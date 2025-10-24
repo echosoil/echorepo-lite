@@ -34,6 +34,9 @@
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+  <!-- Moved here from JS block -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+
   <style>
     #map {
       height: 75vh;
@@ -55,13 +58,10 @@
       box-shadow: none !important;
     }
     .leaflet-tile-pane img.leaflet-tile {
-      image-rendering: auto;      
+      image-rendering: auto;
       outline: none !important;
       border: none !important;
     }
-
-  /* (optional) slightly better sampling on some GPUs */
-  #map .leaflet-tile-pane img.leaflet-tile { image-rendering: auto; }
 
     /* optional: style for our degree labels */
     .deg-rulers text { fill: rgba(0,0,0,0.65); }
@@ -145,14 +145,16 @@
       <ul class="dropdown-menu">
         <li>
           <form method="POST" action="{{ url_for('download_csv') }}" class="px-3 py-1">
+            {# {{ csrf_token() }} if using Flask-WTF #}
             <input type="hidden" name="user_key" value="{{ user_key }}">
-            <button class="btn btn-link p-0"><i class="bi bi-filetype-csv me-1"></i> CSV (per-user)</button>
+            <button class="btn btn-link p-0" type="submit"><i class="bi bi-filetype-csv me-1"></i> CSV (per-user)</button>
           </form>
         </li>
         <li>
           <form method="POST" action="{{ url_for('download_xlsx') }}" class="px-3 py-1">
+            {# {{ csrf_token() }} if using Flask-WTF #}
             <input type="hidden" name="user_key" value="{{ user_key }}">
-            <button class="btn btn-link p-0"><i class="bi bi-filetype-xls me-1"></i> XLSX (per-user)</button>
+            <button class="btn btn-link p-0" type="submit"><i class="bi bi-filetype-xls me-1"></i> XLSX (per-user)</button>
           </form>
         </li>
         <li><hr class="dropdown-divider"></li>
@@ -192,7 +194,6 @@
   <!-- Leaflet + MarkerCluster + Draw -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
   <!-- Tiny helper: copy user key -->
@@ -211,13 +212,14 @@
     })();
   </script>
 
-  <!-- Config passed to map.js -->
+  {# JSON-safe config for map.js #}
+  {% set cfg = {
+      'jitter_m': jitter_m|default(1000)|int,
+      'lat_col': lat_col|default('GPS_lat'),
+      'lon_col': lon_col|default('GPS_long')
+  } %}
   <script>
-    window.ECHOREPO_CFG = {
-      jitter_m: {{ jitter_m|default(1000)|int }},
-      lat_col: "{{ lat_col|default('GPS_lat') }}",
-      lon_col: "{{ lon_col|default('GPS_long') }}"
-    };
+    window.ECHOREPO_CFG = {{ cfg | tojson }};
   </script>
 
   <!-- Your extracted map logic -->
