@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}ECHOrepo — EU Soil Data{% endblock %}</title>
+
+  <!-- Meta -->
+  <meta name="description" content="ECHOrepo — citizen science soil samples under EU-funded ECHO project" />
+  <meta property="og:title" content="ECHOrepo — EU Soil Data" />
+  <meta property="og:type" content="website" />
+  <meta property="og:description" content="Access and download your soil samples. Part of the EU-funded ECHO project." />
+  <meta property="og:image" content="{{ url_for('static', filename='img/og_echorepo.jpg') }}" />
+  <meta name="color-scheme" content="light" />
+
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.png') }}" />
+
+  <!-- Perf hints -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap & Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+  <!-- Site CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=3">
+  <style>
+    :root{
+      --ech-green:#2e7d32; --ech-green-600:#256a29;
+      --ech-brown:#6b4f2a; --ech-sand:#f5efe6; --ech-cream:#faf7f0;
+      --ech-ink:#1c1c1c; --ech-gold:#d5a11d; --ech-border:rgba(0,0,0,.08);
+      --ech-shadow:0 10px 30px rgba(0,0,0,.08);
+      --radius-lg:14px; --radius-md:10px; --radius-sm:8px;
+    }
+    html,body{height:100%}
+    body{color:var(--ech-ink);background:var(--ech-cream)}
+    .soil-gradient{
+      background:
+        radial-gradient(1000px 420px at 10% -10%, rgba(213,161,29,.10), transparent 60%),
+        radial-gradient(800px 360px at 90% -20%, rgba(46,125,50,.12), transparent 60%),
+        linear-gradient(135deg, var(--ech-cream) 0%, var(--ech-sand) 60%, #efe6d9 100%);
+    }
+    .soil-pattern{
+      background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+      background-size: 12px 12px;
+    }
+    .brand-navbar{
+      background: var(--ech-green);
+      --bs-navbar-color: rgba(255,255,255,.9);
+      --bs-navbar-hover-color: #fff;
+    }
+    .navbar-brand img{ height: 28px; }
+    .navbar .nav-link{ font-weight: 500; border-radius: var(--radius-sm); padding:.4rem .6rem; }
+    .navbar .nav-link:hover{ background: rgba(255,255,255,.12); color:#fff !important; }
+    .chip{ display:inline-flex; align-items:center; gap:.45rem; border-radius:999px; padding:.28rem .6rem; font-size:.86rem;
+      background:#fff; border:1px solid var(--ech-border); }
+    .btn-eu{ background:var(--ech-green); color:#fff; border:none; border-radius:var(--radius-md); }
+    .btn-eu:hover{ background:var(--ech-green-600); color:#fff; }
+    .btn-earth{ background:var(--ech-brown); color:#fff; border:none; border-radius:var(--radius-md); }
+    .btn-earth:hover{ filter:brightness(.95); color:#fff; }
+    .card-elevated{ box-shadow:var(--ech-shadow); border:1px solid var(--ech-border); border-radius:var(--radius-lg); background:#fff; }
+    .table-wrap{ overflow-x:auto; }
+    .skip-link{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+    .skip-link:focus{ position:fixed; left:12px; top:12px; width:auto; height:auto; padding:.5rem .75rem;
+      background:#fff; border:2px solid var(--ech-gold); border-radius:.5rem; z-index:1100; }
+    :focus-visible{ outline:3px solid var(--ech-gold); outline-offset:2px; }
+    footer small, footer a{ color:#6b6b6b; }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="soil-gradient">
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <nav class="navbar navbar-expand-lg navbar-dark brand-navbar fixed-top" aria-label="Primary">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+        <img src="{{ url_for('static', filename='img/echorepo_logo_light.svg') }}" alt="ECHOrepo logo" onerror="this.style.display='none'">
+        <span class="ms-2 fw-semibold">ECHOrepo</span>
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsMain"
+              aria-controls="navbarsMain" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsMain">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/#about" target="_blank" rel="noopener">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/for-participants" target="_blank" rel="noopener">For Participants</a></li>
+          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/partners" target="_blank" rel="noopener">Partners</a></li>
+          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/news" target="_blank" rel="noopener">News &amp; Events</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Resources</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="https://echosoil.eu/media-kit" target="_blank" rel="noopener">Media Kit</a></li>
+              <li><a class="dropdown-item" href="https://echosoil.eu/publications" target="_blank" rel="noopener">Publications</a></li>
+              <li><a class="dropdown-item" href="https://echosoil.eu/newsletter-archive" target="_blank" rel="noopener">Newsletter Archive</a></li>
+              <li><hr class="dropdown-divider"></li>
+              {% block nav_left %}{% endblock %}
+            </ul>
+          </li>
+        </ul>
+
+        <!-- Right: child templates supply user & logout; NO issues button here -->
+        <div class="d-flex align-items-center gap-3">
+          {% block nav_right %}{% endblock %}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main" class="container" style="padding-top: 84px;">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="container py-4 soil-pattern mt-5 rounded-3">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-8">
+        <small>
+          ECHOrepo is part of the EU- and UKRI-funded <strong>ECHO</strong> project
+          <a href="https://echosoil.eu" target="_blank" rel="noopener">echosoil.eu</a>.
+          <br/>Need help? <a href="mailto:contact@echosoil.eu">contact@echosoil.eu</a>
+        </small>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <span class="chip" title="EU-funded">
+          <i class="bi bi-stars"></i> EU-funded initiative
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

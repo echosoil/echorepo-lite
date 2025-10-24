@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  echorepo-lite:
+    build: .
+    container_name: echorepo-lite
+    # Load your .env for other values, then override paths below
+    env_file:
+      - .env
+    # environment:
+      # Make sure the app uses the in-container paths
+      # SQLITE_PATH: /data/db/echo.db
+      # INPUT_CSV: /data/echorepo_samples.csv
+      # USERS_CSV: /data/users.csv
+      # (optional) if you rely on these in templates/logic:
+      # LAT_COL: GPS_lat
+      # LON_COL: GPS_long
+      # USER_KEY_COLUMN: email
+    ports:
+      - "8001:8000"             # host:container
+    volumes:
+      - ./data:/data            # CSV + DB shared with host
+      - ./static:/app/static:ro # static files
+      - ./echorepo/templates:/app/echorepo/templates:ro
+      - ./keys:/keys:ro      # <— add this so the service account JSON is visible
+    restart: unless-stopped

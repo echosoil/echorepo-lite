@@ -1,0 +1,99 @@
+# ── Python bytecode / caches ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ── Packaging / build artefacts ────────────────────────────────────────────────
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+wheels/
+share/python-wheels/
+pip-wheel-metadata/
+.manifest
+.installed.cfg
+
+# ── Testing / coverage ─────────────────────────────────────────────────────────
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# ── Type checkers ─────────────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+
+# ── IDE / editor junk ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.iml
+
+# ── OS junk ───────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+logs/
+*.log
+gunicorn-*.log
+
+# ── Flask instance & local DBs ────────────────────────────────────────────────
+instance/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+
+# ── Environment files / secrets ───────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+keys/*
+!keys/.gitkeep
+
+# ── Docker-compose local overrides (optional) ─────────────────────────────────
+docker-compose.override.yml
+
+# ── Node / frontend (if any) ──────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ── Project data mounted into container ───────────────────────────────────────
+# Keep runtime data (CSV, SQLite) out of git. Leave a placeholder if needed.
+data/*
+!data/.gitkeep
+!data/README.md
+!data/db/.gitkeep
+
+# ── Misc temp files ───────────────────────────────────────────────────────────
+*.swp
+*.swo
+
+# Ignore the sandbox test package(s)
+# (anchored to repo root)
+#/ test vs tests — include both if you’re not 100% sure which one you have
+/test/echorepo/
+/tests/echorepo/
+
+# Still allow a placeholder so the dir can exist in git if needed
+!test/echorepo/.gitkeep
+!tests/echorepo/.gitkeep

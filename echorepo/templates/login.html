@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}ECHOrepo — Access{% endblock %}
+
+{% block content %}
+  <section class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+      <div class="card card-elevated border-0 overflow-hidden">
+        <div class="row g-0">
+          <div class="col-md-6 p-4 p-lg-5 order-2 order-md-1">
+            <h1 class="h4 mb-2">Access your data</h1>
+            <p class="text-muted mb-4">Sign in with your Keycloak credentials.</p>
+
+            {% if error %}
+              <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('sso_password_login') }}" novalidate>
+              <div class="mb-3">
+                <label for="username" class="form-label">Email or username</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-person"></i></span>
+                  <input type="text" class="form-control" id="username" name="username"
+                         placeholder="you@example.org" required autofocus>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                  <input type="password" class="form-control" id="password" name="password"
+                         placeholder="••••••••" required>
+                </div>
+              </div>
+              <div class="d-grid gap-2">
+                <button class="btn btn-eu" type="submit">
+                  <span class="me-1 bi bi-box-arrow-in-right"></span> Continue
+                </button>
+              </div>
+            </form>
+
+            <div class="mt-3">
+              <small class="text-muted">Issues signing in? Contact the organisers.</small>
+            </div>
+          </div>
+
+          <!-- Visual side -->
+          <div class="col-md-6 order-1 order-md-2" aria-hidden="true">
+            <div class="h-100 w-100" style="min-height:260px; background:
+                linear-gradient(0deg, rgba(0,0,0,.15), rgba(0,0,0,.15)),
+                url('{{ url_for('static', filename='img/soil_hero.jpg') }}') center/cover no-repeat;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center mt-3">
+        <span class="chip"><i class="bi bi-check2-circle"></i> GDPR-friendly access</span>
+        <span class="chip ms-1"><i class="bi bi-cloud-arrow-down"></i> Download your data anytime</span>
+      </div>
+    </div>
+  </section>
+{% endblock %}

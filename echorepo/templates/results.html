@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% block title %}ECHOrepo — Your Data{% endblock %}
+
+{% block nav_left %}
+  <li class="nav-item">
+    <a class="nav-link" href="{{ url_for('download_all_csv') }}">
+      <i class="bi bi-download"></i> Download all samples (CSV)
+    </a>
+  </li>
+{% endblock %}
+
+{# IMPORTANT: nav_right has no "fix" button — only user + logout #}
+{% block nav_right %}
+  <div class="text-white-50 small me-2">Logged in as</div>
+  <div class="chip bg-white">
+    <i class="bi bi-person-badge"></i>
+    <strong id="userKeyCopy">{{ user_key }}</strong>
+  </div>
+  <button class="btn btn-sm btn-outline-light" type="button" id="copyKeyBtn" title="Copy user key">
+    <i class="bi bi-clipboard"></i>
+  </button>
+  <a class="btn btn-sm btn-warning" href="{{ url_for('logout') }}">
+    <i class="bi bi-box-arrow-right"></i> Logout
+  </a>
+{% endblock %}
+
+{% block extra_css %}
+  <!-- Leaflet + MarkerCluster CSS -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="">
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+  <style>
+    #map {
+      height: 75vh;
+      min-height: 500px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* ——— Kill Leaflet tile seams (Chrome sub-pixel hairlines) ——— */
+    #map .leaflet-pane,
+    #map .leaflet-layer,
+    #map .leaflet-tile {
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform: translateZ(0);
+    }
+    #map .leaflet-tile {
+      border: 0 !important;
+      box-shadow: none !important;
+    }
+    .leaflet-tile-pane img.leaflet-tile {
+      image-rendering: auto;      
+      outline: none !important;
+      border: none !important;
+    }
+
+  /* (optional) slightly better sampling on some GPUs */
+  #map .leaflet-tile-pane img.leaflet-tile { image-rendering: auto; }
+
+    /* optional: style for our degree labels */
+    .deg-rulers text { fill: rgba(0,0,0,0.65); }
+
+    .toolbar { gap: .5rem; }
+    .toolbar .btn { white-space: nowrap; }
+    /* popup card styles */
+    .popup-card {
+      max-width: 340px;
+      font-size: 0.8rem;
+      line-height: 1.25;
+    }
+    .popup-card table {
+      width: 100%;
+      font-size: 0.8rem;
+      margin: 0;
+      border-collapse: collapse;
+    }
+    .popup-card th {
+      white-space: nowrap;
+      width: 1%;
+      color: #444;
+      font-weight: 600;
+      padding: 2px 6px;
+      vertical-align: top;
+    }
+    .popup-card td {
+      color: #222;
+      padding: 2px 6px;
+    }
+    .popup-card img {
+      max-width: 120px;
+      height: auto;
+      border-radius: 6px;
+      margin-top: .3rem;
+      display: block;
+    }
+    .radius-legend {
+      background:#fff; border-radius:8px; padding:.4rem .6rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,.12); font-size:.85rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <header class="mb-3">
+    <h2 class="h4 mb-1">Your data</h2>
+    <p class="text-muted">Explore your soil sample locations on the map, then export or browse the table.</p>
+
+    {# 🔴 Only this red button remains #}
+    {% if (issue_count|default(0)) > 0 %}
+      <div class="mb-3">
+        <a href="{{ url_for('errors.issues') }}"
+           class="btn btn-danger btn-lg d-inline-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-octagon-fill"></i>
+          Fix data issues ({{ issue_count }})
+        </a>
+        <small class="text-muted ms-2">
+          Some samples need attention to ensure correct maps and downloads.
+        </small>
+      </div>
+    {% endif %}
+
+    {% if columns is defined and (columns|length == 0) %}
+      <div class="alert alert-info mb-0 mt-2">
+        No data found for <strong>{{ user_key }}</strong>. If you recently submitted samples, try again later.
+      </div>
+    {% endif %}
+  </header>
+
+  <!-- Map -->
+  <div id="map" class="mb-3"></div>
+
+  <!-- Toolbar -->
+  <div class="d-flex flex-wrap align-items-center toolbar mb-3">
+    <!-- Download dropdown -->
+    <div class="btn-group">
+      <button type="button" class="btn btn-earth dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-download me-1"></i> Download
+      </button>
+      <ul class="dropdown-menu">
+        <li>
+          <form method="POST" action="{{ url_for('download_csv') }}" class="px-3 py-1">
+            <input type="hidden" name="user_key" value="{{ user_key }}">
+            <button class="btn btn-link p-0"><i class="bi bi-filetype-csv me-1"></i> CSV (per-user)</button>
+          </form>
+        </li>
+        <li>
+          <form method="POST" action="{{ url_for('download_xlsx') }}" class="px-3 py-1">
+            <input type="hidden" name="user_key" value="{{ user_key }}">
+            <button class="btn btn-link p-0"><i class="bi bi-filetype-xls me-1"></i> XLSX (per-user)</button>
+          </form>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('download_all_csv') }}">
+            <i class="bi bi-archive me-1"></i> All samples (CSV, anonymised)
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="/api/user_geojson" target="_blank" rel="noopener">
+            <i class="bi bi-braces-asterisk me-1"></i> GeoJSON (per-user)
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- RIGHT: compact pH filter + export -->
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <span class="text-muted small">pH</span>
+      <input type="number" step="0.1" min="0" max="14" id="phMin" class="form-control form-control-sm" placeholder="min" style="width:6rem">
+      <span class="text-muted">–</span>
+      <input type="number" step="0.1" min="0" max="14" id="phMax" class="form-control form-control-sm" placeholder="max" style="width:6rem">
+      <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button" title="Apply pH filter">Apply</button>
+      <button class="btn btn-sm btn-primary" id="btnExportFiltered" type="button" disabled title="Export rows matching current pH filter">
+        Export filtered (0)
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div id="tableWrap" class="table-wrap bg-white rounded-3 p-2 card-elevated">
+    {{ table_html | safe }}
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <!-- Leaflet + MarkerCluster + Draw -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <!-- Tiny helper: copy user key -->
+  <script>
+    (function(){
+      const btn = document.getElementById('copyKeyBtn');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const text = document.getElementById('userKeyCopy')?.textContent?.trim() || '';
+        if(!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+          btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+          setTimeout(()=> btn.innerHTML = '<i class="bi bi-clipboard"></i>', 1400);
+        });
+      });
+    })();
+  </script>
+
+  <!-- Config passed to map.js -->
+  <script>
+    window.ECHOREPO_CFG = {
+      jitter_m: {{ jitter_m|default(1000)|int }},
+      lat_col: "{{ lat_col|default('GPS_lat') }}",
+      lon_col: "{{ lon_col|default('GPS_long') }}"
+    };
+  </script>
+
+  <!-- Your extracted map logic -->
+  <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}
