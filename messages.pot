@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-24 21:41+0000\n"
+"POT-Creation-Date: 2025-10-27 18:04+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -59,75 +59,75 @@ msgstr ""
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr ""
 
-#: echorepo/templates/base.html:78
+#: echorepo/templates/base.html:79
 msgid "Skip to content"
 msgstr ""
 
-#: echorepo/templates/base.html:80
+#: echorepo/templates/base.html:81
 msgid "Primary"
 msgstr ""
 
-#: echorepo/templates/base.html:83
+#: echorepo/templates/base.html:84
 msgid "ECHOrepo logo"
 msgstr ""
 
-#: echorepo/templates/base.html:88
+#: echorepo/templates/base.html:89
 msgid "Toggle navigation"
 msgstr ""
 
-#: echorepo/templates/base.html:94
+#: echorepo/templates/base.html:95
 msgid "About"
 msgstr ""
 
-#: echorepo/templates/base.html:95
+#: echorepo/templates/base.html:96
 msgid "For Participants"
 msgstr ""
 
-#: echorepo/templates/base.html:96
+#: echorepo/templates/base.html:97
 msgid "Partners"
 msgstr ""
 
-#: echorepo/templates/base.html:97
+#: echorepo/templates/base.html:98
 msgid "News & Events"
 msgstr ""
 
-#: echorepo/templates/base.html:99
+#: echorepo/templates/base.html:100
 msgid "Resources"
 msgstr ""
 
-#: echorepo/templates/base.html:101
+#: echorepo/templates/base.html:102
 msgid "Media Kit"
 msgstr ""
 
-#: echorepo/templates/base.html:102
+#: echorepo/templates/base.html:103
 msgid "Publications"
 msgstr ""
 
-#: echorepo/templates/base.html:103
+#: echorepo/templates/base.html:104
 msgid "Newsletter Archive"
 msgstr ""
 
-#: echorepo/templates/base.html:124
+#: echorepo/templates/base.html:144
 msgid "Change language"
 msgstr ""
 
-#: echorepo/templates/base.html:151
+#: echorepo/templates/base.html:171
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr ""
 
-#: echorepo/templates/base.html:151
+#: echorepo/templates/base.html:171
 msgid "project"
 msgstr ""
 
-#: echorepo/templates/base.html:153
+#: echorepo/templates/base.html:173
 msgid "Need help?"
 msgstr ""
 
-#: echorepo/templates/base.html:157
+#: echorepo/templates/base.html:177
 msgid "EU-funded"
 msgstr ""
 
-#: echorepo/templates/base.html:158
+#: echorepo/templates/base.html:178
 msgid "EU-funded initiative"
 msgstr ""
 

@@ -1,4 +1,7 @@
 from authlib.integrations.flask_client import OAuth
+from flask_babel import Babel
 
 oauth = OAuth()
-__all__ = ["oauth"]
+babel = Babel()
+
+__all__ = ["babel", "oauth"]
