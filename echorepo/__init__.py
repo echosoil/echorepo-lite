@@ -6,7 +6,7 @@ from .routes.web import web_bp
 from .routes.api import api_bp
 from .services.db import init_db_sanity
 from .routes.errors import errors_bp  # add import
-
+from .i18n import init_i18n, lang_bp
 
 def create_app() -> Flask:
     pkg_dir = os.path.dirname(__file__)
@@ -36,6 +36,9 @@ def create_app() -> Flask:
         FIREBASE_PROJECT_ID=getattr(settings, "FIREBASE_PROJECT_ID", None),
         GOOGLE_APPLICATION_CREDENTIALS=getattr(settings, "GOOGLE_APPLICATION_CREDENTIALS", None),
     )
+
+    init_i18n(app)               # <-- enable Babel
+    app.register_blueprint(lang_bp)  # <-- /set-lang/<code>
 
     # Extensions & OAuth
     init_oauth(app)

@@ -1,4 +1,5 @@
 import math, re, pandas as pd
+from typing import Optional
 from ..config import settings
 
 LAT_CANDIDATES = ["lat","latitude","y","gps_lat","gps_latitude","geom_lat","geo_lat","gps_lat_deg","latitude_deg"]
@@ -39,7 +40,7 @@ def _hash_to_unit_floats(key: str, n: int = 2):
         vals.append((ui % (10**12)) / (10**12))
     return vals
 
-def deterministic_jitter(lat: float, lon: float, key: str, max_dist_m: float = None):
+def deterministic_jitter(lat: float, lon: float, key: str, max_dist_m: Optional[float] = None):
     if max_dist_m is None: max_dist_m = settings.MAX_JITTER_METERS
     r1, r2 = _hash_to_unit_floats(f"{key}|{settings.JITTER_SALT}")
     theta = 2 * math.pi * r1

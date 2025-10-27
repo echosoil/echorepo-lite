@@ -83,6 +83,8 @@ data/*
 !data/.gitkeep
 !data/README.md
 !data/db/.gitkeep
+instance/*
+!instance/.gitkeep
 
 # ── Misc temp files ───────────────────────────────────────────────────────────
 *.swp

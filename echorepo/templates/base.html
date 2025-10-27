@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="{{ current_locale|default('en') }}" data-bs-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}ECHOrepo — EU Soil Data{% endblock %}</title>
+  <title>{% block title %}{{ _('ECHOrepo — EU Soil Data') }}{% endblock %}</title>
 
   <!-- Meta -->
-  <meta name="description" content="ECHOrepo — citizen science soil samples under EU-funded ECHO project" />
-  <meta property="og:title" content="ECHOrepo — EU Soil Data" />
+  <meta name="description" content="{{ _('ECHOrepo — citizen science soil samples under EU-funded ECHO project') }}" />
+  <meta property="og:title" content="{{ _('ECHOrepo — EU Soil Data') }}" />
   <meta property="og:type" content="website" />
-  <meta property="og:description" content="Access and download your soil samples. Part of the EU-funded ECHO project." />
+  <meta property="og:description" content="{{ _('Access and download your soil samples. Part of the EU-funded ECHO project.') }}" />
   <meta property="og:image" content="{{ url_for('static', filename='img/og_echorepo.jpg') }}" />
   <meta name="color-scheme" content="light" />
 
@@ -71,45 +71,90 @@
     :focus-visible{ outline:3px solid var(--ech-gold); outline-offset:2px; }
     footer small, footer a{ color:#6b6b6b; }
   </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
 
   {% block extra_css %}{% endblock %}
 </head>
 <body class="soil-gradient">
-  <a href="#main" class="skip-link">Skip to content</a>
+  <a href="#main" class="skip-link">{{ _('Skip to content') }}</a>
 
-  <nav class="navbar navbar-expand-lg navbar-dark brand-navbar fixed-top" aria-label="Primary">
+  <nav class="navbar navbar-expand-lg navbar-dark brand-navbar fixed-top" aria-label="{{ _('Primary') }}">
     <div class="container-fluid">
       <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
-        <img src="{{ url_for('static', filename='img/echorepo_logo_light.svg') }}" alt="ECHOrepo logo" onerror="this.style.display='none'">
+        <img src="{{ url_for('static', filename='img/echorepo_logo_light.svg') }}" alt="{{ _('ECHOrepo logo') }}" onerror="this.style.display='none'">
         <span class="ms-2 fw-semibold">ECHOrepo</span>
       </a>
 
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsMain"
-              aria-controls="navbarsMain" aria-expanded="false" aria-label="Toggle navigation">
+              aria-controls="navbarsMain" aria-expanded="false" aria-label="{{ _('Toggle navigation') }}">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div class="collapse navbar-collapse" id="navbarsMain">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/#about" target="_blank" rel="noopener">About</a></li>
-          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/for-participants" target="_blank" rel="noopener">For Participants</a></li>
-          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/partners" target="_blank" rel="noopener">Partners</a></li>
-          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/news" target="_blank" rel="noopener">News &amp; Events</a></li>
+          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/#about" target="_blank" rel="noopener">{{ _('About') }}</a></li>
+          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/for-participants" target="_blank" rel="noopener">{{ _('For Participants') }}</a></li>
+          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/partners" target="_blank" rel="noopener">{{ _('Partners') }}</a></li>
+          <li class="nav-item"><a class="nav-link" href="https://echosoil.eu/news" target="_blank" rel="noopener">{{ _('News & Events') }}</a></li>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Resources</a>
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ _('Resources') }}</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="https://echosoil.eu/media-kit" target="_blank" rel="noopener">Media Kit</a></li>
-              <li><a class="dropdown-item" href="https://echosoil.eu/publications" target="_blank" rel="noopener">Publications</a></li>
-              <li><a class="dropdown-item" href="https://echosoil.eu/newsletter-archive" target="_blank" rel="noopener">Newsletter Archive</a></li>
+              <li><a class="dropdown-item" href="https://echosoil.eu/media-kit" target="_blank" rel="noopener">{{ _('Media Kit') }}</a></li>
+              <li><a class="dropdown-item" href="https://echosoil.eu/publications" target="_blank" rel="noopener">{{ _('Publications') }}</a></li>
+              <li><a class="dropdown-item" href="https://echosoil.eu/newsletter-archive" target="_blank" rel="noopener">{{ _('Newsletter Archive') }}</a></li>
               <li><hr class="dropdown-divider"></li>
               {% block nav_left %}{% endblock %}
             </ul>
           </li>
         </ul>
 
-        <!-- Right: child templates supply user & logout; NO issues button here -->
+        <!-- Right: child templates supply user & logout; language switch always visible -->
         <div class="d-flex align-items-center gap-3">
+            <!-- Language switcher -->
+            <div class="dropdown">
+              <button class="btn btn-sm btn-light d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="fi fi-{{ LOCALE_FLAGS.get(current_locale, 'gb') }}" style="font-size: 1rem;"></span>
+                <strong>{{ current_locale.upper() }}</strong>
+                <i class="bi bi-chevron-down small"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                {% for code in SUPPORTED_LOCALES %}
+                  <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 {% if code==current_locale %}active{% endif %}"
+                      href="{{ url_for('lang.set_language', lang_code=code) }}">
+                      <span class="fi fi-{{ LOCALE_FLAGS.get(code, 'gb') }}"></span>
+                      <span class="fw-semibold">{{ code.upper() }}</span>
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
           {% block nav_right %}{% endblock %}
+
+          {# Language dropdown #}
+          {% set LANGNAMES = {
+            'en':'English','cs':'Čeština','nl':'Nederlands','fi':'Suomi','fr':'Français',
+            'de':'Deutsch','el':'Ελληνικά','it':'Italiano','pl':'Polski','pt':'Português',
+            'ro':'Română','sk':'Slovenčina','es':'Español'
+          } %}
+          {% set _LOCALES = SUPPORTED_LOCALES if SUPPORTED_LOCALES is defined else
+            ['en','cs','nl','fi','fr','de','el','it','pl','pt','ro','sk','es'] %}
+          <div class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="langMenu" role="button"
+               data-bs-toggle="dropdown" aria-expanded="false" title="{{ _('Change language') }}">
+              {{ (current_locale|default('en'))|upper }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langMenu">
+              {% for code in _LOCALES %}
+                <li>
+                  <a class="dropdown-item{% if current_locale==code %} active{% endif %}"
+                     href="{{ url_for('lang.set_language', lang_code=code) }}">
+                    {{ LANGNAMES.get(code, code|upper) }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -123,14 +168,14 @@
     <div class="row g-3 align-items-center">
       <div class="col-md-8">
         <small>
-          ECHOrepo is part of the EU- and UKRI-funded <strong>ECHO</strong> project
+          {{ _('ECHOrepo is part of the EU- and UKRI-funded') }} <strong>ECHO</strong> {{ _('project') }}
           <a href="https://echosoil.eu" target="_blank" rel="noopener">echosoil.eu</a>.
-          <br/>Need help? <a href="mailto:contact@echosoil.eu">contact@echosoil.eu</a>
+          <br/>{{ _('Need help?') }} <a href="mailto:contact@echosoil.eu">contact@echosoil.eu</a>
         </small>
       </div>
       <div class="col-md-4 text-md-end">
-        <span class="chip" title="EU-funded">
-          <i class="bi bi-stars"></i> EU-funded initiative
+        <span class="chip" title="{{ _('EU-funded') }}">
+          <i class="bi bi-stars"></i> {{ _('EU-funded initiative') }}
         </span>
       </div>
     </div>
