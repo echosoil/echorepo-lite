@@ -1,26 +1,26 @@
 {% extends 'base.html' %}
-{% block title %}ECHOrepo — Your Data{% endblock %}
+{% block title %}{{ _('ECHOrepo — Your Data') }}{% endblock %}
 
 {% block nav_left %}
   <li class="nav-item">
     <a class="nav-link" href="{{ url_for('download_all_csv') }}">
-      <i class="bi bi-download"></i> Download all samples (CSV)
+      <i class="bi bi-download"></i> {{ _('Download all samples (CSV)') }}
     </a>
   </li>
 {% endblock %}
 
 {# IMPORTANT: nav_right has no "fix" button — only user + logout #}
 {% block nav_right %}
-  <div class="text-white-50 small me-2">Logged in as</div>
+  <div class="text-white-50 small me-2">{{ _('Logged in as') }}</div>
   <div class="chip bg-white">
     <i class="bi bi-person-badge"></i>
     <strong id="userKeyCopy">{{ user_key }}</strong>
   </div>
-  <button class="btn btn-sm btn-outline-light" type="button" id="copyKeyBtn" title="Copy user key">
+  <button class="btn btn-sm btn-outline-light" type="button" id="copyKeyBtn" title="{{ _('Copy user key') }}">
     <i class="bi bi-clipboard"></i>
   </button>
   <a class="btn btn-sm btn-warning" href="{{ url_for('logout') }}">
-    <i class="bi bi-box-arrow-right"></i> Logout
+    <i class="bi bi-box-arrow-right"></i> {{ _('Logout') }}
   </a>
 {% endblock %}
 
@@ -34,7 +34,7 @@
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-  <!-- Moved here from JS block -->
+  <!-- Draw -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
 
   <style>
@@ -45,19 +45,16 @@
       overflow: hidden;
     }
 
-    /* ——— Kill Leaflet tile seams (Chrome sub-pixel hairlines) ——— */
-    #map .leaflet-pane,
-    #map .leaflet-layer,
+    /* Fix faint tile seam lines (Chrome/GPU rounding) — target tiles only */
     #map .leaflet-tile {
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
       transform: translateZ(0);
-    }
-    #map .leaflet-tile {
       border: 0 !important;
       box-shadow: none !important;
+      outline: 0 !important;
     }
-    .leaflet-tile-pane img.leaflet-tile {
+    #map .leaflet-tile-pane img.leaflet-tile {
       image-rendering: auto;
       outline: none !important;
       border: none !important;
@@ -108,8 +105,8 @@
 
 {% block content %}
   <header class="mb-3">
-    <h2 class="h4 mb-1">Your data</h2>
-    <p class="text-muted">Explore your soil sample locations on the map, then export or browse the table.</p>
+    <h2 class="h4 mb-1">{{ _('Your data') }}</h2>
+    <p class="text-muted">{{ _('Explore your soil sample locations on the map, then export or browse the table.') }}</p>
 
     {# 🔴 Only this red button remains #}
     {% if (issue_count|default(0)) > 0 %}
@@ -117,17 +114,17 @@
         <a href="{{ url_for('errors.issues') }}"
            class="btn btn-danger btn-lg d-inline-flex align-items-center gap-2">
           <i class="bi bi-exclamation-octagon-fill"></i>
-          Fix data issues ({{ issue_count }})
+          {{ _('Fix data issues (%(n)s)', n=issue_count) }}
         </a>
         <small class="text-muted ms-2">
-          Some samples need attention to ensure correct maps and downloads.
+          {{ _('Some samples need attention to ensure correct maps and downloads.') }}
         </small>
       </div>
     {% endif %}
 
     {% if columns is defined and (columns|length == 0) %}
       <div class="alert alert-info mb-0 mt-2">
-        No data found for <strong>{{ user_key }}</strong>. If you recently submitted samples, try again later.
+        {{ _('No data found for') }} <strong>{{ user_key }}</strong>. {{ _('If you recently submitted samples, try again later.') }}
       </div>
     {% endif %}
   </header>
@@ -140,32 +137,30 @@
     <!-- Download dropdown -->
     <div class="btn-group">
       <button type="button" class="btn btn-earth dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="bi bi-download me-1"></i> Download
+        <i class="bi bi-download me-1"></i> {{ _('Download') }}
       </button>
       <ul class="dropdown-menu">
         <li>
           <form method="POST" action="{{ url_for('download_csv') }}" class="px-3 py-1">
-            {# {{ csrf_token() }} if using Flask-WTF #}
             <input type="hidden" name="user_key" value="{{ user_key }}">
-            <button class="btn btn-link p-0" type="submit"><i class="bi bi-filetype-csv me-1"></i> CSV (per-user)</button>
+            <button class="btn btn-link p-0" type="submit"><i class="bi bi-filetype-csv me-1"></i> {{ _('CSV (per-user)') }}</button>
           </form>
         </li>
         <li>
           <form method="POST" action="{{ url_for('download_xlsx') }}" class="px-3 py-1">
-            {# {{ csrf_token() }} if using Flask-WTF #}
             <input type="hidden" name="user_key" value="{{ user_key }}">
-            <button class="btn btn-link p-0" type="submit"><i class="bi bi-filetype-xls me-1"></i> XLSX (per-user)</button>
+            <button class="btn btn-link p-0" type="submit"><i class="bi bi-filetype-xls me-1"></i> {{ _('XLSX (per-user)') }}</button>
           </form>
         </li>
         <li><hr class="dropdown-divider"></li>
         <li>
           <a class="dropdown-item" href="{{ url_for('download_all_csv') }}">
-            <i class="bi bi-archive me-1"></i> All samples (CSV, anonymised)
+            <i class="bi bi-archive me-1"></i> {{ _('All samples (CSV, anonymised)') }}
           </a>
         </li>
         <li>
           <a class="dropdown-item" href="/api/user_geojson" target="_blank" rel="noopener">
-            <i class="bi bi-braces-asterisk me-1"></i> GeoJSON (per-user)
+            <i class="bi bi-braces-asterisk me-1"></i> {{ _('GeoJSON (per-user)') }}
           </a>
         </li>
       </ul>
@@ -173,13 +168,17 @@
 
     <!-- RIGHT: compact pH filter + export -->
     <div class="ms-auto d-flex align-items-center gap-2">
-      <span class="text-muted small">pH</span>
-      <input type="number" step="0.1" min="0" max="14" id="phMin" class="form-control form-control-sm" placeholder="min" style="width:6rem">
+      <span class="text-muted small">{{ _('pH') }}</span>
+      <input type="number" step="0.1" min="0" max="14" id="phMin" class="form-control form-control-sm"
+             placeholder="{{ _('min') }}" style="width:6rem">
       <span class="text-muted">–</span>
-      <input type="number" step="0.1" min="0" max="14" id="phMax" class="form-control form-control-sm" placeholder="max" style="width:6rem">
-      <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button" title="Apply pH filter">Apply</button>
-      <button class="btn btn-sm btn-primary" id="btnExportFiltered" type="button" disabled title="Export rows matching current pH filter">
-        Export filtered (0)
+      <input type="number" step="0.1" min="0" max="14" id="phMax" class="form-control form-control-sm"
+             placeholder="{{ _('max') }}" style="width:6rem">
+      <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button"
+              title="{{ _('Apply pH filter') }}">{{ _('Apply') }}</button>
+      <button class="btn btn-sm btn-primary" id="btnExportFiltered" type="button" disabled
+              title="{{ _('Export rows matching current pH filter') }}">
+        {{ _('Export filtered (0)') }}
       </button>
     </div>
   </div>
@@ -220,6 +219,39 @@
   } %}
   <script>
     window.ECHOREPO_CFG = {{ cfg | tojson }};
+  </script>
+
+  {# JS i18n dictionary for map.js UI strings #}
+  <script>
+    document.documentElement.lang = "{{ current_locale|default('en') }}";
+    window.I18N = {
+      labels: {
+        yourSamples: "{{ _('Your samples') }}",
+        otherSamples: "{{ _('Other samples') }}",
+        export: "{{ _('Export') }}",
+        clear: "{{ _('Clear') }}",
+        exportFiltered: "{{ _('Export filtered ({n})') }}",
+        apply: "{{ _('Apply') }}",
+        date: "{{ _('Date') }}",
+        qr: "{{ _('QR code') }}",
+        ph: "{{ _('pH') }}",
+        colour: "{{ _('Colour') }}",
+        texture: "{{ _('Texture') }}",
+        structure: "{{ _('Structure') }}",
+        earthworms: "{{ _('Earthworms') }}",
+        plastic: "{{ _('Plastic') }}",
+        debris: "{{ _('Debris') }}",
+        contamination: "{{ _('Contamination') }}",
+        metals: "{{ _('Metals') }}",
+        privacyRadius: "{{ _('Privacy radius (~±{km} km)') }}",
+        soilPh: "{{ _('Soil pH') }}",
+        acid: "{{ _('Acidic (≤5.5)') }}",
+        slightlyAcid: "{{ _('Slightly acidic (5.5–6.5)') }}",
+        neutral: "{{ _('Neutral (6.5–7.5)') }}",
+        slightlyAlkaline: "{{ _('Slightly alkaline (7.5–8.5)') }}",
+        alkaline: "{{ _('Alkaline (≥8.5)') }}"
+      }
+    };
   </script>
 
   <!-- Your extracted map logic -->

@@ -2,6 +2,13 @@
   const mapDiv = document.getElementById('map');
   if (!mapDiv) return;
 
+  // ---------- i18n helpers ----------
+  const UI_LANG = document.documentElement.lang || 'en';
+  const T = (key, params = {}, fallback) => {
+    let s = (window.I18N && window.I18N.labels && window.I18N.labels[key]) || fallback || key;
+    return s.replace(/\{(\w+)\}/g, (_, name) => (params[name] ?? `{${name}}`));
+  };
+
   // ---- Config & helpers ----
   const cfg = (window.ECHOREPO_CFG || {});
   const LAT_KEY = cfg.lat_col || 'GPS_lat';
@@ -13,18 +20,14 @@
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
-    updateWhenZooming: false,   // fewer mid-zoom reflows
+    updateWhenZooming: false,
     updateWhenIdle: true,
-    detectRetina: true,         // crisper tiles on HiDPI
-    className: 'tiles-no-seams' // so CSS can target only tiles
+    detectRetina: true,
+    className: 'tiles-no-seams'
   }).addTo(map);
 
-
   /** ─────────────────────────────────────────────────────────────
-   *  Degree rulers (left: latitude, bottom: longitude)
-   *  - No grid lines, only ticks + labels on edges
-   *  - Pointer-events: none, so it never blocks map interactions
-   *  - Updates on move/zoom/resize
+   *  Degree rulers (left: latitude, bottom: longitude) — ticks only
    *  ──────────────────────────────────────────────────────────── */
   (function addDegreeRulers() {
     const container = map.getContainer();
@@ -34,22 +37,18 @@
       position: 'absolute',
       left: '0', top: '0', right: '0', bottom: '0',
       pointerEvents: 'none',
-      zIndex: 450   // above tiles, below most controls
+      zIndex: 450
     });
     container.appendChild(overlay);
 
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
-    Object.assign(svg.style, {
-      position: 'absolute',
-      left: 0, top: 0, width: '100%', height: '100%'
-    });
+    Object.assign(svg.style, { position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' });
     overlay.appendChild(svg);
 
     function clear() { while (svg.firstChild) svg.removeChild(svg.firstChild); }
 
     function chooseStep(spanDeg) {
-      // Aim for ~4–10 ticks across current span
       const steps = [30, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
       for (const s of steps) {
         const ticks = spanDeg / s;
@@ -75,19 +74,15 @@
     function draw() {
       clear();
       const size = map.getSize();
-      const pad = 6;              // distance of labels from edges (px)
-      const tick = 6;             // tick length (px)
-      const font = 11;            // label font size
+      const pad = 6, tick = 6, font = 11;
 
       const b = map.getBounds();
       const south = b.getSouth();
       const north = b.getNorth();
       let west = b.getWest();
       let east = b.getEast();
-      // handle anti-meridian
       if (east < west) east += 360;
 
-      // Steps
       const latSpan = Math.abs(north - south);
       const lonSpan = Math.abs(east - west);
       const latStep = chooseStep(latSpan || 180);
@@ -100,7 +95,6 @@
       for (let lat = latStart; lat <= north + 1e-9; lat += latStep) {
         const pt = map.latLngToContainerPoint([lat, (west + east) / 2]);
         const y = Math.round(pt.y);
-        // small tick
         const line = document.createElementNS(svgNS, 'line');
         line.setAttribute('x1', '0');
         line.setAttribute('x2', String(tick));
@@ -108,18 +102,19 @@
         line.setAttribute('y2', String(y));
         line.setAttribute('stroke', 'rgba(0,0,0,0.55)');
         line.setAttribute('stroke-width', '1');
+        line.setAttribute('shape-rendering', 'crispEdges');
         svg.appendChild(line);
-        // label
+
         const txt = document.createElementNS(svgNS, 'text');
         txt.textContent = fmtLat(lat, latDec);
         txt.setAttribute('x', String(tick + 2));
-        txt.setAttribute('y', String(y + 3)); // vertical centering tweak
+        txt.setAttribute('y', String(y + 3));
         txt.setAttribute('font-size', String(font));
         txt.setAttribute('font-family', 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif');
         txt.setAttribute('fill', 'rgba(0,0,0,0.65)');
         txt.setAttribute('paint-order', 'stroke');
         txt.setAttribute('stroke', 'white');
-        txt.setAttribute('stroke-width', '3'); // halo for legibility
+        txt.setAttribute('stroke-width', '3');
         svg.appendChild(txt);
       }
 
@@ -129,7 +124,7 @@
         const lonWrapped = normLon(lon);
         const pt = map.latLngToContainerPoint([(south + north) / 2, lonWrapped]);
         const x = Math.round(pt.x);
-        // small tick
+
         const line = document.createElementNS(svgNS, 'line');
         line.setAttribute('x1', String(x));
         line.setAttribute('x2', String(x));
@@ -137,8 +132,9 @@
         line.setAttribute('y2', String(size.y));
         line.setAttribute('stroke', 'rgba(0,0,0,0.55)');
         line.setAttribute('stroke-width', '1');
+        line.setAttribute('shape-rendering', 'crispEdges');
         svg.appendChild(line);
-        // label
+
         const txt = document.createElementNS(svgNS, 'text');
         txt.textContent = fmtLon(lonWrapped, lonDec);
         txt.setAttribute('text-anchor', 'middle');
@@ -154,9 +150,7 @@
       }
     }
 
-    // keep in sync with map
     map.on('moveend zoomend viewreset resize', draw);
-    // draw once when tiles load
     map.whenReady(draw);
   })();
   // ── end rulers ──
@@ -191,21 +185,26 @@
     return "#4575b4";
   }
   function fmtInt(v){ const n=Number(v); if(Number.isFinite(n)) return String(Math.trunc(n)); return (v===0||v==="0")?"0":(v??"—"); }
-  function formatDate(iso){ if(!iso) return "—"; const d=new Date(iso); if(isNaN(d)) return iso; return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'2-digit'}); }
+  function formatDate(iso){
+    if(!iso) return "—";
+    const d=new Date(iso);
+    if(isNaN(d)) return iso;
+    return d.toLocaleDateString(UI_LANG,{year:'numeric',month:'short',day:'2-digit'});
+  }
   function formatPopup(f, isOwnerLayer){
     const p=f.properties||{}; const fmt=(v)=>(v==null||(typeof v==="string"&&v.trim()===""))?"—":v;
     const rows=[
-      ['<i class="bi bi-calendar"></i> Date',formatDate(p.collectedAt)],
-      ['<i class="bi bi-qr-code-scan"></i> QR code',p.QR_qrCode],
-      ['<i class="bi bi-droplet-half"></i> pH',p.PH_ph],
-      ['<i class="bi bi-palette"></i> Colour',p.SOIL_COLOR_color],
-      ['<i class="bi bi-grid-3x3-gap"></i> Texture',p.SOIL_TEXTURE_texture],
-      ['<i class="bi bi-diagram-3"></i> Structure',p.SOIL_STRUCTURE_structure],
-      ['<i class="bi bi-bug"></i> Earthworms',fmtInt(p.SOIL_DIVER_earthworms)],
-      ['<i class="bi bi-bag"></i> Plastic',fmtInt(p.SOIL_CONTAMINATION_plastic)],
-      ['<i class="bi bi-bricks"></i> Debris',fmtInt(p.SOIL_CONTAMINATION_debris)],
-      ['<i class="bi bi-exclamation-triangle"></i> Contamination',p.SOIL_CONTAMINATION_comments],
-      ['<i class="bi bi-nut"></i> Metals',p.METALS_info],
+      ['<i class="bi bi-calendar"></i> ' + T('date',{},'Date'),         formatDate(p.collectedAt)],
+      ['<i class="bi bi-qr-code-scan"></i> ' + T('qr',{},'QR code'),    p.QR_qrCode],
+      ['<i class="bi bi-droplet-half"></i> ' + T('ph',{},'pH'),         p.PH_ph],
+      ['<i class="bi bi-palette"></i> ' + T('colour',{},'Colour'),      p.SOIL_COLOR_color],
+      ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture',{},'Texture'), p.SOIL_TEXTURE_texture],
+      ['<i class="bi bi-diagram-3"></i> ' + T('structure',{},'Structure'), p.SOIL_STRUCTURE_structure],
+      ['<i class="bi bi-bug"></i> ' + T('earthworms',{},'Earthworms'),  fmtInt(p.SOIL_DIVER_earthworms)],
+      ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'),        fmtInt(p.SOIL_CONTAMINATION_plastic)],
+      ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'),       fmtInt(p.SOIL_CONTAMINATION_debris)],
+      ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), p.SOIL_CONTAMINATION_comments],
+      ['<i class="bi bi-nut"></i> ' + T('metals',{},'Metals'),          p.METALS_info],
     ].filter(([_,v])=>!(v==null||(typeof v==="string"&&v.trim()==="")||v==="—"));
     let html=`<div class="popup-card"><table class="table table-sm mb-2">${
       rows.map(([k,v])=>`<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")}</table>`;
@@ -214,7 +213,7 @@
     if(p.sampleId){
       html+=`<div class="mt-2"><a class="btn btn-sm btn-outline-primary"
               href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
-              target="_blank" rel="noopener"><i class="bi bi-filetype-csv"></i> Download CSV</a></div>`;
+              target="_blank" rel="noopener"><i class="bi bi-filetype-csv"></i> ${T('export',{},'Export')}</a></div>`;
     }
     html+=`</div>`; return html;
   }
@@ -248,7 +247,7 @@
   let filteredRows = [];
 
   function inRangeGiven(ph, min, max){
-    if (!Number.isFinite(ph)) return (min == null && max == null); // accept unknown only when no filter
+    if (!Number.isFinite(ph)) return (min == null && max == null);
     if (min != null && ph < min) return false;
     if (max != null && ph > max) return false;
     return true;
@@ -293,7 +292,7 @@
             radius:JITTER_M, color:clr, weight:1, opacity:0.9,
             fillColor:clr, fillOpacity:0.35
           });
-          ring.__props = props;           // save for filtering
+          ring.__props = props;
           ring.bindPopup(formatPopup(f,isOwner));
           ring.addTo(map);
           bucket.push(ring);
@@ -328,11 +327,9 @@
 
   // ---- Rebuild clusters to reflect current filter ----
   function rebuildClustersForFilter(){
-    // Remove old groups from map
     if (map.hasLayer(userCluster))   map.removeLayer(userCluster);
     if (map.hasLayer(othersCluster)) map.removeLayer(othersCluster);
 
-    // New groups
     const newUser   = L.markerClusterGroup();
     const newOthers = L.markerClusterGroup();
 
@@ -346,7 +343,7 @@
         const props = f.properties || {};
         if (!passesCurrentFilter(props)) return;
         const m = L.circleMarker([lat, lon], invisible);
-        m.feature = f; // keep reference for selection lookup if needed
+        m.feature = f;
         targetGroup.addLayer(m);
       });
     }
@@ -354,11 +351,9 @@
     addFilteredMarkers(userGJ, newUser);
     addFilteredMarkers(othersGJ, newOthers);
 
-    // Swap references
     userCluster = newUser;
     othersCluster = newOthers;
 
-    // Respect current toggle states when adding back
     const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
     if (state.user)   map.addLayer(userCluster);
     if (state.others) map.addLayer(othersCluster);
@@ -367,7 +362,6 @@
   // ---- Show/hide rings based on current filter + toggles ----
   function applyFilterToRings(){
     const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
-
     function process(rings, includeGroup){
       for (const r of rings){
         const shouldShow = includeGroup && passesCurrentFilter(r.__props || {});
@@ -392,10 +386,7 @@
       if(state.others){ if(!map.hasLayer(othersCluster)) map.addLayer(othersCluster); }
       else            { if(map.hasLayer(othersCluster))  map.removeLayer(othersCluster); }
 
-      // rings obey both toggle and current filter
       applyFilterToRings();
-
-      // keep selection & filtered counts in sync
       updateSelectionCount();
       updateFilteredCountsLabelOnly();
     }
@@ -407,11 +398,11 @@
       div.innerHTML=`
         <div class="form-check" style="margin:.1rem 0;">
           <input class="form-check-input" type="checkbox" id="togUser" checked>
-          <label class="form-check-label" for="togUser">Your samples</label>
+          <label class="form-check-label" for="togUser">${T('yourSamples', {}, 'Your samples')}</label>
         </div>
         <div class="form-check" style="margin:.1rem 0;">
           <input class="form-check-input" type="checkbox" id="togOther" checked>
-          <label class="form-check-label" for="togOther">Other samples</label>
+          <label class="form-check-label" for="togOther">${T('otherSamples', {}, 'Other samples')}</label>
         </div>`;
       L.DomEvent.disableClickPropagation(div);
       const cUser=div.querySelector('#togUser'), cOther=div.querySelector('#togOther');
@@ -430,11 +421,11 @@
       div.style.background='white'; div.style.borderRadius='8px'; div.style.lineHeight='1';
       div.innerHTML=`
         <div class="d-flex gap-2 align-items-center">
-          <button type="button" class="btn btn-sm btn-primary" id="btnExportSel" disabled title="Export selected">
-            Export (0)
+          <button type="button" class="btn btn-sm btn-primary" id="btnExportSel" disabled title="${T('export',{},'Export')}">
+            ${T('export',{},'Export')} (0)
           </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearSel" disabled title="Clear selections">
-            Clear
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearSel" disabled title="${T('clear',{},'Clear')}">
+            ${T('clear',{},'Clear')}
           </button>
         </div>`;
       L.DomEvent.disableClickPropagation(div);
@@ -480,10 +471,7 @@
         const ll=m.getLatLng(); if(!ll) return;
         if(!inAny(ll)) return;
         const f=m.feature||{}; const props={...(f.properties||{})};
-
-        // Respect active pH filter
         if (!passesCurrentFilter(props)) return;
-
         Object.keys(props).forEach(k=>{ if(SHOULD_DROP(k)) delete props[k]; });
         props[LAT_KEY]=ll.lat; props[LON_KEY]=ll.lng;
         const key=props.sampleId||props.QR_qrCode||`${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
@@ -499,7 +487,7 @@
     selectionRows = collectRowsWithinAll();
     const n = selectionRows.length;
     selectionButtonEl.disabled = n===0;
-    selectionButtonEl.textContent = `Export (${n})`;
+    selectionButtonEl.textContent = `${T('export',{},'Export')} (${n})`;
     clearButtonEl.disabled = selectionLayers.length===0;
   }
 
@@ -507,9 +495,7 @@
   function collectRowsFiltered(phMin, phMax){
     const active = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
     const rows=[], seen=new Set();
-    function inRange(ph){
-      return inRangeGiven(ph, phMin, phMax);
-    }
+    function inRange(ph){ return inRangeGiven(ph, phMin, phMax); }
     function scan(layer, include){
       if(!include||!layer) return;
       layer.eachLayer(m=>{
@@ -532,7 +518,7 @@
     if(!btnExportFiltered) return;
     const n = filteredRows.length || 0;
     btnExportFiltered.disabled = n===0;
-    btnExportFiltered.textContent = `Export filtered (${n})`;
+    btnExportFiltered.textContent = T('exportFiltered', { n }, `Export filtered (${n})`);
   }
 
   function updateFiltered(){
@@ -544,15 +530,11 @@
     activePhMin = Number.isFinite(minV) ? minV : null;
     activePhMax = Number.isFinite(maxV) ? maxV : null;
 
-    // Apply to rings + clusters
     applyFilterToRings();
     rebuildClustersForFilter();
 
-    // Recompute filtered rows for the export button
     filteredRows = collectRowsFiltered(activePhMin, activePhMax);
     updateFilteredCountsLabelOnly();
-
-    // Refresh selection count since selection respects the active filter
     updateSelectionCount();
   }
 
@@ -589,7 +571,7 @@
       div.style.background='white'; div.style.borderRadius='8px'; div.style.lineHeight='1.1';
       div.innerHTML=`<div style="display:flex;align-items:center;gap:.4rem;margin:.2rem 0;">
         <svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="#333" fill="none"/></svg>
-        <span>Privacy radius (~±${Math.round(JITTER_M/1000)} km)</span></div>`;
+        <span>${T('privacyRadius', { km: Math.round(JITTER_M/1000) }, `Privacy radius (~±${Math.round(JITTER_M/1000)} km)`)}</span></div>`;
       return div;
     }; legend.addTo(map);
 
@@ -598,12 +580,12 @@
       const div=L.DomUtil.create('div','leaflet-control leaflet-bar p-2');
       div.style.background='white'; div.style.borderRadius='8px'; div.style.lineHeight='1.2';
       div.innerHTML=`
-        <div class="fw-semibold mb-1">Soil pH</div>
-        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#d73027;">●</span> Acidic (≤5.5)</div>
-        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#fc8d59;">●</span> Slightly acidic (5.5–6.5)</div>
-        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#fee08b;">●</span> Neutral (6.5–7.5)</div>
-        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#91bfdb;">●</span> Slightly alkaline (7.5–8.5)</div>
-        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#4575b4;">●</span> Alkaline (≥8.5)</div>`;
+        <div class="fw-semibold mb-1">${T('soilPh', {}, 'Soil pH')}</div>
+        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#d73027;">●</span> ${T('acid', {}, 'Acidic (≤5.5)')}</div>
+        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#fc8d59;">●</span> ${T('slightlyAcid', {}, 'Slightly acidic (5.5–6.5)')}</div>
+        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#fee08b;">●</span> ${T('neutral', {}, 'Neutral (6.5–7.5)')}</div>
+        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#91bfdb;">●</span> ${T('slightlyAlkaline', {}, 'Slightly alkaline (7.5–8.5)')}</div>
+        <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#4575b4;">●</span> ${T('alkaline', {}, 'Alkaline (≥8.5)')}</div>`;
       return div;
     }; phLegend.addTo(map);
   }
