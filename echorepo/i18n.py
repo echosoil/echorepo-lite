@@ -34,7 +34,7 @@ def get_locale():
 
 def init_i18n(app):
     app.config.setdefault("BABEL_DEFAULT_LOCALE", "en")
-    app.config.setdefault("BABEL_TRANSLATION_DIRECTORIES", "echorepo/translations")
+    app.config.setdefault("BABEL_TRANSLATION_DIRECTORIES", "translations;echorepo/translations")
     # Flask-Babel 3+ API:
     babel.init_app(app, locale_selector=get_locale)
 
