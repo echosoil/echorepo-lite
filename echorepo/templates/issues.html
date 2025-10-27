@@ -35,7 +35,7 @@
         </tr>
       </thead>
       <tbody>
-      {% for _, r in default_rows.iterrows() %}
+      {% for idx, r in default_rows.iterrows() %}
         <tr>
           <td>{{ r.get("sampleId","") }}</td>
           <td>{{ r.get("userId","") }}</td>
@@ -74,7 +74,7 @@
         </tr>
       </thead>
       <tbody>
-      {% for _, r in mismatch_rows.iterrows() %}
+      {% for idx, r in mismatch_rows.iterrows() %}
         <tr>
           <td>{{ r.get("sampleId","") }}</td>
           <td>{{ r.get("userId","") }}</td>

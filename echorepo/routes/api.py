@@ -35,7 +35,7 @@ def user_geojson_debug():
     }
     if df is not None and not df.empty and lat_col and lon_col:
         try:
-            feats = sum(1 for _, r in df.iterrows() if r.get(lat_col) and r.get(lon_col))
+            feats = sum(1 for idx, r in df.iterrows() if r.get(lat_col) and r.get(lon_col))
             info["feature_count_if_converted"] = feats
         except Exception:
             pass
