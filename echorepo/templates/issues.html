@@ -1,27 +1,39 @@
 {% extends "base.html" %}
+
+{% block title %}{{ _('Data quality issues — ECHOrepo') }}{% endblock %}
+
 {% block nav_right %}
   <a class="btn btn-outline-light btn-sm" href="{{ url_for('home') }}">
-    <i class="bi bi-arrow-left"></i> Back to My Data
+    <i class="bi bi-arrow-left"></i> {{ _('Back to My Data') }}
   </a>
 {% endblock %}
+
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-3">
-  <h1 class="h4 mb-0">Data quality issues</h1>
+  <h1 class="h4 mb-0">{{ _('Data quality issues') }}</h1>
   <a class="btn btn-outline-secondary" href="{{ url_for('home') }}">
-    <i class="bi bi-arrow-left"></i> Back to My Data
+    <i class="bi bi-arrow-left"></i> {{ _('Back to My Data') }}
   </a>
 </div>
-<div class="container my-4">
-  <h3>Data issues</h3>
 
-  <h5 class="mt-4">1) Default coordinates (46.5, 11.35)</h5>
+<div class="container my-4">
+  <h3>{{ _('Data issues') }}</h3>
+
+  <h5 class="mt-4">1) {{ _('Default coordinates (%(lat)s, %(lon)s)', lat='46.5', lon='11.35') }}</h5>
   {% if default_rows.empty %}
-    <p>No entries with default coordinates 🎉</p>
+    <p>{{ _('No entries with default coordinates') }} 🎉</p>
   {% else %}
     <table class="table table-sm">
-      <thead><tr>
-        <th>Sample</th><th>User</th><th>QR</th><th>Lat</th><th>Lon</th><th>Fix</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>{{ _('Sample') }}</th>
+          <th>{{ _('User') }}</th>
+          <th>{{ _('QR') }}</th>
+          <th>{{ _('Lat') }}</th>
+          <th>{{ _('Lon') }}</th>
+          <th>{{ _('Fix') }}</th>
+        </tr>
+      </thead>
       <tbody>
       {% for _, r in default_rows.iterrows() %}
         <tr>
@@ -34,9 +46,9 @@
             <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="d-flex gap-2">
               <input type="hidden" name="sampleId" value="{{ r.get('sampleId','') }}">
               <input type="hidden" name="userId"   value="{{ r.get('userId','') }}">
-              <input name="lat_input" class="form-control form-control-sm" placeholder="Lat (dec or DMS)">
-              <input name="lon_input" class="form-control form-control-sm" placeholder="Lon (dec or DMS)">
-              <button class="btn btn-sm btn-primary">Save</button>
+              <input name="lat_input" class="form-control form-control-sm" placeholder="{{ _('Lat (dec or DMS)') }}">
+              <input name="lon_input" class="form-control form-control-sm" placeholder="{{ _('Lon (dec or DMS)') }}">
+              <button class="btn btn-sm btn-primary" type="submit">{{ _('Save') }}</button>
             </form>
           </td>
         </tr>
@@ -45,15 +57,22 @@
     </table>
   {% endif %}
 
-  <h5 class="mt-4">2) Country mismatches</h5>
-  <p class="text-muted">Actual country (from coords) is not in the planned list for this QR.</p>
+  <h5 class="mt-4">2) {{ _('Country mismatches') }}</h5>
+  <p class="text-muted">{{ _('Actual country (from coords) is not in the planned list for this QR.') }}</p>
   {% if mismatch_rows.empty %}
-    <p>No country mismatches 🎉</p>
+    <p>{{ _('No country mismatches') }} 🎉</p>
   {% else %}
     <table class="table table-sm">
-      <thead><tr>
-        <th>Sample</th><th>User</th><th>QR</th><th>Lat</th><th>Lon</th><th>Fix</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>{{ _('Sample') }}</th>
+          <th>{{ _('User') }}</th>
+          <th>{{ _('QR') }}</th>
+          <th>{{ _('Lat') }}</th>
+          <th>{{ _('Lon') }}</th>
+          <th>{{ _('Fix') }}</th>
+        </tr>
+      </thead>
       <tbody>
       {% for _, r in mismatch_rows.iterrows() %}
         <tr>
@@ -66,9 +85,9 @@
             <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="d-flex gap-2">
               <input type="hidden" name="sampleId" value="{{ r.get('sampleId','') }}">
               <input type="hidden" name="userId"   value="{{ r.get('userId','') }}">
-              <input name="lat_input" class="form-control form-control-sm" placeholder="Lat (dec or DMS)">
-              <input name="lon_input" class="form-control form-control-sm" placeholder="Lon (dec or DMS)">
-              <button class="btn btn-sm btn-primary">Save</button>
+              <input name="lat_input" class="form-control form-control-sm" placeholder="{{ _('Lat (dec or DMS)') }}">
+              <input name="lon_input" class="form-control form-control-sm" placeholder="{{ _('Lon (dec or DMS)') }}">
+              <button class="btn btn-sm btn-primary" type="submit">{{ _('Save') }}</button>
             </form>
           </td>
         </tr>
