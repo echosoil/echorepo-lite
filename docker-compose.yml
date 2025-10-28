@@ -22,4 +22,20 @@ services:
       - ./static:/app/static:ro # static files
       - ./echorepo/templates:/app/echorepo/templates:ro
       - ./keys:/keys:ro      # <— add this so the service account JSON is visible
+      - ./echorepo/translations:/app/echorepo/translations:ro
+      - ./translations:/app/translations:ro                     # compiled MOs
     restart: unless-stopped
+  i18n:
+    build:
+      context: .
+      dockerfile: Dockerfile.i18n
+    working_dir: /work
+    volumes:
+      - .:/work                   # so edits affect your host repo
+    # If you run LibreTranslate via compose too, uncomment the next line:
+    # depends_on: [libretranslate]
+    # networks: [default]         # share network with app/libretranslate
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      LT_URL: "http://host.docker.internal:5001"

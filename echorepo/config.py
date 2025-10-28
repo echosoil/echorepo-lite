@@ -15,6 +15,7 @@ class Settings:
 
     # -------- App secret & cookies --------
     SECRET_KEY: str   = os.getenv("SECRET_KEY", "please-change-me")
+    SESSION_COOKIE_NAME = "echorepo_session"
     SESSION_COOKIE_SAMESITE: str = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
     SESSION_COOKIE_SECURE: bool  = os.getenv("SESSION_COOKIE_SECURE", "true").lower() in ("1", "true", "yes")
 
@@ -50,6 +51,8 @@ class Settings:
     # -------- Firebase --------
     FIREBASE_PROJECT_ID: Optional[str] = os.getenv("FIREBASE_PROJECT_ID") or None
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or None
+    # -------- i18n / Babel --------
+    BABEL_TRANSLATION_DIRECTORIES = "/app/translations" # compiled .mo files location
 
     # -------- Misc --------
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
