@@ -24,19 +24,23 @@
 ```
 ├── .env
 ├── .env.example
+├── .github
+│   └── workflows
+│       └── i18n.yml
 ├── .gitignore
 ├── Dockerfile
+├── Dockerfile.i18n
+├── REPO_OVERVIEW.md
 ├── babel.cfg
-├── messages.pot
 ├── data
 │   ├── .gitkeep
 │   ├── db
 │   │   ├── .gitkeep
-│   │   ├── X.db
-│   │   └── Y.db.sig
-│   ├── X.csv
-│   ├── Y.csv
-│   └── Z.csv
+│   │   ├── echo.db
+│   │   └── echo.db.sig
+│   ├── echorepo_samples.csv
+│   ├── echorepo_samples_with_email.csv
+│   └── users.csv
 ├── docker-compose.yml
 ├── echorepo
 │   ├── __init__.py
@@ -49,7 +53,6 @@
 │   ├── config.py
 │   ├── extensions.py
 │   ├── i18n.py
-│   ├── messages.pot
 │   ├── routes
 │   │   ├── __init__.py
 │   │   ├── api.py
@@ -103,6 +106,8 @@
 │   │   ├── geo.py
 │   │   ├── load_csv.py
 │   │   ├── planned.py
+│   │   ├── pull_and_enrich_samples.py
+│   │   ├── refresh_sqlite.py
 │   │   ├── table.py
 │   │   └── users.py
 │   └── wsgi.py
@@ -132,7 +137,6 @@
 │   │   └── favicon.ico
 │   └── js
 │       └── map.js
-├── test
 ├── tools
 │   ├── auto_translate.py
 │   ├── make_repo_overview.py
@@ -167,7 +171,6 @@
     │   └── LC_MESSAGES
     │       ├── messages.mo
     │       └── messages.po
-    ├── messages.pot
     ├── nl
     │   └── LC_MESSAGES
     │       ├── messages.mo

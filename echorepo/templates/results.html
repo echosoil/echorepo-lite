@@ -44,8 +44,6 @@
       border-radius: 12px;
       overflow: hidden;
     }
-
-    /* Fix faint tile seam lines (Chrome/GPU rounding) — target tiles only */
     #map .leaflet-tile {
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
@@ -59,13 +57,11 @@
       outline: none !important;
       border: none !important;
     }
-
-    /* optional: style for our degree labels */
     .deg-rulers text { fill: rgba(0,0,0,0.65); }
 
     .toolbar { gap: .5rem; }
     .toolbar .btn { white-space: nowrap; }
-    /* popup card styles */
+
     .popup-card {
       max-width: 340px;
       font-size: 0.8rem;
@@ -114,7 +110,7 @@
         <a href="{{ url_for('errors.issues') }}"
            class="btn btn-danger btn-lg d-inline-flex align-items-center gap-2">
           <i class="bi bi-exclamation-octagon-fill"></i>
-          {{ _('Fix data issues (%(n)s)', n=issue_count) }}
+          {% trans n=issue_count %}Fix data issues ({{ n }}){% endtrans %}
         </a>
         <small class="text-muted ms-2">
           {{ _('Some samples need attention to ensure correct maps and downloads.') }}
@@ -221,7 +217,7 @@
     window.ECHOREPO_CFG = {{ cfg | tojson }};
   </script>
 
-  {# JS i18n dictionary for map.js UI strings #}
+  {# JS i18n dictionary for map.js UI strings — use named placeholders %(... )s so Babel protects them #}
   <script>
     document.documentElement.lang = "{{ current_locale|default('en') }}";
     window.I18N = {
@@ -230,7 +226,7 @@
         otherSamples: "{{ _('Other samples') }}",
         export: "{{ _('Export') }}",
         clear: "{{ _('Clear') }}",
-        exportFiltered: "{{ _('Export filtered ({n})') }}",
+        exportFiltered: "{{ _('Export filtered (%(n)s)') }}",
         apply: "{{ _('Apply') }}",
         date: "{{ _('Date') }}",
         qr: "{{ _('QR code') }}",
@@ -243,7 +239,7 @@
         debris: "{{ _('Debris') }}",
         contamination: "{{ _('Contamination') }}",
         metals: "{{ _('Metals') }}",
-        privacyRadius: "{{ _('Privacy radius (~±{km} km)') }}",
+        privacyRadius: "{{ _('Privacy radius (~±%(km)s km)') }}",
         soilPh: "{{ _('Soil pH') }}",
         acid: "{{ _('Acidic (≤5.5)') }}",
         slightlyAcid: "{{ _('Slightly acidic (5.5–6.5)') }}",

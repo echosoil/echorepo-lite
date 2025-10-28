@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-24 21:41+0000\n"
-"PO-Revision-Date: 2025-10-24 22:06+0000\n"
+"POT-Creation-Date: 2025-10-28 17:50+0000\n"
+"PO-Revision-Date: 2025-10-28 17:50+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -20,409 +20,417 @@ msgstr ""
 
 #: echorepo/templates/auth.html:2
 msgid "Sign in — ECHOrepo"
-msgstr ""
+msgstr "Connexion — ECHOrepo"
 
 #: echorepo/templates/auth.html:8
 msgid "Sign in"
-msgstr ""
+msgstr "Connexion"
 
 #: echorepo/templates/auth.html:14
 msgid "Email"
-msgstr ""
+msgstr "Courriel"
 
 #: echorepo/templates/auth.html:17
 msgid "you@example.com"
-msgstr ""
+msgstr "vous@exemple.com"
 
 #: echorepo/templates/auth.html:19
-msgid ""
-"Username is optional and ignored for authentication; useful for your own "
-"logs."
+msgid "Username is optional and ignored for authentication; useful for your own logs."
 msgstr ""
+"Nom d'utilisateur est facultatif et ignoré pour l'authentification; utile "
+"pour vos propres journaux."
 
 #: echorepo/templates/auth.html:24 echorepo/templates/login.html:30
 msgid "Password"
-msgstr ""
+msgstr "Mot de passe"
 
 #: echorepo/templates/auth.html:30
 msgid "Enter"
-msgstr ""
+msgstr "Entrez"
 
 #: echorepo/templates/base.html:6 echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
-msgstr ""
+msgstr "ECHOrepo — UE Données sur les sols"
 
 #: echorepo/templates/base.html:9
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr ""
+"ECHOrepo — Échantillons de sol en science citoyenne dans le cadre du projet "
+"ECHO financé par l'UE"
 
 #: echorepo/templates/base.html:12
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr ""
+"Accédez et téléchargez vos échantillons de sol. Une partie du projet ECHO "
+"financé par l'UE."
 
-#: echorepo/templates/base.html:78
+#: echorepo/templates/base.html:79
 msgid "Skip to content"
-msgstr ""
+msgstr "Passer au contenu"
 
-#: echorepo/templates/base.html:80
+#: echorepo/templates/base.html:81
 msgid "Primary"
-msgstr ""
+msgstr "Enseignement primaire"
 
-#: echorepo/templates/base.html:83
+#: echorepo/templates/base.html:84
 msgid "ECHOrepo logo"
-msgstr ""
+msgstr "Logo ECHOrepo"
 
-#: echorepo/templates/base.html:88
+#: echorepo/templates/base.html:89
 msgid "Toggle navigation"
-msgstr ""
-
-#: echorepo/templates/base.html:94
-msgid "About"
-msgstr ""
+msgstr "Basculer la navigation"
 
 #: echorepo/templates/base.html:95
-msgid "For Participants"
-msgstr ""
+msgid "About"
+msgstr "À propos"
 
 #: echorepo/templates/base.html:96
-msgid "Partners"
-msgstr ""
+msgid "For Participants"
+msgstr "Pour les participants"
 
 #: echorepo/templates/base.html:97
+msgid "Partners"
+msgstr "Partenaires"
+
+#: echorepo/templates/base.html:98
 msgid "News & Events"
-msgstr ""
+msgstr "Nouvelles et événements"
 
-#: echorepo/templates/base.html:99
+#: echorepo/templates/base.html:100
 msgid "Resources"
-msgstr ""
-
-#: echorepo/templates/base.html:101
-msgid "Media Kit"
-msgstr ""
+msgstr "Ressources"
 
 #: echorepo/templates/base.html:102
-msgid "Publications"
-msgstr ""
+msgid "Media Kit"
+msgstr "Kit média"
 
 #: echorepo/templates/base.html:103
+msgid "Publications"
+msgstr "Publications"
+
+#: echorepo/templates/base.html:104
 msgid "Newsletter Archive"
-msgstr ""
+msgstr "Archives de la newsletter"
 
-#: echorepo/templates/base.html:124
+#: echorepo/templates/base.html:116
 msgid "Change language"
-msgstr ""
+msgstr "Changer de langue"
 
-#: echorepo/templates/base.html:151
+#: echorepo/templates/base.html:148
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
-msgstr ""
+msgstr "ECHOrepo fait partie des fonds de l'UE et de l'IRUK"
 
-#: echorepo/templates/base.html:151
+#: echorepo/templates/base.html:148
 msgid "project"
-msgstr ""
+msgstr "projet"
 
-#: echorepo/templates/base.html:153
+#: echorepo/templates/base.html:150
 msgid "Need help?"
-msgstr ""
+msgstr "Besoin d'aide ?"
 
-#: echorepo/templates/base.html:157
+#: echorepo/templates/base.html:154
 msgid "EU-funded"
-msgstr ""
+msgstr "Financement de l'UE"
 
-#: echorepo/templates/base.html:158
+#: echorepo/templates/base.html:155
 msgid "EU-funded initiative"
-msgstr ""
+msgstr "Initiative financée par l'UE"
 
 #: echorepo/templates/issues.html:3
 msgid "Data quality issues — ECHOrepo"
-msgstr ""
+msgstr "Problèmes de qualité des données — ECHOrepo"
 
 #: echorepo/templates/issues.html:7 echorepo/templates/issues.html:15
 msgid "Back to My Data"
-msgstr ""
+msgstr "Retour à mes données"
 
 #: echorepo/templates/issues.html:13
 msgid "Data quality issues"
-msgstr ""
+msgstr "Questions relatives à la qualité des données"
 
 #: echorepo/templates/issues.html:20
 msgid "Data issues"
-msgstr ""
+msgstr "Questions relatives aux données"
 
 #: echorepo/templates/issues.html:22
 #, python-format
 msgid "Default coordinates (%(lat)s, %(lon)s)"
-msgstr ""
+msgstr "Coordonnées par défaut (%(lat)s, %(lon)s)"
 
 #: echorepo/templates/issues.html:24
 msgid "No entries with default coordinates"
-msgstr ""
+msgstr "Aucune entrée avec coordonnées par défaut"
 
 #: echorepo/templates/issues.html:29 echorepo/templates/issues.html:68
 msgid "Sample"
-msgstr ""
+msgstr "Échantillon"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:69
 msgid "User"
-msgstr ""
+msgstr "Utilisateur"
 
 #: echorepo/templates/issues.html:31 echorepo/templates/issues.html:70
 msgid "QR"
-msgstr ""
+msgstr "QR"
 
 #: echorepo/templates/issues.html:32 echorepo/templates/issues.html:71
 msgid "Lat"
-msgstr ""
+msgstr "Lat"
 
 #: echorepo/templates/issues.html:33 echorepo/templates/issues.html:72
 msgid "Lon"
-msgstr ""
+msgstr "Lon"
 
 #: echorepo/templates/issues.html:34 echorepo/templates/issues.html:73
 msgid "Fix"
-msgstr ""
+msgstr "Correction"
 
 #: echorepo/templates/issues.html:49 echorepo/templates/issues.html:88
 msgid "Lat (dec or DMS)"
-msgstr ""
+msgstr "Lat (déc ou DMS)"
 
 #: echorepo/templates/issues.html:50 echorepo/templates/issues.html:89
 msgid "Lon (dec or DMS)"
-msgstr ""
+msgstr "Lon (déc ou DMS)"
 
 #: echorepo/templates/issues.html:51 echorepo/templates/issues.html:90
 msgid "Save"
-msgstr ""
+msgstr "Enregistrer"
 
 #: echorepo/templates/issues.html:60
 msgid "Country mismatches"
-msgstr ""
+msgstr "Inconvénients de pays"
 
 #: echorepo/templates/issues.html:61
 msgid "Actual country (from coords) is not in the planned list for this QR."
-msgstr ""
+msgstr "Le pays réel (des coords) n'est pas dans la liste prévue pour ce QR."
 
 #: echorepo/templates/issues.html:63
 msgid "No country mismatches"
-msgstr ""
+msgstr "Pas d'anomalies nationales"
 
 #: echorepo/templates/login.html:2
 msgid "ECHOrepo — Access"
-msgstr ""
+msgstr "ECHOrepo — Accès"
 
 #: echorepo/templates/login.html:10
 msgid "Access your data"
-msgstr ""
+msgstr "Accédez à vos données"
 
 #: echorepo/templates/login.html:11
 msgid "Sign in with your Keycloak credentials."
-msgstr ""
+msgstr "Connectez-vous avec vos identifiants Keycloak."
 
 #: echorepo/templates/login.html:21
 msgid "Email or username"
-msgstr ""
+msgstr "Courriel ou nom d'utilisateur"
 
 #: echorepo/templates/login.html:25
 msgid "you@example.org"
-msgstr ""
+msgstr "vous@exemple.org"
 
 #: echorepo/templates/login.html:40
 msgid "Continue"
-msgstr ""
+msgstr "Continuer"
 
 #: echorepo/templates/login.html:46
 msgid "Issues signing in? Contact the organisers."
-msgstr ""
+msgstr "Des problèmes ? Contactez les organisateurs."
 
 #: echorepo/templates/login.html:62
 msgid "GDPR-friendly access"
-msgstr ""
+msgstr "Accès favorable au RGPD"
 
 #: echorepo/templates/login.html:65
 msgid "Download your data anytime"
-msgstr ""
+msgstr "Téléchargez vos données à tout moment"
 
 #: echorepo/templates/results.html:2
 msgid "ECHOrepo — Your Data"
-msgstr ""
+msgstr "ECHOrepo — Vos données"
 
 #: echorepo/templates/results.html:7
 msgid "Download all samples (CSV)"
-msgstr ""
+msgstr "Télécharger tous les échantillons (CSV)"
 
 #: echorepo/templates/results.html:14
 msgid "Logged in as"
-msgstr ""
+msgstr "Enclenchée comme"
 
 #: echorepo/templates/results.html:19
 msgid "Copy user key"
-msgstr ""
+msgstr "Copier la clé utilisateur"
 
 #: echorepo/templates/results.html:23
 msgid "Logout"
-msgstr ""
+msgstr "Déconnexion"
 
-#: echorepo/templates/results.html:108
+#: echorepo/templates/results.html:104
 msgid "Your data"
-msgstr ""
+msgstr "Vos données"
 
-#: echorepo/templates/results.html:109
+#: echorepo/templates/results.html:105
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
 msgstr ""
+"Explorez l'emplacement de votre échantillon de sol sur la carte, puis "
+"exportez ou parcourez la table."
 
-#: echorepo/templates/results.html:117
+#: echorepo/templates/results.html:113
 #, python-format
 msgid "Fix data issues (%(n)s)"
-msgstr ""
+msgstr "Correction des problèmes de données (%(n)s)"
 
-#: echorepo/templates/results.html:120
+#: echorepo/templates/results.html:116
 msgid "Some samples need attention to ensure correct maps and downloads."
 msgstr ""
+"Certains échantillons doivent faire l'objet d'une attention particulière afin"
+" d'assurer l'exactitude des cartes et des téléchargements."
 
-#: echorepo/templates/results.html:127
+#: echorepo/templates/results.html:123
 msgid "No data found for"
-msgstr ""
+msgstr "Aucune donnée trouvée pour"
 
-#: echorepo/templates/results.html:127
+#: echorepo/templates/results.html:123
 msgid "If you recently submitted samples, try again later."
-msgstr ""
+msgstr "Si vous avez récemment soumis des échantillons, essayez de nouveau plus tard."
 
-#: echorepo/templates/results.html:140
+#: echorepo/templates/results.html:136
 msgid "Download"
-msgstr ""
+msgstr "Télécharger"
 
-#: echorepo/templates/results.html:146
+#: echorepo/templates/results.html:142
 msgid "CSV (per-user)"
-msgstr ""
+msgstr "CSV (par utilisateur)"
 
-#: echorepo/templates/results.html:152
+#: echorepo/templates/results.html:148
 msgid "XLSX (per-user)"
-msgstr ""
+msgstr "XLSX (par utilisateur)"
 
-#: echorepo/templates/results.html:158
+#: echorepo/templates/results.html:154
 msgid "All samples (CSV, anonymised)"
-msgstr ""
+msgstr "Tous les échantillons (CSV, anonymisé)"
 
-#: echorepo/templates/results.html:163
+#: echorepo/templates/results.html:159
 msgid "GeoJSON (per-user)"
-msgstr ""
+msgstr "GeoJSON (par utilisateur)"
 
-#: echorepo/templates/results.html:171 echorepo/templates/results.html:237
+#: echorepo/templates/results.html:167 echorepo/templates/results.html:233
 msgid "pH"
-msgstr ""
+msgstr "p H"
 
-#: echorepo/templates/results.html:173
+#: echorepo/templates/results.html:169
 msgid "min"
-msgstr ""
+msgstr "min"
+
+#: echorepo/templates/results.html:172
+msgid "max"
+msgstr "max"
+
+#: echorepo/templates/results.html:174
+msgid "Apply pH filter"
+msgstr "Appliquer le pH filter"
+
+#: echorepo/templates/results.html:174 echorepo/templates/results.html:230
+msgid "Apply"
+msgstr "Appliquer"
 
 #: echorepo/templates/results.html:176
-msgid "max"
-msgstr ""
-
-#: echorepo/templates/results.html:178
-msgid "Apply pH filter"
-msgstr ""
-
-#: echorepo/templates/results.html:178 echorepo/templates/results.html:234
-msgid "Apply"
-msgstr ""
-
-#: echorepo/templates/results.html:180
 msgid "Export rows matching current pH filter"
-msgstr ""
+msgstr "Exporter des lignes correspondant au filtre pH actuel"
 
-#: echorepo/templates/results.html:181
+#: echorepo/templates/results.html:177
 msgid "Export filtered (0)"
-msgstr ""
+msgstr "Exportation filtrée (0)"
+
+#: echorepo/templates/results.html:225
+msgid "Your samples"
+msgstr "Vos échantillons"
+
+#: echorepo/templates/results.html:226
+msgid "Other samples"
+msgstr "Autres échantillons"
+
+#: echorepo/templates/results.html:227
+msgid "Export"
+msgstr "Exportations"
+
+#: echorepo/templates/results.html:228
+msgid "Clear"
+msgstr "Effacer"
 
 #: echorepo/templates/results.html:229
-msgid "Your samples"
-msgstr ""
-
-#: echorepo/templates/results.html:230
-msgid "Other samples"
-msgstr ""
+#, python-format
+msgid "Export filtered (%(n)s)"
+msgstr "Exportation filtrée (%(n)s)"
 
 #: echorepo/templates/results.html:231
-msgid "Export"
-msgstr ""
+msgid "Date"
+msgstr "Date"
 
 #: echorepo/templates/results.html:232
-msgid "Clear"
-msgstr ""
+msgid "QR code"
+msgstr "Code QR"
 
-#: echorepo/templates/results.html:233
-#, python-brace-format
-msgid "Export filtered ({n})"
-msgstr ""
+#: echorepo/templates/results.html:234
+msgid "Colour"
+msgstr "Couleur"
 
 #: echorepo/templates/results.html:235
-msgid "Date"
-msgstr ""
+msgid "Texture"
+msgstr "Texture"
 
 #: echorepo/templates/results.html:236
-msgid "QR code"
-msgstr ""
+msgid "Structure"
+msgstr "Structure"
+
+#: echorepo/templates/results.html:237
+msgid "Earthworms"
+msgstr "Vers de terre"
 
 #: echorepo/templates/results.html:238
-msgid "Colour"
-msgstr ""
+msgid "Plastic"
+msgstr "Plastique"
 
 #: echorepo/templates/results.html:239
-msgid "Texture"
-msgstr ""
+msgid "Debris"
+msgstr "Débris"
 
 #: echorepo/templates/results.html:240
-msgid "Structure"
-msgstr ""
+msgid "Contamination"
+msgstr "Contamination"
 
 #: echorepo/templates/results.html:241
-msgid "Earthworms"
-msgstr ""
+msgid "Metals"
+msgstr "Métaux"
 
 #: echorepo/templates/results.html:242
-msgid "Plastic"
-msgstr ""
+#, python-format
+msgid "Privacy radius (~±%(km)s km)"
+msgstr "Rayon de protection de la vie privée (~±__%(km)s_ km)"
 
 #: echorepo/templates/results.html:243
-msgid "Debris"
-msgstr ""
+msgid "Soil pH"
+msgstr "PH du sol"
 
 #: echorepo/templates/results.html:244
-msgid "Contamination"
-msgstr ""
+msgid "Acidic (≤5.5)"
+msgstr "Acidique"
 
 #: echorepo/templates/results.html:245
-msgid "Metals"
-msgstr ""
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Légèrement acide (5.5-6.5)"
 
 #: echorepo/templates/results.html:246
-#, python-brace-format
-msgid "Privacy radius (~±{km} km)"
-msgstr ""
+msgid "Neutral (6.5–7.5)"
+msgstr "Neutre (6,5–7,5)"
 
 #: echorepo/templates/results.html:247
-msgid "Soil pH"
-msgstr ""
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Légèrement alcalin (7,5–8,5)"
 
 #: echorepo/templates/results.html:248
-msgid "Acidic (≤5.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:249
-msgid "Slightly acidic (5.5–6.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:250
-msgid "Neutral (6.5–7.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:251
-msgid "Slightly alkaline (7.5–8.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:252
 msgid "Alkaline (≥8.5)"
-msgstr ""
+msgstr "Alcaline (≥ 8,5)"
 

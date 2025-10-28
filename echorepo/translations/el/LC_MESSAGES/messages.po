@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-24 21:41+0000\n"
-"PO-Revision-Date: 2025-10-24 22:06+0000\n"
+"POT-Creation-Date: 2025-10-28 17:50+0000\n"
+"PO-Revision-Date: 2025-10-28 17:50+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
 "Language-Team: el <LL@li.org>\n"
@@ -20,409 +20,419 @@ msgstr ""
 
 #: echorepo/templates/auth.html:2
 msgid "Sign in — ECHOrepo"
-msgstr ""
+msgstr "Σύνδεση — ECHOrepo"
 
 #: echorepo/templates/auth.html:8
 msgid "Sign in"
-msgstr ""
+msgstr "Υπογραφή"
 
 #: echorepo/templates/auth.html:14
 msgid "Email"
-msgstr ""
+msgstr "Ηλεκτρονικό ταχυδρομείο"
 
 #: echorepo/templates/auth.html:17
 msgid "you@example.com"
-msgstr ""
+msgstr "you@example.com"
 
 #: echorepo/templates/auth.html:19
-msgid ""
-"Username is optional and ignored for authentication; useful for your own "
-"logs."
+msgid "Username is optional and ignored for authentication; useful for your own logs."
 msgstr ""
+"Το όνομα χρήστη είναι προαιρετικό και αγνοείται για ταυτοποίηση· χρήσιμο για "
+"τα δικά σας αρχεία καταγραφής."
 
 #: echorepo/templates/auth.html:24 echorepo/templates/login.html:30
 msgid "Password"
-msgstr ""
+msgstr "Κωδικός πρόσβασης"
 
 #: echorepo/templates/auth.html:30
 msgid "Enter"
-msgstr ""
+msgstr "Είσοδος"
 
 #: echorepo/templates/base.html:6 echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
-msgstr ""
+msgstr "ECHOrepo — ΕΕ Δεδομένα εδάφους"
 
 #: echorepo/templates/base.html:9
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr ""
+"ECHOREPO — Δείγματα εδάφους για την επιστήμη των πολιτών στο πλαίσιο του "
+"προγράμματος ECHO που χρηματοδοτείται από την ΕΕ"
 
 #: echorepo/templates/base.html:12
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr ""
+"Πρόσβαση και λήψη δειγμάτων εδάφους σας. Μέρος του προγράμματος ECHO που "
+"χρηματοδοτείται από την ΕΕ."
 
-#: echorepo/templates/base.html:78
+#: echorepo/templates/base.html:79
 msgid "Skip to content"
-msgstr ""
+msgstr "Μετάβαση στο περιεχόμενο"
 
-#: echorepo/templates/base.html:80
+#: echorepo/templates/base.html:81
 msgid "Primary"
-msgstr ""
+msgstr "Πρωτοβάθμια"
 
-#: echorepo/templates/base.html:83
+#: echorepo/templates/base.html:84
 msgid "ECHOrepo logo"
-msgstr ""
+msgstr "Λογότυπο ECHOrepo"
 
-#: echorepo/templates/base.html:88
+#: echorepo/templates/base.html:89
 msgid "Toggle navigation"
-msgstr ""
-
-#: echorepo/templates/base.html:94
-msgid "About"
-msgstr ""
+msgstr "Εναλλαγή πλοήγησης"
 
 #: echorepo/templates/base.html:95
-msgid "For Participants"
-msgstr ""
+msgid "About"
+msgstr "Σχετικά"
 
 #: echorepo/templates/base.html:96
-msgid "Partners"
-msgstr ""
+msgid "For Participants"
+msgstr "Για τους συμμετέχοντες"
 
 #: echorepo/templates/base.html:97
+msgid "Partners"
+msgstr "Εταίροι"
+
+#: echorepo/templates/base.html:98
 msgid "News & Events"
-msgstr ""
+msgstr "Νέα & Γεγονότα"
 
-#: echorepo/templates/base.html:99
+#: echorepo/templates/base.html:100
 msgid "Resources"
-msgstr ""
-
-#: echorepo/templates/base.html:101
-msgid "Media Kit"
-msgstr ""
+msgstr "Πόροι"
 
 #: echorepo/templates/base.html:102
-msgid "Publications"
-msgstr ""
+msgid "Media Kit"
+msgstr "Κιτ πολυμέσων"
 
 #: echorepo/templates/base.html:103
+msgid "Publications"
+msgstr "Εκδόσεις"
+
+#: echorepo/templates/base.html:104
 msgid "Newsletter Archive"
-msgstr ""
+msgstr "Αρχείο ενημερωτικού δελτίου"
 
-#: echorepo/templates/base.html:124
+#: echorepo/templates/base.html:116
 msgid "Change language"
-msgstr ""
+msgstr "Αλλαγή γλώσσας"
 
-#: echorepo/templates/base.html:151
+#: echorepo/templates/base.html:148
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
-msgstr ""
+msgstr "Το ECHOrepo είναι μέρος της χρηματοδοτούμενης από την ΕΕ και το UKRI"
 
-#: echorepo/templates/base.html:151
+#: echorepo/templates/base.html:148
 msgid "project"
-msgstr ""
+msgstr "έργο"
 
-#: echorepo/templates/base.html:153
+#: echorepo/templates/base.html:150
 msgid "Need help?"
-msgstr ""
+msgstr "Χρειάζεσαι βοήθεια?"
 
-#: echorepo/templates/base.html:157
+#: echorepo/templates/base.html:154
 msgid "EU-funded"
-msgstr ""
+msgstr "Χρηματοδοτήσεις ΕΕ"
 
-#: echorepo/templates/base.html:158
+#: echorepo/templates/base.html:155
 msgid "EU-funded initiative"
-msgstr ""
+msgstr "Πρωτοβουλία χρηματοδοτούμενη από την ΕΕ"
 
 #: echorepo/templates/issues.html:3
 msgid "Data quality issues — ECHOrepo"
-msgstr ""
+msgstr "Θέματα ποιότητας δεδομένων — ECHOREPO"
 
 #: echorepo/templates/issues.html:7 echorepo/templates/issues.html:15
 msgid "Back to My Data"
-msgstr ""
+msgstr "Επιστροφή στα Δεδομένα Μου"
 
 #: echorepo/templates/issues.html:13
 msgid "Data quality issues"
-msgstr ""
+msgstr "Θέματα ποιότητας δεδομένων"
 
 #: echorepo/templates/issues.html:20
 msgid "Data issues"
-msgstr ""
+msgstr "Θέματα δεδομένων"
 
 #: echorepo/templates/issues.html:22
 #, python-format
 msgid "Default coordinates (%(lat)s, %(lon)s)"
-msgstr ""
+msgstr "Προκαθορισμένες συντεταγμένες (__%(lat)s_, __%(lon)s_)"
 
 #: echorepo/templates/issues.html:24
 msgid "No entries with default coordinates"
-msgstr ""
+msgstr "Χωρίς καταχωρήσεις με προκαθορισμένες συντεταγμένες"
 
 #: echorepo/templates/issues.html:29 echorepo/templates/issues.html:68
 msgid "Sample"
-msgstr ""
+msgstr "Δείγμα"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:69
 msgid "User"
-msgstr ""
+msgstr "Χρήστης"
 
 #: echorepo/templates/issues.html:31 echorepo/templates/issues.html:70
 msgid "QR"
-msgstr ""
+msgstr "QR"
 
 #: echorepo/templates/issues.html:32 echorepo/templates/issues.html:71
 msgid "Lat"
-msgstr ""
+msgstr "Λατ"
 
 #: echorepo/templates/issues.html:33 echorepo/templates/issues.html:72
 msgid "Lon"
-msgstr ""
+msgstr "Λον"
 
 #: echorepo/templates/issues.html:34 echorepo/templates/issues.html:73
 msgid "Fix"
-msgstr ""
+msgstr "Διόρθωση"
 
 #: echorepo/templates/issues.html:49 echorepo/templates/issues.html:88
 msgid "Lat (dec or DMS)"
-msgstr ""
+msgstr "Λατ (dec ή DMS)"
 
 #: echorepo/templates/issues.html:50 echorepo/templates/issues.html:89
 msgid "Lon (dec or DMS)"
-msgstr ""
+msgstr "Lon (dec ή DMS)"
 
 #: echorepo/templates/issues.html:51 echorepo/templates/issues.html:90
 msgid "Save"
-msgstr ""
+msgstr "Αποθήκευση"
 
 #: echorepo/templates/issues.html:60
 msgid "Country mismatches"
-msgstr ""
+msgstr "Αναντιστοιχίες ανά χώρα"
 
 #: echorepo/templates/issues.html:61
 msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr ""
+"Η πραγματική χώρα (από συντονιστές) δεν περιλαμβάνεται στον προβλεπόμενο "
+"κατάλογο για την παρούσα QR."
 
 #: echorepo/templates/issues.html:63
 msgid "No country mismatches"
-msgstr ""
+msgstr "Καμία αταίριαστη χώρα"
 
 #: echorepo/templates/login.html:2
 msgid "ECHOrepo — Access"
-msgstr ""
+msgstr "ECHOrepo — Πρόσβαση"
 
 #: echorepo/templates/login.html:10
 msgid "Access your data"
-msgstr ""
+msgstr "Πρόσβαση στα δεδομένα σας"
 
 #: echorepo/templates/login.html:11
 msgid "Sign in with your Keycloak credentials."
-msgstr ""
+msgstr "Υπογράψτε με τα διαπιστευτήριά σας."
 
 #: echorepo/templates/login.html:21
 msgid "Email or username"
-msgstr ""
+msgstr "Ηλεκτρονικό ταχυδρομείο ή όνομα χρήστη"
 
 #: echorepo/templates/login.html:25
 msgid "you@example.org"
-msgstr ""
+msgstr "you@example.org"
 
 #: echorepo/templates/login.html:40
 msgid "Continue"
-msgstr ""
+msgstr "Συνέχεια"
 
 #: echorepo/templates/login.html:46
 msgid "Issues signing in? Contact the organisers."
-msgstr ""
+msgstr "Θέματα που υπογράφουν; Επικοινωνήστε με τους διοργανωτές."
 
 #: echorepo/templates/login.html:62
 msgid "GDPR-friendly access"
-msgstr ""
+msgstr "Φιλική πρόσβαση GDPR"
 
 #: echorepo/templates/login.html:65
 msgid "Download your data anytime"
-msgstr ""
+msgstr "Κατεβάστε τα δεδομένα σας οποτεδήποτε"
 
 #: echorepo/templates/results.html:2
 msgid "ECHOrepo — Your Data"
-msgstr ""
+msgstr "ECHOREPO — Τα Δεδομένα Σας"
 
 #: echorepo/templates/results.html:7
 msgid "Download all samples (CSV)"
-msgstr ""
+msgstr "Κατεβάστε όλα τα δείγματα (CSV)"
 
 #: echorepo/templates/results.html:14
 msgid "Logged in as"
-msgstr ""
+msgstr "Σύνδεση ως"
 
 #: echorepo/templates/results.html:19
 msgid "Copy user key"
-msgstr ""
+msgstr "Αντιγραφή κλειδιού χρήστη"
 
 #: echorepo/templates/results.html:23
 msgid "Logout"
-msgstr ""
+msgstr "Αποσύνδεση"
 
-#: echorepo/templates/results.html:108
+#: echorepo/templates/results.html:104
 msgid "Your data"
-msgstr ""
+msgstr "Τα δεδομένα σας"
 
-#: echorepo/templates/results.html:109
+#: echorepo/templates/results.html:105
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
 msgstr ""
+"Εξερευνήστε τις τοποθεσίες του δείγματος εδάφους σας στο χάρτη, στη συνέχεια,"
+" εξαγωγή ή περιήγηση στον πίνακα."
 
-#: echorepo/templates/results.html:117
+#: echorepo/templates/results.html:113
 #, python-format
 msgid "Fix data issues (%(n)s)"
-msgstr ""
+msgstr "Διόρθωση θεμάτων δεδομένων (__%(n)s_)"
 
-#: echorepo/templates/results.html:120
+#: echorepo/templates/results.html:116
 msgid "Some samples need attention to ensure correct maps and downloads."
 msgstr ""
+"Ορισμένα δείγματα χρειάζονται προσοχή για να εξασφαλίσουν σωστούς χάρτες και "
+"λήψεις."
 
-#: echorepo/templates/results.html:127
+#: echorepo/templates/results.html:123
 msgid "No data found for"
-msgstr ""
+msgstr "Δεν βρέθηκαν δεδομένα για"
 
-#: echorepo/templates/results.html:127
+#: echorepo/templates/results.html:123
 msgid "If you recently submitted samples, try again later."
-msgstr ""
+msgstr "Εάν υποβάλατε πρόσφατα δείγματα, προσπαθήστε ξανά αργότερα."
 
-#: echorepo/templates/results.html:140
+#: echorepo/templates/results.html:136
 msgid "Download"
-msgstr ""
+msgstr "Λήψη"
 
-#: echorepo/templates/results.html:146
+#: echorepo/templates/results.html:142
 msgid "CSV (per-user)"
-msgstr ""
+msgstr "CSV (ανά χρήστη)"
 
-#: echorepo/templates/results.html:152
+#: echorepo/templates/results.html:148
 msgid "XLSX (per-user)"
-msgstr ""
+msgstr "XLSX (ανά χρήστη)"
 
-#: echorepo/templates/results.html:158
+#: echorepo/templates/results.html:154
 msgid "All samples (CSV, anonymised)"
-msgstr ""
+msgstr "Όλα τα δείγματα (CSV, ανώνυμα)"
 
-#: echorepo/templates/results.html:163
+#: echorepo/templates/results.html:159
 msgid "GeoJSON (per-user)"
-msgstr ""
+msgstr "GeoJSON (ανά χρήστη)"
 
-#: echorepo/templates/results.html:171 echorepo/templates/results.html:237
+#: echorepo/templates/results.html:167 echorepo/templates/results.html:233
 msgid "pH"
-msgstr ""
+msgstr "p Η"
 
-#: echorepo/templates/results.html:173
+#: echorepo/templates/results.html:169
 msgid "min"
-msgstr ""
+msgstr "λεπτά"
+
+#: echorepo/templates/results.html:172
+msgid "max"
+msgstr "max"
+
+#: echorepo/templates/results.html:174
+msgid "Apply pH filter"
+msgstr "Εφαρμογή φίλτρου pH"
+
+#: echorepo/templates/results.html:174 echorepo/templates/results.html:230
+msgid "Apply"
+msgstr "Εφαρμογή"
 
 #: echorepo/templates/results.html:176
-msgid "max"
-msgstr ""
-
-#: echorepo/templates/results.html:178
-msgid "Apply pH filter"
-msgstr ""
-
-#: echorepo/templates/results.html:178 echorepo/templates/results.html:234
-msgid "Apply"
-msgstr ""
-
-#: echorepo/templates/results.html:180
 msgid "Export rows matching current pH filter"
-msgstr ""
+msgstr "Εξαγωγή γραμμών που ταιριάζουν με το τρέχον φίλτρο pH"
 
-#: echorepo/templates/results.html:181
+#: echorepo/templates/results.html:177
 msgid "Export filtered (0)"
-msgstr ""
+msgstr "Φίλτρο εξαγωγής (0)"
+
+#: echorepo/templates/results.html:225
+msgid "Your samples"
+msgstr "Τα δείγματα σας"
+
+#: echorepo/templates/results.html:226
+msgid "Other samples"
+msgstr "Άλλα δείγματα"
+
+#: echorepo/templates/results.html:227
+msgid "Export"
+msgstr "Εξαγωγή"
+
+#: echorepo/templates/results.html:228
+msgid "Clear"
+msgstr "Καθαρισμός"
 
 #: echorepo/templates/results.html:229
-msgid "Your samples"
-msgstr ""
-
-#: echorepo/templates/results.html:230
-msgid "Other samples"
-msgstr ""
+#, python-format
+msgid "Export filtered (%(n)s)"
+msgstr "Φίλτρα εξαγωγής (%(n)s)"
 
 #: echorepo/templates/results.html:231
-msgid "Export"
-msgstr ""
+msgid "Date"
+msgstr "Ημερομηνία"
 
 #: echorepo/templates/results.html:232
-msgid "Clear"
-msgstr ""
+msgid "QR code"
+msgstr "Κωδικός QR"
 
-#: echorepo/templates/results.html:233
-#, python-brace-format
-msgid "Export filtered ({n})"
-msgstr ""
+#: echorepo/templates/results.html:234
+msgid "Colour"
+msgstr "Χρώμα"
 
 #: echorepo/templates/results.html:235
-msgid "Date"
-msgstr ""
+msgid "Texture"
+msgstr "Υφή"
 
 #: echorepo/templates/results.html:236
-msgid "QR code"
-msgstr ""
+msgid "Structure"
+msgstr "Δομή"
+
+#: echorepo/templates/results.html:237
+msgid "Earthworms"
+msgstr "Γαιοσκώληκες"
 
 #: echorepo/templates/results.html:238
-msgid "Colour"
-msgstr ""
+msgid "Plastic"
+msgstr "Πλαστικό"
 
 #: echorepo/templates/results.html:239
-msgid "Texture"
-msgstr ""
+msgid "Debris"
+msgstr "Αποβράσματα"
 
 #: echorepo/templates/results.html:240
-msgid "Structure"
-msgstr ""
+msgid "Contamination"
+msgstr "Μόλυνση"
 
 #: echorepo/templates/results.html:241
-msgid "Earthworms"
-msgstr ""
+msgid "Metals"
+msgstr "Μέταλλα"
 
 #: echorepo/templates/results.html:242
-msgid "Plastic"
-msgstr ""
+#, python-format
+msgid "Privacy radius (~±%(km)s km)"
+msgstr "Ακτίνα απορρήτου (~±__%(km)s_ km)"
 
 #: echorepo/templates/results.html:243
-msgid "Debris"
-msgstr ""
+msgid "Soil pH"
+msgstr "PH εδάφους"
 
 #: echorepo/templates/results.html:244
-msgid "Contamination"
-msgstr ""
+msgid "Acidic (≤5.5)"
+msgstr "Οξύ (≤5.5)"
 
 #: echorepo/templates/results.html:245
-msgid "Metals"
-msgstr ""
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Ελαφρώς όξινα (5.5–6.5)"
 
 #: echorepo/templates/results.html:246
-#, python-brace-format
-msgid "Privacy radius (~±{km} km)"
-msgstr ""
+msgid "Neutral (6.5–7.5)"
+msgstr "Ουδέτερο (6.5–7.5)"
 
 #: echorepo/templates/results.html:247
-msgid "Soil pH"
-msgstr ""
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Ελαφρώς αλκαλικό (7.5–8.5)"
 
 #: echorepo/templates/results.html:248
-msgid "Acidic (≤5.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:249
-msgid "Slightly acidic (5.5–6.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:250
-msgid "Neutral (6.5–7.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:251
-msgid "Slightly alkaline (7.5–8.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:252
 msgid "Alkaline (≥8.5)"
-msgstr ""
+msgstr "Αλκαλίνη (≥8. 5)"
 

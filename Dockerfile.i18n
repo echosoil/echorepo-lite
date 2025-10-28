@@ -1,0 +1,13 @@
+# Lightweight one-off tooling image for i18n tasks
+FROM python:3.11-slim
+
+# System deps for Babel (optional but nice to have)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl tini && rm -rf /var/lib/apt/lists/*
+
+# Python deps for i18n pipeline
+RUN pip install --no-cache-dir Babel Flask-Babel polib requests
+
+WORKDIR /work
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["bash"]

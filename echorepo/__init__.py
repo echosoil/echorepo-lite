@@ -19,6 +19,8 @@ def create_app() -> Flask:
 
     # Base config
     app.secret_key = settings.SECRET_KEY
+    app.config.from_mapping(SECRET_KEY=os.environ.get("SECRET_KEY","dev-secret"))
+
     app.config.update(
         SESSION_COOKIE_SAMESITE=settings.SESSION_COOKIE_SAMESITE,
         SESSION_COOKIE_SECURE=settings.SESSION_COOKIE_SECURE,

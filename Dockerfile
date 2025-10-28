@@ -12,6 +12,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy package and templates
 COPY echorepo/ ./echorepo/
 
+# Compile translations (only the app tree)
+# the `|| true` prevents the build from failing if a locale is empty
+RUN pybabel compile -d /app/echorepo/translations
+
 # Data dir for your mounted volume
 RUN mkdir -p /data/db
 
