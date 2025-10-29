@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-29 08:12+0000\n"
+"POT-Creation-Date: 2025-10-29 13:21+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,34 +17,99 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: echorepo/templates/auth.html:2
-msgid "Sign in — ECHOrepo"
+#: echorepo/routes/web.py:19
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
 msgstr ""
 
-#: echorepo/templates/auth.html:8
-msgid "Sign in"
+#: echorepo/routes/web.py:20 echorepo/templates/results.html:243
+msgid "Soil pH"
 msgstr ""
 
-#: echorepo/templates/auth.html:14
-msgid "Email"
+#: echorepo/routes/web.py:21 echorepo/templates/results.html:244
+msgid "Acidic (≤5.5)"
 msgstr ""
 
-#: echorepo/templates/auth.html:17
-msgid "you@example.com"
+#: echorepo/routes/web.py:22 echorepo/templates/results.html:245
+msgid "Slightly acidic (5.5–6.5)"
 msgstr ""
 
-#: echorepo/templates/auth.html:19
-msgid ""
-"Username is optional and ignored for authentication; useful for your own "
-"logs."
+#: echorepo/routes/web.py:23 echorepo/templates/results.html:246
+msgid "Neutral (6.5–7.5)"
 msgstr ""
 
-#: echorepo/templates/auth.html:24 echorepo/templates/login.html:30
-msgid "Password"
+#: echorepo/routes/web.py:24 echorepo/templates/results.html:247
+msgid "Slightly alkaline (7.5–8.5)"
 msgstr ""
 
-#: echorepo/templates/auth.html:30
-msgid "Enter"
+#: echorepo/routes/web.py:25 echorepo/templates/results.html:248
+msgid "Alkaline (≥8.5)"
+msgstr ""
+
+#: echorepo/routes/web.py:26 echorepo/templates/results.html:225
+msgid "Your samples"
+msgstr ""
+
+#: echorepo/routes/web.py:27 echorepo/templates/results.html:226
+msgid "Other samples"
+msgstr ""
+
+#: echorepo/routes/web.py:28 echorepo/templates/results.html:227
+msgid "Export"
+msgstr ""
+
+#: echorepo/routes/web.py:29 echorepo/templates/results.html:228
+msgid "Clear"
+msgstr ""
+
+#: echorepo/routes/web.py:30
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr ""
+
+#: echorepo/routes/web.py:31 echorepo/templates/results.html:231
+msgid "Date"
+msgstr ""
+
+#: echorepo/routes/web.py:32 echorepo/templates/results.html:232
+msgid "QR code"
+msgstr ""
+
+#: echorepo/routes/web.py:33 echorepo/templates/results.html:167
+#: echorepo/templates/results.html:233
+msgid "pH"
+msgstr ""
+
+#: echorepo/routes/web.py:34 echorepo/templates/results.html:234
+msgid "Colour"
+msgstr ""
+
+#: echorepo/routes/web.py:35 echorepo/templates/results.html:235
+msgid "Texture"
+msgstr ""
+
+#: echorepo/routes/web.py:36 echorepo/templates/results.html:236
+msgid "Structure"
+msgstr ""
+
+#: echorepo/routes/web.py:37 echorepo/templates/results.html:237
+msgid "Earthworms"
+msgstr ""
+
+#: echorepo/routes/web.py:38 echorepo/templates/results.html:238
+msgid "Plastic"
+msgstr ""
+
+#: echorepo/routes/web.py:39 echorepo/templates/results.html:239
+msgid "Debris"
+msgstr ""
+
+#: echorepo/routes/web.py:40 echorepo/templates/results.html:240
+msgid "Contamination"
+msgstr ""
+
+#: echorepo/routes/web.py:41 echorepo/templates/results.html:241
+msgid "Metals"
 msgstr ""
 
 #: echorepo/templates/base.html:6 echorepo/templates/base.html:10
@@ -63,71 +128,71 @@ msgstr ""
 msgid "Skip to content"
 msgstr ""
 
-#: echorepo/templates/base.html:81
+#: echorepo/templates/base.html:85
 msgid "Primary"
 msgstr ""
 
-#: echorepo/templates/base.html:84
+#: echorepo/templates/base.html:88
 msgid "ECHOrepo logo"
 msgstr ""
 
-#: echorepo/templates/base.html:89
+#: echorepo/templates/base.html:93
 msgid "Toggle navigation"
 msgstr ""
 
-#: echorepo/templates/base.html:95
+#: echorepo/templates/base.html:99
 msgid "About"
 msgstr ""
 
-#: echorepo/templates/base.html:96
+#: echorepo/templates/base.html:100
 msgid "For Participants"
 msgstr ""
 
-#: echorepo/templates/base.html:97
+#: echorepo/templates/base.html:101
 msgid "Partners"
 msgstr ""
 
-#: echorepo/templates/base.html:98
+#: echorepo/templates/base.html:102
 msgid "News & Events"
 msgstr ""
 
-#: echorepo/templates/base.html:100
+#: echorepo/templates/base.html:104
 msgid "Resources"
 msgstr ""
 
-#: echorepo/templates/base.html:102
+#: echorepo/templates/base.html:106
 msgid "Media Kit"
 msgstr ""
 
-#: echorepo/templates/base.html:103
+#: echorepo/templates/base.html:107
 msgid "Publications"
 msgstr ""
 
-#: echorepo/templates/base.html:104
+#: echorepo/templates/base.html:108
 msgid "Newsletter Archive"
 msgstr ""
 
-#: echorepo/templates/base.html:116
+#: echorepo/templates/base.html:120
 msgid "Change language"
 msgstr ""
 
-#: echorepo/templates/base.html:148
+#: echorepo/templates/base.html:152
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr ""
 
-#: echorepo/templates/base.html:148
+#: echorepo/templates/base.html:152
 msgid "project"
 msgstr ""
 
-#: echorepo/templates/base.html:150
+#: echorepo/templates/base.html:154
 msgid "Need help?"
 msgstr ""
 
-#: echorepo/templates/base.html:154
+#: echorepo/templates/base.html:158
 msgid "EU-funded"
 msgstr ""
 
-#: echorepo/templates/base.html:155
+#: echorepo/templates/base.html:159
 msgid "EU-funded initiative"
 msgstr ""
 
@@ -224,6 +289,10 @@ msgstr ""
 msgid "you@example.org"
 msgstr ""
 
+#: echorepo/templates/login.html:30
+msgid "Password"
+msgstr ""
+
 #: echorepo/templates/login.html:40
 msgid "Continue"
 msgstr ""
@@ -307,10 +376,6 @@ msgstr ""
 msgid "GeoJSON (per-user)"
 msgstr ""
 
-#: echorepo/templates/results.html:167 echorepo/templates/results.html:233
-msgid "pH"
-msgstr ""
-
 #: echorepo/templates/results.html:169
 msgid "min"
 msgstr ""
@@ -335,93 +400,13 @@ msgstr ""
 msgid "Export filtered (0)"
 msgstr ""
 
-#: echorepo/templates/results.html:225
-msgid "Your samples"
-msgstr ""
-
-#: echorepo/templates/results.html:226
-msgid "Other samples"
-msgstr ""
-
-#: echorepo/templates/results.html:227
-msgid "Export"
-msgstr ""
-
-#: echorepo/templates/results.html:228
-msgid "Clear"
-msgstr ""
-
 #: echorepo/templates/results.html:229
 #, python-format
 msgid "Export filtered (%(n)s)"
 msgstr ""
 
-#: echorepo/templates/results.html:231
-msgid "Date"
-msgstr ""
-
-#: echorepo/templates/results.html:232
-msgid "QR code"
-msgstr ""
-
-#: echorepo/templates/results.html:234
-msgid "Colour"
-msgstr ""
-
-#: echorepo/templates/results.html:235
-msgid "Texture"
-msgstr ""
-
-#: echorepo/templates/results.html:236
-msgid "Structure"
-msgstr ""
-
-#: echorepo/templates/results.html:237
-msgid "Earthworms"
-msgstr ""
-
-#: echorepo/templates/results.html:238
-msgid "Plastic"
-msgstr ""
-
-#: echorepo/templates/results.html:239
-msgid "Debris"
-msgstr ""
-
-#: echorepo/templates/results.html:240
-msgid "Contamination"
-msgstr ""
-
-#: echorepo/templates/results.html:241
-msgid "Metals"
-msgstr ""
-
 #: echorepo/templates/results.html:242
 #, python-format
 msgid "Privacy radius (~±%(km)s km)"
-msgstr ""
-
-#: echorepo/templates/results.html:243
-msgid "Soil pH"
-msgstr ""
-
-#: echorepo/templates/results.html:244
-msgid "Acidic (≤5.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:245
-msgid "Slightly acidic (5.5–6.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:246
-msgid "Neutral (6.5–7.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:247
-msgid "Slightly alkaline (7.5–8.5)"
-msgstr ""
-
-#: echorepo/templates/results.html:248
-msgid "Alkaline (≥8.5)"
 msgstr ""
 

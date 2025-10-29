@@ -1,76 +1,146 @@
 {% extends 'base.html' %}
 {% block title %}I18N Admin{% endblock %}
+
 {% block content %}
 <div class="container my-3">
   <h3>Translation overrides</h3>
+
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <a class="nav-link {% if scope!='js' %}active{% endif %}"
+         href="{{ url_for('i18n_admin.admin_page', scope='page', locale=locale, file=files_hint or '', q=request.args.get('q','')) }}">
+        Page texts
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if scope=='js' %}active{% endif %}"
+         href="{{ url_for('i18n_admin.admin_page', scope='js', locale=locale, q=request.args.get('q','')) }}">
+        JS keys
+      </a>
+    </li>
+  </ul>
+
   <form class="row g-2 align-items-end mb-3" method="get">
+    <input type="hidden" name="scope" value="{{ scope }}">
     <div class="col-auto">
       <label class="form-label">Locale</label>
-      <select name="locale" class="form-select">
-        {% for loc in locales %}
-          <option value="{{loc}}"{% if loc==locale %} selected{% endif %}>{{loc}}</option>
-        {% endfor %}
-      </select>
+      <input class="form-control" name="locale" value="{{ locale }}">
     </div>
+    {% if scope!='js' %}
+    <div class="col-auto">
+      <label class="form-label">Filter by file (e.g. base.html, map.js)</label>
+      <input class="form-control" name="file" value="{{ files_hint or '' }}">
+    </div>
+    {% endif %}
     <div class="col-auto">
       <label class="form-label">Search</label>
-      <input class="form-control" name="q" value="{{q or ''}}" placeholder="key or value">
+      <input class="form-control" name="q" value="{{ request.args.get('q','') }}">
     </div>
-    <div class="col-auto">
-      <button class="btn btn-primary" type="submit">Filter</button>
-    </div>
+    <div class="col-auto"><button class="btn btn-primary">Filter</button></div>
   </form>
 
   <div class="table-responsive">
     <table class="table table-sm align-middle">
       <thead>
-        <tr><th style="width:28%">Key</th><th>Override value ({{locale}})</th><th style="width:12%"></th></tr>
+      {% if scope=='js' %}
+        <tr>
+          <th style="width:18%">Key</th>
+          <th>English msgid</th>
+          <th>Current</th>
+          <th style="width:32%">Override</th>
+          <th style="width:10%"></th>
+        </tr>
+      {% else %}
+        <tr>
+          <th>Msgid (English)</th>
+          <th>Current</th>
+          <th style="width:32%">Override</th>
+          <th style="width:10%"></th>
+        </tr>
+      {% endif %}
       </thead>
       <tbody>
-        {% for r in rows %}
-        <tr data-key="{{r.key}}">
-          <td class="text-monospace"><code>{{ r.key }}</code></td>
+      {% for r in rows %}
+        <tr>
+          {% if scope=='js' %}
+            <td><code>{{ r.key }}</code></td>
+            <td>{{ r.msgid }}</td>
+          {% else %}
+            <td>
+              <div class="small text-muted">
+                {% if r.refs %}<div class="text-muted">{{ r.refs|join(', ') }}</div>{% endif %}
+              </div>
+              {{ r.msgid }}
+            </td>
+          {% endif %}
+          <td>{{ r.current }}</td>
           <td>
-            <input class="form-control form-control-sm override-input" value="{{ r.value }}" placeholder="Leave empty to remove override">
+            <input class="form-control form-control-sm override-input"
+                   value="{{ r.override }}" placeholder="Leave empty to remove override">
           </td>
           <td>
             <button class="btn btn-sm btn-outline-success save-btn">Save</button>
             <button class="btn btn-sm btn-outline-danger clear-btn">Clear</button>
           </td>
         </tr>
-        {% endfor %}
+      {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <div class="alert alert-info">
+  <div class="alert alert-info mt-3">
     Overrides take effect on next page load. They don’t modify PO/MO files.
   </div>
 </div>
 
 <script>
 (function(){
+  const scope = "{{ scope }}";
   const locale = "{{ locale }}";
+
   async function postJSON(url, payload){
-    const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'same-origin'});
-    if(!r.ok){ const t = await r.text(); throw new Error(t || r.statusText); }
+    const r = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+      credentials:'same-origin'
+    });
+    if(!r.ok){ throw new Error(await r.text()); }
     return r.json();
   }
-  document.querySelectorAll('tr[data-key]').forEach(tr=>{
-    const key = tr.getAttribute('data-key');
+
+  document.querySelectorAll('table tbody tr').forEach(tr=>{
     const input = tr.querySelector('.override-input');
-    tr.querySelector('.save-btn').addEventListener('click', async ()=>{
-      try{
-        await postJSON('/i18n/admin/set', { locale, key, value: input.value });
-        input.classList.add('is-valid'); setTimeout(()=>input.classList.remove('is-valid'), 800);
-      }catch(e){ alert('Save failed: ' + e.message); }
+    const save = tr.querySelector('.save-btn');
+    const clear = tr.querySelector('.clear-btn');
+
+    // Build payload depending on scope
+    let payload = { locale };
+    if (scope === 'js') {
+      const keyCell = tr.querySelector('td code');
+      if (keyCell) payload.key = keyCell.textContent.trim();
+    } else {
+      // First non-muted line is the msgid itself
+      const cell = tr.querySelector('td');
+      const parts = cell.innerText.split('\n').map(s=>s.trim()).filter(Boolean);
+      payload.msgid = parts[parts.length-1];
+    }
+
+    save.addEventListener('click', async ()=>{
+      try {
+        await postJSON('/i18n/admin/set', Object.assign({}, payload, {value: input.value}));
+        input.classList.add('is-valid');
+        setTimeout(()=>input.classList.remove('is-valid'), 600);
+      } catch(e){ alert('Save failed: ' + e.message); }
     });
-    tr.querySelector('.clear-btn').addEventListener('click', async ()=>{
-      try{
-        await postJSON('/i18n/admin/set', { locale, key, value: "" });
-        input.value = "";
-        input.classList.add('is-valid'); setTimeout(()=>input.classList.remove('is-valid'), 800);
-      }catch(e){ alert('Clear failed: ' + e.message); }
+
+    clear.addEventListener('click', async ()=>{
+      try {
+        await postJSON('/i18n/admin/set', Object.assign({}, payload, {value: ""}));
+        input.value="";
+        input.classList.add('is-valid');
+        setTimeout(()=>input.classList.remove('is-valid'), 600);
+      } catch(e){ alert('Clear failed: ' + e.message); }
     });
   });
 })();

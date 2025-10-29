@@ -255,20 +255,25 @@
   
   function T(key, vars = {}, defaultText) {
     const dict = (window.I18N && (window.I18N.labels || window.I18N)) || {};
-    const s = dict[key] || defaultText || key;
+    const s = (dict && Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : undefined)
+          ?? defaultText
+          ?? key;
 
-    // Replace {name}
-    let out = String(s).replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
+    let out = String(s);
+
+    // {name}
+    out = out.replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
       Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
     );
 
-    // Also support Python-style %(name)s
+    // %(name)s
     out = out.replace(/%\(([A-Za-z0-9_]+)\)s/g, (_, k) =>
       Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `%(${k})s`
     );
 
     return out;
   }
+  window.T = T; // expose for DevTools only
 
   function computeAllHeaders(){
     const preferred=[
