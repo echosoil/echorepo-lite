@@ -7,8 +7,8 @@ import tempfile  # <-- added
 import re 
 
 # ---- Config (env) ----
-CSV_PATH    = "/home/quanta/echorepo-lite/data/echorepo_samples_with_email.csv"
-SQLITE_PATH = "/home/quanta/echorepo-lite/data/db/echo.db"
+CSV_PATH    = "/home/quanta/echorepo-lite-dev/data/echorepo_samples_with_email.csv"
+SQLITE_PATH = "/home/quanta/echorepo-lite-dev/data/db/echo.db"
 TABLE_NAME  = os.getenv("TABLE_NAME", "samples")
 
 # Max jitter distance in meters (match the map legend/toggle)
