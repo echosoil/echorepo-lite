@@ -1,25 +1,66 @@
 import os
 from flask import Flask
+from flask_babel import get_locale
 from .config import settings
 from .auth.routes import auth_bp, init_oauth
 from .routes.web import web_bp
 from .routes.api import api_bp
 from .services.db import init_db_sanity
-from .routes.errors import errors_bp  # add import
-from .i18n import init_i18n, lang_bp
+from .routes.errors import errors_bp
+from .i18n import init_i18n, lang_bp, build_i18n_labels  # <- use centralized builder
+from echorepo.routes.i18n_admin import bp as i18n_admin_bp
+
+# Optional: base labels here or import from a helper if you split it
+from flask_babel import gettext as _
+def _base_labels() -> dict:
+    return {
+        "privacyRadius": _("Privacy radius (~±{km} km)"),
+        "soilPh": _("Soil pH"),
+        "acid": _("Acidic (≤5.5)"),
+        "slightlyAcid": _("Slightly acidic (5.5–6.5)"),
+        "neutral": _("Neutral (6.5–7.5)"),
+        "slightlyAlkaline": _("Slightly alkaline (7.5–8.5)"),
+        "alkaline": _("Alkaline (≥8.5)"),
+        "yourSamples": _("Your samples"),
+        "otherSamples": _("Other samples"),
+        "export": _("Export"),
+        "clear": _("Clear"),
+        "exportFiltered": _("Export filtered ({n})"),
+        "date": _("Date"),
+        "qr": _("QR code"),
+        "ph": _("pH"),
+        "colour": _("Colour"),
+        "texture": _("Texture"),
+        "structure": _("Structure"),
+        "earthworms": _("Earthworms"),
+        "plastic": _("Plastic"),
+        "debris": _("Debris"),
+        "contamination": _("Contamination"),
+        "metals": _("Metals"),
+    }
+
+def _default_flags(codes):
+    base = {
+        "en": "gb", "cs": "cz", "de": "de", "el": "gr", "es": "es", "fi": "fi",
+        "fr": "fr", "it": "it", "nl": "nl", "pl": "pl", "pt": "pt", "ro": "ro", "sk": "sk",
+    }
+    out = dict(base)
+    for c in codes:
+        out.setdefault(c, "gb")
+    return out
 
 def create_app() -> Flask:
     pkg_dir = os.path.dirname(__file__)
     app = Flask(
         __name__,
         template_folder=os.path.join(pkg_dir, "templates"),
-        static_folder=os.path.join(pkg_dir, "..", "static"),  # -> /app/static
+        static_folder=os.path.join(pkg_dir, "..", "static"),
         static_url_path="/static",
     )
 
     # Base config
     app.secret_key = settings.SECRET_KEY
-    app.config.from_mapping(SECRET_KEY=os.environ.get("SECRET_KEY","dev-secret"))
+    app.config.from_mapping(SECRET_KEY=os.environ.get("SECRET_KEY", "dev-secret"))
 
     app.config.update(
         SESSION_COOKIE_SAMESITE=settings.SESSION_COOKIE_SAMESITE,
@@ -39,14 +80,40 @@ def create_app() -> Flask:
         GOOGLE_APPLICATION_CREDENTIALS=getattr(settings, "GOOGLE_APPLICATION_CREDENTIALS", None),
     )
 
-    init_i18n(app)               # <-- enable Babel
-    app.register_blueprint(lang_bp)  # <-- /set-lang/<code>
+    # ---- i18n ----
+    init_i18n(app)          # sets up Babel, locale selection, etc.
+    app.register_blueprint(lang_bp)   # /set-lang/<code>
 
-    # Extensions & OAuth
+    # Supported locales & flags (from settings or defaults)
+    SUPPORTED_LOCALES = getattr(
+        settings, "SUPPORTED_LOCALES",
+        ["en", "cs", "de", "el", "es", "fi", "fr", "it", "nl", "pl", "pt", "ro", "sk"]
+    )
+    LOCALE_FLAGS = getattr(settings, "LOCALE_FLAGS", _default_flags(SUPPORTED_LOCALES))
+
+    # ---- Global template context: I18N + locale info ----
+    @app.context_processor
+    def inject_i18n_and_locale():
+        try:
+            labels = build_i18n_labels(_base_labels())  # merges DB overrides on top
+        except Exception:
+            labels = {}
+        try:
+            loc = str(get_locale() or "en")
+        except Exception:
+            loc = "en"
+        return {
+            "I18N": {"labels": labels},
+            "current_locale": loc,
+            "SUPPORTED_LOCALES": SUPPORTED_LOCALES,
+            "LOCALE_FLAGS": LOCALE_FLAGS,
+        }
+
+    # ---- OAuth / Blueprints ----
     init_oauth(app)
 
-    # Blueprints
     app.register_blueprint(auth_bp)
+    app.register_blueprint(i18n_admin_bp)  # /i18n/admin
     app.register_blueprint(web_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(errors_bp)
@@ -65,12 +132,11 @@ def create_app() -> Flask:
         ("others_geojson",     "api.others_geojson",     "/api/others_geojson",     ["GET"]),
         ("download_sample_csv","api.download_sample_csv","/download/sample_csv",    ["GET"]),
 
-        # auth aliases so templates like url_for('sso_password_login') work
+        # auth
         ("login",              "auth.login",              "/login",        ["GET"]),
         ("sso_password_login", "auth.sso_password_login", "/login",        ["POST"]),
         ("logout",             "auth.logout",             "/logout",       ["GET"]),
         ("sso_callback",       "auth.sso_callback",       "/sso/callback", ["GET"]),
-        # If you also expose GET /sso/login:
         # ("sso_login",          "auth.sso_login",          "/sso/login",    ["GET"]),
     ]
     for ep, target, rule, methods in alias_map:

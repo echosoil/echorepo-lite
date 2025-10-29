@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, send_file, abort, session, redirect, url_for
+from flask import Blueprint, render_template, request, send_file, abort, session, redirect, url_for, jsonify
 import pandas as pd
 from io import BytesIO
 import pathlib
@@ -7,8 +7,39 @@ from ..auth.decorators import login_required
 from ..services.db import query_user_df, query_sample
 from ..services.validation import find_default_coord_rows, annotate_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
+from echorepo.i18n import build_i18n_labels
+from flask_babel import gettext as _  
 
 web_bp = Blueprint("web", __name__)
+
+# ---------- NEW: base UI labels used by map.js / UI ----------
+def _js_base_labels() -> dict:
+    # Keep keys in sync with your map.js calls
+    return {
+        "privacyRadius": _("Privacy radius (~±{km} km)"),
+        "soilPh": _("Soil pH"),
+        "acid": _("Acidic (≤5.5)"),
+        "slightlyAcid": _("Slightly acidic (5.5–6.5)"),
+        "neutral": _("Neutral (6.5–7.5)"),
+        "slightlyAlkaline": _("Slightly alkaline (7.5–8.5)"),
+        "alkaline": _("Alkaline (≥8.5)"),
+        "yourSamples": _("Your samples"),
+        "otherSamples": _("Other samples"),
+        "export": _("Export"),
+        "clear": _("Clear"),
+        "exportFiltered": _("Export filtered ({n})"),
+        "date": _("Date"),
+        "qr": _("QR code"),
+        "ph": _("pH"),
+        "colour": _("Colour"),
+        "texture": _("Texture"),
+        "structure": _("Structure"),
+        "earthworms": _("Earthworms"),
+        "plastic": _("Plastic"),
+        "debris": _("Debris"),
+        "contamination": _("Contamination"),
+        "metals": _("Metals"),
+    }
 
 @web_bp.get("/", endpoint="home")
 @login_required
@@ -18,16 +49,19 @@ def home():
         return redirect(url_for("auth.login"))
 
     df = query_user_df(user_key)
+    i18n = {"labels": build_i18n_labels(_js_base_labels())}  # <-- merge DB overrides
+
     if df.empty:
         return render_template(
             "results.html",
-            issue_count=0,  # no issues if no rows
+            issue_count=0,
             user_key=user_key,
             columns=[],
             table_html="<p>No data available for this user.</p>",
             jitter_m=int(settings.MAX_JITTER_METERS),
             lat_col=settings.LAT_COL,
             lon_col=settings.LON_COL,
+            I18N=i18n,  # <-- inject for front-end
         )
 
     defaults = find_default_coord_rows(df)
@@ -43,7 +77,14 @@ def home():
         jitter_m=int(settings.MAX_JITTER_METERS),
         lat_col=settings.LAT_COL,
         lon_col=settings.LON_COL,
+        I18N=i18n,  # <-- inject for front-end
     )
+
+# (Optional) JSON endpoint if you prefer fetching labels via XHR
+@web_bp.get("/i18n/labels")
+@login_required
+def i18n_labels():
+    return jsonify({"labels": build_i18n_labels(_js_base_labels())})
 
 @web_bp.post("/download/csv")
 @login_required

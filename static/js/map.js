@@ -4,10 +4,6 @@
 
   // ---------- i18n helpers ----------
   const UI_LANG = document.documentElement.lang || 'en';
-  const T = (key, params = {}, fallback) => {
-    let s = (window.I18N && window.I18N.labels && window.I18N.labels[key]) || fallback || key;
-    return s.replace(/\{(\w+)\}/g, (_, name) => (params[name] ?? `{${name}}`));
-  };
 
   // ---- Config & helpers ----
   const cfg = (window.ECHOREPO_CFG || {});
@@ -255,6 +251,23 @@
   function passesCurrentFilter(props){
     const ph = getPhFromProps(props || {});
     return inRangeGiven(ph, activePhMin, activePhMax);
+  }
+  
+  function T(key, vars = {}, defaultText) {
+    const dict = (window.I18N && (window.I18N.labels || window.I18N)) || {};
+    const s = dict[key] || defaultText || key;
+
+    // Replace {name}
+    let out = String(s).replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
+      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
+    );
+
+    // Also support Python-style %(name)s
+    out = out.replace(/%\(([A-Za-z0-9_]+)\)s/g, (_, k) =>
+      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `%(${k})s`
+    );
+
+    return out;
   }
 
   function computeAllHeaders(){
@@ -571,7 +584,7 @@
       div.style.background='white'; div.style.borderRadius='8px'; div.style.lineHeight='1.1';
       div.innerHTML=`<div style="display:flex;align-items:center;gap:.4rem;margin:.2rem 0;">
         <svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="#333" fill="none"/></svg>
-        <span>${T('privacyRadius', { km: Math.round(JITTER_M/1000) }, `Privacy radius (~±${Math.round(JITTER_M/1000)} km)`)}</span></div>`;
+        <span>${T('privacyRadius', { km: Math.round(JITTER_M/1000) }, 'Privacy radius (~±{km} km)')}</span></div>`;
       return div;
     }; legend.addTo(map);
 
