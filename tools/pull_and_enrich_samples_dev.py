@@ -27,7 +27,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth
 
 # ---------- Load .env explicitly ----------
-PROJECT_ROOT = Path("/home/quanta/echorepo-lite")
+PROJECT_ROOT = Path("/home/quanta/echorepo-lite-dev")
 ENV_PATH = Path(os.getenv("ENV_PATH", PROJECT_ROOT / ".env"))
 if ENV_PATH.exists():
     load_dotenv(dotenv_path=ENV_PATH, override=False)

@@ -12,7 +12,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # --- Paths / .env ---
-PROJECT_ROOT = Path("/home/quanta/echorepo-lite")
+PROJECT_ROOT = Path("/home/quanta/echorepo-lite-dev")
 ENV_PATH = Path(os.getenv("ENV_PATH", PROJECT_ROOT / ".env"))
 if ENV_PATH.exists():
     load_dotenv(dotenv_path=ENV_PATH, override=False)
@@ -32,7 +32,7 @@ os.environ.setdefault("ECHO_FORCE_REBUILD", "false")
 
 # --- Import and run builder ---
 sys.path.insert(0, str(PROJECT_ROOT))
-from echorepo.utils.load_csv import ensure_sqlite
+from echorepo.utils.load_csv_dev import ensure_sqlite
 
 def main():
     print(f"[refresh_sqlite] CSV_PATH={os.environ['CSV_PATH']}")
