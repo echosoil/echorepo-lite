@@ -1,15 +1,15 @@
 # echorepo/routes/i18n_admin.py
 from flask_babel import get_locale, gettext as _
 from echorepo.auth.decorators import login_required
-from echorepo.i18n import BASE_LABEL_MSGIDS, base_labels
+from echorepo.i18n import BASE_LABEL_MSGIDS
 from echorepo.services.i18n_overrides import (
     get_overrides, set_override, delete_override,
     get_overrides_msgid, set_override_msgid, delete_override_msgid,
 )
-import os
+import os, json
+from babel.support import Translations
 
 from flask import Blueprint, render_template, request, jsonify, abort, current_app, Response
-import json
 
 bp = Blueprint("i18n_admin", __name__, url_prefix="/i18n")
 
@@ -19,6 +19,24 @@ def _canon_locale(lang: str) -> str:
     lang = lang.strip().lower().replace("-", "_")
     return lang.split("_", 1)[0]
 
+# cache loaded catalogs per request
+def _get_catalog(loc: str) -> Translations | None:
+    trans_dir = os.path.join(current_app.root_path, "translations")
+    try:
+        # returns NullTranslations if not found; good enough (.gettext returns msgid)
+        return Translations.load(dirname=trans_dir, locales=[loc], domain="messages")
+    except Exception:
+        return None
+
+def _catalog_gettext(loc: str, msgid: str) -> str:
+    cat = _get_catalog(loc)
+    if cat:
+        try:
+            return cat.gettext(msgid)
+        except Exception:
+            pass
+    return msgid
+
 def _make_labels(locale_code: str) -> dict:
     loc = _canon_locale(locale_code)
     by_msgid = get_overrides_msgid(loc) or {}
@@ -26,9 +44,11 @@ def _make_labels(locale_code: str) -> dict:
 
     labels = {}
     for key, msgid in BASE_LABEL_MSGIDS.items():
-        # gettext first, then msgid-override, then key-override (key wins last)
-        text = _(msgid)
+        # catalog for selected locale
+        text = _catalog_gettext(loc, msgid)
+        # then msgid-override
         text = by_msgid.get(msgid, text)
+        # then key override (wins last for JS)
         text = by_key.get(key, text)
         labels[key] = text
     return labels
@@ -53,14 +73,11 @@ def _load_pot_entries():
 
 @bp.get("/labels.js")
 def labels_js():
-    # locale can come from querystring or current babel locale
-    loc_raw = request.args.get("locale") or str(get_locale() or "en")
-    labels = _make_labels(loc_raw)
-    payload = {"labels": labels}
-
+    loc_raw = request.args.get("locale") or str(get_locale() or "n")
+    loc = _canon_locale(loc_raw)
+    payload = {"labels": _make_labels(loc)}
     js = "window.I18N = " + json.dumps(payload, ensure_ascii=False) + ";"
     resp = Response(js, mimetype="application/javascript; charset=utf-8")
-    # No-cache so you see admin changes after reload (Shift+Reload in browser)
     resp.headers["Cache-Control"] = "no-store"
     return resp
 
@@ -77,9 +94,8 @@ def admin_page():
     rows = []
 
     if scope == "page":
-        # Template msgids from POT
         entries = _load_pot_entries()
-        # Also include JS msgids (so you can fix map.js strings in the same tab)
+        # also fold in JS msgids so you can fix them here too
         for key, msgid in BASE_LABEL_MSGIDS.items():
             entries.append({"msgid": msgid, "refs": ["static/js/map.js"]})
 
@@ -94,7 +110,10 @@ def admin_page():
             if q and q not in msgid.lower():
                 continue
 
-            current_txt = _(msgid)  # current translation via Babel/Jinja `_`
+            # IMPORTANT: translate using the SELECTED locale, not the request locale
+            catalog_txt = _catalog_gettext(loc, msgid)
+            current_txt = msg_over.get(msgid, catalog_txt)
+
             rows.append({
                 "msgid": msgid,
                 "current": current_txt,
@@ -111,20 +130,19 @@ def admin_page():
             js_keys=False,
         )
 
-    # scope == 'js' (key-based overrides)
-    key_over = get_overrides(loc)     # { key: override }
-    js_current = base_labels()        # { key: translated text via gettext }
+    # scope == 'js' (key-based)
+    key_over = get_overrides(loc) or {}
 
-    for k, cur in js_current.items():
-        msgid = BASE_LABEL_MSGIDS.get(k, "")
-        # basic filtering across key/current/msgid
-        if q and not (q in k.lower() or q in str(cur).lower() or q in msgid.lower()):
+    for k, msgid in BASE_LABEL_MSGIDS.items():
+        catalog_txt = _catalog_gettext(loc, msgid)
+        current_txt = key_over.get(k, catalog_txt)
+        if q and not (q in k.lower() or q in str(current_txt).lower() or q in msgid.lower()):
             continue
 
         rows.append({
             "key": k,
             "msgid": msgid,
-            "current": cur,
+            "current": current_txt,
             "override": key_over.get(k, ""),
         })
 

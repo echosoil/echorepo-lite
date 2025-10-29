@@ -20,23 +20,36 @@
     </li>
   </ul>
 
-  <form class="row g-2 align-items-end mb-3" method="get">
+  <form id="filterForm" class="row g-2 align-items-end mb-3" method="get">
     <input type="hidden" name="scope" value="{{ scope }}">
+
     <div class="col-auto">
       <label class="form-label">Locale</label>
-      <input class="form-control" name="locale" value="{{ locale }}">
+      <select class="form-select" name="locale" id="localeSelect">
+        {% for code in SUPPORTED_LOCALES %}
+          <option value="{{ code }}" {% if code==locale %}selected{% endif %}>
+            {{ code }}
+          </option>
+        {% endfor %}
+      </select>
     </div>
+
     {% if scope!='js' %}
     <div class="col-auto">
       <label class="form-label">Filter by file (e.g. base.html, map.js)</label>
       <input class="form-control" name="file" value="{{ files_hint or '' }}">
     </div>
     {% endif %}
+
     <div class="col-auto">
       <label class="form-label">Search</label>
       <input class="form-control" name="q" value="{{ request.args.get('q','') }}">
     </div>
-    <div class="col-auto"><button class="btn btn-primary">Filter</button></div>
+
+    <div class="col-auto">
+      <label class="form-label d-block">&nbsp;</label>
+      <button class="btn btn-primary">Filter</button>
+    </div>
   </form>
 
   <div class="table-responsive">
@@ -97,6 +110,11 @@
 (function(){
   const scope = "{{ scope }}";
   const locale = "{{ locale }}";
+
+  // Auto-submit when locale changes
+  const form = document.getElementById('filterForm');
+  const sel  = document.getElementById('localeSelect');
+  sel.addEventListener('change', () => form.submit());
 
   async function postJSON(url, payload){
     const r = await fetch(url, {
