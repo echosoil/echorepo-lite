@@ -1,7 +1,7 @@
 # echorepo/__init__.py
 import os
 import json
-from flask import Flask, jsonify, make_response
+from flask import Flask, jsonify, make_response, request, render_template_string
 from flask_babel import get_locale, gettext as _real_gettext, ngettext as _real_ngettext
 
 from .config import settings
@@ -21,7 +21,6 @@ def _canon_locale(lang: str) -> str:
         return "en"
     lang = lang.strip().lower().replace("-", "_")
     return lang.split("_", 1)[0]
-
 
 def _default_flags(codes):
     base = {
@@ -92,6 +91,8 @@ def create_app() -> Flask:
 
     # ---- i18n ----
     init_i18n(app)                 # set up Babel, locale selection, etc.
+    if 'jinja2.ext.i18n' not in app.jinja_env.extensions:
+        app.jinja_env.add_extension('jinja2.ext.i18n')
     app.register_blueprint(lang_bp)  # /set-lang/<code>
 
     # Supported locales & flags (from settings or defaults)
@@ -103,43 +104,70 @@ def create_app() -> Flask:
 
     # ---- Override-aware gettext for templates (incl. {% trans %}) ----
     def _gettext_with_overrides(msgid, **kwargs):
-        loc = _canon_locale(str(get_locale() or "en"))
+        try:
+            loc = _canon_locale(str(get_locale() or "en"))
+        except Exception:
+            loc = "en"
         ov = get_overrides_msgid(loc).get(msgid)
-        text = ov if (ov is not None and ov != "") else _real_gettext(msgid)
-        if kwargs:
+        if ov not in (None, ""):
             try:
-                text = text % kwargs
+                return ov % kwargs if kwargs else ov
             except Exception:
-                pass
-        return text
+                return ov
+        return _real_gettext(msgid, **kwargs)
 
     def _ngettext_with_overrides(singular, plural, n, **kwargs):
-        loc = _canon_locale(str(get_locale() or "en"))
-        ov_s = get_overrides_msgid(loc).get(singular)
-        ov_p = get_overrides_msgid(loc).get(plural)
-        if n == 1 and ov_s not in (None, ""):
-            text = ov_s
-        elif n != 1 and ov_p not in (None, ""):
-            text = ov_p
-        else:
-            text = _real_ngettext(singular, plural, n)
-        if kwargs:
+        try:
+            loc = _canon_locale(str(get_locale() or "en"))
+        except Exception:
+            loc = "en"
+        ov = get_overrides_msgid(loc).get(singular)
+        if ov not in (None, ""):
             try:
-                text = text % kwargs
+                return ov % kwargs if kwargs else ov
             except Exception:
-                pass
-        return text
+                return ov
+        # Fall back to Babel plural handling
+        return _real_ngettext(singular, plural, n, **kwargs)
+
+
+    def _install_callables():
+        # Install override-aware gettext/ngettext into the Jinja env
+        app.jinja_env.install_gettext_callables(
+            _gettext_with_overrides,
+            _ngettext_with_overrides,
+            newstyle=True,
+        )
+        # Also expose names that templates might use directly
+        app.jinja_env.globals["_"] = _gettext_with_overrides
+        app.jinja_env.globals["gettext"] = _gettext_with_overrides
+        app.jinja_env.globals["ngettext"] = _ngettext_with_overrides
+
+    # Install once now…
+    _install_callables()
+
+    # …and also re-install on every request in case something rebinds them later.
+    @app.before_request
+    def _force_i18n_install_every_time():
+        _install_callables()
 
     # Make Jinja use our override-aware functions everywhere
-    app.jinja_env.globals.update(
-        _=_gettext_with_overrides,
-        gettext=_gettext_with_overrides,
-        ngettext=_ngettext_with_overrides,
-    )
     app.jinja_env.install_gettext_callables(
-        _gettext_with_overrides, _ngettext_with_overrides, newstyle=True
+    _gettext_with_overrides,
+    _ngettext_with_overrides,
+    newstyle=True,   # enables %(name)s formatting
     )
 
+    app.jinja_env.globals["_"] = _gettext_with_overrides
+
+    # ✅ Ensure our binding persists *after* Babel hooks per-request
+    @app.before_request
+    def _rebind_gettext_per_request():
+        app.jinja_env.install_gettext_callables(
+            _gettext_with_overrides, _ngettext_with_overrides, newstyle=True
+        )
+        app.jinja_env.globals["_"] = _gettext_with_overrides
+        
     # ---- Inject JS labels + locale into templates (for pages that need it) ----
     @app.context_processor
     def inject_i18n_and_locale():
@@ -153,17 +181,20 @@ def create_app() -> Flask:
         by_msgid = get_overrides_msgid(loc)  # {msgid: value}
         by_key   = get_overrides(loc)        # {key: value}
         for key, msgid in BASE_LABEL_MSGIDS.items():
-            # default to catalog, then msgid override, then allow key to win for JS strings
             base = by_msgid.get(msgid) or _real_gettext(msgid)
             labels[key] = by_key.get(key, base)
 
+        # ⬇️ ADD THESE THREE KEYS to override Babel's context-level bindings
         return {
             "I18N": {"labels": labels},
             "current_locale": loc,
             "SUPPORTED_LOCALES": SUPPORTED_LOCALES,
             "LOCALE_FLAGS": LOCALE_FLAGS,
+            "_": _gettext_with_overrides,          # <—
+            "gettext": _gettext_with_overrides,    # <—
+            "ngettext": _ngettext_with_overrides,  # <—
         }
-
+    
     # ---- OAuth / Blueprints ----
     init_oauth(app)
     app.register_blueprint(auth_bp)
@@ -215,6 +246,24 @@ def create_app() -> Flask:
         resp = jsonify({"labels": labels, "locale": _canon_locale(raw)})
         resp.headers["Cache-Control"] = "no-store"
         return resp
+    
+    @app.get("/i18n/probe-json")
+    def i18n_probe_json():
+        s = request.args.get("s", "About")
+        loc = _canon_locale(str(get_locale() or "en"))
+        return jsonify({
+            "locale": loc,
+            "override": get_overrides_msgid(loc).get(s),
+            "gettext_with_overrides": _gettext_with_overrides(s),
+            "babel_gettext": _real_gettext(s),
+        })
+
+    @app.get("/i18n/probe-tpl")
+    def i18n_probe_tpl():
+        s = request.args.get("s", "About")
+        # Render via Jinja so we test what templates *actually* call.
+        out = render_template_string("{{ _('"+s.replace('\"','\\\"')+"') }}")
+        return out
 
     @app.get("/i18n/labels.js")
     def i18n_labels_js():

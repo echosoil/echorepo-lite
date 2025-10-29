@@ -161,11 +161,12 @@
       </div>
     </div>
   </footer>
+<!-- Bootstrap bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Bootstrap bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('i18n_admin.labels_js', locale=current_locale) }}"></script>
-  {% block extra_js %}{% endblock %}
+<!-- Load dynamic JS labels (built from overrides) -->
+<script src="{{ url_for('i18n_labels_js') }}?v=1"></script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>
-e

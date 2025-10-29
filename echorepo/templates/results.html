@@ -44,19 +44,58 @@
       border-radius: 12px;
       overflow: hidden;
     }
-    #map .leaflet-tile { -webkit-backface-visibility: hidden; backface-visibility: hidden; transform: translateZ(0); border:0!important; box-shadow:none!important; outline:0!important; }
-    #map .leaflet-tile-pane img.leaflet-tile { image-rendering:auto; outline:none!important; border:none!important; }
+    #map .leaflet-tile {
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform: translateZ(0);
+      border: 0 !important;
+      box-shadow: none !important;
+      outline: 0 !important;
+    }
+    #map .leaflet-tile-pane img.leaflet-tile {
+      image-rendering: auto;
+      outline: none !important;
+      border: none !important;
+    }
     .deg-rulers text { fill: rgba(0,0,0,0.65); }
 
     .toolbar { gap: .5rem; }
     .toolbar .btn { white-space: nowrap; }
 
-    .popup-card { max-width: 340px; font-size: 0.8rem; line-height: 1.25; }
-    .popup-card table { width:100%; font-size:0.8rem; margin:0; border-collapse:collapse; }
-    .popup-card th { white-space:nowrap; width:1%; color:#444; font-weight:600; padding:2px 6px; vertical-align:top; }
-    .popup-card td { color:#222; padding:2px 6px; }
-    .popup-card img { max-width:120px; height:auto; border-radius:6px; margin-top:.3rem; display:block; }
-    .radius-legend { background:#fff; border-radius:8px; padding:.4rem .6rem; box-shadow:0 2px 6px rgba(0,0,0,.12); font-size:.85rem; }
+    .popup-card {
+      max-width: 340px;
+      font-size: 0.8rem;
+      line-height: 1.25;
+    }
+    .popup-card table {
+      width: 100%;
+      font-size: 0.8rem;
+      margin: 0;
+      border-collapse: collapse;
+    }
+    .popup-card th {
+      white-space: nowrap;
+      width: 1%;
+      color: #444;
+      font-weight: 600;
+      padding: 2px 6px;
+      vertical-align: top;
+    }
+    .popup-card td {
+      color: #222;
+      padding: 2px 6px;
+    }
+    .popup-card img {
+      max-width: 120px;
+      height: auto;
+      border-radius: 6px;
+      margin-top: .3rem;
+      display: block;
+    }
+    .radius-legend {
+      background:#fff; border-radius:8px; padding:.4rem .6rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,.12); font-size:.85rem;
+    }
   </style>
 {% endblock %}
 
@@ -65,6 +104,7 @@
     <h2 class="h4 mb-1">{{ _('Your data') }}</h2>
     <p class="text-muted">{{ _('Explore your soil sample locations on the map, then export or browse the table.') }}</p>
 
+    {# 🔴 Only this red button remains #}
     {% if (issue_count|default(0)) > 0 %}
       <div class="mb-3">
         <a href="{{ url_for('errors.issues') }}"
@@ -146,47 +186,37 @@
 {% endblock %}
 
 {% block extra_js %}
-  <!-- Leaflet + MarkerCluster + Draw (defer for deterministic order) -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer crossorigin=""></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
-  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js" defer></script>
+  <!-- Leaflet + MarkerCluster + Draw -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
-  <!-- Copy user key -->
-  <script defer>
+  <!-- Tiny helper: copy user key -->
+  <script>
     (function(){
-      const onReady = () => {
-        const btn = document.getElementById('copyKeyBtn');
-        if (!btn) return;
-        btn.addEventListener('click', () => {
-          const text = document.getElementById('userKeyCopy')?.textContent?.trim() || '';
-          if(!text) return;
-          navigator.clipboard.writeText(text).then(() => {
-            btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
-            setTimeout(()=> btn.innerHTML = '<i class="bi bi-clipboard"></i>', 1400);
-          });
+      const btn = document.getElementById('copyKeyBtn');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const text = document.getElementById('userKeyCopy')?.textContent?.trim() || '';
+        if(!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+          btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+          setTimeout(()=> btn.innerHTML = '<i class="bi bi-clipboard"></i>', 1400);
         });
-      };
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', onReady);
-      } else {
-        onReady();
-      }
+      });
     })();
   </script>
 
-  {# Map config for map.js #}
+  {# JSON-safe config for map.js #}
   {% set cfg = {
       'jitter_m': jitter_m|default(1000)|int,
       'lat_col': lat_col|default('GPS_lat'),
       'lon_col': lon_col|default('GPS_long')
   } %}
-  <script defer>
-    window.ECHOREPO_CFG = {{ cfg | tojson }};
-  </script>
+  <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
 
-  {# IMPORTANT: load canonical JS labels BEFORE map.js #}
-  <script src="{{ url_for('i18n_admin.labels_js') }}" defer></script>
+  <!-- IMPORTANT: Do NOT redefine window.I18N here. labels.js (from base.html) already did it. -->
 
-  <!-- Your map logic (consumes window.I18N) -->
-  <script src="{{ url_for('static', filename='js/map.js') }}?v=9" defer></script>
+  <!-- Your map logic (consumes window.I18N.labels) -->
+  <script src="{{ url_for('static', filename='js/map.js') }}?v=8"></script>
 {% endblock %}
