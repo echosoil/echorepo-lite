@@ -1,0 +1,12 @@
+services:
+  echorepo-lite:
+    container_name: echorepo-lite    # keep the legacy/stable name
+    environment:
+      APP_ENV: prod
+    ports:
+      - "0.0.0.0:8001:8000"          # PUBLIC 8001 -> CONTAINER 8000
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10

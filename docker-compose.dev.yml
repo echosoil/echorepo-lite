@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  echorepo-lite:
+    # no container_name here; let Compose generate it
+    environment:
+      APP_ENV: dev
+      FLASK_DEBUG: "1"
+    ports:
+      - "127.0.0.1:18080:8000"   # only loopback on the server
