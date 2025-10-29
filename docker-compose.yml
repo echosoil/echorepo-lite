@@ -1,30 +1,29 @@
 version: "3.9"
+
 services:
   echorepo-lite:
     build: .
-    container_name: echorepo-lite
-    # Load your .env for other values, then override paths below
+    image: echorepo-lite:latest
     env_file:
       - .env
-    # environment:
-      # Make sure the app uses the in-container paths
-      # SQLITE_PATH: /data/db/echo.db
-      # INPUT_CSV: /data/echorepo_samples.csv
-      # USERS_CSV: /data/users.csv
-      # (optional) if you rely on these in templates/logic:
-      # LAT_COL: GPS_lat
-      # LON_COL: GPS_long
-      # USER_KEY_COLUMN: email
-    ports:
-      - "8001:8000"             # host:container
+    environment:
+      APP_ENV: ${APP_ENV:-prod}
+      # If you run Flask dev server, set these in .env or here:
+      # FLASK_RUN_HOST: 0.0.0.0
+      # FLASK_RUN_PORT: 8000
+      # If you run gunicorn, either use GUNICORN_CMD_ARGS below or your own command
+      # GUNICORN_CMD_ARGS: "--bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 60"
+    expose:
+      - "8000"
     volumes:
-      - ./data:/data            # CSV + DB shared with host
-      - ./static:/app/static:ro # static files
+      - ./data:/data
+      - ./static:/app/static:ro
       - ./echorepo/templates:/app/echorepo/templates:ro
-      - ./keys:/keys:ro      # <— add this so the service account JSON is visible
+      - ./keys:/keys:ro
       - ./echorepo/translations:/app/echorepo/translations:ro
-      - ./translations:/app/translations:ro                     # compiled MOs
+      - ./translations:/app/translations:ro
     restart: unless-stopped
+
   i18n:
     profiles: ["devtools"]
     build:
