@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-29 08:12+0000\n"
-"PO-Revision-Date: 2025-10-29 08:12+0000\n"
+"POT-Creation-Date: 2025-10-29 13:21+0000\n"
+"PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ro\n"
 "Language-Team: ro <LL@li.org>\n"
@@ -19,35 +19,100 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: echorepo/templates/auth.html:2
-msgid "Sign in — ECHOrepo"
-msgstr "Conectează-te la ECHOrepo"
+#: echorepo/routes/web.py:19
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
+msgstr "Raza de confidențialitate (~±_{km}_ km)"
 
-#: echorepo/templates/auth.html:8
-msgid "Sign in"
-msgstr "Semnează"
+#: echorepo/routes/web.py:20 echorepo/templates/results.html:243
+msgid "Soil pH"
+msgstr "PH-ul solului"
 
-#: echorepo/templates/auth.html:14
-msgid "Email"
-msgstr "Email"
+#: echorepo/routes/web.py:21 echorepo/templates/results.html:244
+msgid "Acidic (≤5.5)"
+msgstr "Acid (≤5,5)"
 
-#: echorepo/templates/auth.html:17
-msgid "you@example.com"
-msgstr "you@exemplu.com"
+#: echorepo/routes/web.py:22 echorepo/templates/results.html:245
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Ușor acidă (pphh)"
 
-#: echorepo/templates/auth.html:19
-msgid "Username is optional and ignored for authentication; useful for your own logs."
-msgstr ""
-"Numele de utilizator este opțional și ignorat pentru autentificare; util "
-"pentru propriile jurnale."
+#: echorepo/routes/web.py:23 echorepo/templates/results.html:246
+msgid "Neutral (6.5–7.5)"
+msgstr "Neutru (65/575)"
 
-#: echorepo/templates/auth.html:24 echorepo/templates/login.html:30
-msgid "Password"
-msgstr "Parolă"
+#: echorepo/routes/web.py:24 echorepo/templates/results.html:247
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Ușor alcalină (7,5"
 
-#: echorepo/templates/auth.html:30
-msgid "Enter"
-msgstr "Intră"
+#: echorepo/routes/web.py:25 echorepo/templates/results.html:248
+msgid "Alkaline (≥8.5)"
+msgstr "Alkalină (≥ 8, 5)"
+
+#: echorepo/routes/web.py:26 echorepo/templates/results.html:225
+msgid "Your samples"
+msgstr "Mostrele tale"
+
+#: echorepo/routes/web.py:27 echorepo/templates/results.html:226
+msgid "Other samples"
+msgstr "Alte eșantioane"
+
+#: echorepo/routes/web.py:28 echorepo/templates/results.html:227
+msgid "Export"
+msgstr "Exportă"
+
+#: echorepo/routes/web.py:29 echorepo/templates/results.html:228
+msgid "Clear"
+msgstr "Clar"
+
+#: echorepo/routes/web.py:30
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr "Export filtrat ({n})"
+
+#: echorepo/routes/web.py:31 echorepo/templates/results.html:231
+msgid "Date"
+msgstr "Dată"
+
+#: echorepo/routes/web.py:32 echorepo/templates/results.html:232
+msgid "QR code"
+msgstr "Codul QR"
+
+#: echorepo/routes/web.py:33 echorepo/templates/results.html:167
+#: echorepo/templates/results.html:233
+msgid "pH"
+msgstr "p H"
+
+#: echorepo/routes/web.py:34 echorepo/templates/results.html:234
+msgid "Colour"
+msgstr "Culoare"
+
+#: echorepo/routes/web.py:35 echorepo/templates/results.html:235
+msgid "Texture"
+msgstr "Textură"
+
+#: echorepo/routes/web.py:36 echorepo/templates/results.html:236
+msgid "Structure"
+msgstr "Structura"
+
+#: echorepo/routes/web.py:37 echorepo/templates/results.html:237
+msgid "Earthworms"
+msgstr "Viermi"
+
+#: echorepo/routes/web.py:38 echorepo/templates/results.html:238
+msgid "Plastic"
+msgstr "Plastic"
+
+#: echorepo/routes/web.py:39 echorepo/templates/results.html:239
+msgid "Debris"
+msgstr "Debris"
+
+#: echorepo/routes/web.py:40 echorepo/templates/results.html:240
+msgid "Contamination"
+msgstr "Contaminarea"
+
+#: echorepo/routes/web.py:41 echorepo/templates/results.html:241
+msgid "Metals"
+msgstr "Metale"
 
 #: echorepo/templates/base.html:6 echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
@@ -67,71 +132,71 @@ msgstr ""
 msgid "Skip to content"
 msgstr "Sari la conținut"
 
-#: echorepo/templates/base.html:81
+#: echorepo/templates/base.html:85
 msgid "Primary"
 msgstr "Primare"
 
-#: echorepo/templates/base.html:84
+#: echorepo/templates/base.html:88
 msgid "ECHOrepo logo"
 msgstr "Sigla ECHOrepo"
 
-#: echorepo/templates/base.html:89
+#: echorepo/templates/base.html:93
 msgid "Toggle navigation"
 msgstr "Comută navigația"
 
-#: echorepo/templates/base.html:95
+#: echorepo/templates/base.html:99
 msgid "About"
 msgstr "Despre"
 
-#: echorepo/templates/base.html:96
+#: echorepo/templates/base.html:100
 msgid "For Participants"
 msgstr "Pentru participanți"
 
-#: echorepo/templates/base.html:97
+#: echorepo/templates/base.html:101
 msgid "Partners"
 msgstr "Parteneri"
 
-#: echorepo/templates/base.html:98
+#: echorepo/templates/base.html:102
 msgid "News & Events"
 msgstr "Noutăți și evenimente"
 
-#: echorepo/templates/base.html:100
+#: echorepo/templates/base.html:104
 msgid "Resources"
 msgstr "Resurse"
 
-#: echorepo/templates/base.html:102
+#: echorepo/templates/base.html:106
 msgid "Media Kit"
 msgstr "Kit media"
 
-#: echorepo/templates/base.html:103
+#: echorepo/templates/base.html:107
 msgid "Publications"
 msgstr "Publicaţii"
 
-#: echorepo/templates/base.html:104
+#: echorepo/templates/base.html:108
 msgid "Newsletter Archive"
 msgstr "Arhiva Newsletter"
 
-#: echorepo/templates/base.html:116
+#: echorepo/templates/base.html:120
 msgid "Change language"
 msgstr "Schimbă limba"
 
-#: echorepo/templates/base.html:148
+#: echorepo/templates/base.html:152
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo face parte din finanțarea UE și a UKRI"
 
-#: echorepo/templates/base.html:148
+#: echorepo/templates/base.html:152
 msgid "project"
 msgstr "proiect"
 
-#: echorepo/templates/base.html:150
+#: echorepo/templates/base.html:154
 msgid "Need help?"
 msgstr "Ai nevoie de ajutor?"
 
-#: echorepo/templates/base.html:154
+#: echorepo/templates/base.html:158
 msgid "EU-funded"
 msgstr "Finanțată de UE"
 
-#: echorepo/templates/base.html:155
+#: echorepo/templates/base.html:159
 msgid "EU-funded initiative"
 msgstr "Inițiativa finanțată de UE"
 
@@ -228,6 +293,10 @@ msgstr "E-mail sau nume de utilizator"
 msgid "you@example.org"
 msgstr "you@exemplu.org"
 
+#: echorepo/templates/login.html:30
+msgid "Password"
+msgstr "Parolă"
+
 #: echorepo/templates/login.html:40
 msgid "Continue"
 msgstr "Continuă"
@@ -313,10 +382,6 @@ msgstr "Toate eșantioanele (CSV, anonimizate)"
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (per-utilizator)"
 
-#: echorepo/templates/results.html:167 echorepo/templates/results.html:233
-msgid "pH"
-msgstr "p H"
-
 #: echorepo/templates/results.html:169
 msgid "min"
 msgstr "min"
@@ -341,93 +406,13 @@ msgstr "Exportă rânduri de potrivire filtru curent pH"
 msgid "Export filtered (0)"
 msgstr "Export filtrat (0)"
 
-#: echorepo/templates/results.html:225
-msgid "Your samples"
-msgstr "Mostrele tale"
-
-#: echorepo/templates/results.html:226
-msgid "Other samples"
-msgstr "Alte eșantioane"
-
-#: echorepo/templates/results.html:227
-msgid "Export"
-msgstr "Exportă"
-
-#: echorepo/templates/results.html:228
-msgid "Clear"
-msgstr "Clar"
-
 #: echorepo/templates/results.html:229
 #, python-format
 msgid "Export filtered (%(n)s)"
 msgstr "Export filtrat (%(n)s)"
 
-#: echorepo/templates/results.html:231
-msgid "Date"
-msgstr "Dată"
-
-#: echorepo/templates/results.html:232
-msgid "QR code"
-msgstr "Codul QR"
-
-#: echorepo/templates/results.html:234
-msgid "Colour"
-msgstr "Culoare"
-
-#: echorepo/templates/results.html:235
-msgid "Texture"
-msgstr "Textură"
-
-#: echorepo/templates/results.html:236
-msgid "Structure"
-msgstr "Structura"
-
-#: echorepo/templates/results.html:237
-msgid "Earthworms"
-msgstr "Viermi"
-
-#: echorepo/templates/results.html:238
-msgid "Plastic"
-msgstr "Plastic"
-
-#: echorepo/templates/results.html:239
-msgid "Debris"
-msgstr "Debris"
-
-#: echorepo/templates/results.html:240
-msgid "Contamination"
-msgstr "Contaminarea"
-
-#: echorepo/templates/results.html:241
-msgid "Metals"
-msgstr "Metale"
-
 #: echorepo/templates/results.html:242
 #, python-format
 msgid "Privacy radius (~±%(km)s km)"
 msgstr "Raza de confidențialitate (~±_%(km)s_ km)"
-
-#: echorepo/templates/results.html:243
-msgid "Soil pH"
-msgstr "PH-ul solului"
-
-#: echorepo/templates/results.html:244
-msgid "Acidic (≤5.5)"
-msgstr "Acid (≤5,5)"
-
-#: echorepo/templates/results.html:245
-msgid "Slightly acidic (5.5–6.5)"
-msgstr "Ușor acidă (pphh)"
-
-#: echorepo/templates/results.html:246
-msgid "Neutral (6.5–7.5)"
-msgstr "Neutru (65/575)"
-
-#: echorepo/templates/results.html:247
-msgid "Slightly alkaline (7.5–8.5)"
-msgstr "Ușor alcalină (7,5"
-
-#: echorepo/templates/results.html:248
-msgid "Alkaline (≥8.5)"
-msgstr "Alkalină (≥ 8, 5)"
 

@@ -1,43 +1,27 @@
+# echorepo/__init__.py
 import os
-from flask import Flask
-from flask_babel import get_locale
+import json
+from flask import Flask, jsonify, make_response
+from flask_babel import get_locale, gettext as _real_gettext, ngettext as _real_ngettext
+
 from .config import settings
 from .auth.routes import auth_bp, init_oauth
 from .routes.web import web_bp
 from .routes.api import api_bp
-from .services.db import init_db_sanity
+from .routes.i18n_admin import bp as i18n_admin_bp
 from .routes.errors import errors_bp
-from .i18n import init_i18n, lang_bp, build_i18n_labels  # <- use centralized builder
-from echorepo.routes.i18n_admin import bp as i18n_admin_bp
+from .services.db import init_db_sanity
+from .services.i18n_overrides import get_overrides, get_overrides_msgid
+from .i18n import init_i18n, lang_bp, BASE_LABEL_MSGIDS
 
-# Optional: base labels here or import from a helper if you split it
-from flask_babel import gettext as _
-def _base_labels() -> dict:
-    return {
-        "privacyRadius": _("Privacy radius (~±{km} km)"),
-        "soilPh": _("Soil pH"),
-        "acid": _("Acidic (≤5.5)"),
-        "slightlyAcid": _("Slightly acidic (5.5–6.5)"),
-        "neutral": _("Neutral (6.5–7.5)"),
-        "slightlyAlkaline": _("Slightly alkaline (7.5–8.5)"),
-        "alkaline": _("Alkaline (≥8.5)"),
-        "yourSamples": _("Your samples"),
-        "otherSamples": _("Other samples"),
-        "export": _("Export"),
-        "clear": _("Clear"),
-        "exportFiltered": _("Export filtered ({n})"),
-        "date": _("Date"),
-        "qr": _("QR code"),
-        "ph": _("pH"),
-        "colour": _("Colour"),
-        "texture": _("Texture"),
-        "structure": _("Structure"),
-        "earthworms": _("Earthworms"),
-        "plastic": _("Plastic"),
-        "debris": _("Debris"),
-        "contamination": _("Contamination"),
-        "metals": _("Metals"),
-    }
+
+# ---------- helpers ----------
+def _canon_locale(lang: str) -> str:
+    if not lang:
+        return "en"
+    lang = lang.strip().lower().replace("-", "_")
+    return lang.split("_", 1)[0]
+
 
 def _default_flags(codes):
     base = {
@@ -49,6 +33,27 @@ def _default_flags(codes):
         out.setdefault(c, "gb")
     return out
 
+
+def _build_labels_for_locale(loc: str) -> dict:
+    """
+    Build the JS label dict for the current locale.
+    Priority: key-override > msgid-override > gettext
+    """
+    loc = _canon_locale(loc or "en")
+    by_msgid = get_overrides_msgid(loc) or {}
+    by_key   = get_overrides(loc) or {}
+
+    labels = {}
+    for key, msgid in BASE_LABEL_MSGIDS.items():
+        # prefer explicit key override for JS strings
+        text = by_key.get(key)
+        if text is None or text == "":
+            text = by_msgid.get(msgid) or _real_gettext(msgid)
+        labels[key] = text
+    return labels
+
+
+# ---------- create app ----------
 def create_app() -> Flask:
     pkg_dir = os.path.dirname(__file__)
     app = Flask(
@@ -65,6 +70,7 @@ def create_app() -> Flask:
     app.config.update(
         SESSION_COOKIE_SAMESITE=settings.SESSION_COOKIE_SAMESITE,
         SESSION_COOKIE_SECURE=settings.SESSION_COOKIE_SECURE,
+
         # General settings
         LAT_COL=getattr(settings, "LAT_COL", "GPS_lat"),
         LON_COL=getattr(settings, "LON_COL", "GPS_long"),
@@ -75,14 +81,18 @@ def create_app() -> Flask:
         ORIG_COL_SUFFIX=getattr(settings, "ORIG_COL_SUFFIX", "_orig"),
         HIDE_ORIG_COLS=getattr(settings, "HIDE_ORIG_COLS", True),
         MAX_JITTER_METERS=getattr(settings, "MAX_JITTER_METERS", 1000),
-        # Firebase settings
+
+        # Firebase / creds
         FIREBASE_PROJECT_ID=getattr(settings, "FIREBASE_PROJECT_ID", None),
         GOOGLE_APPLICATION_CREDENTIALS=getattr(settings, "GOOGLE_APPLICATION_CREDENTIALS", None),
+
+        # Overrides storage path
+        I18N_OVERRIDES_PATH=os.environ.get("I18N_OVERRIDES_PATH", "/data/i18n_overrides.json"),
     )
 
     # ---- i18n ----
-    init_i18n(app)          # sets up Babel, locale selection, etc.
-    app.register_blueprint(lang_bp)   # /set-lang/<code>
+    init_i18n(app)                 # set up Babel, locale selection, etc.
+    app.register_blueprint(lang_bp)  # /set-lang/<code>
 
     # Supported locales & flags (from settings or defaults)
     SUPPORTED_LOCALES = getattr(
@@ -91,17 +101,62 @@ def create_app() -> Flask:
     )
     LOCALE_FLAGS = getattr(settings, "LOCALE_FLAGS", _default_flags(SUPPORTED_LOCALES))
 
-    # ---- Global template context: I18N + locale info ----
+    # ---- Override-aware gettext for templates (incl. {% trans %}) ----
+    def _gettext_with_overrides(msgid, **kwargs):
+        loc = _canon_locale(str(get_locale() or "en"))
+        ov = get_overrides_msgid(loc).get(msgid)
+        text = ov if (ov is not None and ov != "") else _real_gettext(msgid)
+        if kwargs:
+            try:
+                text = text % kwargs
+            except Exception:
+                pass
+        return text
+
+    def _ngettext_with_overrides(singular, plural, n, **kwargs):
+        loc = _canon_locale(str(get_locale() or "en"))
+        ov_s = get_overrides_msgid(loc).get(singular)
+        ov_p = get_overrides_msgid(loc).get(plural)
+        if n == 1 and ov_s not in (None, ""):
+            text = ov_s
+        elif n != 1 and ov_p not in (None, ""):
+            text = ov_p
+        else:
+            text = _real_ngettext(singular, plural, n)
+        if kwargs:
+            try:
+                text = text % kwargs
+            except Exception:
+                pass
+        return text
+
+    # Make Jinja use our override-aware functions everywhere
+    app.jinja_env.globals.update(
+        _=_gettext_with_overrides,
+        gettext=_gettext_with_overrides,
+        ngettext=_ngettext_with_overrides,
+    )
+    app.jinja_env.install_gettext_callables(
+        _gettext_with_overrides, _ngettext_with_overrides, newstyle=True
+    )
+
+    # ---- Inject JS labels + locale into templates (for pages that need it) ----
     @app.context_processor
     def inject_i18n_and_locale():
         try:
-            labels = build_i18n_labels(_base_labels())  # merges DB overrides on top
-        except Exception:
-            labels = {}
-        try:
-            loc = str(get_locale() or "en")
+            loc = _canon_locale(str(get_locale() or "en"))
         except Exception:
             loc = "en"
+
+        # Build JS labels with both override layers
+        labels = {}
+        by_msgid = get_overrides_msgid(loc)  # {msgid: value}
+        by_key   = get_overrides(loc)        # {key: value}
+        for key, msgid in BASE_LABEL_MSGIDS.items():
+            # default to catalog, then msgid override, then allow key to win for JS strings
+            base = by_msgid.get(msgid) or _real_gettext(msgid)
+            labels[key] = by_key.get(key, base)
+
         return {
             "I18N": {"labels": labels},
             "current_locale": loc,
@@ -111,14 +166,13 @@ def create_app() -> Flask:
 
     # ---- OAuth / Blueprints ----
     init_oauth(app)
-
     app.register_blueprint(auth_bp)
     app.register_blueprint(i18n_admin_bp)  # /i18n/admin
     app.register_blueprint(web_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(errors_bp)
 
-    # ---- Back-compat endpoint aliases (so url_for('home') still works) ----
+    # ---- Back-compat endpoint aliases ----
     alias_map = [
         # web
         ("home",               "web.home",               "/",                  ["GET"]),
@@ -137,7 +191,6 @@ def create_app() -> Flask:
         ("sso_password_login", "auth.sso_password_login", "/login",        ["POST"]),
         ("logout",             "auth.logout",             "/logout",       ["GET"]),
         ("sso_callback",       "auth.sso_callback",       "/sso/callback", ["GET"]),
-        # ("sso_login",          "auth.sso_login",          "/sso/login",    ["GET"]),
     ]
     for ep, target, rule, methods in alias_map:
         app.add_url_rule(
@@ -147,7 +200,67 @@ def create_app() -> Flask:
             methods=methods,
         )
 
+    # ---- DB sanity ----
     with app.app_context():
         init_db_sanity()
+
+    # ---- i18n JSON/JS endpoints for the frontend ----
+    @app.get("/i18n/labels.json")
+    def i18n_labels_json():
+        try:
+            raw = str(get_locale() or "en")
+        except Exception:
+            raw = "en"
+        labels = _build_labels_for_locale(raw)
+        resp = jsonify({"labels": labels, "locale": _canon_locale(raw)})
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    @app.get("/i18n/labels.js")
+    def i18n_labels_js():
+        try:
+            raw = str(get_locale() or "en")
+        except Exception:
+            raw = "en"
+        labels = _build_labels_for_locale(raw)
+        payload = "window.I18N = " + json.dumps({"labels": labels}, ensure_ascii=False) + ";"
+        resp = make_response(payload, 200)
+        resp.headers["Content-Type"] = "application/javascript; charset=utf-8"
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    # ---- Debugging endpoints ----
+    @app.get("/i18n/debug")
+    def i18n_debug():
+        try:
+            loc_raw = str(get_locale() or "en")
+        except Exception:
+            loc_raw = "en"
+        loc = _canon_locale(loc_raw)
+        labels = _build_labels_for_locale(loc)
+        return jsonify({
+            "locale_raw": loc_raw,
+            "locale_canon": loc,
+            "labels_count": len(labels),
+            "labels_sample": {k: labels[k] for k in list(labels)[:10]},
+            "has_privacyRadius": "privacyRadius" in labels,
+            "privacyRadius": labels.get("privacyRadius"),
+        })
+
+    @app.get("/i18n/check-overrides")
+    def i18n_check_overrides():
+        loc = _canon_locale(str(get_locale() or "en"))
+        return jsonify({
+            "locale": loc,
+            "by_key": get_overrides(loc),
+            "by_msgid": get_overrides_msgid(loc),
+        })
+
+    # ---- No-cache for HTML ----
+    @app.after_request
+    def nocache_html(resp):
+        if resp.mimetype == "text/html":
+            resp.headers["Cache-Control"] = "no-store"
+        return resp
 
     return app

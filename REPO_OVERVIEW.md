@@ -7,16 +7,6 @@
 
 ## Routes (best-effort scan)
 
-- `/api/user`  _(in .venv/lib/python3.10/site-packages/authlib/integrations/flask_oauth2/resource_protector.py)_
-- `/user`  _(in .venv/lib/python3.10/site-packages/authlib/integrations/flask_oauth2/resource_protector.py)_
-- `/oauth/userinfo`  _(in .venv/lib/python3.10/site-packages/authlib/oidc/core/userinfo.py)_
-- `/`  _(in .venv/lib/python3.10/site-packages/flask/ctx.py)_
-- `/`  _(in .venv/lib/python3.10/site-packages/flask/ctx.py)_
-- `/uploads/<path:name>`  _(in .venv/lib/python3.10/site-packages/flask/helpers.py)_
-- `/`  _(in .venv/lib/python3.10/site-packages/flask/sansio/scaffold.py)_
-- `/`  _(in .venv/lib/python3.10/site-packages/flask/sansio/scaffold.py)_
-- `/`  _(in .venv/lib/python3.10/site-packages/flask_babel/__init__.py)_
-- `/`  _(in .venv/lib/python3.10/site-packages/flask_babel/__init__.py)_
 - `/<lang_code>`  _(in echorepo/i18n.py)_
 
 ## Directory tree (depth ≤ 3)
@@ -35,12 +25,10 @@
 ├── data
 │   ├── .gitkeep
 │   ├── db
-│   │   ├── .gitkeep
-│   │   ├── echo.db
-│   │   └── echo.db.sig
-│   ├── echorepo_samples.csv
-│   ├── echorepo_samples_with_email.csv
-│   └── users.csv
+│   │   └── .gitkeep
+│   ├── X.csv
+│   ├── Y.csv
+│   └── Z.csv
 ├── docker-compose.yml
 ├── echorepo
 │   ├── __init__.py
@@ -66,7 +54,6 @@
 │   │   ├── planned.py
 │   │   └── validation.py
 │   ├── templates
-│   │   ├── auth.html
 │   │   ├── base.html
 │   │   ├── issues.html
 │   │   ├── login.html

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-29 08:12+0000\n"
-"PO-Revision-Date: 2025-10-29 08:12+0000\n"
+"POT-Creation-Date: 2025-10-29 13:21+0000\n"
+"PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
 "Language-Team: cs <LL@li.org>\n"
@@ -18,35 +18,100 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: echorepo/templates/auth.html:2
-msgid "Sign in — ECHOrepo"
-msgstr "Přihlásit se - ECHOrepo"
+#: echorepo/routes/web.py:19
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
+msgstr "Poloměr ochrany soukromí (~ ±{km}km)"
 
-#: echorepo/templates/auth.html:8
-msgid "Sign in"
-msgstr "Přihlaste se"
+#: echorepo/routes/web.py:20 echorepo/templates/results.html:243
+msgid "Soil pH"
+msgstr "PH půdy"
 
-#: echorepo/templates/auth.html:14
-msgid "Email"
-msgstr "E-mail"
+#: echorepo/routes/web.py:21 echorepo/templates/results.html:244
+msgid "Acidic (≤5.5)"
+msgstr "Acidic (≤ 5, 5)"
 
-#: echorepo/templates/auth.html:17
-msgid "you@example.com"
-msgstr "@ example.com"
+#: echorepo/routes/web.py:22 echorepo/templates/results.html:245
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Mírně kyselé (5.5- 6.5)"
 
-#: echorepo/templates/auth.html:19
-msgid "Username is optional and ignored for authentication; useful for your own logs."
-msgstr ""
-"Uživatelské jméno je volitelné a ignorováno pro ověření; užitečné pro vaše "
-"vlastní protokoly."
+#: echorepo/routes/web.py:23 echorepo/templates/results.html:246
+msgid "Neutral (6.5–7.5)"
+msgstr "Neutrální (6, 5- 7, 5)"
 
-#: echorepo/templates/auth.html:24 echorepo/templates/login.html:30
-msgid "Password"
-msgstr "Heslo"
+#: echorepo/routes/web.py:24 echorepo/templates/results.html:247
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Mírně alkalické (7.5- 8.5)"
 
-#: echorepo/templates/auth.html:30
-msgid "Enter"
-msgstr "Zadejte"
+#: echorepo/routes/web.py:25 echorepo/templates/results.html:248
+msgid "Alkaline (≥8.5)"
+msgstr "Alkalické (≥ 8, 5)"
+
+#: echorepo/routes/web.py:26 echorepo/templates/results.html:225
+msgid "Your samples"
+msgstr "Vaše vzorky"
+
+#: echorepo/routes/web.py:27 echorepo/templates/results.html:226
+msgid "Other samples"
+msgstr "Ostatní vzorky"
+
+#: echorepo/routes/web.py:28 echorepo/templates/results.html:227
+msgid "Export"
+msgstr "Vývoz"
+
+#: echorepo/routes/web.py:29 echorepo/templates/results.html:228
+msgid "Clear"
+msgstr "Vyčistit"
+
+#: echorepo/routes/web.py:30
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr "Exportní filtrovaný ({n})"
+
+#: echorepo/routes/web.py:31 echorepo/templates/results.html:231
+msgid "Date"
+msgstr "Datum"
+
+#: echorepo/routes/web.py:32 echorepo/templates/results.html:232
+msgid "QR code"
+msgstr "Kód QR"
+
+#: echorepo/routes/web.py:33 echorepo/templates/results.html:167
+#: echorepo/templates/results.html:233
+msgid "pH"
+msgstr "p H"
+
+#: echorepo/routes/web.py:34 echorepo/templates/results.html:234
+msgid "Colour"
+msgstr "Barva"
+
+#: echorepo/routes/web.py:35 echorepo/templates/results.html:235
+msgid "Texture"
+msgstr "Textura"
+
+#: echorepo/routes/web.py:36 echorepo/templates/results.html:236
+msgid "Structure"
+msgstr "Struktura"
+
+#: echorepo/routes/web.py:37 echorepo/templates/results.html:237
+msgid "Earthworms"
+msgstr "Žížaly"
+
+#: echorepo/routes/web.py:38 echorepo/templates/results.html:238
+msgid "Plastic"
+msgstr "Plastové"
+
+#: echorepo/routes/web.py:39 echorepo/templates/results.html:239
+msgid "Debris"
+msgstr "Nedostatky"
+
+#: echorepo/routes/web.py:40 echorepo/templates/results.html:240
+msgid "Contamination"
+msgstr "Kontaminace"
+
+#: echorepo/routes/web.py:41 echorepo/templates/results.html:241
+msgid "Metals"
+msgstr "Kovy"
 
 #: echorepo/templates/base.html:6 echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
@@ -64,71 +129,71 @@ msgstr "Přístup a stahování vzorků půdy. Část projektu ECHO financované
 msgid "Skip to content"
 msgstr "Přeskočit na obsah"
 
-#: echorepo/templates/base.html:81
+#: echorepo/templates/base.html:85
 msgid "Primary"
 msgstr "Primární"
 
-#: echorepo/templates/base.html:84
+#: echorepo/templates/base.html:88
 msgid "ECHOrepo logo"
 msgstr "Logo ECHOrepo"
 
-#: echorepo/templates/base.html:89
+#: echorepo/templates/base.html:93
 msgid "Toggle navigation"
 msgstr "Přepnout navigaci"
 
-#: echorepo/templates/base.html:95
+#: echorepo/templates/base.html:99
 msgid "About"
 msgstr "O"
 
-#: echorepo/templates/base.html:96
+#: echorepo/templates/base.html:100
 msgid "For Participants"
 msgstr "Pro účastníky"
 
-#: echorepo/templates/base.html:97
+#: echorepo/templates/base.html:101
 msgid "Partners"
 msgstr "Partneři"
 
-#: echorepo/templates/base.html:98
+#: echorepo/templates/base.html:102
 msgid "News & Events"
 msgstr "Novinky a události"
 
-#: echorepo/templates/base.html:100
+#: echorepo/templates/base.html:104
 msgid "Resources"
 msgstr "Zdroje"
 
-#: echorepo/templates/base.html:102
+#: echorepo/templates/base.html:106
 msgid "Media Kit"
 msgstr "Media Kit"
 
-#: echorepo/templates/base.html:103
+#: echorepo/templates/base.html:107
 msgid "Publications"
 msgstr "Publikace"
 
-#: echorepo/templates/base.html:104
+#: echorepo/templates/base.html:108
 msgid "Newsletter Archive"
 msgstr "Name"
 
-#: echorepo/templates/base.html:116
+#: echorepo/templates/base.html:120
 msgid "Change language"
 msgstr "Změnit jazyk"
 
-#: echorepo/templates/base.html:148
+#: echorepo/templates/base.html:152
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo je součástí financovaných EU a UKRI-"
 
-#: echorepo/templates/base.html:148
+#: echorepo/templates/base.html:152
 msgid "project"
 msgstr "projekt"
 
-#: echorepo/templates/base.html:150
+#: echorepo/templates/base.html:154
 msgid "Need help?"
 msgstr "Potřebuješ pomoc?"
 
-#: echorepo/templates/base.html:154
+#: echorepo/templates/base.html:158
 msgid "EU-funded"
 msgstr "Financování EU"
 
-#: echorepo/templates/base.html:155
+#: echorepo/templates/base.html:159
 msgid "EU-funded initiative"
 msgstr "Iniciativa financovaná EU"
 
@@ -225,6 +290,10 @@ msgstr "E-mail nebo uživatelské jméno"
 msgid "you@example.org"
 msgstr "@ example.org"
 
+#: echorepo/templates/login.html:30
+msgid "Password"
+msgstr "Heslo"
+
 #: echorepo/templates/login.html:40
 msgid "Continue"
 msgstr "Pokračovat"
@@ -310,10 +379,6 @@ msgstr "Všechny vzorky (CSV, anonymizované)"
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (per- user)"
 
-#: echorepo/templates/results.html:167 echorepo/templates/results.html:233
-msgid "pH"
-msgstr "p H"
-
 #: echorepo/templates/results.html:169
 msgid "min"
 msgstr "min"
@@ -338,93 +403,13 @@ msgstr "Exportovat řádky odpovídající současnému pH filtru"
 msgid "Export filtered (0)"
 msgstr "Exportní filtrovaný (0)"
 
-#: echorepo/templates/results.html:225
-msgid "Your samples"
-msgstr "Vaše vzorky"
-
-#: echorepo/templates/results.html:226
-msgid "Other samples"
-msgstr "Ostatní vzorky"
-
-#: echorepo/templates/results.html:227
-msgid "Export"
-msgstr "Vývoz"
-
-#: echorepo/templates/results.html:228
-msgid "Clear"
-msgstr "Vyčistit"
-
 #: echorepo/templates/results.html:229
 #, python-format
 msgid "Export filtered (%(n)s)"
 msgstr "Exportní filtrovaný (%(n)s)"
 
-#: echorepo/templates/results.html:231
-msgid "Date"
-msgstr "Datum"
-
-#: echorepo/templates/results.html:232
-msgid "QR code"
-msgstr "Kód QR"
-
-#: echorepo/templates/results.html:234
-msgid "Colour"
-msgstr "Barva"
-
-#: echorepo/templates/results.html:235
-msgid "Texture"
-msgstr "Textura"
-
-#: echorepo/templates/results.html:236
-msgid "Structure"
-msgstr "Struktura"
-
-#: echorepo/templates/results.html:237
-msgid "Earthworms"
-msgstr "Žížaly"
-
-#: echorepo/templates/results.html:238
-msgid "Plastic"
-msgstr "Plastové"
-
-#: echorepo/templates/results.html:239
-msgid "Debris"
-msgstr "Nedostatky"
-
-#: echorepo/templates/results.html:240
-msgid "Contamination"
-msgstr "Kontaminace"
-
-#: echorepo/templates/results.html:241
-msgid "Metals"
-msgstr "Kovy"
-
 #: echorepo/templates/results.html:242
 #, python-format
 msgid "Privacy radius (~±%(km)s km)"
 msgstr "Poloměr ochrany soukromí (~ ±%(km)skm)"
-
-#: echorepo/templates/results.html:243
-msgid "Soil pH"
-msgstr "PH půdy"
-
-#: echorepo/templates/results.html:244
-msgid "Acidic (≤5.5)"
-msgstr "Acidic (≤ 5, 5)"
-
-#: echorepo/templates/results.html:245
-msgid "Slightly acidic (5.5–6.5)"
-msgstr "Mírně kyselé (5.5- 6.5)"
-
-#: echorepo/templates/results.html:246
-msgid "Neutral (6.5–7.5)"
-msgstr "Neutrální (6, 5- 7, 5)"
-
-#: echorepo/templates/results.html:247
-msgid "Slightly alkaline (7.5–8.5)"
-msgstr "Mírně alkalické (7.5- 8.5)"
-
-#: echorepo/templates/results.html:248
-msgid "Alkaline (≥8.5)"
-msgstr "Alkalické (≥ 8, 5)"
 

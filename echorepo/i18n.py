@@ -1,38 +1,42 @@
 # echorepo/i18n.py
 from flask import Blueprint, redirect, request, session, url_for, current_app, g
-from flask_babel import Babel, _, get_locale
+from flask_babel import Babel, _, get_locale, gettext as _real_gettext
 from werkzeug.user_agent import UserAgent
 import os
 from .services.i18n_overrides import get_overrides
 
 SUPPORTED_LOCALES = ["en","cs","nl","fi","fr","de","el","it","pl","pt","ro","sk","es"]
 
+# Raw English msgids used for JS labels
+BASE_LABEL_MSGIDS = {
+    "privacyRadius": "Privacy radius (~±{km} km)",
+    "soilPh": "Soil pH",
+    "acid": "Acidic (≤5.5)",
+    "slightlyAcid": "Slightly acidic (5.5–6.5)",
+    "neutral": "Neutral (6.5–7.5)",
+    "slightlyAlkaline": "Slightly alkaline (7.5–8.5)",
+    "alkaline": "Alkaline (≥8.5)",
+    "yourSamples": "Your samples",
+    "otherSamples": "Other samples",
+    "export": "Export",
+    "clear": "Clear",
+    "exportFiltered": "Export filtered ({n})",
+    "date": "Date",
+    "qr": "QR code",
+    "ph": "pH",
+    "colour": "Colour",
+    "texture": "Texture",
+    "structure": "Structure",
+    "earthworms": "Earthworms",
+    "plastic": "Plastic",
+    "debris": "Debris",
+    "contamination": "Contamination",
+    "metals": "Metals",
+}
+
 def base_labels() -> dict:
-    return {
-        "privacyRadius": _("Privacy radius (~±{km} km)"),
-        "soilPh": _("Soil pH"),
-        "acid": _("Acidic (≤5.5)"),
-        "slightlyAcid": _("Slightly acidic (5.5–6.5)"),
-        "neutral": _("Neutral (6.5–7.5)"),
-        "slightlyAlkaline": _("Slightly alkaline (7.5–8.5)"),
-        "alkaline": _("Alkaline (≥8.5)"),
-        "yourSamples": _("Your samples"),
-        "otherSamples": _("Other samples"),
-        "export": _("Export"),
-        "clear": _("Clear"),
-        "exportFiltered": _("Export filtered ({n})"),
-        "date": _("Date"),
-        "qr": _("QR code"),
-        "ph": _("pH"),
-        "colour": _("Colour"),
-        "texture": _("Texture"),
-        "structure": _("Structure"),
-        "earthworms": _("Earthworms"),
-        "plastic": _("Plastic"),
-        "debris": _("Debris"),
-        "contamination": _("Contamination"),
-        "metals": _("Metals"),
-    }
+    # Translate the msgids for current locale
+    return {k: _real_gettext(v) for k, v in BASE_LABEL_MSGIDS.items()}
 
 def build_i18n_labels(base: dict | None = None) -> dict:
     try:

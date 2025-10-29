@@ -1,50 +1,64 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-import sqlite3
-from pathlib import Path
-from typing import Dict, Optional
-from flask import current_app
+# echorepo/services/i18n_overrides.py
+import json, os, threading
 
-# Uses your existing SQLite under /data/db/echo.db
-def _db_path() -> Path:
-    # If you already centralize DB path, reuse that; otherwise:
-    p = Path(current_app.config.get("SQLITE_PATH", "/data/db/echo.db"))
-    p.parent.mkdir(parents=True, exist_ok=True)
-    return p
+_LOCK = threading.Lock()
 
-def _conn():
-    c = sqlite3.connect(str(_db_path()))
-    c.row_factory = sqlite3.Row
-    return c
+def _canon_locale(lang: str) -> str:
+    if not lang:
+        return "en"
+    lang = lang.strip().lower().replace("-", "_")
+    return lang.split("_", 1)[0]   # "es_es" → "es"
 
-def ensure_schema():
-    with _conn() as cx:
-        cx.execute("""
-            CREATE TABLE IF NOT EXISTS i18n_overrides (
-                locale TEXT NOT NULL,
-                key     TEXT NOT NULL,       -- your UI key, e.g. 'privacyRadius'
-                value   TEXT NOT NULL,       -- override translation
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (locale, key)
-            )
-        """)
+# One place on disk (must be RW). You mount ./data:/data so this works.
+_OVERRIDES_PATH = os.environ.get("I18N_OVERRIDES_PATH", "/data/i18n_overrides.json")
 
-def get_overrides(locale: str) -> Dict[str, str]:
-    ensure_schema()
-    with _conn() as cx:
-        cur = cx.execute("SELECT key, value FROM i18n_overrides WHERE locale = ?", (locale,))
-        return {row["key"]: row["value"] for row in cur.fetchall()}
+def _load():
+    try:
+        with _LOCK:
+            if os.path.exists(_OVERRIDES_PATH):
+                with open(_OVERRIDES_PATH, "r", encoding="utf-8") as f:
+                    return json.load(f) or {}
+    except Exception:
+        pass
+    return {}
 
-def set_override(locale: str, key: str, value: str) -> None:
-    ensure_schema()
-    with _conn() as cx:
-        cx.execute("""
-            INSERT INTO i18n_overrides(locale, key, value)
-            VALUES (?, ?, ?)
-            ON CONFLICT(locale, key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP
-        """, (locale, key, value))
+def _save(obj):
+    os.makedirs(os.path.dirname(_OVERRIDES_PATH), exist_ok=True)
+    with _LOCK, open(_OVERRIDES_PATH, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
 
-def delete_override(locale: str, key: str) -> None:
-    ensure_schema()
-    with _conn() as cx:
-        cx.execute("DELETE FROM i18n_overrides WHERE locale = ? AND key = ?", (locale, key))
+def get_overrides(locale: str) -> dict:
+    data = _load()
+    return data.get(_canon_locale(locale), {}).get("by_key", {})
+
+def get_overrides_msgid(locale: str) -> dict:
+    data = _load()
+    return data.get(_canon_locale(locale), {}).get("by_msgid", {})
+
+def set_override(locale: str, key: str, value: str):
+    data = _load()
+    loc = _canon_locale(locale)
+    data.setdefault(loc, {}).setdefault("by_key", {})
+    data[loc]["by_key"][key] = value
+    _save(data)
+
+def delete_override(locale: str, key: str):
+    data = _load()
+    loc = _canon_locale(locale)
+    if loc in data and "by_key" in data[loc] and key in data[loc]["by_key"]:
+        del data[loc]["by_key"][key]
+        _save(data)
+
+def set_override_msgid(locale: str, msgid: str, value: str):
+    data = _load()
+    loc = _canon_locale(locale)
+    data.setdefault(loc, {}).setdefault("by_msgid", {})
+    data[loc]["by_msgid"][msgid] = value
+    _save(data)
+
+def delete_override_msgid(locale: str, msgid: str):
+    data = _load()
+    loc = _canon_locale(locale)
+    if loc in data and "by_msgid" in data[loc] and msgid in data[loc]["by_msgid"]:
+        del data[loc]["by_msgid"][msgid]
+        _save(data)
