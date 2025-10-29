@@ -85,6 +85,7 @@ data/*
 !data/db/.gitkeep
 instance/*
 !instance/.gitkeep
+work/*
 
 # ── Misc temp files ───────────────────────────────────────────────────────────
 *.swp

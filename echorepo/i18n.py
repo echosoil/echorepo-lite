@@ -1,10 +1,49 @@
 # echorepo/i18n.py
-from flask import Blueprint, redirect, request, session, url_for, current_app
-from flask_babel import Babel, _
+from flask import Blueprint, redirect, request, session, url_for, current_app, g
+from flask_babel import Babel, _, get_locale
 from werkzeug.user_agent import UserAgent
 import os
+from .services.i18n_overrides import get_overrides
 
 SUPPORTED_LOCALES = ["en","cs","nl","fi","fr","de","el","it","pl","pt","ro","sk","es"]
+
+def base_labels() -> dict:
+    return {
+        "privacyRadius": _("Privacy radius (~±{km} km)"),
+        "soilPh": _("Soil pH"),
+        "acid": _("Acidic (≤5.5)"),
+        "slightlyAcid": _("Slightly acidic (5.5–6.5)"),
+        "neutral": _("Neutral (6.5–7.5)"),
+        "slightlyAlkaline": _("Slightly alkaline (7.5–8.5)"),
+        "alkaline": _("Alkaline (≥8.5)"),
+        "yourSamples": _("Your samples"),
+        "otherSamples": _("Other samples"),
+        "export": _("Export"),
+        "clear": _("Clear"),
+        "exportFiltered": _("Export filtered ({n})"),
+        "date": _("Date"),
+        "qr": _("QR code"),
+        "ph": _("pH"),
+        "colour": _("Colour"),
+        "texture": _("Texture"),
+        "structure": _("Structure"),
+        "earthworms": _("Earthworms"),
+        "plastic": _("Plastic"),
+        "debris": _("Debris"),
+        "contamination": _("Contamination"),
+        "metals": _("Metals"),
+    }
+
+def build_i18n_labels(base: dict | None = None) -> dict:
+    try:
+        locale = str(get_locale() or "en")
+    except Exception:
+        locale = "en"
+    base = base or base_labels()
+    overrides = get_overrides(locale)
+    out = dict(base)
+    out.update(overrides)
+    return out
 
 # language -> flag-icons country code
 LOCALE_FLAGS = {

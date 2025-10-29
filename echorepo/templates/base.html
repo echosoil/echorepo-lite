@@ -78,6 +78,10 @@
 <body class="soil-gradient">
   <a href="#main" class="skip-link">{{ _('Skip to content') }}</a>
 
+  {% set _loc = current_locale|default('en') %}
+  {% set _flags = LOCALE_FLAGS|default({}) %}
+  {% set _locs = SUPPORTED_LOCALES|default(['en']) %}
+
   <nav class="navbar navbar-expand-lg navbar-dark brand-navbar fixed-top" aria-label="{{ _('Primary') }}">
     <div class="container-fluid">
       <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
@@ -110,20 +114,20 @@
 
         <!-- Right: language switcher + per-page actions -->
         <div class="d-flex align-items-center gap-3">
-          <!-- Language switcher (flags + 2-letter code) -->
+          <!-- Language switcher -->
           <div class="dropdown">
             <button class="btn btn-sm btn-light d-flex align-items-center gap-2"
                     data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ _('Change language') }}">
-              <span class="fi fi-{{ LOCALE_FLAGS.get(current_locale, 'gb') }}" style="font-size: 1rem;"></span>
-              <strong>{{ current_locale.upper() }}</strong>
+              <span class="fi fi-{{ _flags.get(_loc, 'gb') }}" style="font-size: 1rem;"></span>
+              <strong>{{ _loc.upper() }}</strong>
               <i class="bi bi-chevron-down small"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-              {% for code in SUPPORTED_LOCALES %}
+              {% for code in _locs %}
                 <li>
-                  <a class="dropdown-item d-flex align-items-center gap-2 {% if code==current_locale %}active{% endif %}"
+                  <a class="dropdown-item d-flex align-items-center gap-2 {% if code==_loc %}active{% endif %}"
                      href="{{ url_for('lang.set_language', lang_code=code) }}">
-                    <span class="fi fi-{{ LOCALE_FLAGS.get(code, 'gb') }}"></span>
+                    <span class="fi fi-{{ _flags.get(code, 'gb') }}"></span>
                     <span class="fw-semibold">{{ code.upper() }}</span>
                   </a>
                 </li>
@@ -158,7 +162,24 @@
     </div>
   </footer>
 
+  <!-- Bootstrap bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Safe I18N injection (always defined) -->
+  <script>
+    (function () {
+      // Server-provided I18N or a safe default
+      var injected = {{ (I18N or {'labels': {}}) | tojson | safe }};
+      if (!injected || typeof injected !== 'object') injected = {};
+      if (!injected.labels || typeof injected.labels !== 'object') injected.labels = {};
+      window.I18N = injected;
+
+      // Expose current locale to JS
+      window.CURRENT_LOCALE = "{{ _loc }}";
+      document.documentElement.lang = "{{ _loc }}";
+    })();
+  </script>
+
   {% block extra_js %}{% endblock %}
 </body>
 </html>
