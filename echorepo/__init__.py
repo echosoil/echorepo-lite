@@ -10,6 +10,8 @@ from .routes.web import web_bp
 from .routes.api import api_bp
 from .routes.i18n_admin import bp as i18n_admin_bp
 from .routes.errors import errors_bp
+from .routes import data_api
+
 from .services.db import init_db_sanity
 from .services.i18n_overrides import get_overrides, get_overrides_msgid
 from .i18n import init_i18n, lang_bp, BASE_LABEL_MSGIDS
@@ -202,6 +204,7 @@ def create_app() -> Flask:
     app.register_blueprint(web_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(errors_bp)
+    app.register_blueprint(data_api.data_api, url_prefix="/api/v1")  # or url_prefix="/api"
 
     # ---- Back-compat endpoint aliases ----
     alias_map = [

@@ -4,11 +4,13 @@ from typing import Optional
 
 class Settings:
     # -------- Data locations --------
-    INPUT_CSV: str      = os.getenv("INPUT_CSV", "/data/echorepo_samples.csv")
-    SQLITE_PATH: str    = os.getenv("SQLITE_PATH", "/data/db/echo.db")
-    TABLE_NAME: str     = os.getenv("TABLE_NAME", "samples")
-    USERS_CSV: str      = os.getenv("USERS_CSV", "/data/users.csv")
+    INPUT_CSV: str       = os.getenv("INPUT_CSV", "/data/echorepo_samples.csv")
+    SQLITE_PATH: str     = os.getenv("SQLITE_PATH", "/data/db/echo.db")
+    TABLE_NAME: str      = os.getenv("TABLE_NAME", "samples")
+    USERS_CSV: str       = os.getenv("USERS_CSV", "/data/users.csv")
     USER_KEY_COLUMN: str = os.getenv("USER_KEY_COLUMN", "email")
+    API_KEY              = os.environ.get("API_KEY")  # if set, required for access
+    SAMPLE_TABLE         = os.environ.get("SAMPLE_TABLE")  # optional override
 
     # Planned countries (xlsx with QR->countries)
     PLANNED_XLSX: str   = os.getenv("PLANNED_XLSX", "/data/planned.xlsx")
