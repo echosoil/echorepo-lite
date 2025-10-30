@@ -15,22 +15,27 @@ NOFF_MERGE="${NOFF_MERGE:-1}"        # 1=use --no-ff on 'close', 0=allow FF
 RECREATE="${RECREATE:-0}"            # 1=delete existing local/remote on 'open'
 ASSUME_YES="${ASSUME_YES:-0}"        # 1=auto-confirm on 'nuke'
 
+# Stash helpers (optional per-call flags)
+STASH_BEFORE="${STASH_BEFORE:-0}"    # 1=auto-stash before switching
+UNSTASH_AFTER="${UNSTASH_AFTER:-0}"  # 1=auto-unstash after switching
+
 usage() {
   cat <<EOF
 Usage:
-  $(basename "$0") open  <name> [--repo DIR] [--base BRANCH] [--remote ORIGIN] [--prefix feat/] [--recreate]
+  $(basename "$0") open  <name> [--repo DIR] [--base BRANCH] [--remote ORIGIN] [--prefix feat/] [--recreate] [--stash] [--unstash]
   $(basename "$0") close <name> [--repo DIR] [--base BRANCH] [--remote ORIGIN] [--prefix feat/] [--keep-remote] [--ff]
   $(basename "$0") nuke  <name> [--repo DIR] [--remote ORIGIN] [--prefix feat/] [--yes]
 
 Examples:
   $(basename "$0") open privacy_policy_alert
-  $(basename "$0") open privacy_policy_alert --recreate
+  $(basename "$0") open other_task --recreate --stash
   $(basename "$0") close privacy_policy_alert
   $(basename "$0") nuke  privacy_policy_alert --yes
 
 Env overrides:
   REPO=.  REMOTE=origin  BASE=develop  PREFIX=feat/
   DELETE_REMOTE=1  NOFF_MERGE=1  RECREATE=0  ASSUME_YES=0
+  STASH_BEFORE=0  UNSTASH_AFTER=0
 EOF
 }
 
@@ -46,7 +51,6 @@ need_git_repo() {
 }
 
 parse_common_flags() {
-  # Echo back non-flag args to become "$@" of the caller.
   local args=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -58,6 +62,8 @@ parse_common_flags() {
       --ff) NOFF_MERGE=0; shift;;
       --recreate) RECREATE=1; shift;;
       --yes) ASSUME_YES=1; shift;;
+      --stash) STASH_BEFORE=1; shift;;
+      --unstash) UNSTASH_AFTER=1; shift;;
       -h|--help) usage; exit 0;;
       *) args+=("$1"); shift;;
     esac
@@ -77,7 +83,7 @@ ensure_base_current() {
 ensure_not_on_branch() {
   local b="$1"
   local cur
-  cur="$(git -C "$REPO" rev-parse --abbrev-ref HEAD)"
+  cur="$(git -C "$REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
   if [[ "$cur" == "$b" ]]; then
     say "Currently on $b — switching to $BASE"
     git -C "$REPO" switch "$BASE"
@@ -93,27 +99,59 @@ confirm() {
   [[ "$reply" == "y" || "$reply" == "Y" ]]
 }
 
+is_dirty() {
+  # unstaged, staged, or untracked present?
+  ! git -C "$REPO" diff --quiet || ! git -C "$REPO" diff --cached --quiet || [[ -n "$(git -C "$REPO" ls-files --others --exclude-standard)" ]]
+}
+
+stash_make() {
+  local from="$1" to="$2"
+  git -C "$REPO" stash push -u -m "auto-stash: $from -> $to @ $(date +%F-%H%M%S)" || true
+}
+
+stash_pop_for() {
+  local to="$1"
+  local ref
+  ref="$(git -C "$REPO" stash list | grep -m1 "-> $to @" | sed -E 's/^([^:]+):.*/\1/')" || true
+  [[ -n "${ref:-}" ]] && git -C "$REPO" stash pop "$ref" || true
+}
+
 cmd_open() {
   local NAME="$1"; [[ -z "${NAME:-}" ]] && err "Branch name required" && exit 1
   local BRANCH="${PREFIX}${NAME}"
+  local START_REF="refs/remotes/$REMOTE/$BASE"
 
   need_git_repo
   say "➡ Opening feature branch: $BRANCH (base: $BASE, remote: $REMOTE) in $REPO"
   ensure_base_current
 
+  # Optional: stash before we switch away
+  local CUR="$(git -C "$REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+  if [[ "$STASH_BEFORE" == "1" ]] && [[ -n "$CUR" ]] && is_dirty; then
+    warn "Dirty tree on $CUR — auto-stashing before switch…"
+    stash_make "$CUR" "$BRANCH"
+  fi
+
   if [[ "$RECREATE" == "1" ]]; then
-    warn "Recreate: deleting $BRANCH locally/remotely if present…"
+    warn "Recreate requested: deleting $BRANCH locally/remotely if present…"
+    ensure_not_on_branch "$BRANCH"
     branch_exists_local "$BRANCH"  && git -C "$REPO" branch -D "$BRANCH" || true
-    branch_exists_remote "$BRANCH" && git -C "$REPO" push "$REMOTE" --delete "$BRANCH" || true
+    if branch_exists_remote "$BRANCH"; then
+      git -C "$REPO" push "$REMOTE" --delete "$BRANCH" || warn "Remote delete failed (possibly protected). Will force-update after creation."
+    fi
     git -C "$REPO" fetch --prune
-    say "Creating new $BRANCH from $BASE"
-    git -C "$REPO" switch -c "$BRANCH"
-    say "Pushing and setting upstream"
-    git -C "$REPO" push -u "$REMOTE" "$BRANCH"
-    say "✅ Ready. On branch: $BRANCH"
+
+    say "Creating $BRANCH from $START_REF"
+    git -C "$REPO" switch -c "$BRANCH" "$START_REF"
+
+    say "Pushing (force) and setting upstream to ensure a clean remote"
+    git -C "$REPO" push -u "$REMOTE" "$BRANCH" --force
+    say "✅ Ready. Fresh branch: $BRANCH"
+    [[ "$UNSTASH_AFTER" == "1" ]] && { warn "Trying to restore any auto-stash for $BRANCH…"; stash_pop_for "$BRANCH"; }
     return
   fi
 
+  # Default behavior: reuse if exists, else create from remote base
   if branch_exists_local "$BRANCH"; then
     warn "Local $BRANCH exists — switching."
     git -C "$REPO" switch "$BRANCH"
@@ -121,11 +159,13 @@ cmd_open() {
     warn "Remote $REMOTE/$BRANCH exists — creating local tracking."
     git -C "$REPO" switch -c "$BRANCH" --track "$REMOTE/$BRANCH"
   else
-    say "Creating $BRANCH from $BASE"
-    git -C "$REPO" switch -c "$BRANCH"
+    say "Creating $BRANCH from $START_REF"
+    git -C "$REPO" switch -c "$BRANCH" "$START_REF"
     say "Pushing and setting upstream"
     git -C "$REPO" push -u "$REMOTE" "$BRANCH"
   fi
+
+  [[ "$UNSTASH_AFTER" == "1" ]] && { warn "Trying to restore any auto-stash for $BRANCH…"; stash_pop_for "$BRANCH"; }
   say "✅ Ready. Do your edits/commits on: $BRANCH"
 }
 
@@ -137,7 +177,6 @@ cmd_close() {
   say "➡ Closing feature: $BRANCH → merge into $BASE (remote: $REMOTE) in $REPO"
   ensure_base_current
 
-  # Prefer remote ref if available
   local MERGE_REF="$BRANCH"
   if branch_exists_remote "$BRANCH"; then
     MERGE_REF="refs/remotes/$REMOTE/$BRANCH"
@@ -157,7 +196,6 @@ cmd_close() {
   say "Pushing $BASE"
   git -C "$REPO" push "$REMOTE" "$BASE"
 
-  # Cleanup
   ensure_not_on_branch "$BRANCH"
   if branch_exists_local "$BRANCH"; then
     say "Deleting local $BRANCH"
@@ -200,21 +238,16 @@ main() {
   local cmd="${1:-}"; shift || true
   case "$cmd" in
     open)
-      set +e
-      local rest; rest="$(parse_common_flags "$@")"; set -e
+      set +e; local rest; rest="$(parse_common_flags "$@")"; set -e
       # shellcheck disable=SC2086
       set -- $rest
       cmd_open "${1:-}";;
     close)
-      set +e
-      local rest; rest="$(parse_common_flags "$@")"; set -e
-      # shellcheck disable=SC2086
+      set +e; local rest; rest="$(parse_common_flags "$@")"; set -e
       set -- $rest
       cmd_close "${1:-}";;
     nuke)
-      set +e
-      local rest; rest="$(parse_common_flags "$@")"; set -e
-      # shellcheck disable=SC2086
+      set +e; local rest; rest="$(parse_common_flags "$@")"; set -e
       set -- $rest
       cmd_nuke "${1:-}";;
     -h|--help|"")
