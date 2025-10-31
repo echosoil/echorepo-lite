@@ -5,10 +5,14 @@ import hashlib
 import pandas as pd
 import tempfile  # <-- added
 import re 
-
+from dotenv import load_dotenv
+from pathlib import Path
 # ---- Config (env) ----
-CSV_PATH    = "/home/quanta/echorepo-lite/data/echorepo_samples_with_email.csv"
-SQLITE_PATH = "/home/quanta/echorepo-lite/data/db/echo.db"
+load_dotenv()
+CSV_PATH    = os.getenv("CSV_PATH") if not os.getenv("CSV_PATH").startswith("/") else os.getenv("CSV_PATH")[1:]
+CSV_PATH    = str(Path(os.getenv("PROJECT_ROOT")) / CSV_PATH)
+SQLITE_PATH = os.getenv("SQLITE_PATH") if not os.getenv("SQLITE_PATH").startswith("/") else os.getenv("SQLITE_PATH")[1:]
+SQLITE_PATH = str(Path(os.getenv("PROJECT_ROOT")) / SQLITE_PATH)
 TABLE_NAME  = os.getenv("TABLE_NAME", "samples")
 
 # Max jitter distance in meters (match the map legend/toggle)

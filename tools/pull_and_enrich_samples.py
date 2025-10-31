@@ -9,7 +9,7 @@ Pipeline:
        - OUTPUT_USERS_CSV (distinct valid emails)
 
 Environment:
-  - .env is loaded explicitly from /home/quanta/echorepo-lite/.env (override via ENV_PATH)
+  - .env is loaded explicitly from /home/echo/ECHO-STORE/echorepo-lite/.env (override via ENV_PATH)
   - GOOGLE_APPLICATION_CREDENTIALS must point to the service account JSON
   - FIREBASE_PROJECT_ID optional
   - INPUT_CSV, OUTPUT_CSV, OUTPUT_USERS_CSV define outputs
@@ -25,23 +25,26 @@ from dotenv import load_dotenv
 
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+from pathlib import Path
 
+load_dotenv()
 # ---------- Load .env explicitly ----------
-PROJECT_ROOT = Path("/home/quanta/echorepo-lite-dev")
-ENV_PATH = Path(os.getenv("ENV_PATH", PROJECT_ROOT / ".env"))
-if ENV_PATH.exists():
-    load_dotenv(dotenv_path=ENV_PATH, override=False)
-    print(f"[INFO] Loaded environment from {ENV_PATH}")
-else:
-    print(f"[WARN] .env not found at {ENV_PATH}")
+print(f"[INFO] Loaded environment from {os.getenv('PROJECT_ROOT')}/.env")
 
 # ---------- Config from env (with sane defaults) ----------
+PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite-dev"))
 CREDS_PATH   = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
 CREDS_PATH   = CREDS_PATH if not CREDS_PATH.startswith("/keys") else str(PROJECT_ROOT / CREDS_PATH[1:])
+INPUT_CSV    = os.getenv("INPUT_CSV", "/data/echorepo_samples.csv")
+INPUT_CSV    = INPUT_CSV if not INPUT_CSV.startswith("/") else INPUT_CSV[1:]
+OUTPUT_CSV   = os.getenv("OUTPUT_CSV", "/data/echorepo_samples_with_email.csv") 
+OUTPUT_CSV   = OUTPUT_CSV if not OUTPUT_CSV.startswith("/") else OUTPUT_CSV[1:]
+USERS_CSV    = os.getenv("USERS_CSV", "/data/users.csv")
+USERS_CSV    = USERS_CSV if not USERS_CSV.startswith("/") else USERS_CSV[1:]
 PROJECT_ID   = os.getenv("FIREBASE_PROJECT_ID", None)
-RAW_CSV      = str(PROJECT_ROOT / "data" / "echorepo_samples.csv")
-ENRICHED_CSV = str(PROJECT_ROOT / "data" / "echorepo_samples_with_email.csv")
-USERS_CSV    = str(PROJECT_ROOT / "data" / "users.csv")
+RAW_CSV      = str(PROJECT_ROOT / INPUT_CSV)
+ENRICHED_CSV = str(PROJECT_ROOT / OUTPUT_CSV)
+USERS_CSV    = str(PROJECT_ROOT / USERS_CSV)
 
 # ---------- Firebase init ----------
 def init_firebase():
