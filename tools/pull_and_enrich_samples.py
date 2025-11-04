@@ -32,7 +32,7 @@ load_dotenv()
 print(f"[INFO] Loaded environment from {os.getenv('PROJECT_ROOT')}/.env")
 
 # ---------- Config from env (with sane defaults) ----------
-PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite-dev"))
+PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite"))
 CREDS_PATH   = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
 CREDS_PATH   = CREDS_PATH if not CREDS_PATH.startswith("/keys") else str(PROJECT_ROOT / CREDS_PATH[1:])
 INPUT_CSV    = os.getenv("INPUT_CSV", "/data/echorepo_samples.csv")

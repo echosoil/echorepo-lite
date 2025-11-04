@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   echorepo-lite:
     # no container_name here; let Compose generate it

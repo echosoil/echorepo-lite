@@ -39,6 +39,11 @@
 - `/download/sample_csv`  _(in echorepo/routes/web.py)_
 - `/download/xlsx`  _(in echorepo/routes/web.py)_
 - `/i18n/labels`  _(in echorepo/routes/web.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
 
 ## Directory tree (depth ≤ 4)
 
@@ -46,6 +51,7 @@
 ├── .github
 │   └── .github/workflows
 ├── data
+│   └── .gitkeep
 ├── docs
 │   ├── ECHOREPO_Data_API_Guide.html
 │   └── ECHOREPO_Data_API_Guide.md
@@ -62,14 +68,17 @@
 │   ├── i18n.py
 │   └── wsgi.py
 ├── keys
+│   └── .gitkeep
 ├── scripts
-│   └── find_default_coords.py
+│   ├── .gitkeep
+│   ├── feature.sh
+│   ├── make_release.sh
+│   └── translate_all.sh
 ├── static
 │   ├── static/css
 │   ├── static/fonts
 │   ├── static/img
 │   └── static/js
-│               └── map.js
 ├── tools
 │   ├── auto_translate.py
 │   ├── create_indexes.py
