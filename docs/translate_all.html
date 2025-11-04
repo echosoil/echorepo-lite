@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ECHOrepo – On-demand translation pipeline</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      max-width: 880px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: .8rem 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: .9rem;
+    }
+    code {
+      background: rgba(27,31,35,.05);
+      padding: .2rem .4rem;
+      border-radius: 4px;
+    }
+    h1,h2,h3 { margin-top: 1.7rem; }
+  </style>
+</head>
+<body>
+  <h1>ECHOrepo – On-demand translation pipeline</h1>
+  <p>This document describes how to run the on-demand translation workflow that uses:</p>
+  <ul>
+    <li>your existing <code>echorepo/translations/</code> tree (Babel/Flask-Babel style),</li>
+    <li>a throwaway LibreTranslate container,</li>
+    <li>a helper <code>i18n</code> container,</li>
+    <li>your existing <code>tools/auto_translate.py</code>,</li>
+    <li>and finally re-compiles translations inside the real app container.</li>
+  </ul>
+  <p>The whole thing is wrapped in one script: <code>tools/translate_all.sh</code>.</p>
+
+  <h2>What the script does</h2>
+  <ol>
+    <li>Starts two temporary services from docker compose: <code>libretranslate</code> and <code>i18n</code>.</li>
+    <li>Waits until LibreTranslate is up on <code>http://localhost:5001</code>.</li>
+    <li>Scans <code>./echorepo/translations</code> and collects language folders except <code>en</code>.</li>
+    <li>Runs <code>tools/auto_translate.py</code> inside the <code>i18n</code> container, pointing it to <code>http://libretranslate:5000</code>.</li>
+    <li>Finds the real app container and runs <code>pybabel compile -d /app/echorepo/translations</code> inside it.</li>
+    <li>Shuts down the temporary services again.</li>
+  </ol>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>Your compose defines <code>libretranslate</code>, <code>i18n</code>, and your main app container.</li>
+    <li>The repo is mounted into <code>i18n</code> as <code>/work</code>.</li>
+    <li>LibreTranslate is published on the host as <code>http://localhost:5001</code>.</li>
+    <li>The app image has Babel and can run <code>pybabel compile</code>.</li>
+  </ul>
+
+  <h2>The script</h2>
+  <p>Save this as <code>tools/translate_all.sh</code> and make it executable.</p>
+  <pre><code>#!/usr/bin/env bash
+set -euo pipefail
+
+COMPOSE="docker compose"
+LT_PROFILE="--profile devtools"
+LT_SERVICE="libretranslate"
+I18N_SERVICE="i18n"
+APP_TRANSL_DIR="/app/echorepo/translations"
+APP_CONTAINER="${APP_CONTAINER:-}"
+LT_HOST_URL="${LT_HOST_URL:-http://localhost:5001}"
+LT_CONTAINER_URL="http://libretranslate:5000"
+
+echo "[1/5] Starting libretranslate + i18n..."
+$COMPOSE $LT_PROFILE up -d "$LT_SERVICE" "$I18N_SERVICE"
+
+echo "[2/5] Waiting for LibreTranslate at $LT_HOST_URL ..."
+for i in {1..30}; do
+  if curl -sf "$LT_HOST_URL/languages" &gt;/dev/null 2&gt;&amp;1; then
+    echo "LibreTranslate is up."
+    break
+  fi
+  echo "  ... still waiting ($i)"
+  sleep 2
+done
+
+if ! curl -sf "$LT_HOST_URL/languages" &gt;/dev/null 2&gt;&amp;1; then
+  echo "ERROR: LibreTranslate did not become ready. Aborting."
+  exit 1
+fi
+
+echo "[3/5] Collecting languages from ./echorepo/translations ..."
+if [ ! -d ./echorepo/translations ]; then
+  echo "ERROR: ./echorepo/translations not found in current dir"
+  exit 1
+fi
+
+LANGS=""
+for d in ./echorepo/translations/*; do
+  [ -d "$d" ] || continue
+  lang="$(basename "$d")"
+  if [ "$lang" != "en" ]; then
+    LANGS+="$lang "
+  fi
+done
+
+echo "Will translate into: $LANGS"
+
+echo "[4/5] Running auto_translate.py in i18n container..."
+$COMPOSE $LT_PROFILE run --rm "$I18N_SERVICE" \
+  python tools/auto_translate.py \
+    --trans-dir /work/echorepo/translations \
+    --endpoint "$LT_CONTAINER_URL" \
+    --source en \
+    --langs $LANGS
+echo "Translation step done."
+
+if [ -z "$APP_CONTAINER" ]; then
+  candidate=$(docker ps --filter "name=echorepo-lite" --format '{{.Names}}' | head -n1 || true)
+  if echo "$candidate" | grep -qi "i18n"; then
+    candidate=""
+  fi
+  if [ -z "$candidate" ]; then
+    candidate=$(docker ps --format '{{.Names}} {{.Image}}' \
+      | grep 'echorepo-lite' \
+      | grep -vi 'i18n' \
+      | awk '{print $1}' \
+      | head -n1 || true)
+  fi
+  APP_CONTAINER="$candidate"
+fi
+
+if [ -z "$APP_CONTAINER" ]; then
+  echo "WARN: could not autodetect app container."
+  echo "Run this yourself in the app container:"
+  echo "  docker exec -it &lt;app-container&gt; pybabel compile -d $APP_TRANSL_DIR"
+else
+  echo "[5/5] Compiling translations inside container: $APP_CONTAINER ..."
+  docker exec "$APP_CONTAINER" pybabel compile -d "$APP_TRANSL_DIR"
+  echo "Compilation done."
+fi
+
+echo "Stopping temporary i18n services..."
+$COMPOSE $LT_PROFILE down
+
+echo "All done ✅"</code></pre>
+
+  <h2>Running it</h2>
+  <pre><code>./tools/translate_all.sh</code></pre>
+
+  <h2>When you get “filled 0 entries”</h2>
+  <p>This usually means the .po files didn’t have empty msgstrs. First extract and update:</p>
+  <pre><code>pybabel extract -F babel.cfg -o echorepo/translations/messages.pot .
+pybabel update -i echorepo/translations/messages.pot -d echorepo/translations</code></pre>
+  <p>Then run the script again.</p>
+
+  <h2>Forcing the container</h2>
+  <pre><code>APP_CONTAINER=echorepo-lite ./tools/translate_all.sh</code></pre>
+</body>
+</html>

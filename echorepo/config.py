@@ -53,11 +53,12 @@ class Settings:
     # -------- Firebase --------
     FIREBASE_PROJECT_ID: Optional[str] = os.getenv("FIREBASE_PROJECT_ID") or None
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or None
+
     # -------- i18n / Babel --------
     BABEL_TRANSLATION_DIRECTORIES = "/app/translations" # compiled .mo files location
 
     # -------- Misc --------
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
-
+    SURVEY_BASE_URL: str = os.getenv("SURVEY_BASE_URL", "https://www.soscisurvey.de/default?r=")
 
 settings = Settings()
