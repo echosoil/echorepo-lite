@@ -5,8 +5,8 @@ from .geo import pick_lat_lon_cols
 def strip_orig_cols(df: pd.DataFrame) -> pd.DataFrame:
     if not settings.HIDE_ORIG_COLS:
         return df
-    drop = {c for c in df.columns if c.endswith(settings.ORIG_COL_SUFFIX)}
-    drop |= {c for c in settings.HIDE_ORIG_LIST if c in df.columns}
+    DROP_SUFFIXES = {settings.ORIG_COL_SUFFIX} | {c for c in settings.HIDE_ORIG_LIST if c}
+    drop = {c for c in df.columns if any(c.endswith(suf) for suf in DROP_SUFFIXES)}
     return df.drop(columns=list(drop), errors="ignore") if drop else df
 
 def make_table_html(df: pd.DataFrame) -> str:
