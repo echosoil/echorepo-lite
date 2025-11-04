@@ -12,7 +12,10 @@
   const SHOULD_DROP = (k) => /_orig$/i.test(k);
   const JITTER_M = Number(cfg.jitter_m) || 1000;
 
-  const map = L.map('map', { boxZoom: true });
+  const map = L.map('map', {
+    minZoom: 3,        // don’t let them see the whole Earth at once
+    maxZoom: 18
+  }).setView([40, 0], 4);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
