@@ -1,7 +1,7 @@
 # echorepo/__init__.py
 import os
 import json
-from flask import Flask, jsonify, make_response, request, render_template_string
+from flask import Flask, jsonify, make_response, request, render_template_string, current_app
 from flask_babel import get_locale, gettext as _real_gettext, ngettext as _real_ngettext
 
 from .config import settings
@@ -15,7 +15,20 @@ from .routes import data_api
 from .services.db import init_db_sanity
 from .services.i18n_overrides import get_overrides, get_overrides_msgid
 from .i18n import init_i18n, lang_bp, BASE_LABEL_MSGIDS
+import logging, time
 
+# ---------- Logging ----------
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# only add the file handler once
+if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
+    os.makedirs("/tmp", exist_ok=True)
+    fh = logging.FileHandler("/tmp/echorepo-slow.log")
+    fh.setLevel(logging.INFO)
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    fh.setFormatter(fmt)
+    logger.addHandler(fh)
 
 # ---------- helpers ----------
 def _canon_locale(lang: str) -> str:
@@ -63,6 +76,21 @@ def create_app() -> Flask:
         static_folder=os.path.join(pkg_dir, "..", "static"),
         static_url_path="/static",
     )
+
+    # ---- Request timing logging, see /tmp/echorepo-slow.log ----
+    @app.before_request
+    def _start_timer():
+        request._t0 = time.time()
+
+    @app.after_request
+    def _log_time(response):
+        t0 = getattr(request, "_t0", None)
+        if t0 is not None:
+            dt = (time.time() - t0) * 1000
+            if dt > 100:  # only log slow ones
+                current_app.logger.info("SLOW %s %s %.1f ms", request.method, request.path, dt)
+                logger.warning("SLOW %s %s %.1f ms", request.method, request.path, dt)
+        return response
 
     # Base config
     app.secret_key = settings.SECRET_KEY
