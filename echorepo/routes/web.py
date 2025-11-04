@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, send_file, abort, session, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, send_file, abort, session, redirect, url_for, jsonify, current_app
 import pandas as pd
 from io import BytesIO
 import pathlib
@@ -9,6 +9,7 @@ from ..services.validation import find_default_coord_rows, annotate_country_mism
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 from flask_babel import gettext as _  
+from datetime import datetime
 
 web_bp = Blueprint("web", __name__)
 
@@ -133,9 +134,25 @@ def download_all_csv():
     p = pathlib.Path(settings.INPUT_CSV)
     if not p.exists() or not p.is_file():
         abort(404, description="Full CSV not found on server.")
+
+    # columns we never want to expose
+    pii_cols = {
+        "userId",
+        "user_id",
+        "email",
+        getattr(settings, "USER_KEY_COLUMN", None),
+    }
+    pii_cols = {c.lower() for c in pii_cols if c}  # drop Nones
+
     try:
-        df_all = pd.read_csv(p, dtype=str, keep_default_na=False)
+        # 1) normal, fast, pandas path
+        df_all = pd.read_csv(p, dtype=str, keep_default_na=False, low_memory=False)
+        # existing anonymizer
         df_all = strip_orig_cols(df_all)
+        # and belt-and-suspenders: drop common PII columns if still present
+        cols_to_drop = [col for col in df_all.columns if col.lower() in pii_cols]
+        df_all = df_all.drop(columns=[cols_to_drop], errors="ignore")
+
         buf = BytesIO()
         df_all.to_csv(buf, index=False)
         buf.seek(0)
@@ -145,14 +162,38 @@ def download_all_csv():
             download_name="echorepo_all_samples.csv",
             mimetype="text/csv"
         )
+
     except Exception:
+        # 2) fallback: stream-sanitize without pandas
+        import csv
+        buf = BytesIO()
+        with p.open("r", encoding="utf-8", newline="") as f_in:
+            reader = csv.reader(f_in)
+            rows = list(reader)
+            if not rows:
+                abort(404, description="CSV is empty")
+
+            header = rows[0]
+            # figure out which columns to keep
+            keep_idx = []
+            for i, name in enumerate(header):
+                if name in pii_cols:
+                    continue
+                keep_idx.append(i)
+
+            writer = csv.writer(buf)
+            # write filtered header
+            writer.writerow([header[i] for i in keep_idx])
+            # write filtered rows
+            for row in rows[1:]:
+                writer.writerow([row[i] for i in keep_idx])
+
+        buf.seek(0)
         return send_file(
-            str(p),
+            buf,
             as_attachment=True,
             download_name="echorepo_all_samples.csv",
             mimetype="text/csv",
-            max_age=0,
-            conditional=True
         )
 
 @web_bp.get("/download/sample_csv")
