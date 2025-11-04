@@ -22,5 +22,5 @@ RUN mkdir -p /data/db
 EXPOSE 8000
 
 # Use gunicorn against the app-factory entrypoint
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "echorepo.wsgi:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "--timeout", "120", "--graceful-timeout", "120", "--keep-alive", "5", "echorepo.wsgi:app"]
 # (for quick local debugging you can switch to:  CMD ["python", "-m", "echorepo.wsgi"])

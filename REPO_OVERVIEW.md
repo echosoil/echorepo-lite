@@ -39,6 +39,11 @@
 - `/download/sample_csv`  _(in echorepo/routes/web.py)_
 - `/download/xlsx`  _(in echorepo/routes/web.py)_
 - `/i18n/labels`  _(in echorepo/routes/web.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
 
 ## Directory tree (depth ≤ 4)
 
@@ -46,9 +51,12 @@
 ├── .github
 │   └── .github/workflows
 ├── data
+│   └── .gitkeep
 ├── docs
 │   ├── ECHOREPO_Data_API_Guide.html
-│   └── ECHOREPO_Data_API_Guide.md
+│   ├── ECHOREPO_Data_API_Guide.md
+│   ├── translate_all.html
+│   └── translate_all.md
 ├── echorepo
 │   ├── echorepo/auth
 │   ├── echorepo/routes
@@ -62,25 +70,25 @@
 │   ├── i18n.py
 │   └── wsgi.py
 ├── keys
+│   └── .gitkeep
 ├── scripts
-│   └── find_default_coords.py
+│   ├── .gitkeep
+│   ├── feature.sh
+│   ├── make_release.sh
+│   └── translate_all.sh
 ├── static
 │   ├── static/css
 │   ├── static/fonts
 │   ├── static/img
 │   └── static/js
-│               └── map.js
 ├── tools
 │   ├── auto_translate.py
 │   ├── create_indexes.py
-│   ├── feature.sh
 │   ├── find_default_coords.py
 │   ├── firebase_kc_sync.py
 │   ├── i18n_override.py
-│   ├── make_release.sh
 │   ├── make_repo_overview.py
 │   ├── pull_and_enrich_samples.py
-│   ├── rebuild_babel_catalog.sh
 │   └── refresh_sqlite.py
 ├── .env.example
 ├── .gitignore
@@ -89,7 +97,6 @@
 ├── REPO_OVERVIEW.md
 ├── babel.cfg
 ├── docker-compose.dev.yml
-├── docker-compose.nosplit.yml
 ├── docker-compose.prod.yml
 ├── docker-compose.yml
 ├── project_paths.py

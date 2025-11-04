@@ -45,12 +45,34 @@ def _js_base_labels() -> dict:
 @web_bp.get("/", endpoint="home")
 @login_required
 def home():
+    # same as before: get the "logical" user key (email from KC / session)
     user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
     if not user_key:
         return redirect(url_for("auth.login"))
 
     df = query_user_df(user_key)
-    i18n = {"labels": build_i18n_labels(_js_base_labels())}  # <-- merge DB overrides
+    i18n = {"labels": build_i18n_labels(_js_base_labels())}
+
+    # 👇 figure out the survey id
+    SURVEY_BASE_URL = getattr(settings, "SURVEY_BASE_URL", "https://www.soscisurvey.de/default?r=")  # change to your real URL
+    survey_user_id = None
+    if not df.empty:
+        # prefer real userId column if present
+        if "userId" in df.columns:
+            col = df["userId"].dropna().astype(str)
+            if not col.empty:
+                survey_user_id = col.iloc[0].strip()
+        # optional fallback: some setups store it under a configured column
+        elif getattr(settings, "USER_KEY_COLUMN", None) and settings.USER_KEY_COLUMN in df.columns:
+            col = df[settings.USER_KEY_COLUMN].dropna().astype(str)
+            if not col.empty:
+                survey_user_id = col.iloc[0].strip()
+
+    # final fallback to email if we didn't find anything
+    if not survey_user_id:
+        survey_user_id = user_key
+
+    survey_url = f"{SURVEY_BASE_URL}{survey_user_id}"
 
     if df.empty:
         return render_template(
@@ -62,7 +84,10 @@ def home():
             jitter_m=int(settings.MAX_JITTER_METERS),
             lat_col=settings.LAT_COL,
             lon_col=settings.LON_COL,
-            I18N=i18n,  # <-- inject for front-end
+            I18N=i18n,
+            # 👇 new
+            survey_url=survey_url,
+            show_survey=True,
         )
 
     defaults = find_default_coord_rows(df)
@@ -78,7 +103,10 @@ def home():
         jitter_m=int(settings.MAX_JITTER_METERS),
         lat_col=settings.LAT_COL,
         lon_col=settings.LON_COL,
-        I18N=i18n,  # <-- inject for front-end
+        I18N=i18n,
+        # 👇 new
+        survey_url=survey_url,
+        show_survey=True,
     )
 
 # (Optional) JSON endpoint if you prefer fetching labels via XHR
