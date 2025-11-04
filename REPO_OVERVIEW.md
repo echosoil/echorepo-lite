@@ -24,6 +24,9 @@
 - `/others_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson_debug`  _(in echorepo/routes/api.py)_
+- `/ping`  _(in echorepo/routes/data_api.py)_
+- `/samples`  _(in echorepo/routes/data_api.py)_
+- `/samples/count`  _(in echorepo/routes/data_api.py)_
 - `/issues`  _(in echorepo/routes/errors.py)_
 - `/issues/fix-coords`  _(in echorepo/routes/errors.py)_
 - `/admin`  _(in echorepo/routes/i18n_admin.py)_
@@ -36,19 +39,16 @@
 - `/download/sample_csv`  _(in echorepo/routes/web.py)_
 - `/download/xlsx`  _(in echorepo/routes/web.py)_
 - `/i18n/labels`  _(in echorepo/routes/web.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
 
-## Directory tree (depth ≤ 3)
+## Directory tree (depth ≤ 4)
 
 ```
 ├── .github
 │   └── .github/workflows
 ├── data
-│   └── .gitkeep
+├── docs
+│   ├── ECHOREPO_Data_API_Guide.html
+│   └── ECHOREPO_Data_API_Guide.md
 ├── echorepo
 │   ├── echorepo/auth
 │   ├── echorepo/routes
@@ -62,7 +62,6 @@
 │   ├── i18n.py
 │   └── wsgi.py
 ├── keys
-│   └── .gitkeep
 ├── scripts
 │   └── find_default_coords.py
 ├── static
@@ -70,17 +69,19 @@
 │   ├── static/fonts
 │   ├── static/img
 │   └── static/js
+│               └── map.js
 ├── tools
 │   ├── auto_translate.py
+│   ├── create_indexes.py
 │   ├── feature.sh
+│   ├── find_default_coords.py
+│   ├── firebase_kc_sync.py
 │   ├── i18n_override.py
 │   ├── make_release.sh
 │   ├── make_repo_overview.py
 │   ├── pull_and_enrich_samples.py
-│   ├── pull_and_enrich_samples_dev.py
 │   ├── rebuild_babel_catalog.sh
-│   ├── refresh_sqlite.py
-│   └── refresh_sqlite_dev.py
+│   └── refresh_sqlite.py
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
@@ -91,6 +92,7 @@
 ├── docker-compose.nosplit.yml
 ├── docker-compose.prod.yml
 ├── docker-compose.yml
+├── project_paths.py
 ├── requirements.txt
 ├── run.py
 ├── start_dev.sh
