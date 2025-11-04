@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   echorepo-lite:
     build: .
@@ -20,8 +18,18 @@ services:
       - ./static:/app/static:ro
       - ./echorepo/templates:/app/echorepo/templates:ro
       - ./keys:/keys:ro
-      - ./echorepo/translations:/app/echorepo/translations:ro
+      - ./echorepo/translations:/app/echorepo/translations
       - ./translations:/app/translations:ro
+    restart: unless-stopped
+
+  libretranslate:
+    profiles: ["devtools"]        # 👈 add this line
+    image: libretranslate/libretranslate:latest
+    container_name: libretranslate
+    ports:
+      - "5001:5000"
+    environment:
+      LT_LOAD_ONLY: en,cs,de,el,es,fi,fr,it,nl,pl,pt,ro,sk
     restart: unless-stopped
 
   i18n:
@@ -30,9 +38,12 @@ services:
       context: .
       dockerfile: Dockerfile.i18n
     working_dir: /work
+    command: ["tail", "-f", "/dev/null"]
     volumes:
       - .:/work
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      LT_URL: "http://host.docker.internal:5001"
+      LT_URL: "http://libretranslate:5000"
+    depends_on:
+      - libretranslate

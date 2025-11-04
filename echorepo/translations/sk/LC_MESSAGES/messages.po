@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-29 13:21+0000\n"
+"POT-Creation-Date: 2025-11-04 12:27+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sk\n"
@@ -18,98 +18,97 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: echorepo/routes/web.py:19
+#: echorepo/routes/web.py:20
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Polomer súkromia (~±{km} km)"
 
-#: echorepo/routes/web.py:20 echorepo/templates/results.html:243
+#: echorepo/routes/web.py:21
 msgid "Soil pH"
 msgstr "PH pôdy"
 
-#: echorepo/routes/web.py:21 echorepo/templates/results.html:244
+#: echorepo/routes/web.py:22
 msgid "Acidic (≤5.5)"
 msgstr "Kyselina (≤5.5)"
 
-#: echorepo/routes/web.py:22 echorepo/templates/results.html:245
+#: echorepo/routes/web.py:23
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Mierne kyslé (5.5"
 
-#: echorepo/routes/web.py:23 echorepo/templates/results.html:246
+#: echorepo/routes/web.py:24
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutrálne (6, 5 7, 5)"
 
-#: echorepo/routes/web.py:24 echorepo/templates/results.html:247
+#: echorepo/routes/web.py:25
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Mierne zásadité (7.5 a 8.5.)"
 
-#: echorepo/routes/web.py:25 echorepo/templates/results.html:248
+#: echorepo/routes/web.py:26
 msgid "Alkaline (≥8.5)"
 msgstr "Alkalické (≥8,5)"
 
-#: echorepo/routes/web.py:26 echorepo/templates/results.html:225
+#: echorepo/routes/web.py:27
 msgid "Your samples"
 msgstr "Vaše vzorky"
 
-#: echorepo/routes/web.py:27 echorepo/templates/results.html:226
+#: echorepo/routes/web.py:28
 msgid "Other samples"
 msgstr "Ostatné vzorky"
 
-#: echorepo/routes/web.py:28 echorepo/templates/results.html:227
+#: echorepo/routes/web.py:29
 msgid "Export"
 msgstr "Vývoz"
 
-#: echorepo/routes/web.py:29 echorepo/templates/results.html:228
+#: echorepo/routes/web.py:30
 msgid "Clear"
 msgstr "Vyčistiť"
 
-#: echorepo/routes/web.py:30
+#: echorepo/routes/web.py:31
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Export filtrovaný ({n})"
 
-#: echorepo/routes/web.py:31 echorepo/templates/results.html:231
+#: echorepo/routes/web.py:32
 msgid "Date"
 msgstr "Dátum"
 
-#: echorepo/routes/web.py:32 echorepo/templates/results.html:232
+#: echorepo/routes/web.py:33
 msgid "QR code"
 msgstr "QR kód"
 
-#: echorepo/routes/web.py:33 echorepo/templates/results.html:167
-#: echorepo/templates/results.html:233
+#: echorepo/routes/web.py:34 echorepo/templates/results.html:180
 msgid "pH"
 msgstr "p H"
 
-#: echorepo/routes/web.py:34 echorepo/templates/results.html:234
+#: echorepo/routes/web.py:35
 msgid "Colour"
 msgstr "Farba"
 
-#: echorepo/routes/web.py:35 echorepo/templates/results.html:235
+#: echorepo/routes/web.py:36
 msgid "Texture"
 msgstr "Textúra"
 
-#: echorepo/routes/web.py:36 echorepo/templates/results.html:236
+#: echorepo/routes/web.py:37
 msgid "Structure"
 msgstr "Štruktúra"
 
-#: echorepo/routes/web.py:37 echorepo/templates/results.html:237
+#: echorepo/routes/web.py:38
 msgid "Earthworms"
 msgstr "Dážďovky"
 
-#: echorepo/routes/web.py:38 echorepo/templates/results.html:238
+#: echorepo/routes/web.py:39
 msgid "Plastic"
 msgstr "Plasty"
 
-#: echorepo/routes/web.py:39 echorepo/templates/results.html:239
+#: echorepo/routes/web.py:40
 msgid "Debris"
 msgstr "Debris"
 
-#: echorepo/routes/web.py:40 echorepo/templates/results.html:240
+#: echorepo/routes/web.py:41
 msgid "Contamination"
 msgstr "Kontaminácia"
 
-#: echorepo/routes/web.py:41 echorepo/templates/results.html:241
+#: echorepo/routes/web.py:42
 msgid "Metals"
 msgstr "Kovy"
 
@@ -361,57 +360,65 @@ msgstr "Nenájdené žiadne údaje"
 msgid "If you recently submitted samples, try again later."
 msgstr "Ak ste nedávno predložili vzorky, skúste to neskôr."
 
-#: echorepo/templates/results.html:136
+#: echorepo/templates/results.html:130
+msgid "Click to fill in 3rd survey"
+msgstr "Kliknutím vyplňte 3. prieskum"
+
+#: echorepo/templates/results.html:131
+msgid "It helps us improve EchoSoil."
+msgstr "Pomáha nám zlepšiť EchoSoil."
+
+#: echorepo/templates/results.html:134
+msgid "Open survey"
+msgstr "Otvorený prieskum"
+
+#: echorepo/templates/results.html:149
 msgid "Download"
 msgstr "Stiahnuť"
 
-#: echorepo/templates/results.html:142
+#: echorepo/templates/results.html:155
 msgid "CSV (per-user)"
 msgstr "CSV (na užívateľa)"
 
-#: echorepo/templates/results.html:148
+#: echorepo/templates/results.html:161
 msgid "XLSX (per-user)"
 msgstr "XLSX (na užívateľa)"
 
-#: echorepo/templates/results.html:154
+#: echorepo/templates/results.html:167
 msgid "All samples (CSV, anonymised)"
 msgstr "Všetky vzorky (CSV, anonymizované)"
 
-#: echorepo/templates/results.html:159
+#: echorepo/templates/results.html:172
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (na užívateľa)"
 
-#: echorepo/templates/results.html:169
+#: echorepo/templates/results.html:182
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/results.html:172
+#: echorepo/templates/results.html:185
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/results.html:174
+#: echorepo/templates/results.html:187
 msgid "Apply pH filter"
 msgstr "Aplikovať pH filter"
 
-#: echorepo/templates/results.html:174 echorepo/templates/results.html:230
+#: echorepo/templates/results.html:187
 msgid "Apply"
 msgstr "Použiť"
 
-#: echorepo/templates/results.html:176
+#: echorepo/templates/results.html:189
 msgid "Export rows matching current pH filter"
 msgstr "Exportovať riadky zodpovedajúce aktuálnemu pH filtru"
 
-#: echorepo/templates/results.html:177
+#: echorepo/templates/results.html:190
 msgid "Export filtered (0)"
 msgstr "Export filtrované (0)"
 
-#: echorepo/templates/results.html:229
-#, python-format
-msgid "Export filtered (%(n)s)"
-msgstr "Export filtrovaný (%(n)s)"
+#~ msgid "Export filtered (%(n)s)"
+#~ msgstr "Export filtrovaný (%(n)s)"
 
-#: echorepo/templates/results.html:242
-#, python-format
-msgid "Privacy radius (~±%(km)s km)"
-msgstr "Polomer súkromia (~±%(km)s km)"
+#~ msgid "Privacy radius (~±%(km)s km)"
+#~ msgstr "Polomer súkromia (~±%(km)s km)"
 
