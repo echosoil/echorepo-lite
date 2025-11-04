@@ -24,7 +24,7 @@ curl -H "X-API-Key: YOUR_SECRET" \
 ### Option B — OAuth2 Client Credentials (Keycloak) (standard)
 Use a confidential client in Keycloak to obtain a bearer token.
 
-- **Issuer (realm):** `https://keycloak-dev.quanta-labs.com/auth/realms/echo_realm`
+- **Issuer (realm):** `https://keycloak-dev.quanta-labs.com/realms/echo_realm`
 - **Token endpoint:** `.../protocol/openid-connect/token`
 - **Client ID (audience):** `echorepo-api`
 - **Client Secret:** (obtain from ECHO team)
@@ -35,7 +35,7 @@ TOKEN=$(curl -s -X POST \
   -d 'grant_type=client_credentials' \
   -d 'client_id=echorepo-api' \
   -d 'client_secret=YOUR_CLIENT_SECRET' \
-  'https://keycloak-dev.quanta-labs.com/auth/realms/echo_realm/protocol/openid-connect/token' \
+  'https://keycloak-dev.quanta-labs.com/realms/echo_realm/protocol/openid-connect/token' \
   | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
 ```
 
