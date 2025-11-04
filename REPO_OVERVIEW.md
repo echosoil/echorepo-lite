@@ -54,7 +54,9 @@
 │   └── .gitkeep
 ├── docs
 │   ├── ECHOREPO_Data_API_Guide.html
-│   └── ECHOREPO_Data_API_Guide.md
+│   ├── ECHOREPO_Data_API_Guide.md
+│   ├── translate_all.html
+│   └── translate_all.md
 ├── echorepo
 │   ├── echorepo/auth
 │   ├── echorepo/routes
@@ -82,14 +84,11 @@
 ├── tools
 │   ├── auto_translate.py
 │   ├── create_indexes.py
-│   ├── feature.sh
 │   ├── find_default_coords.py
 │   ├── firebase_kc_sync.py
 │   ├── i18n_override.py
-│   ├── make_release.sh
 │   ├── make_repo_overview.py
 │   ├── pull_and_enrich_samples.py
-│   ├── rebuild_babel_catalog.sh
 │   └── refresh_sqlite.py
 ├── .env.example
 ├── .gitignore
@@ -98,7 +97,6 @@
 ├── REPO_OVERVIEW.md
 ├── babel.cfg
 ├── docker-compose.dev.yml
-├── docker-compose.nosplit.yml
 ├── docker-compose.prod.yml
 ├── docker-compose.yml
 ├── project_paths.py
