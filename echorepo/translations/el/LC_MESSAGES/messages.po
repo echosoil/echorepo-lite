@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-29 13:21+0000\n"
+"POT-Creation-Date: 2025-11-04 12:27+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -18,98 +18,97 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: echorepo/routes/web.py:19
+#: echorepo/routes/web.py:20
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Ακτίνα απορρήτου (~±__{km}_ km)"
 
-#: echorepo/routes/web.py:20 echorepo/templates/results.html:243
+#: echorepo/routes/web.py:21
 msgid "Soil pH"
 msgstr "PH εδάφους"
 
-#: echorepo/routes/web.py:21 echorepo/templates/results.html:244
+#: echorepo/routes/web.py:22
 msgid "Acidic (≤5.5)"
 msgstr "Οξύ (≤5.5)"
 
-#: echorepo/routes/web.py:22 echorepo/templates/results.html:245
+#: echorepo/routes/web.py:23
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Ελαφρώς όξινα (5.5–6.5)"
 
-#: echorepo/routes/web.py:23 echorepo/templates/results.html:246
+#: echorepo/routes/web.py:24
 msgid "Neutral (6.5–7.5)"
 msgstr "Ουδέτερο (6.5–7.5)"
 
-#: echorepo/routes/web.py:24 echorepo/templates/results.html:247
+#: echorepo/routes/web.py:25
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Ελαφρώς αλκαλικό (7.5–8.5)"
 
-#: echorepo/routes/web.py:25 echorepo/templates/results.html:248
+#: echorepo/routes/web.py:26
 msgid "Alkaline (≥8.5)"
 msgstr "Αλκαλίνη (≥8. 5)"
 
-#: echorepo/routes/web.py:26 echorepo/templates/results.html:225
+#: echorepo/routes/web.py:27
 msgid "Your samples"
 msgstr "Τα δείγματα σας"
 
-#: echorepo/routes/web.py:27 echorepo/templates/results.html:226
+#: echorepo/routes/web.py:28
 msgid "Other samples"
 msgstr "Άλλα δείγματα"
 
-#: echorepo/routes/web.py:28 echorepo/templates/results.html:227
+#: echorepo/routes/web.py:29
 msgid "Export"
 msgstr "Εξαγωγή"
 
-#: echorepo/routes/web.py:29 echorepo/templates/results.html:228
+#: echorepo/routes/web.py:30
 msgid "Clear"
 msgstr "Καθαρισμός"
 
-#: echorepo/routes/web.py:30
+#: echorepo/routes/web.py:31
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Φίλτρα εξαγωγής ({n})"
 
-#: echorepo/routes/web.py:31 echorepo/templates/results.html:231
+#: echorepo/routes/web.py:32
 msgid "Date"
 msgstr "Ημερομηνία"
 
-#: echorepo/routes/web.py:32 echorepo/templates/results.html:232
+#: echorepo/routes/web.py:33
 msgid "QR code"
 msgstr "Κωδικός QR"
 
-#: echorepo/routes/web.py:33 echorepo/templates/results.html:167
-#: echorepo/templates/results.html:233
+#: echorepo/routes/web.py:34 echorepo/templates/results.html:180
 msgid "pH"
 msgstr "p Η"
 
-#: echorepo/routes/web.py:34 echorepo/templates/results.html:234
+#: echorepo/routes/web.py:35
 msgid "Colour"
 msgstr "Χρώμα"
 
-#: echorepo/routes/web.py:35 echorepo/templates/results.html:235
+#: echorepo/routes/web.py:36
 msgid "Texture"
 msgstr "Υφή"
 
-#: echorepo/routes/web.py:36 echorepo/templates/results.html:236
+#: echorepo/routes/web.py:37
 msgid "Structure"
 msgstr "Δομή"
 
-#: echorepo/routes/web.py:37 echorepo/templates/results.html:237
+#: echorepo/routes/web.py:38
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: echorepo/routes/web.py:38 echorepo/templates/results.html:238
+#: echorepo/routes/web.py:39
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: echorepo/routes/web.py:39 echorepo/templates/results.html:239
+#: echorepo/routes/web.py:40
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: echorepo/routes/web.py:40 echorepo/templates/results.html:240
+#: echorepo/routes/web.py:41
 msgid "Contamination"
 msgstr "Μόλυνση"
 
-#: echorepo/routes/web.py:41 echorepo/templates/results.html:241
+#: echorepo/routes/web.py:42
 msgid "Metals"
 msgstr "Μέταλλα"
 
@@ -367,57 +366,65 @@ msgstr "Δεν βρέθηκαν δεδομένα για"
 msgid "If you recently submitted samples, try again later."
 msgstr "Εάν υποβάλατε πρόσφατα δείγματα, προσπαθήστε ξανά αργότερα."
 
-#: echorepo/templates/results.html:136
+#: echorepo/templates/results.html:130
+msgid "Click to fill in 3rd survey"
+msgstr "Κλικ για συμπλήρωση 3ης έρευνας"
+
+#: echorepo/templates/results.html:131
+msgid "It helps us improve EchoSoil."
+msgstr "Μας βοηθά να βελτιώσουμε το EchoSoil."
+
+#: echorepo/templates/results.html:134
+msgid "Open survey"
+msgstr "Άνοιγμα έρευνας"
+
+#: echorepo/templates/results.html:149
 msgid "Download"
 msgstr "Λήψη"
 
-#: echorepo/templates/results.html:142
+#: echorepo/templates/results.html:155
 msgid "CSV (per-user)"
 msgstr "CSV (ανά χρήστη)"
 
-#: echorepo/templates/results.html:148
+#: echorepo/templates/results.html:161
 msgid "XLSX (per-user)"
 msgstr "XLSX (ανά χρήστη)"
 
-#: echorepo/templates/results.html:154
+#: echorepo/templates/results.html:167
 msgid "All samples (CSV, anonymised)"
 msgstr "Όλα τα δείγματα (CSV, ανώνυμα)"
 
-#: echorepo/templates/results.html:159
+#: echorepo/templates/results.html:172
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (ανά χρήστη)"
 
-#: echorepo/templates/results.html:169
+#: echorepo/templates/results.html:182
 msgid "min"
 msgstr "λεπτά"
 
-#: echorepo/templates/results.html:172
+#: echorepo/templates/results.html:185
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/results.html:174
+#: echorepo/templates/results.html:187
 msgid "Apply pH filter"
 msgstr "Εφαρμογή φίλτρου pH"
 
-#: echorepo/templates/results.html:174 echorepo/templates/results.html:230
+#: echorepo/templates/results.html:187
 msgid "Apply"
 msgstr "Εφαρμογή"
 
-#: echorepo/templates/results.html:176
+#: echorepo/templates/results.html:189
 msgid "Export rows matching current pH filter"
 msgstr "Εξαγωγή γραμμών που ταιριάζουν με το τρέχον φίλτρο pH"
 
-#: echorepo/templates/results.html:177
+#: echorepo/templates/results.html:190
 msgid "Export filtered (0)"
 msgstr "Φίλτρο εξαγωγής (0)"
 
-#: echorepo/templates/results.html:229
-#, python-format
-msgid "Export filtered (%(n)s)"
-msgstr "Φίλτρα εξαγωγής (%(n)s)"
+#~ msgid "Export filtered (%(n)s)"
+#~ msgstr "Φίλτρα εξαγωγής (%(n)s)"
 
-#: echorepo/templates/results.html:242
-#, python-format
-msgid "Privacy radius (~±%(km)s km)"
-msgstr "Ακτίνα απορρήτου (~±__%(km)s_ km)"
+#~ msgid "Privacy radius (~±%(km)s km)"
+#~ msgstr "Ακτίνα απορρήτου (~±__%(km)s_ km)"
 
