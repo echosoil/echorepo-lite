@@ -45,7 +45,7 @@ class Settings:
     # -------- Keycloak / OIDC --------
     KC_BASE: str   = os.getenv("KEYCLOAK_BASE_URL", "https://keycloak-dev.quanta-labs.com").rstrip("/")
     KC_REALM: str  = os.getenv("KEYCLOAK_REALM", "echo_realm")
-    KC_USE_AUTH_PREFIX: bool = os.getenv("KEYCLOAK_USE_AUTH_PREFIX", "true").lower() in ("1", "true", "yes")
+    KC_USE_AUTH_PREFIX: bool = os.getenv("KC_USE_AUTH_PREFIX", "false").lower() in ("1", "true", "yes")
 
     KC_CLIENT_ID: str     = os.getenv("KEYCLOAK_CLIENT_ID", "echo_client")
     KC_CLIENT_SECRET: str = os.getenv("KEYCLOAK_CLIENT_SECRET", "")
