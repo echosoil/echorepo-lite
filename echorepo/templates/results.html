@@ -219,4 +219,23 @@
 
   <!-- Your map logic (consumes window.I18N.labels) -->
   <script src="{{ url_for('static', filename='js/map.js') }}?v=8"></script>
+    <script>
+    (function () {
+      // don't spam people: only once per session
+      if (sessionStorage.getItem('survey_shown')) {
+        return;
+      }
+
+      const userId = "{{ user_key|e }}";
+      const surveyUrl = "http://myservey.com/?r=" + encodeURIComponent(userId);
+
+      const wantsSurvey = confirm("We'd love your feedback. Go to the survey now?");
+      if (wantsSurvey) {
+        // open in new tab so they don't lose the app
+        window.open(surveyUrl, "_blank");
+      }
+
+      sessionStorage.setItem('survey_shown', '1');
+    })();
+  </script>
 {% endblock %}
