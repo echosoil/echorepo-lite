@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 # --- Paths / .env ---
 load_dotenv()  # load any existing .env first to get PROJECT_ROOT
-PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite-dev"))
+PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite"))
 ENV_PATH = Path(PROJECT_ROOT / ".env")
 
 # --- Defaults if misload_csvsing in .env ---

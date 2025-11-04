@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-29 13:21+0000\n"
+"POT-Creation-Date: 2025-11-04 12:27+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -18,98 +18,97 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: echorepo/routes/web.py:19
+#: echorepo/routes/web.py:20
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Datenschutz (~±__{km}_ km)"
 
-#: echorepo/routes/web.py:20 echorepo/templates/results.html:243
+#: echorepo/routes/web.py:21
 msgid "Soil pH"
 msgstr "Soil pH"
 
-#: echorepo/routes/web.py:21 echorepo/templates/results.html:244
+#: echorepo/routes/web.py:22
 msgid "Acidic (≤5.5)"
 msgstr "Säure (≤5.5)"
 
-#: echorepo/routes/web.py:22 echorepo/templates/results.html:245
+#: echorepo/routes/web.py:23
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Leicht sauer (5.5–6.5)"
 
-#: echorepo/routes/web.py:23 echorepo/templates/results.html:246
+#: echorepo/routes/web.py:24
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutral (6.5–7.5)"
 
-#: echorepo/routes/web.py:24 echorepo/templates/results.html:247
+#: echorepo/routes/web.py:25
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Leicht alkalisch (7,5–8,5)"
 
-#: echorepo/routes/web.py:25 echorepo/templates/results.html:248
+#: echorepo/routes/web.py:26
 msgid "Alkaline (≥8.5)"
 msgstr "Alkalin (≥8.5)"
 
-#: echorepo/routes/web.py:26 echorepo/templates/results.html:225
+#: echorepo/routes/web.py:27
 msgid "Your samples"
 msgstr "Ihre Proben"
 
-#: echorepo/routes/web.py:27 echorepo/templates/results.html:226
+#: echorepo/routes/web.py:28
 msgid "Other samples"
 msgstr "Andere Proben"
 
-#: echorepo/routes/web.py:28 echorepo/templates/results.html:227
+#: echorepo/routes/web.py:29
 msgid "Export"
 msgstr "Ausfuhr"
 
-#: echorepo/routes/web.py:29 echorepo/templates/results.html:228
+#: echorepo/routes/web.py:30
 msgid "Clear"
 msgstr "Klar"
 
-#: echorepo/routes/web.py:30
+#: echorepo/routes/web.py:31
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Export gefiltert ({n})"
 
-#: echorepo/routes/web.py:31 echorepo/templates/results.html:231
+#: echorepo/routes/web.py:32
 msgid "Date"
 msgstr "Datum"
 
-#: echorepo/routes/web.py:32 echorepo/templates/results.html:232
+#: echorepo/routes/web.py:33
 msgid "QR code"
 msgstr "QR Code Design"
 
-#: echorepo/routes/web.py:33 echorepo/templates/results.html:167
-#: echorepo/templates/results.html:233
+#: echorepo/routes/web.py:34 echorepo/templates/results.html:180
 msgid "pH"
 msgstr "p H"
 
-#: echorepo/routes/web.py:34 echorepo/templates/results.html:234
+#: echorepo/routes/web.py:35
 msgid "Colour"
 msgstr "Farbe"
 
-#: echorepo/routes/web.py:35 echorepo/templates/results.html:235
+#: echorepo/routes/web.py:36
 msgid "Texture"
 msgstr "Textur"
 
-#: echorepo/routes/web.py:36 echorepo/templates/results.html:236
+#: echorepo/routes/web.py:37
 msgid "Structure"
 msgstr "Struktur"
 
-#: echorepo/routes/web.py:37 echorepo/templates/results.html:237
+#: echorepo/routes/web.py:38
 msgid "Earthworms"
 msgstr "Erdwürmer"
 
-#: echorepo/routes/web.py:38 echorepo/templates/results.html:238
+#: echorepo/routes/web.py:39
 msgid "Plastic"
 msgstr "Kunststoff"
 
-#: echorepo/routes/web.py:39 echorepo/templates/results.html:239
+#: echorepo/routes/web.py:40
 msgid "Debris"
 msgstr "Schulden"
 
-#: echorepo/routes/web.py:40 echorepo/templates/results.html:240
+#: echorepo/routes/web.py:41
 msgid "Contamination"
 msgstr "Kontamination"
 
-#: echorepo/routes/web.py:41 echorepo/templates/results.html:241
+#: echorepo/routes/web.py:42
 msgid "Metals"
 msgstr "Metalle"
 
@@ -365,57 +364,65 @@ msgstr "Keine Daten gefunden für"
 msgid "If you recently submitted samples, try again later."
 msgstr "Wenn Sie kürzlich Proben eingereicht haben, versuchen Sie es später erneut."
 
-#: echorepo/templates/results.html:136
+#: echorepo/templates/results.html:130
+msgid "Click to fill in 3rd survey"
+msgstr "Klicken Sie zum Ausfüllen der 3. Umfrage"
+
+#: echorepo/templates/results.html:131
+msgid "It helps us improve EchoSoil."
+msgstr "Es hilft uns, EchoSoil zu verbessern."
+
+#: echorepo/templates/results.html:134
+msgid "Open survey"
+msgstr "Offene Umfrage"
+
+#: echorepo/templates/results.html:149
 msgid "Download"
 msgstr "Downloads"
 
-#: echorepo/templates/results.html:142
+#: echorepo/templates/results.html:155
 msgid "CSV (per-user)"
 msgstr "CSV (pro-user)"
 
-#: echorepo/templates/results.html:148
+#: echorepo/templates/results.html:161
 msgid "XLSX (per-user)"
 msgstr "XLSX (pro-user)"
 
-#: echorepo/templates/results.html:154
+#: echorepo/templates/results.html:167
 msgid "All samples (CSV, anonymised)"
 msgstr "Alle Proben (CSV, anonymisiert)"
 
-#: echorepo/templates/results.html:159
+#: echorepo/templates/results.html:172
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (pro-user)"
 
-#: echorepo/templates/results.html:169
+#: echorepo/templates/results.html:182
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/results.html:172
+#: echorepo/templates/results.html:185
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/results.html:174
+#: echorepo/templates/results.html:187
 msgid "Apply pH filter"
 msgstr "PH-Filter anwenden"
 
-#: echorepo/templates/results.html:174 echorepo/templates/results.html:230
+#: echorepo/templates/results.html:187
 msgid "Apply"
 msgstr "Anwendung"
 
-#: echorepo/templates/results.html:176
+#: echorepo/templates/results.html:189
 msgid "Export rows matching current pH filter"
 msgstr "Exportieren von Zeilen, die mit dem aktuellen pH-Filter übereinstimmen"
 
-#: echorepo/templates/results.html:177
+#: echorepo/templates/results.html:190
 msgid "Export filtered (0)"
 msgstr "Export gefiltert (0)"
 
-#: echorepo/templates/results.html:229
-#, python-format
-msgid "Export filtered (%(n)s)"
-msgstr "Export gefiltert (%(n)s)"
+#~ msgid "Export filtered (%(n)s)"
+#~ msgstr "Export gefiltert (%(n)s)"
 
-#: echorepo/templates/results.html:242
-#, python-format
-msgid "Privacy radius (~±%(km)s km)"
-msgstr "Datenschutz (~±__%(km)s_ km)"
+#~ msgid "Privacy radius (~±%(km)s km)"
+#~ msgstr "Datenschutz (~±__%(km)s_ km)"
 

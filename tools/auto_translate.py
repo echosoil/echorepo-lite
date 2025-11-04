@@ -282,31 +282,69 @@ def translate_catalog(po_path, endpoint, target_lang, source_lang="en",
 # --- CLI ---------------------------------------------------------------------
 
 def main():
+    import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--trans-dir", default="echorepo/translations",
-                    help="translations dir with <lang>/LC_MESSAGES/messages.po")
-    ap.add_argument("--langs", nargs="+", required=True,
-                    help="space-separated lang codes: cs nl fi fr de el it pl pt ro sk es")
-    ap.add_argument("--endpoint", default=os.environ.get("LT_URL","http://127.0.0.1:5001"),
-                    help="LibreTranslate base URL (no trailing /translate)")
+    ap.add_argument(
+        "--trans-dir",
+        default="echorepo/translations",
+        help="translations dir with <lang>/LC_MESSAGES/messages.po",
+    )
+    ap.add_argument(
+        "--langs",
+        nargs="+",
+        help="space-separated lang codes; if omitted, auto-detect from --trans-dir",
+    )
+    ap.add_argument(
+        "--endpoint",
+        # default to service name in docker compose
+        default=os.environ.get("LT_URL", "http://libretranslate:5000"),
+        help="LibreTranslate base URL (no trailing /translate)",
+    )
     ap.add_argument("--source", default="en", help="source language code")
     ap.add_argument("--batch", type=int, default=60, help="batch size")
     ap.add_argument("--verbose", action="store_true", help="verbose logs")
-    ap.add_argument("--repair-only", action="store_true",
-                    help="only repair legacy PH tokens; do not call MT")
+    ap.add_argument(
+        "--repair-only",
+        action="store_true",
+        help="only repair legacy PH tokens; do not call MT",
+    )
     args = ap.parse_args()
+
+    # 1) auto-detect langs if user didn't pass --langs
+    langs = args.langs
+    if not langs:
+        langs = []
+        # NOTE: this was the line with the typo
+        for name in os.listdir(args.trans_dir):
+            lang_dir = os.path.join(args.trans_dir, name)
+            po_path = os.path.join(lang_dir, "LC_MESSAGES", "messages.po")
+            if os.path.isfile(po_path):
+                langs.append(name)
+        langs.sort()
 
     total_changed = 0
     total_repaired = 0
-    for lang in args.langs:
+
+    for lang in langs:
         po = os.path.join(args.trans_dir, lang, "LC_MESSAGES", "messages.po")
         if not os.path.isfile(po):
             print(f"[{lang}] missing: {po} — skipping")
             continue
-        print(f"[{lang}] translating empty entries via {args.endpoint} …" if not args.repair_only
-              else f"[{lang}] repairing placeholder tokens …")
+
+        print(
+            f"[{lang}] translating empty entries via {args.endpoint} …"
+            if not args.repair_only
+            else f"[{lang}] repairing placeholder tokens …"
+        )
+
         ch, rep = translate_catalog(
-            po, args.endpoint, lang, args.source, args.batch, args.verbose, args.repair_only
+            po,
+            args.endpoint,
+            lang,
+            args.source,
+            args.batch,
+            args.verbose,
+            args.repair_only,
         )
         print(f"[{lang}] filled {ch} entries; repaired {rep} existing")
         total_changed += ch
@@ -315,6 +353,6 @@ def main():
     print(f"ALL DONE — total filled: {total_changed}; repaired: {total_repaired}")
     if total_changed == 0 and total_repaired == 0:
         print("Note: If zero, verify LT_URL, languages, and that msgids exist/are empty.")
-
+        
 if __name__ == "__main__":
     main()
