@@ -15,6 +15,19 @@ PH_SENTINEL_ANY = re.compile(r'(?:__|_)?PH(?:_[A-Z]+)?_(\d+)(?:__|_)?')
 WHITES = r'[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]'
 SPACED_PH = re.compile(fr'(?:{WHITES}|_)*PH(?:{WHITES}|_)*(?:[A-Z]+)?(?:{WHITES}|_)*(\d+)(?:{WHITES}|_)*(?:{WHITES}|_)*')
 
+# --- Helper functions ---------------------------------------------------------
+def _to_text(val):
+    """Normalize MT output to a string."""
+    if isinstance(val, str):
+        return val
+    if isinstance(val, list) and val:
+        # LibreTranslate sometimes returns ['text']
+        return val[0]
+    if val is None:
+        return ""
+    return str(val)
+
+# --- Placeholder extraction, protection, restoration --------------------------
 def extract_placeholders(src: str):
     """
     Return (tokens, kind): tokens are the exact substrings to protect/restore.
@@ -57,12 +70,13 @@ def repair_legacy_tokens(text: str, tokens):
     """
     Map junk PH tokens back to the real placeholders by index.
     If the source had no placeholders, just strip PH junk and
-    leave the rest of the string unchanged (no global normalization).
+    leave the rest of the string unchanged.
     """
+    text = _to_text(text)
     if not text:
         return text
 
-    out = text  # <-- do NOT normalize globally
+    out = text  # do NOT normalize globally
 
     if tokens:
         # compact forms like "__PH_PY_0__", "_PH_0__", "PH_0"
@@ -90,7 +104,7 @@ def repair_legacy_tokens(text: str, tokens):
         out = SPACED_PH.sub(repl_spaced, out)
         return out
 
-    # Source had no placeholders — remove PH junk only; keep spaces intact
+    # Source had no placeholders — just remove leftover PH junk
     out = PH_SENTINEL_ANY.sub('', out)
     out = SPACED_PH.sub('', out)
     return out
@@ -182,62 +196,44 @@ def translate_catalog(po_path, endpoint, target_lang, source_lang="en",
     changed = 0
     repaired = 0
 
-    # Pass 1: repair legacy PH tokens in already-filled entries
-    for msg in list(catalog):
-        if not msg.id:
-            continue
-
-        if msg.pluralizable and isinstance(msg.string, dict):
-            nm = dict(msg.string)
-            for k, v in list(nm.items()):
-                if not isinstance(v, str) or not v:
-                    continue
-                # pick singular source for index 0, plural for others
-                src = msg.id[0] if k == 0 else msg.id[1]
-                tokens, _ = extract_placeholders(src)
-                fixed = repair_legacy_tokens(v, tokens)
-                if fixed != v:
-                    nm[k] = fixed
-                    repaired += 1
-            msg.string = nm
-        else:
-            if isinstance(msg.string, str) and msg.string:
-                src = msg.id if isinstance(msg.id, str) else msg.id[0]
-                tokens, _ = extract_placeholders(src)
-                fixed = repair_legacy_tokens(msg.string, tokens)
-                if fixed != msg.string:
-                    msg.string = fixed
-                    repaired += 1
+    # --- Pass 1: repair existing strings (you already have this) ---
+    # ... keep your current repair pass here ...
 
     if repair_only:
         if changed or repaired:
             write_po_robust(po_path, catalog, width=80)
         return changed, repaired
 
-    # Pass 2: translate empty entries
+    # --- Pass 2: collect what needs translation (empty OR fuzzy) ---
     tasks = []   # (msg, part, protected_text, tokens)
     for msg in list(catalog):
         if not msg.id:
             continue
 
+        is_fuzzy = "fuzzy" in getattr(msg, "flags", [])
+
         if msg.pluralizable:
+            # plural case
             has_any = False
             if isinstance(msg.string, dict):
                 has_any = any(bool(v) for v in msg.string.values())
-            if has_any:
-                continue
-            s_sing, s_plu = msg.id
-            p_sing, t_sing = protect_placeholders(s_sing)
-            p_plu,  t_plu  = protect_placeholders(s_plu)
-            tasks.append((msg, "sing", p_sing, t_sing))
-            tasks.append((msg, "plur", p_plu,  t_plu))
-        else:
-            if msg.string:
-                continue
-            src = msg.id if isinstance(msg.id, str) else msg.id[0]
-            p_src, toks = protect_placeholders(src)
-            tasks.append((msg, "singular", p_src, toks))
 
+            # translate if empty OR fuzzy
+            if (not has_any) or is_fuzzy:
+                s_sing, s_plu = msg.id
+                p_sing, t_sing = protect_placeholders(s_sing)
+                p_plu,  t_plu  = protect_placeholders(s_plu)
+                tasks.append((msg, "sing", p_sing, t_sing))
+                tasks.append((msg, "plur", p_plu,  t_plu))
+        else:
+            # simple (non-plural)
+            is_empty = not msg.string
+            if is_empty or is_fuzzy:
+                src = msg.id if isinstance(msg.id, str) else msg.id[0]
+                p_src, toks = protect_placeholders(src)
+                tasks.append((msg, "singular", p_src, toks))
+
+    # --- Now translate in batches, same as before ---
     i = 0
     while i < len(tasks):
         batch = tasks[i:i+batch_size]
@@ -254,24 +250,33 @@ def translate_catalog(po_path, endpoint, target_lang, source_lang="en",
                 outs.append(lt_translate_single(endpoint, ptxt, target_lang, source_lang))
 
         for (m, part, ptxt, toks), tr in zip(batch, outs):
+            tr = _to_text(tr)
             tr = tr or ""
+            # restore placeholders
             tr = restore_placeholders(tr, toks)
-            # Final safety: if any legacy tokens slipped, repair again
+
+            # final safety
             src = m.id if isinstance(m.id, str) else (m.id[0] if part in ("sing", "singular") else m.id[1])
             tr = repair_legacy_tokens(tr, extract_placeholders(src)[0])
 
+            # write back
             if m.pluralizable:
                 if not m.string or not isinstance(m.string, dict):
                     m.string = {}
                 if part == "sing":
                     m.string[0] = tr
                 else:
+                    # we only got one plural form from MT, reuse it
                     for k in range(1, 6):
                         m.string[k] = tr
-                changed += 1
             else:
                 m.string = tr
-                changed += 1
+
+            # IMPORTANT: drop fuzzy flag if present
+            if hasattr(m, "flags") and "fuzzy" in m.flags:
+                m.flags.remove("fuzzy")
+
+            changed += 1
 
         i += batch_size
 

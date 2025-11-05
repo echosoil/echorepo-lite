@@ -32,6 +32,11 @@ BASE_LABEL_MSGIDS = {
     "debris": "Debris",
     "contamination": "Contamination",
     "metals": "Metals",
+    "drawRectangle": "Draw a rectangle",
+    "drawRectangleHint": "Click and drag to draw a rectangle.",
+    "cancelDrawing": "Cancel drawing",
+    "cancel": "Cancel",
+    "deleteLastPoint": "Delete last point",
 }
 
 def base_labels() -> dict:
