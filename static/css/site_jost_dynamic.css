@@ -1,0 +1,22 @@
+/* === Jost variable === */
+@font-face {
+  font-family: "Jost";
+  src: url("../fonts/Jost-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;           /* Jost covers a range */
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Jost";
+  src: url("../fonts/Jost-Italic-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --font-sans: "Jost", "Noto Sans", Inter, system-ui, -apple-system,
+               "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bs-body-font-family: var(--font-sans);
+}
