@@ -1,102 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --------------------------------------------------
-# CONFIG – adjust if your names differ
-# --------------------------------------------------
-COMPOSE="docker compose"             # or 'docker-compose'
-LT_PROFILE="--profile devtools"
-LT_SERVICE="libretranslate"
-I18N_SERVICE="i18n"
-
-# where translations live INSIDE the app container
-APP_TRANSL_DIR="/app/echorepo/translations"
-
-# allow forcing from CLI: APP_CONTAINER=echorepo-lite ./tools/translate_all.sh
-APP_CONTAINER="${APP_CONTAINER:-}"
-
-LT_HOST_URL="${LT_HOST_URL:-http://localhost:5001}"
+# 0) where the code is inside the container
+WORK_DIR="/work"
+TRANS_DIR="$WORK_DIR/echorepo/translations"
+LT_HOST_URL="http://localhost:5001"       # host side
 LT_CONTAINER_URL="http://libretranslate:5000"
 
-echo "[1/5] Starting libretranslate + i18n..."
-$COMPOSE $LT_PROFILE up -d "$LT_SERVICE" "$I18N_SERVICE"
+echo "[1/6] Starting libretranslate + i18n..."
+docker compose up -d libretranslate i18n
 
-echo "[2/5] Waiting for LibreTranslate at $LT_HOST_URL ..."
-for i in {1..200}; do
-  if curl -sf "$LT_HOST_URL/languages" >/dev/null 2>&1; then
+echo "[2/6] Waiting for LibreTranslate at $LT_HOST_URL ..."
+for i in {1..30}; do
+  if curl -s "$LT_HOST_URL/languages" >/dev/null 2>&1; then
     echo "LibreTranslate is up."
     break
   fi
-  echo "  ... still waiting ($i)"
-  sleep 5
+  sleep 1
 done
 
-if ! curl -sf "$LT_HOST_URL/languages" >/dev/null 2>&1; then
-  echo "ERROR: LibreTranslate did not become ready. Aborting."
-  exit 1
-fi
+echo "[3/6] Running pybabel extract in i18n container..."
+docker compose run --rm i18n \
+  pybabel extract -F babel.cfg -o "$TRANS_DIR/messages.pot" "$WORK_DIR"
 
-echo "[3/5] Collecting languages from ./echorepo/translations ..."
-if [ ! -d ./echorepo/translations ]; then
-  echo "ERROR: ./echorepo/translations not found in current dir"
-  exit 1
-fi
+echo "[4/6] Running pybabel update in i18n container..."
+docker compose run --rm i18n \
+  pybabel update -i "$TRANS_DIR/messages.pot" -d "$TRANS_DIR"
 
-LANGS=""
-for d in ./echorepo/translations/*; do
-  [ -d "$d" ] || continue
-  lang="$(basename "$d")"
-  if [ "$lang" != "en" ]; then
-    LANGS+="$lang "
-  fi
-done
+echo "[5/6] Running auto_translate.py in i18n container..."
+docker compose run --rm i18n \
+  python tools/auto_translate.py --trans-dir "$TRANS_DIR" --endpoint "$LT_CONTAINER_URL"
 
-echo "Will translate into: $LANGS"
+echo "[6/6] Compiling translations in i18n container..."
+docker compose run --rm i18n \
+  pybabel compile -d "$TRANS_DIR"
 
-echo "[4/5] Running auto_translate.py in i18n container..."
-$COMPOSE $LT_PROFILE run --rm "$I18N_SERVICE" \
-  python tools/auto_translate.py \
-    --trans-dir /work/echorepo/translations \
-    --endpoint "$LT_CONTAINER_URL" \
-    --source en \
-    --langs $LANGS
-echo "Translation step done."
+echo "Stopping libretranslate..."
+docker compose stop libretranslate
 
-# --------------------------------------------------
-# find the REAL app container to compile inside
-# --------------------------------------------------
-if [ -z "$APP_CONTAINER" ]; then
-  # 1) try explicit name you showed earlier
-  candidate=$(docker ps --filter "name=echorepo-lite" --format '{{.Names}}' | head -n1 || true)
-
-  # 2) if it picked the i18n one, discard it
-  if echo "$candidate" | grep -qi "i18n"; then
-    candidate=""
-  fi
-
-  # 3) try any container whose IMAGE contains 'echorepo-lite'
-  if [ -z "$candidate" ]; then
-    candidate=$(docker ps --format '{{.Names}} {{.Image}}' \
-      | grep 'echorepo-lite' \
-      | grep -vi 'i18n' \
-      | awk '{print $1}' \
-      | head -n1 || true)
-  fi
-
-  APP_CONTAINER="$candidate"
-fi
-
-if [ -z "$APP_CONTAINER" ]; then
-  echo "WARN: could not autodetect app container."
-  echo "Run this yourself in the app container:"
-  echo "  docker exec -it <app-container> pybabel compile -d $APP_TRANSL_DIR"
-else
-  echo "[5/5] Compiling translations inside container: $APP_CONTAINER ..."
-  docker exec "$APP_CONTAINER" pybabel compile -d "$APP_TRANSL_DIR"
-  echo "Compilation done."
-fi
-
-echo "Stopping temporary i18n services..."
-$COMPOSE $LT_PROFILE down
-
-echo "All done ✅"
+echo "✅ Translation pipeline done."
