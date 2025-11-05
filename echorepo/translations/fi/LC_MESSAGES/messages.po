@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-04 12:27+0000\n"
+"POT-Creation-Date: 2025-11-05 00:22+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fi\n"
@@ -18,399 +18,516 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: echorepo/routes/web.py:20
+#: /work/echorepo/routes/web.py:19
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Yksityisyyden suojasäde (~±_{km}_ km)"
 
-#: echorepo/routes/web.py:21
+#: /work/echorepo/routes/web.py:20
 msgid "Soil pH"
 msgstr "Maaperän pH"
 
-#: echorepo/routes/web.py:22
+#: /work/echorepo/routes/web.py:21
 msgid "Acidic (≤5.5)"
 msgstr "Hapan (≤5.5)"
 
-#: echorepo/routes/web.py:23
+#: /work/echorepo/routes/web.py:22
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Hieman happoinen (5.5...6,5)"
 
-#: echorepo/routes/web.py:24
+#: /work/echorepo/routes/web.py:23
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutraali (6.5"
 
-#: echorepo/routes/web.py:25
+#: /work/echorepo/routes/web.py:24
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Hieman emäksinen (7.5...8.5)"
 
-#: echorepo/routes/web.py:26
+#: /work/echorepo/routes/web.py:25
 msgid "Alkaline (≥8.5)"
 msgstr "Alkali (≥8.5)"
 
-#: echorepo/routes/web.py:27
+#: /work/echorepo/routes/web.py:26
 msgid "Your samples"
 msgstr "Näytteet"
 
-#: echorepo/routes/web.py:28
+#: /work/echorepo/routes/web.py:27
 msgid "Other samples"
 msgstr "Muut näytteet"
 
-#: echorepo/routes/web.py:29
+#: /work/echorepo/routes/web.py:28
 msgid "Export"
 msgstr "Vie"
 
-#: echorepo/routes/web.py:30
+#: /work/echorepo/routes/web.py:29
 msgid "Clear"
 msgstr "Tyhjennä"
 
-#: echorepo/routes/web.py:31
+#: /work/echorepo/routes/web.py:30
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Vie suodatettu (__{n}_)"
 
-#: echorepo/routes/web.py:32
+#: /work/echorepo/routes/web.py:31
 msgid "Date"
 msgstr "Päivämäärä"
 
-#: echorepo/routes/web.py:33
+#: /work/echorepo/routes/web.py:32
 msgid "QR code"
 msgstr "QR-koodi"
 
-#: echorepo/routes/web.py:34 echorepo/templates/results.html:180
+#: /work/echorepo/routes/web.py:33 /work/echorepo/templates/results.html:216
 msgid "pH"
 msgstr "p H"
 
-#: echorepo/routes/web.py:35
+#: /work/echorepo/routes/web.py:34
 msgid "Colour"
 msgstr "Väri"
 
-#: echorepo/routes/web.py:36
+#: /work/echorepo/routes/web.py:35
 msgid "Texture"
 msgstr "Tekstuuri"
 
-#: echorepo/routes/web.py:37
+#: /work/echorepo/routes/web.py:36
 msgid "Structure"
 msgstr "Rakenne"
 
-#: echorepo/routes/web.py:38
+#: /work/echorepo/routes/web.py:37
 msgid "Earthworms"
 msgstr "Madot"
 
-#: echorepo/routes/web.py:39
+#: /work/echorepo/routes/web.py:38
 msgid "Plastic"
 msgstr "Muovi"
 
-#: echorepo/routes/web.py:40
+#: /work/echorepo/routes/web.py:39
 msgid "Debris"
 msgstr "Jätteet"
 
-#: echorepo/routes/web.py:41
+#: /work/echorepo/routes/web.py:40
 msgid "Contamination"
 msgstr "Saastuminen"
 
-#: echorepo/routes/web.py:42
+#: /work/echorepo/routes/web.py:41
 msgid "Metals"
 msgstr "Metallit"
 
-#: echorepo/templates/base.html:6 echorepo/templates/base.html:10
+#: /work/echorepo/routes/web.py:42
+msgid "Draw a rectangle"
+msgstr "Piirrä suorakulmio"
+
+#: /work/echorepo/routes/web.py:43
+msgid "Cancel drawing"
+msgstr "Peruuta piirustus"
+
+#: /work/echorepo/routes/web.py:44
+msgid "Cancel"
+msgstr "Peruuta"
+
+#: /work/echorepo/routes/web.py:45
+msgid "Delete last point"
+msgstr "Poistetaan viimeinen kohta"
+
+#: /work/echorepo/routes/web.py:46
+msgid "Click and drag to draw a rectangle."
+msgstr "Napsauta ja vedä piirtää suorakulmio."
+
+#: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
 msgstr "EU Maaperän tiedot"
 
-#: echorepo/templates/base.html:9
+#: /work/echorepo/templates/base.html:9
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr "ECHOrepo "
 
-#: echorepo/templates/base.html:12
+#: /work/echorepo/templates/base.html:12
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr "Lataa maanäytteet. Osa EU:n rahoittamaa ECHO-hanketta."
 
-#: echorepo/templates/base.html:79
+#: /work/echorepo/templates/base.html:79
 msgid "Skip to content"
 msgstr "Siirry sisältöön"
 
-#: echorepo/templates/base.html:85
+#: /work/echorepo/templates/base.html:85
 msgid "Primary"
 msgstr "Ensisijainen"
 
-#: echorepo/templates/base.html:88
+#: /work/echorepo/templates/base.html:88
 msgid "ECHOrepo logo"
 msgstr "ECHOrepo-logo"
 
-#: echorepo/templates/base.html:93
+#: /work/echorepo/templates/base.html:93
 msgid "Toggle navigation"
 msgstr "Vaihda navigointia"
 
-#: echorepo/templates/base.html:99
+#: /work/echorepo/templates/base.html:99
 msgid "About"
 msgstr "Tietoja"
 
-#: echorepo/templates/base.html:100
+#: /work/echorepo/templates/base.html:100
 msgid "For Participants"
 msgstr "Osallistujat"
 
-#: echorepo/templates/base.html:101
+#: /work/echorepo/templates/base.html:101
 msgid "Partners"
 msgstr "Kumppanit"
 
-#: echorepo/templates/base.html:102
+#: /work/echorepo/templates/base.html:102
 msgid "News & Events"
 msgstr "Uutiset & Tapahtumat"
 
-#: echorepo/templates/base.html:104
+#: /work/echorepo/templates/base.html:104
 msgid "Resources"
 msgstr "Varat"
 
-#: echorepo/templates/base.html:106
+#: /work/echorepo/templates/base.html:106
 msgid "Media Kit"
 msgstr "Mediapakkaus"
 
-#: echorepo/templates/base.html:107
+#: /work/echorepo/templates/base.html:107
 msgid "Publications"
 msgstr "Julkaisut"
 
-#: echorepo/templates/base.html:108
+#: /work/echorepo/templates/base.html:108
 msgid "Newsletter Archive"
 msgstr "Tiedotuslehtiarkisto"
 
-#: echorepo/templates/base.html:120
+#: /work/echorepo/templates/base.html:120
 msgid "Change language"
 msgstr "Vaihda kieltä"
 
-#: echorepo/templates/base.html:152
+#: /work/echorepo/templates/base.html:152
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo on osa EU:n ja UKRI:n rahoittamaa"
 
-#: echorepo/templates/base.html:152
+#: /work/echorepo/templates/base.html:152
 msgid "project"
 msgstr "hanke"
 
-#: echorepo/templates/base.html:154
+#: /work/echorepo/templates/base.html:154
 msgid "Need help?"
 msgstr "Tarvitsetko apua?"
 
-#: echorepo/templates/base.html:158
+#: /work/echorepo/templates/base.html:158
 msgid "EU-funded"
 msgstr "EU:n rahoittama"
 
-#: echorepo/templates/base.html:159
+#: /work/echorepo/templates/base.html:159
 msgid "EU-funded initiative"
 msgstr "EU:n rahoittama aloite"
 
-#: echorepo/templates/issues.html:3
+#: /work/echorepo/templates/issues.html:3
 msgid "Data quality issues — ECHOrepo"
 msgstr "Tietojen laatua koskevat kysymykset"
 
-#: echorepo/templates/issues.html:7 echorepo/templates/issues.html:15
+#: /work/echorepo/templates/issues.html:7
+#: /work/echorepo/templates/issues.html:15
 msgid "Back to My Data"
 msgstr "Takaisin omaan dataani"
 
-#: echorepo/templates/issues.html:13
+#: /work/echorepo/templates/issues.html:13
 msgid "Data quality issues"
 msgstr "Tietojen laatua koskevat kysymykset"
 
-#: echorepo/templates/issues.html:20
+#: /work/echorepo/templates/issues.html:20
 msgid "Data issues"
 msgstr "Tietokysymykset"
 
-#: echorepo/templates/issues.html:22
+#: /work/echorepo/templates/issues.html:22
 #, python-format
 msgid "Default coordinates (%(lat)s, %(lon)s)"
 msgstr "Oletuskoordinaatit (__%(lat)s_, %(lon)s)"
 
-#: echorepo/templates/issues.html:24
+#: /work/echorepo/templates/issues.html:24
 msgid "No entries with default coordinates"
 msgstr "Ei tietueita oletuskoordinaateilla"
 
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:68
+#: /work/echorepo/templates/issues.html:29
+#: /work/echorepo/templates/issues.html:68
 msgid "Sample"
 msgstr "Näyte"
 
-#: echorepo/templates/issues.html:30 echorepo/templates/issues.html:69
+#: /work/echorepo/templates/issues.html:30
+#: /work/echorepo/templates/issues.html:69
 msgid "User"
 msgstr "Käyttäjä"
 
-#: echorepo/templates/issues.html:31 echorepo/templates/issues.html:70
+#: /work/echorepo/templates/issues.html:31
+#: /work/echorepo/templates/issues.html:70
 msgid "QR"
 msgstr "QR"
 
-#: echorepo/templates/issues.html:32 echorepo/templates/issues.html:71
+#: /work/echorepo/templates/issues.html:32
+#: /work/echorepo/templates/issues.html:71
 msgid "Lat"
 msgstr "Lat"
 
-#: echorepo/templates/issues.html:33 echorepo/templates/issues.html:72
+#: /work/echorepo/templates/issues.html:33
+#: /work/echorepo/templates/issues.html:72
 msgid "Lon"
 msgstr "Lon"
 
-#: echorepo/templates/issues.html:34 echorepo/templates/issues.html:73
+#: /work/echorepo/templates/issues.html:34
+#: /work/echorepo/templates/issues.html:73
 msgid "Fix"
 msgstr "Korjaa"
 
-#: echorepo/templates/issues.html:49 echorepo/templates/issues.html:88
+#: /work/echorepo/templates/issues.html:49
+#: /work/echorepo/templates/issues.html:88
 msgid "Lat (dec or DMS)"
 msgstr "Lat (dec tai DMS)"
 
-#: echorepo/templates/issues.html:50 echorepo/templates/issues.html:89
+#: /work/echorepo/templates/issues.html:50
+#: /work/echorepo/templates/issues.html:89
 msgid "Lon (dec or DMS)"
 msgstr "Lon (dec tai DMS)"
 
-#: echorepo/templates/issues.html:51 echorepo/templates/issues.html:90
+#: /work/echorepo/templates/issues.html:51
+#: /work/echorepo/templates/issues.html:90
 msgid "Save"
 msgstr "Tallenna"
 
-#: echorepo/templates/issues.html:60
+#: /work/echorepo/templates/issues.html:60
 msgid "Country mismatches"
 msgstr "Maa"
 
-#: echorepo/templates/issues.html:61
+#: /work/echorepo/templates/issues.html:61
 msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr "Todellinen maa (koordista) ei ole tämän QR:n suunnitellussa luettelossa."
 
-#: echorepo/templates/issues.html:63
+#: /work/echorepo/templates/issues.html:63
 msgid "No country mismatches"
 msgstr "Ei maiden välisiä eroja"
 
-#: echorepo/templates/login.html:2
+#: /work/echorepo/templates/login.html:2
 msgid "ECHOrepo — Access"
 msgstr "ECHOrepo "
 
-#: echorepo/templates/login.html:10
+#: /work/echorepo/templates/login.html:10
 msgid "Access your data"
 msgstr "Käytä tietojasi"
 
-#: echorepo/templates/login.html:11
+#: /work/echorepo/templates/login.html:11
 msgid "Sign in with your Keycloak credentials."
 msgstr "Kirjaudu sisään avainvaaleillasi."
 
-#: echorepo/templates/login.html:21
+#: /work/echorepo/templates/login.html:21
 msgid "Email or username"
 msgstr "Sähköposti tai käyttäjätunnus"
 
-#: echorepo/templates/login.html:25
+#: /work/echorepo/templates/login.html:25
 msgid "you@example.org"
 msgstr "you@example.org"
 
-#: echorepo/templates/login.html:30
+#: /work/echorepo/templates/login.html:30
 msgid "Password"
 msgstr "Salasana"
 
-#: echorepo/templates/login.html:40
+#: /work/echorepo/templates/login.html:40
 msgid "Continue"
 msgstr "Jatka"
 
-#: echorepo/templates/login.html:46
+#: /work/echorepo/templates/login.html:46
 msgid "Issues signing in? Contact the organisers."
 msgstr "Ongelmia? Ota yhteyttä järjestäjiin."
 
-#: echorepo/templates/login.html:62
+#: /work/echorepo/templates/login.html:62
 msgid "GDPR-friendly access"
 msgstr "GDPR:n käyttömahdollisuudet"
 
-#: echorepo/templates/login.html:65
+#: /work/echorepo/templates/login.html:65
 msgid "Download your data anytime"
 msgstr "Lataa tiedot milloin tahansa"
 
-#: echorepo/templates/results.html:2
+#: /work/echorepo/templates/results.html:2
 msgid "ECHOrepo — Your Data"
 msgstr "ECHOREPO "
 
-#: echorepo/templates/results.html:7
+#: /work/echorepo/templates/results.html:7
 msgid "Download all samples (CSV)"
 msgstr "Lataa kaikki näytteet (CSV)"
 
-#: echorepo/templates/results.html:14
+#: /work/echorepo/templates/results.html:14
 msgid "Logged in as"
 msgstr "Kirjautunut sisään"
 
-#: echorepo/templates/results.html:19
+#: /work/echorepo/templates/results.html:19
 msgid "Copy user key"
 msgstr "Kopioi käyttäjätunnus"
 
-#: echorepo/templates/results.html:23
+#: /work/echorepo/templates/results.html:23
 msgid "Logout"
 msgstr "Kirjaudu ulos"
 
-#: echorepo/templates/results.html:104
+#: /work/echorepo/templates/results.html:104
 msgid "Your data"
 msgstr "Tietosi"
 
-#: echorepo/templates/results.html:105
+#: /work/echorepo/templates/results.html:105
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
-msgstr "Tutustu maaperänäytteen sijainti kartalla, sitten viedä tai selata taulukkoa."
+msgstr ""
+"Tutustu maaperänäytteen sijainti kartalla, sitten viedä tai selata "
+"taulukkoa."
 
-#: echorepo/templates/results.html:113
+#: /work/echorepo/templates/results.html:110
+msgid "Final survey"
+msgstr "Loppututkimus"
+
+#: /work/echorepo/templates/results.html:112
+msgid "We sincerely thank you for your commitment to this project!"
+msgstr "Kiitämme teitä vilpittömästi sitoutumisestanne tähän hankkeeseen!"
+
+#: /work/echorepo/templates/results.html:115
+msgid ""
+"This is the third and final survey in the project, following the initial "
+"ones you completed before and after soil sampling. The majority of "
+"questions are consistent with the previous surveys so that we can "
+"accurately measure changes over time and understand the impact of project"
+" participation."
+msgstr ""
+"Tämä on hankkeen kolmas ja viimeinen tutkimus, joka on tehty ennen ja "
+"jälkeen maaperänäytteenoton. Suurin osa kysymyksistä on yhteneviä "
+"aiempien kyselyiden kanssa, jotta voimme tarkasti mitata muutoksia ajan "
+"mittaan ja ymmärtää hankkeiden osallistumisen vaikutuksia."
+
+#: /work/echorepo/templates/results.html:118
+msgid ""
+"Before you start: please only complete this survey if the lab results "
+"from your soil sample(s) have already been added to the repository. If "
+"the results are pending, please check back at a later time."
+msgstr ""
+"Ennen kuin aloitat: Täytä tämä tutkimus vain, jos maaperänäytteiden "
+"tulokset on jo lisätty varastoon. Jos tulokset ovat kesken, tarkista "
+"myöhemmin."
+
+#: /work/echorepo/templates/results.html:123
+msgid "Go to final survey"
+msgstr "Siirry loppututkimukseen"
+
+#: /work/echorepo/templates/results.html:131
+msgid "Data use information"
+msgstr "Tietojen käyttötiedot"
+
+#: /work/echorepo/templates/results.html:136
+msgid "Processing survey data in the ECHO project"
+msgstr "ECHO-hankkeen tutkimustietojen käsittely"
+
+#: /work/echorepo/templates/results.html:138
+msgid ""
+"The objective of this survey data is to examine the impact of project "
+"participation on participant attitudes and motivation towards soil."
+msgstr ""
+"Tämän kyselyn tavoitteena on selvittää hankkeen osallistumisen vaikutusta"
+" osallistujien asenteisiin ja motivaatioon maaperää kohtaan."
+
+#: /work/echorepo/templates/results.html:141
+msgid ""
+"Your information will only be used for scientific purposes. We do not "
+"collect names or addresses. Your details regarding age and gender are "
+"only used for statistical purposes and all details are collected and "
+"evaluated anonymously. It is not possible to draw conclusions about your "
+"person at any time."
+msgstr ""
+"Tietojasi käytetään vain tieteellisiin tarkoituksiin. Emme kerää nimiä "
+"tai osoitteita. Ikää ja sukupuolta koskevia tietojasi käytetään vain "
+"tilastollisiin tarkoituksiin ja kaikki tiedot kerätään ja arvioidaan "
+"nimettömästi. Henkilöstä ei voi tehdä johtopäätöksiä milloinkaan."
+
+#: /work/echorepo/templates/results.html:144
+msgid ""
+"Answering each question in the survey is most appreciated as it plays a "
+"crucial role in providing valuable insights that enhance the relevance "
+"and impact of the ECHO project. Your honest responses are essential for "
+"understanding how engagement with the project influences attitudes and "
+"motivations, ensuring the project’s outcomes are meaningful and well-"
+"informed."
+msgstr ""
+"Kuhunkin kysymykseen vastaaminen tutkimuksessa on erittäin tärkeää, koska"
+" sillä on ratkaiseva merkitys ECHO-hankkeen merkityksellisyyden ja "
+"vaikutusten kannalta. Rehelliset vastauksesi ovat olennaisia, jotta "
+"voidaan ymmärtää, miten sitoutuminen projektiin vaikuttaa asenteisiin ja "
+"motivaatioihin ja varmistaa, että hankkeen tulokset ovat mielekkäitä ja "
+"hyvin perillä asioista."
+
+#: /work/echorepo/templates/results.html:147
+msgid ""
+"The survey will take approximately 8–10 minutes to complete. Please find "
+"a quiet space where you won’t be interrupted. There are no right or wrong"
+" answers — answer spontaneously."
+msgstr ""
+"Kyselyn valmistuminen kestää noin 8.10. Etsi hiljainen tila, jossa voit "
+"keskeyttää. Ei ole oikeita tai vääriä vastauksia . Vastaus spontaanisti."
+
+#: /work/echorepo/templates/results.html:150
+msgid ""
+"Based on the information provided to you, please consent to participate "
+"in the survey below."
+msgstr ""
+"Saamiesi tietojen perusteella suostut osallistumaan alla olevaan "
+"tutkimukseen."
+
+#: /work/echorepo/templates/results.html:162
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Korjaa tiedot (__%(n)s_)"
 
-#: echorepo/templates/results.html:116
+#: /work/echorepo/templates/results.html:165
 msgid "Some samples need attention to ensure correct maps and downloads."
 msgstr ""
 "Jotkut näytteet tarvitsevat huomiota varmistaakseen oikeat kartat ja "
 "lataukset."
 
-#: echorepo/templates/results.html:123
+#: /work/echorepo/templates/results.html:172
 msgid "No data found for"
 msgstr "Tietoja ei löytynyt"
 
-#: echorepo/templates/results.html:123
+#: /work/echorepo/templates/results.html:172
 msgid "If you recently submitted samples, try again later."
 msgstr "Jos olet äskettäin toimittanut näytteitä, yritä myöhemmin uudelleen."
 
-#: echorepo/templates/results.html:130
-msgid "Click to fill in 3rd survey"
-msgstr "Klikkaa täyttääksesi 3. kyselyn"
-
-#: echorepo/templates/results.html:131
-msgid "It helps us improve EchoSoil."
-msgstr "Se auttaa meitä parantamaan EchoSoilia."
-
-#: echorepo/templates/results.html:134
-msgid "Open survey"
-msgstr "Avoin kysely"
-
-#: echorepo/templates/results.html:149
+#: /work/echorepo/templates/results.html:185
 msgid "Download"
 msgstr "Lataa"
 
-#: echorepo/templates/results.html:155
+#: /work/echorepo/templates/results.html:191
 msgid "CSV (per-user)"
 msgstr "CSV (käyttäjää kohti)"
 
-#: echorepo/templates/results.html:161
+#: /work/echorepo/templates/results.html:197
 msgid "XLSX (per-user)"
 msgstr "XLSX (käyttäjäkohtainen)"
 
-#: echorepo/templates/results.html:167
+#: /work/echorepo/templates/results.html:203
 msgid "All samples (CSV, anonymised)"
 msgstr "Kaikki näytteet (CSV, anonyymi)"
 
-#: echorepo/templates/results.html:172
+#: /work/echorepo/templates/results.html:208
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (käyttäjä)"
 
-#: echorepo/templates/results.html:182
+#: /work/echorepo/templates/results.html:218
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/results.html:185
+#: /work/echorepo/templates/results.html:221
 msgid "max"
 msgstr "enintään"
 
-#: echorepo/templates/results.html:187
+#: /work/echorepo/templates/results.html:223
 msgid "Apply pH filter"
 msgstr "Käytä pH-suodatinta"
 
-#: echorepo/templates/results.html:187
+#: /work/echorepo/templates/results.html:223
 msgid "Apply"
 msgstr "Käytä"
 
-#: echorepo/templates/results.html:189
+#: /work/echorepo/templates/results.html:225
 msgid "Export rows matching current pH filter"
 msgstr "Vie nykyisen pH-suotimen mukaiset rivit"
 
-#: echorepo/templates/results.html:190
+#: /work/echorepo/templates/results.html:226
 msgid "Export filtered (0)"
 msgstr "Vie suodatettu (0)"
 
@@ -419,4 +536,7 @@ msgstr "Vie suodatettu (0)"
 
 #~ msgid "Privacy radius (~±%(km)s km)"
 #~ msgstr "Yksityisyyden suojasäde (~±_%(km)s_ km)"
+
+#~ msgid "It helps us improve EchoSoil."
+#~ msgstr "Se auttaa meitä parantamaan EchoSoilia."
 

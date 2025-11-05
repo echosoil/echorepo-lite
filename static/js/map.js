@@ -434,6 +434,42 @@
     ctl.addTo(map); sync();
   }
 
+  // ---- Localize Leaflet.Draw built-in strings ----
+  function applyLeafletDrawTranslations() {
+    if (!L.drawLocal) return;   // safety
+
+    // toolbar button text
+    if (L.drawLocal.draw && L.drawLocal.draw.toolbar) {
+      const tb = L.drawLocal.draw.toolbar;
+      // the little button you hover on the map
+      if (tb.buttons) {
+        tb.buttons.rectangle = T('drawRectangle', {}, 'Draw a rectangle');
+      }
+      // cancel / finish stuff
+      if (tb.actions) {
+        tb.actions.title = T('cancelDrawing', {}, 'Cancel drawing');
+        tb.actions.text  = T('cancel', {}, 'Cancel');
+      }
+      if (tb.undo) {
+        tb.undo.title = T('deleteLastPoint', {}, 'Delete last point drawn');
+        tb.undo.text  = T('deleteLastPoint', {}, 'Delete last point');
+      }
+    }
+
+    // tooltips while drawing
+    if (L.drawLocal.draw && L.drawLocal.draw.handlers) {
+      const h = L.drawLocal.draw.handlers;
+      if (h.rectangle && h.rectangle.tooltip) {
+        h.rectangle.tooltip.start = T(
+          'drawRectangleHint',
+          {},
+          'Click and drag to draw a rectangle.'
+        );
+      }
+      // you can add other handlers later (polygon, polyline, marker, …)
+    }
+  }
+
   // ---- Selection (rectangle multi-select) ----
   function addSelectionControl(){
     const ctl=L.control({position:'topright'});
@@ -461,6 +497,8 @@
       return div;
     };
     ctl.addTo(map);
+
+    applyLeafletDrawTranslations();
 
     const RECT_STYLE = { color:'#0d6efd', weight:2, opacity:1, fill:true, fillOpacity:0.18 };
     const drawControl = new L.Control.Draw({
