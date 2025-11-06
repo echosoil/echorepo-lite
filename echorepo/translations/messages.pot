@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-06 04:29+0000\n"
+"POT-Creation-Date: 2025-11-06 10:46+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,117 +17,117 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: /work/echorepo/routes/web.py:22
+#: /work/echorepo/routes/web.py:23
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:23
+#: /work/echorepo/routes/web.py:24
 msgid "Soil pH"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:24
+#: /work/echorepo/routes/web.py:25
 msgid "Acidic (≤5.5)"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:25
+#: /work/echorepo/routes/web.py:26
 msgid "Slightly acidic (5.5–6.5)"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:26
+#: /work/echorepo/routes/web.py:27
 msgid "Neutral (6.5–7.5)"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:27
+#: /work/echorepo/routes/web.py:28
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:28
+#: /work/echorepo/routes/web.py:29
 msgid "Alkaline (≥8.5)"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:29
+#: /work/echorepo/routes/web.py:30
 msgid "Your samples"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:30
+#: /work/echorepo/routes/web.py:31
 msgid "Other samples"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:31
+#: /work/echorepo/routes/web.py:32
 msgid "Export"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:32
+#: /work/echorepo/routes/web.py:33
 msgid "Clear"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:33
+#: /work/echorepo/routes/web.py:34
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:34
+#: /work/echorepo/routes/web.py:35
 msgid "Date"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:35
+#: /work/echorepo/routes/web.py:36
 msgid "QR code"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:36 /work/echorepo/templates/results.html:225
+#: /work/echorepo/routes/web.py:37 /work/echorepo/templates/results.html:225
 msgid "pH"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:37
+#: /work/echorepo/routes/web.py:38
 msgid "Colour"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:38
+#: /work/echorepo/routes/web.py:39
 msgid "Texture"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:39
+#: /work/echorepo/routes/web.py:40
 msgid "Structure"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:40
+#: /work/echorepo/routes/web.py:41
 msgid "Earthworms"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:41
+#: /work/echorepo/routes/web.py:42
 msgid "Plastic"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:42
+#: /work/echorepo/routes/web.py:43
 msgid "Debris"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:43
+#: /work/echorepo/routes/web.py:44
 msgid "Contamination"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:44
+#: /work/echorepo/routes/web.py:45
 msgid "Metals"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:45
+#: /work/echorepo/routes/web.py:46
 msgid "Draw a rectangle"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:46
+#: /work/echorepo/routes/web.py:47
 msgid "Cancel drawing"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:47
+#: /work/echorepo/routes/web.py:48
 msgid "Cancel"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:48
+#: /work/echorepo/routes/web.py:49
 msgid "Delete last point"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:49
+#: /work/echorepo/routes/web.py:50
 msgid "Click and drag to draw a rectangle."
 msgstr ""
 

@@ -7,129 +7,129 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-06 04:29+0000\n"
+"POT-Creation-Date: 2025-11-06 10:46+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ro\n"
 "Language-Team: ro <LL@li.org>\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
-"20)) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : (n==0 || (n%100 > 0 && n%100"
+" < 20)) ? 1 : 2);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: /work/echorepo/routes/web.py:22
+#: /work/echorepo/routes/web.py:23
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Raza de confidențialitate (~±_{km}_ km)"
 
-#: /work/echorepo/routes/web.py:23
+#: /work/echorepo/routes/web.py:24
 msgid "Soil pH"
 msgstr "PH-ul solului"
 
-#: /work/echorepo/routes/web.py:24
+#: /work/echorepo/routes/web.py:25
 msgid "Acidic (≤5.5)"
 msgstr "Acid (≤5,5)"
 
-#: /work/echorepo/routes/web.py:25
+#: /work/echorepo/routes/web.py:26
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Ușor acidă (pphh)"
 
-#: /work/echorepo/routes/web.py:26
+#: /work/echorepo/routes/web.py:27
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutru (65/575)"
 
-#: /work/echorepo/routes/web.py:27
+#: /work/echorepo/routes/web.py:28
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Ușor alcalină (7,5"
 
-#: /work/echorepo/routes/web.py:28
+#: /work/echorepo/routes/web.py:29
 msgid "Alkaline (≥8.5)"
 msgstr "Alkalină (≥ 8, 5)"
 
-#: /work/echorepo/routes/web.py:29
+#: /work/echorepo/routes/web.py:30
 msgid "Your samples"
 msgstr "Mostrele tale"
 
-#: /work/echorepo/routes/web.py:30
+#: /work/echorepo/routes/web.py:31
 msgid "Other samples"
 msgstr "Alte eșantioane"
 
-#: /work/echorepo/routes/web.py:31
+#: /work/echorepo/routes/web.py:32
 msgid "Export"
 msgstr "Exportă"
 
-#: /work/echorepo/routes/web.py:32
+#: /work/echorepo/routes/web.py:33
 msgid "Clear"
 msgstr "Clar"
 
-#: /work/echorepo/routes/web.py:33
+#: /work/echorepo/routes/web.py:34
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Export filtrat ({n})"
 
-#: /work/echorepo/routes/web.py:34
+#: /work/echorepo/routes/web.py:35
 msgid "Date"
 msgstr "Dată"
 
-#: /work/echorepo/routes/web.py:35
+#: /work/echorepo/routes/web.py:36
 msgid "QR code"
 msgstr "Codul QR"
 
-#: /work/echorepo/routes/web.py:36 /work/echorepo/templates/results.html:225
+#: /work/echorepo/routes/web.py:37 /work/echorepo/templates/results.html:225
 msgid "pH"
 msgstr "p H"
 
-#: /work/echorepo/routes/web.py:37
+#: /work/echorepo/routes/web.py:38
 msgid "Colour"
 msgstr "Culoare"
 
-#: /work/echorepo/routes/web.py:38
+#: /work/echorepo/routes/web.py:39
 msgid "Texture"
 msgstr "Textură"
 
-#: /work/echorepo/routes/web.py:39
+#: /work/echorepo/routes/web.py:40
 msgid "Structure"
 msgstr "Structura"
 
-#: /work/echorepo/routes/web.py:40
+#: /work/echorepo/routes/web.py:41
 msgid "Earthworms"
 msgstr "Viermi"
 
-#: /work/echorepo/routes/web.py:41
+#: /work/echorepo/routes/web.py:42
 msgid "Plastic"
 msgstr "Plastic"
 
-#: /work/echorepo/routes/web.py:42
+#: /work/echorepo/routes/web.py:43
 msgid "Debris"
 msgstr "Debris"
 
-#: /work/echorepo/routes/web.py:43
+#: /work/echorepo/routes/web.py:44
 msgid "Contamination"
 msgstr "Contaminarea"
 
-#: /work/echorepo/routes/web.py:44
+#: /work/echorepo/routes/web.py:45
 msgid "Metals"
 msgstr "Metale"
 
-#: /work/echorepo/routes/web.py:45
+#: /work/echorepo/routes/web.py:46
 msgid "Draw a rectangle"
 msgstr "Desenează un dreptunghi"
 
-#: /work/echorepo/routes/web.py:46
+#: /work/echorepo/routes/web.py:47
 msgid "Cancel drawing"
 msgstr "Anulează desenul"
 
-#: /work/echorepo/routes/web.py:47
+#: /work/echorepo/routes/web.py:48
 msgid "Cancel"
 msgstr "Renunță"
 
-#: /work/echorepo/routes/web.py:48
+#: /work/echorepo/routes/web.py:49
 msgid "Delete last point"
 msgstr "Se elimină ultimul punct"
 
-#: /work/echorepo/routes/web.py:49
+#: /work/echorepo/routes/web.py:50
 msgid "Click and drag to draw a rectangle."
 msgstr "Faceţi clic şi trageţi pentru a trage un dreptunghi."
 
@@ -144,8 +144,8 @@ msgstr "ECHOrepo "
 #: /work/echorepo/templates/base.html:12
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr ""
-"Accesați și descărcați probele de sol. Parte a proiectului ECHO finanțat de "
-"UE."
+"Accesați și descărcați probele de sol. Parte a proiectului ECHO finanțat "
+"de UE."
 
 #: /work/echorepo/templates/base.html:79
 msgid "Skip to content"
@@ -223,7 +223,8 @@ msgstr "Inițiativa finanțată de UE"
 msgid "Data quality issues — ECHOrepo"
 msgstr "Probleme de calitate a datelor ECHOrepo"
 
-#: /work/echorepo/templates/issues.html:7 /work/echorepo/templates/issues.html:15
+#: /work/echorepo/templates/issues.html:7
+#: /work/echorepo/templates/issues.html:15
 msgid "Back to My Data"
 msgstr "Înapoi la datele mele"
 
@@ -244,39 +245,48 @@ msgstr "Coordonate implicite (%(lat)s, %(lon)s)"
 msgid "No entries with default coordinates"
 msgstr "Nicio intrare cu coordonate implicite"
 
-#: /work/echorepo/templates/issues.html:29 /work/echorepo/templates/issues.html:68
+#: /work/echorepo/templates/issues.html:29
+#: /work/echorepo/templates/issues.html:68
 msgid "Sample"
 msgstr "Eșantion"
 
-#: /work/echorepo/templates/issues.html:30 /work/echorepo/templates/issues.html:69
+#: /work/echorepo/templates/issues.html:30
+#: /work/echorepo/templates/issues.html:69
 msgid "User"
 msgstr "Utilizator"
 
-#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:70
+#: /work/echorepo/templates/issues.html:31
+#: /work/echorepo/templates/issues.html:70
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:71
+#: /work/echorepo/templates/issues.html:32
+#: /work/echorepo/templates/issues.html:71
 msgid "Lat"
 msgstr "Lat"
 
-#: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:72
+#: /work/echorepo/templates/issues.html:33
+#: /work/echorepo/templates/issues.html:72
 msgid "Lon"
 msgstr "Lon"
 
-#: /work/echorepo/templates/issues.html:34 /work/echorepo/templates/issues.html:73
+#: /work/echorepo/templates/issues.html:34
+#: /work/echorepo/templates/issues.html:73
 msgid "Fix"
 msgstr "Fixează"
 
-#: /work/echorepo/templates/issues.html:49 /work/echorepo/templates/issues.html:88
+#: /work/echorepo/templates/issues.html:49
+#: /work/echorepo/templates/issues.html:88
 msgid "Lat (dec or DMS)"
 msgstr "Lat (dec sau DMS)"
 
-#: /work/echorepo/templates/issues.html:50 /work/echorepo/templates/issues.html:89
+#: /work/echorepo/templates/issues.html:50
+#: /work/echorepo/templates/issues.html:89
 msgid "Lon (dec or DMS)"
 msgstr "Lon (dec sau DMS)"
 
-#: /work/echorepo/templates/issues.html:51 /work/echorepo/templates/issues.html:90
+#: /work/echorepo/templates/issues.html:51
+#: /work/echorepo/templates/issues.html:90
 msgid "Save"
 msgstr "Salvează"
 
@@ -374,8 +384,8 @@ msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
 msgstr ""
-"Explorați locațiile de probă de sol de pe hartă, apoi exportați sau răsfoiți "
-"tabelul."
+"Explorați locațiile de probă de sol de pe hartă, apoi exportați sau "
+"răsfoiți tabelul."
 
 #: /work/echorepo/templates/results.html:119
 msgid "Final survey"
@@ -383,31 +393,34 @@ msgstr "Sondaj final"
 
 #: /work/echorepo/templates/results.html:121
 msgid "We sincerely thank you for your commitment to this project!"
-msgstr "Vă mulţumim sincer pentru angajamentul dumneavoastră faţă de acest proiect!"
+msgstr ""
+"Vă mulţumim sincer pentru angajamentul dumneavoastră faţă de acest "
+"proiect!"
 
 #: /work/echorepo/templates/results.html:124
 msgid ""
-"This is the third and final survey in the project, following the initial ones"
-" you completed before and after soil sampling. The majority of questions are "
-"consistent with the previous surveys so that we can accurately measure "
-"changes over time and understand the impact of project participation."
+"This is the third and final survey in the project, following the initial "
+"ones you completed before and after soil sampling. The majority of "
+"questions are consistent with the previous surveys so that we can "
+"accurately measure changes over time and understand the impact of project"
+" participation."
 msgstr ""
-"Acesta este al treilea și ultimul studiu din proiect, în urma celor inițiale "
-"ați finalizat înainte și după prelevarea de probe de sol. Majoritatea "
-"întrebărilor sunt în concordanță cu sondajele anterioare, astfel încât să "
-"putem măsura cu precizie schimbările în timp și să înțelegem impactul "
-"participării la proiect."
+"Acesta este al treilea și ultimul studiu din proiect, în urma celor "
+"inițiale ați finalizat înainte și după prelevarea de probe de sol. "
+"Majoritatea întrebărilor sunt în concordanță cu sondajele anterioare, "
+"astfel încât să putem măsura cu precizie schimbările în timp și să "
+"înțelegem impactul participării la proiect."
 
 #: /work/echorepo/templates/results.html:127
 msgid ""
-"Before you start: please only complete this survey if the lab results from "
-"your soil sample(s) have already been added to the repository. If the results"
-" are pending, please check back at a later time."
+"Before you start: please only complete this survey if the lab results "
+"from your soil sample(s) have already been added to the repository. If "
+"the results are pending, please check back at a later time."
 msgstr ""
-"Înainte de a începe: vă rugăm să completați acest studiu numai în cazul în "
-"care rezultatele de laborator ale eșantionului dumneavoastră de sol (s) au "
-"fost deja adăugate în depozit. În cazul în care rezultatele sunt în "
-"așteptare, vă rugăm să verificați înapoi la un moment ulterior."
+"Înainte de a începe: vă rugăm să completați acest studiu numai în cazul "
+"în care rezultatele de laborator ale eșantionului dumneavoastră de sol "
+"(s) au fost deja adăugate în depozit. În cazul în care rezultatele sunt "
+"în așteptare, vă rugăm să verificați înapoi la un moment ulterior."
 
 #: /work/echorepo/templates/results.html:132
 msgid "Go to final survey"
@@ -426,43 +439,44 @@ msgid ""
 "The objective of this survey data is to examine the impact of project "
 "participation on participant attitudes and motivation towards soil."
 msgstr ""
-"Obiectivul acestui studiu este de a examina impactul participării proiectelor"
-" asupra atitudinilor și motivării participanților față de sol."
+"Obiectivul acestui studiu este de a examina impactul participării "
+"proiectelor asupra atitudinilor și motivării participanților față de sol."
 
 #: /work/echorepo/templates/results.html:150
 msgid ""
-"Your information will only be used for scientific purposes. We do not collect"
-" names or addresses. Your details regarding age and gender are only used for "
-"statistical purposes and all details are collected and evaluated anonymously."
-" It is not possible to draw conclusions about your person at any time."
+"Your information will only be used for scientific purposes. We do not "
+"collect names or addresses. Your details regarding age and gender are "
+"only used for statistical purposes and all details are collected and "
+"evaluated anonymously. It is not possible to draw conclusions about your "
+"person at any time."
 msgstr ""
-"Informaţiile tale vor fi folosite doar în scopuri ştiinţifice. Nu colectăm "
-"nume sau adrese. Detaliile privind vârsta și sexul sunt utilizate doar în "
-"scopuri statistice și toate detaliile sunt colectate și evaluate anonim. Nu "
-"este posibil să trageţi concluzii despre persoana dumneavoastră în orice "
-"moment."
+"Informaţiile tale vor fi folosite doar în scopuri ştiinţifice. Nu "
+"colectăm nume sau adrese. Detaliile privind vârsta și sexul sunt "
+"utilizate doar în scopuri statistice și toate detaliile sunt colectate și"
+" evaluate anonim. Nu este posibil să trageţi concluzii despre persoana "
+"dumneavoastră în orice moment."
 
 #: /work/echorepo/templates/results.html:153
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
-"crucial role in providing valuable insights that enhance the relevance and "
-"impact of the ECHO project. Your honest responses are essential for "
+"crucial role in providing valuable insights that enhance the relevance "
+"and impact of the ECHO project. Your honest responses are essential for "
 "understanding how engagement with the project influences attitudes and "
 "motivations, ensuring the project’s outcomes are meaningful and well-"
 "informed."
 msgstr ""
 "Răspunsul la fiecare întrebare din sondaj este cel mai apreciat deoarece "
-"joacă un rol crucial în furnizarea de perspective valoroase care să sporească"
-" relevanța și impactul proiectului ECHO. Răspunsurile dvs. oneste sunt "
-"esențiale pentru a înțelege modul în care angajamentul cu proiectul "
-"influențează atitudinile și motivațiile, asigurând rezultatele proiectului "
-"sunt semnificative și bine informate."
+"joacă un rol crucial în furnizarea de perspective valoroase care să "
+"sporească relevanța și impactul proiectului ECHO. Răspunsurile dvs. "
+"oneste sunt esențiale pentru a înțelege modul în care angajamentul cu "
+"proiectul influențează atitudinile și motivațiile, asigurând rezultatele "
+"proiectului sunt semnificative și bine informate."
 
 #: /work/echorepo/templates/results.html:156
 msgid ""
-"The survey will take approximately 8–10 minutes to complete. Please find a "
-"quiet space where you won’t be interrupted. There are no right or wrong "
-"answers — answer spontaneously."
+"The survey will take approximately 8–10 minutes to complete. Please find "
+"a quiet space where you won’t be interrupted. There are no right or wrong"
+" answers — answer spontaneously."
 msgstr ""
 "Sondajul va dura aproximativ 8 [10 minute pentru a finaliza. Vă rugăm să "
 "găsiţi un spaţiu liniştit în cazul în care nu va fi întrerupt. Nu există "
@@ -470,8 +484,8 @@ msgstr ""
 
 #: /work/echorepo/templates/results.html:159
 msgid ""
-"Based on the information provided to you, please consent to participate in "
-"the survey below."
+"Based on the information provided to you, please consent to participate "
+"in the survey below."
 msgstr ""
 "Pe baza informaţiilor furnizate, vă rugăm să acceptaţi participarea la "
 "sondajul de mai jos."
