@@ -177,19 +177,15 @@ def home():
                 kc_user_id = df[col].dropna().astype(str).iloc[0].strip()
                 break
 
-    # build survey URL
-    survey_base = getattr(
-        settings,
-        "SURVEY_BASE_URL",
-        "https://www.soscisurvey.de/default?r=",
-    )
+    # build survey URL (you already have _build_sosci_url somewhere above)
     survey_user_id = kc_user_id or user_key
     survey_url = _build_sosci_url(survey_user_id)
 
-    # NEW: decide if we should show it
+    # decide if we should show it → only if user has metals
     has_metals = _user_has_metals(df)
     show_survey = bool(survey_url) and has_metals
 
+    # EMPTY CASE ------------------------------------------------------------
     if df.empty:
         return render_template(
             "results.html",
@@ -203,30 +199,55 @@ def home():
             lon_col=settings.LON_COL,
             I18N=i18n,
             survey_url=survey_url,
-            # empty df → no metals → don't show
-            show_survey=False,
+            show_survey=False,  # empty df → no metals → don't show
         )
 
-    # data issues
+    # NON-EMPTY: data issues ------------------------------------------------
     defaults = find_default_coord_rows(df)
     mism = annotate_country_mismatches(df)
     issue_count = len(defaults) + len(mism)
+
+    # HTML-SPECIFIC COPY ----------------------------------------------------
+    # we don't want to mutate the DF that other routes might reuse
+    df_html = df.copy()
+    print("[--------TEST-----------]", df_html.columns, df_html.head())
+    if "fs_createdAt" in df_html.columns:
+        # make it nicer to read
+        df_html["fs_createdAt"] = (
+            df_html["fs_createdAt"]
+            .fillna("")
+            .astype(str).str.split(".").str[0]  # remove fractional seconds
+            .str.replace("T", " ", regex=False) # space between date and time
+            .str.replace("Z", "", regex=False)  # remove Zulu designator
+        )
+
+        # optional: move it right after sampleId if present
+        cols = list(df_html.columns)
+        if "fs_createdAt" in cols:
+            if "sampleId" in cols:
+                cols.insert(cols.index("sampleId") + 1, cols.pop(cols.index("fs_createdAt")))
+            else:
+                cols.insert(0, cols.pop(cols.index("fs_createdAt")))
+            df_html = df_html[cols]
+
+    # build HTML from the prettified DF
+    table_html = make_table_html(df_html)
 
     return render_template(
         "results.html",
         issue_count=issue_count,
         user_key=user_key,
         kc_user_id=kc_user_id,
+        # keep original columns list (not the renamed one) — you already pass this
         columns=list(df.columns),
-        table_html=make_table_html(df),
+        table_html=table_html,
         jitter_m=int(settings.MAX_JITTER_METERS),
         lat_col=settings.LAT_COL,
         lon_col=settings.LON_COL,
         I18N=i18n,
         survey_url=survey_url,
-        show_survey=show_survey,   # ← now conditional on metals
+        show_survey=show_survey,
     )
-
 
 # (Optional) JSON endpoint if you prefer fetching labels via XHR
 @web_bp.get("/i18n/labels")

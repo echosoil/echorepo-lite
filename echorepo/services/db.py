@@ -15,51 +15,20 @@ def update_coords_sqlite(sample_id: str, lat: float, lon: float):
 
 
 def _ensure_lab_enrichment(conn: sqlite3.Connection):
-    """
-    Make sure lab_enrichment exists and has the columns we now expect.
-    Older deployments had:
-        id PK, qr_code, param, value, unit, user_id, created_at
-    Newer code (web upload, API) wants:
-        qr_code, param, value, unit, user_id, raw_row, updated_at
-        + unique index on (qr_code, param)
-    This function upgrades the old shape in-place.
-    """
-    # create if missing at all (use the *new* shape)
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS lab_enrichment (
-          qr_code    TEXT NOT NULL,
-          param      TEXT NOT NULL,
-          value      TEXT,
-          unit       TEXT,
-          user_id    TEXT,
-          raw_row    TEXT,
-          updated_at TEXT DEFAULT (datetime('now')),
-          PRIMARY KEY (qr_code, param)
-        )
-        """
-    )
-
-    # inspect actual columns (for already-existing table)
-    cols = {r[1] for r in conn.execute("PRAGMA table_info(lab_enrichment)")}
-
-    # older table didn’t have these → add them
-    if "raw_row" not in cols:
-        conn.execute("ALTER TABLE lab_enrichment ADD COLUMN raw_row TEXT")
-    if "updated_at" not in cols:
-        conn.execute("ALTER TABLE lab_enrichment ADD COLUMN updated_at TEXT")
-
-    # some very old tables had an integer id PK; that’s fine,
-    # we just also want a unique index on (qr_code, param) so
-    # INSERT ... ON CONFLICT(qr_code, param) works.
-    conn.execute(
-        """
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_lab_enrichment_qr_param
-        ON lab_enrichment(qr_code, param)
-        """
-    )
-
+            qr_code    TEXT NOT NULL,
+            param      TEXT NOT NULL,
+            value      TEXT,
+            unit       TEXT,
+            user_id    TEXT,
+            raw_row    TEXT,
+            updated_at TEXT DEFAULT (datetime('now')),
+            PRIMARY KEY (qr_code, param)
+        );
+    """)
     conn.commit()
+
 
 def init_db_sanity():
     if not os.path.exists(settings.SQLITE_PATH):
@@ -129,6 +98,9 @@ def _merge_metals_cols(df: pd.DataFrame, html: bool = False) -> pd.DataFrame:
 def query_user_df(user_key: str) -> pd.DataFrame:
     user_col = settings.USER_KEY_COLUMN
     with sqlite3.connect(settings.SQLITE_PATH) as conn:
+        # make sure the table exists even if refresh_sqlite just recreated the DB
+        _ensure_lab_enrichment(conn)
+
         q = f"""
         WITH lab AS (
             SELECT
@@ -156,10 +128,8 @@ def query_user_df(user_key: str) -> pd.DataFrame:
         """
         df = pd.read_sql_query(q, conn, params=(user_key, user_key))
 
-    # UI table → HTML = True
     df = _merge_metals_cols(df, html=True)
     return df
-
 
 # helper: this is the normalized join condition we’ll reuse
 # strip ECHO-, uppercase, trim
@@ -178,6 +148,7 @@ def query_others_df(user_key: str) -> pd.DataFrame:
     user_col = settings.USER_KEY_COLUMN
     join_clause = _normalized_join_clause()
     with sqlite3.connect(settings.SQLITE_PATH) as conn:
+        _ensure_lab_enrichment(conn)
         q = f"""
         WITH lab AS (
             SELECT
@@ -210,6 +181,7 @@ def query_others_df(user_key: str) -> pd.DataFrame:
 def query_sample(sample_id: str) -> pd.DataFrame:
     join_clause = _normalized_join_clause()
     with sqlite3.connect(settings.SQLITE_PATH) as conn:
+        _ensure_lab_enrichment(conn)
         q = f"""
         WITH lab AS (
             SELECT
