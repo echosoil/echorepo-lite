@@ -88,6 +88,8 @@ data/*
 instance/*
 !instance/.gitkeep
 work/*
+minio-data/*
+!minio-data/.gitkeep
 
 # ── Misc temp files ───────────────────────────────────────────────────────────
 *.swp
