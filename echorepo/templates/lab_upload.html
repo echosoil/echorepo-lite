@@ -1,9 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-  <h3>Upload lab data</h3>
-  <p>Expected columns: <code>qrCode, compound1, compound1Unit, compound2Unit, etc. </code></p>
-  <form method="post" enctype="multipart/form-data" action="{{ url_for('web.lab_import') }}" enctype="multipart/form-data">
+  <h3>{{ _('Upload lab data') }}</h3>
+  <p>
+    {{ _('Expected columns:') }}
+    <code>qrCode, compound1, compound1Unit, compound2Unit, etc.</code>
+  </p>
+  <form method="post"
+        enctype="multipart/form-data"
+        action="{{ url_for('web.lab_import') }}">
     <input type="file" name="file" required class="form-control mb-2">
-    <button class="btn btn-primary">Upload</button>
+    <button class="btn btn-primary">{{ _('Upload') }}</button>
   </form>
 {% endblock %}
