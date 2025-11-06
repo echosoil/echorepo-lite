@@ -8,13 +8,69 @@ from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment
 from ..services.validation import find_default_coord_rows, annotate_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
-from flask_babel import gettext as _
+from flask_babel import gettext as _, get_locale
 from datetime import datetime
 import sqlite3
 import os
 import json
 
 web_bp = Blueprint("web", __name__)
+
+# SosciSurvey language code mapping
+# browser locale → sosci 3-letter code
+from flask_babel import get_locale
+from flask import request
+from ..config import settings
+
+def _build_sosci_url(user_id: str | None) -> str | None:
+    """
+    Build the final SoSci survey URL with:
+      1) user-chosen/site language first,
+      2) if that's 'en', try browser locale,
+      3) fallback to English.
+    Then map to SoSci's 3-letter language codes and append &r=<user_id>.
+    """
+    if not user_id:
+        return None
+
+    # 2-letter -> SoSci 3-letter
+    sosci_map = {
+        "de": "deu",
+        "el": "gre",
+        "en": "eng",
+        "es": "spa",
+        "fi": "fin",
+        "it": "ita",
+        "po": "pol",
+        "pt": "por",
+        "ro": "rum",
+    }
+
+    # 1) current (explicit) site language
+    current = str(get_locale() or "en")
+    current_base = current.split("_", 1)[0].split("-", 1)[0].lower()
+
+    # 2) if site is en, try browser
+    if current_base == "en":
+        browser = request.accept_languages.best_match(
+            ["de", "it", "fi", "el", "es", "po", "pt", "ro", "en"]
+        )
+        if browser:
+            current_base = browser.split("-", 1)[0].lower()
+
+    # 3) map → SoSci
+    sosci_lang = sosci_map.get(current_base, "eng")
+
+    # base URL from settings or default
+    base = getattr(
+        settings,
+        "SURVEY_BASE_URL",
+        "https://www.soscisurvey.de/default",
+    )
+
+    # make sure we append params correctly
+    sep = "&" if "?" in base else "?"
+    return f"{base}{sep}l={sosci_lang}&r={user_id}"
 
 
 # ---------- base UI labels used by map.js / UI ----------
@@ -128,7 +184,7 @@ def home():
         "https://www.soscisurvey.de/default?r=",
     )
     survey_user_id = kc_user_id or user_key
-    survey_url = f"{survey_base}{survey_user_id}" if survey_user_id else None
+    survey_url = _build_sosci_url(survey_user_id)
 
     # NEW: decide if we should show it
     has_metals = _user_has_metals(df)
