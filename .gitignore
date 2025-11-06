@@ -93,6 +93,9 @@ work/*
 *.swp
 *.swo
 
+# ── Compiled translations ──────────────────────────────────────────────────────
+*.mo
+
 # Ignore the sandbox test package(s)
 # (anchored to repo root)
 #/ test vs tests — include both if you’re not 100% sure which one you have
