@@ -60,5 +60,6 @@ class Settings:
     # -------- Misc --------
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     SURVEY_BASE_URL: str = os.getenv("SURVEY_BASE_URL", "https://www.soscisurvey.de/default?r=")
-
+    
 settings = Settings()
+print(f"[config] Loaded settings from environment and defaults: {settings.SURVEY_BASE_URL}")
