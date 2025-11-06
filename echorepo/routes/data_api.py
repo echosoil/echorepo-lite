@@ -412,3 +412,207 @@ def samples_count():
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
     cnt = conn.execute(f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}", params).fetchone()[0]
     return jsonify({"count": cnt})
+
+# ---------- lab enrichment upload ----------
+
+def _normalize_qr(raw: str) -> str:
+    """
+    Match the logic from web routes:
+    - strip leading 'ECHO-'
+    - inject dash after 4 chars if missing
+    """
+    if not raw:
+        return ""
+    raw = str(raw).strip()
+    if raw.upper().startswith("ECHO-"):
+        raw = raw[5:]
+    if "-" not in raw and len(raw) >= 5:
+        raw = raw[:4] + "-" + raw[4:]
+    return raw
+
+def _ensure_lab_enrichment(conn: sqlite3.Connection):
+    # use the same schema as the web upload route
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS lab_enrichment (
+          qr_code    TEXT NOT NULL,
+          param      TEXT NOT NULL,
+          value      TEXT,
+          unit       TEXT,
+          user_id    TEXT,
+          raw_row    TEXT,
+          updated_at TEXT DEFAULT (datetime('now')),
+          PRIMARY KEY (qr_code, param)
+        )
+        """
+    )
+
+@data_api.post("/lab-enrichment")
+def lab_enrichment_upload():
+    """
+    POST /api/v1/lab-enrichment
+
+    Auth: same as /api/v1/samples (API key, bearer, or session)
+
+    Accepted payloads:
+
+    1) JSON:
+       [
+         {"qr_code": "ECHO-ABCD1234", "metal1": 12.3, "metal1_unit": "mg/kg"},
+         ...
+       ]
+       or { "rows": [ ... ] }
+
+    2) multipart/form-data:
+       file=<csv|xlsx>
+
+    3) Raw CSV/XLSX body (Content-Type: text/csv or application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+
+    Each row is turned into multiple lab_enrichment records:
+    (qr_code, param=<column>, value=<cell>, unit=maybe_from_<column>_unit)
+    """
+    require_api_auth()
+
+    conn = get_conn()
+    _ensure_lab_enrichment(conn)
+
+    rows = None
+
+    # ---------- 1) multipart/form-data with file= ----------
+    if "file" in request.files:
+        f = request.files["file"]
+        filename = (f.filename or "").lower()
+
+        # we use pandas here because it already exists in the project
+        try:
+            import pandas as pd
+        except ImportError:
+            abort(400, description="pandas is required to read XLSX/CSV uploads")
+
+        if filename.endswith(".xlsx") or (
+            request.content_type or ""
+        ).startswith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+            df = pd.read_excel(f)
+        else:
+            # CSV — try comma, then tab
+            try:
+                df = pd.read_csv(f)
+            except Exception:
+                f.stream.seek(0)
+                df = pd.read_csv(f, sep="\t")
+
+        rows = df.to_dict(orient="records")
+
+    else:
+        # ---------- 2) check content-type ----------
+        ct = (request.content_type or "").split(";", 1)[0].strip().lower()
+
+        if ct in ("text/csv", "application/csv", "text/plain"):
+            # raw CSV in body
+            text = request.get_data(as_text=True)
+            import csv as _csv
+            reader = _csv.DictReader(text.splitlines())
+            rows = list(reader)
+
+        elif ct.startswith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+            # raw XLSX in body
+            try:
+                import pandas as pd
+            except ImportError:
+                abort(400, description="pandas is required to read XLSX uploads")
+
+            df = pd.read_excel(io.BytesIO(request.get_data()))
+            rows = df.to_dict(orient="records")
+
+        else:
+            # ---------- 3) assume JSON ----------
+            payload = request.get_json(silent=True)
+            if not payload:
+                abort(400, description="Expected JSON array/object, CSV, XLSX, or multipart/form-data with file=")
+
+            if isinstance(payload, dict) and "rows" in payload:
+                rows = payload["rows"]
+            else:
+                rows = payload
+
+    if not isinstance(rows, list):
+        abort(400, description="Parsed payload is not a list of rows")
+
+    # identify uploader
+    uploader_id = None
+    claims = verify_bearer()
+    if claims:
+        uploader_id = claims.get("sub") or claims.get("preferred_username")
+    if not uploader_id:
+        uploader_id = request.headers.get("X-User-Id") or "api"
+
+    inserted = 0
+    updated = 0
+    skipped = 0
+
+    cur = conn.cursor()
+
+    for raw_row in rows:
+        if not isinstance(raw_row, dict):
+            skipped += 1
+            continue
+
+        qr = (
+            raw_row.get("qr_code")
+            or raw_row.get("QR_qrCode")
+            or raw_row.get("id")
+            or raw_row.get("ID")
+            or ""
+        )
+        qr = _normalize_qr(qr)
+        if not qr:
+            skipped += 1
+            continue
+
+        raw_json = json.dumps(raw_row, ensure_ascii=False)
+
+        for key, val in raw_row.items():
+            # skip id-like fields
+            if key in ("qr_code", "QR_qrCode", "id", "ID"):
+                continue
+            if val is None or val == "":
+                continue
+
+            # skip obvious unit-only columns
+            low = key.lower()
+            if low.startswith("unit") or low.endswith("_unit"):
+                continue
+
+            param = str(key).strip()
+
+            # find a unit
+            unit = ""
+            unit_key = f"{key}_unit"
+            if unit_key in raw_row and raw_row[unit_key]:
+                unit = str(raw_row[unit_key]).strip()
+            elif "unit" in raw_row and raw_row["unit"]:
+                unit = str(raw_row["unit"]).strip()
+
+            cur.execute(
+                """
+                INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(qr_code, param) DO UPDATE SET
+                    value=excluded.value,
+                    unit=excluded.unit,
+                    user_id=excluded.user_id,
+                    raw_row=excluded.raw_row,
+                    updated_at=datetime('now')
+                """,
+                (qr, param, str(val), unit, uploader_id, raw_json),
+            )
+            # we don't 100% know if it was insert or update; just count as processed
+            inserted += 1
+
+    conn.commit()
+
+    return jsonify({
+        "ok": True,
+        "processed": inserted,
+        "skipped": skipped,
+    })
