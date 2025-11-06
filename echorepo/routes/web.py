@@ -4,7 +4,7 @@ from io import BytesIO
 import pathlib
 from ..config import settings
 from ..auth.decorators import login_required
-from ..services.db import query_user_df, query_sample
+from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment
 from ..services.validation import find_default_coord_rows, annotate_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
@@ -15,6 +15,7 @@ import os
 import json
 
 web_bp = Blueprint("web", __name__)
+
 
 # ---------- base UI labels used by map.js / UI ----------
 def _js_base_labels() -> dict:
@@ -49,6 +50,7 @@ def _js_base_labels() -> dict:
         "drawRectangleHint": _("Click and drag to draw a rectangle."),
     }
 
+
 # ---------- Adjust QR code formats ----------
 def _normalize_qr(raw: str) -> str:
     """
@@ -58,13 +60,33 @@ def _normalize_qr(raw: str) -> str:
     if not raw:
         return ""
     raw = str(raw).strip()
-    # strip leading prefix
     if raw.upper().startswith("ECHO-"):
         raw = raw[5:]
-    # add dash between 4th and 5th char if no dash
     if "-" not in raw and len(raw) >= 5:
         raw = raw[:4] + "-" + raw[4:]
     return raw
+
+
+# ---------- does the user have any metals in the joined DF? ----------
+def _user_has_metals(df: pd.DataFrame) -> bool:
+    if df is None or df.empty:
+        return False
+
+    # your query_user_df() already merges into METALS_info (html=True)
+    candidate_cols = ["METALS_info", "lab_METALS_info", "METALS", "metals"]
+    for col in candidate_cols:
+        if col in df.columns:
+            s = (
+                df[col]
+                .fillna("")
+                .astype(str)
+                .str.replace("<br>", "", regex=False)
+                .str.strip()
+            )
+            if s.ne("").any():
+                return True
+    return False
+
 
 @web_bp.get("/", endpoint="home")
 @login_required
@@ -86,16 +108,17 @@ def home():
                 break
 
     # build survey URL
-    # you can set SURVEY_BASE_URL in settings.py or .env → settings.SURVEY_BASE_URL
     survey_base = getattr(
         settings,
         "SURVEY_BASE_URL",
-        "https://www.soscisurvey.de/default?r="
+        "https://www.soscisurvey.de/default?r=",
     )
-
-    # prefer the real KC/userId from DF, fall back to email
     survey_user_id = kc_user_id or user_key
     survey_url = f"{survey_base}{survey_user_id}" if survey_user_id else None
+
+    # NEW: decide if we should show it
+    has_metals = _user_has_metals(df)
+    show_survey = bool(survey_url) and has_metals
 
     if df.empty:
         return render_template(
@@ -109,9 +132,9 @@ def home():
             lat_col=settings.LAT_COL,
             lon_col=settings.LON_COL,
             I18N=i18n,
-            # NEW:
             survey_url=survey_url,
-            show_survey=bool(survey_url),
+            # empty df → no metals → don't show
+            show_survey=False,
         )
 
     # data issues
@@ -130,16 +153,17 @@ def home():
         lat_col=settings.LAT_COL,
         lon_col=settings.LON_COL,
         I18N=i18n,
-        # NEW:
         survey_url=survey_url,
-        show_survey=bool(survey_url),
+        show_survey=show_survey,   # ← now conditional on metals
     )
+
 
 # (Optional) JSON endpoint if you prefer fetching labels via XHR
 @web_bp.get("/i18n/labels")
 @login_required
 def i18n_labels():
     return jsonify({"labels": build_i18n_labels(_js_base_labels())})
+
 
 @web_bp.post("/download/csv")
 @login_required
@@ -158,8 +182,9 @@ def download_csv():
         buf,
         as_attachment=True,
         download_name=f"{user_key}_data.csv",
-        mimetype="text/csv"
+        mimetype="text/csv",
     )
+
 
 @web_bp.post("/download/xlsx")
 @login_required
@@ -182,6 +207,7 @@ def download_xlsx():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
+
 @web_bp.get("/download/all_csv")
 @login_required
 def download_all_csv():
@@ -200,7 +226,6 @@ def download_all_csv():
     try:
         df_all = pd.read_csv(p, dtype=str, keep_default_na=False, low_memory=False)
         df_all = strip_orig_cols(df_all)
-        # drop PII if any survived
         drop_these = [col for col in df_all.columns if col.lower() in pii_cols]
         if drop_these:
             df_all = df_all.drop(columns=drop_these, errors="ignore")
@@ -212,10 +237,11 @@ def download_all_csv():
             buf,
             as_attachment=True,
             download_name="echorepo_all_samples.csv",
-            mimetype="text/csv"
+            mimetype="text/csv",
         )
     except Exception:
         import csv
+
         buf = BytesIO()
         with p.open("r", encoding="utf-8", newline="") as f_in:
             reader = csv.reader(f_in)
@@ -242,6 +268,7 @@ def download_all_csv():
             download_name="echorepo_all_samples.csv",
             mimetype="text/csv",
         )
+
 
 @web_bp.get("/download/sample_csv")
 @login_required
@@ -275,23 +302,17 @@ def download_sample_csv():
         buf,
         as_attachment=True,
         download_name=f"sample_{sample_id}.csv",
-        mimetype="text/csv"
+        mimetype="text/csv",
     )
+
 
 @web_bp.post("/lab-import")
 @login_required
 def lab_import():
-    """
-    Accepts a CSV/XLSX with columns like:
-    ID  MgO  Unit  P2O5  Unit  SO3  Unit  ...
-    and stores them in lab_enrichment (qr_code, param, value, unit, user_id).
-    """
     file = request.files.get("file")
     if not file:
         abort(400, description="No file uploaded")
 
-    # who's uploading?
-    # we prefer Keycloak's internal id if present
     kc_profile = (session.get("kc") or {}).get("profile") or {}
     uploader_id = (
         kc_profile.get("id")
@@ -300,14 +321,11 @@ def lab_import():
         or "unknown"
     )
 
-    # load into pandas
     filename = file.filename or ""
     try:
         if filename.lower().endswith(".xlsx"):
             df = pd.read_excel(file)
         else:
-            # try CSV, auto-sep-ish
-            # your example looked tab-separated, so we try that first
             try:
                 df = pd.read_csv(file, sep="\t")
             except Exception:
@@ -319,15 +337,13 @@ def lab_import():
     if df.empty:
         abort(400, description="Uploaded file has no rows")
 
-    # connect to same SQLite your app uses
     db_path = settings.SQLITE_PATH
     if not os.path.exists(db_path):
         abort(500, description=f"SQLite database not found at {db_path}")
 
     conn = sqlite3.connect(db_path)
+    _ensure_lab_enrichment(conn)   # ← make sure schema is up-to-date
     cur = conn.cursor()
-
-    # make sure table exists
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS lab_enrichment (
@@ -343,37 +359,29 @@ def lab_import():
         """
     )
 
-    # we’ll need field order
     fieldnames = list(df.columns)
 
-    # walk rows
     for _, row in df.iterrows():
         raw_dict = row.to_dict()
         qr = _normalize_qr(raw_dict.get("ID") or raw_dict.get("id") or "")
         if not qr:
             continue
 
-        # we store the whole original row for debugging
-        # (pandas may give nan; turn them into empty strings)
         clean_raw = {k: ("" if pd.isna(v) else v) for k, v in raw_dict.items()}
         raw_json = json.dumps(clean_raw, ensure_ascii=False)
 
-        # the pattern is: Param, Unit, Param, Unit ...
         for idx, col in enumerate(fieldnames):
             if col in ("ID", "id"):
                 continue
             val = row.get(col)
             if pd.isna(val) or val == "":
                 continue
-
-            # skip obvious unit columns themselves
             if str(col).lower().startswith("unit"):
                 continue
 
             param = str(col).strip()
             unit = ""
 
-            # try to grab the next column if it's unit-like
             if idx + 1 < len(fieldnames):
                 maybe_unit_col = fieldnames[idx + 1]
                 if str(maybe_unit_col).lower().startswith("unit"):
@@ -398,13 +406,14 @@ def lab_import():
     conn.commit()
     conn.close()
 
-    # if your form in results.html posts here, you can redirect back to home
     return redirect(url_for("web.home"))
+
 
 @web_bp.get("/lab-upload")
 @login_required
 def lab_upload():
     return render_template("lab_upload.html")
+
 
 @web_bp.post("/lab-upload")
 @login_required
@@ -412,7 +421,5 @@ def lab_upload_post():
     file = request.files.get("file")
     if not file:
         abort(400, "No file")
-    # parse CSV/XLSX → loop rows → normalize ID (ECHO-ABCD1234 → ABCD-1234)
-    # insert into lab_enrichment with user_id = session.get("kc")... or email
-    ...
+    # TODO: implement if you want a second upload path
     return redirect(url_for("web.home"))
