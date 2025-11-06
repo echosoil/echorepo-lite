@@ -69,22 +69,36 @@ def _normalize_qr(raw: str) -> str:
 
 # ---------- does the user have any metals in the joined DF? ----------
 def _user_has_metals(df: pd.DataFrame) -> bool:
+    """
+    Return True only if we see at least one row that looks like a lab-enriched
+    string (i.e. contains "param=value").
+    """
     if df is None or df.empty:
         return False
 
-    # your query_user_df() already merges into METALS_info (html=True)
-    candidate_cols = ["METALS_info", "lab_METALS_info", "METALS", "metals"]
+    candidate_cols = ("METALS_info", "lab_METALS_info", "METALS", "metals")
     for col in candidate_cols:
-        if col in df.columns:
-            s = (
-                df[col]
-                .fillna("")
-                .astype(str)
-                .str.replace("<br>", "", regex=False)
-                .str.strip()
-            )
-            if s.ne("").any():
-                return True
+        if col not in df.columns:
+            continue
+
+        series = (
+            df[col]
+            .fillna("")
+            .astype(str)
+            # your query_user_df uses <br> when html=True, turn it back to ';'
+            .str.replace("<br>", ";", regex=False)
+            .str.strip()
+        )
+
+        # strip a few common junk values
+        series = series.replace(
+            {"nan": "", "None": "", "0": "", "0.0": "", "NaN": ""}
+        )
+
+        # a “real” lab line should have at least one "="
+        if series.str.contains("=", regex=False).any():
+            return True
+
     return False
 
 
