@@ -10,6 +10,9 @@ from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 from flask_babel import gettext as _
 from datetime import datetime
+import sqlite3
+import os
+import json
 
 web_bp = Blueprint("web", __name__)
 
@@ -45,6 +48,23 @@ def _js_base_labels() -> dict:
         "deleteLastPoint": _("Delete last point"),
         "drawRectangleHint": _("Click and drag to draw a rectangle."),
     }
+
+# ---------- Adjust QR code formats ----------
+def _normalize_qr(raw: str) -> str:
+    """
+    Lab gives: 'ECHO-ABCD1234'
+    DB uses:   'ABCD-1234'
+    """
+    if not raw:
+        return ""
+    raw = str(raw).strip()
+    # strip leading prefix
+    if raw.upper().startswith("ECHO-"):
+        raw = raw[5:]
+    # add dash between 4th and 5th char if no dash
+    if "-" not in raw and len(raw) >= 5:
+        raw = raw[:4] + "-" + raw[4:]
+    return raw
 
 @web_bp.get("/", endpoint="home")
 @login_required
@@ -257,3 +277,142 @@ def download_sample_csv():
         download_name=f"sample_{sample_id}.csv",
         mimetype="text/csv"
     )
+
+@web_bp.post("/lab-import")
+@login_required
+def lab_import():
+    """
+    Accepts a CSV/XLSX with columns like:
+    ID  MgO  Unit  P2O5  Unit  SO3  Unit  ...
+    and stores them in lab_enrichment (qr_code, param, value, unit, user_id).
+    """
+    file = request.files.get("file")
+    if not file:
+        abort(400, description="No file uploaded")
+
+    # who's uploading?
+    # we prefer Keycloak's internal id if present
+    kc_profile = (session.get("kc") or {}).get("profile") or {}
+    uploader_id = (
+        kc_profile.get("id")
+        or kc_profile.get("sub")
+        or session.get("user")
+        or "unknown"
+    )
+
+    # load into pandas
+    filename = file.filename or ""
+    try:
+        if filename.lower().endswith(".xlsx"):
+            df = pd.read_excel(file)
+        else:
+            # try CSV, auto-sep-ish
+            # your example looked tab-separated, so we try that first
+            try:
+                df = pd.read_csv(file, sep="\t")
+            except Exception:
+                file.stream.seek(0)
+                df = pd.read_csv(file)
+    except Exception as e:
+        abort(400, description=f"Cannot read file: {e}")
+
+    if df.empty:
+        abort(400, description="Uploaded file has no rows")
+
+    # connect to same SQLite your app uses
+    db_path = settings.SQLITE_PATH
+    if not os.path.exists(db_path):
+        abort(500, description=f"SQLite database not found at {db_path}")
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+
+    # make sure table exists
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS lab_enrichment (
+          qr_code    TEXT NOT NULL,
+          param      TEXT NOT NULL,
+          value      TEXT,
+          unit       TEXT,
+          user_id    TEXT,
+          raw_row    TEXT,
+          updated_at TEXT DEFAULT (datetime('now')),
+          PRIMARY KEY (qr_code, param)
+        )
+        """
+    )
+
+    # we’ll need field order
+    fieldnames = list(df.columns)
+
+    # walk rows
+    for _, row in df.iterrows():
+        raw_dict = row.to_dict()
+        qr = _normalize_qr(raw_dict.get("ID") or raw_dict.get("id") or "")
+        if not qr:
+            continue
+
+        # we store the whole original row for debugging
+        # (pandas may give nan; turn them into empty strings)
+        clean_raw = {k: ("" if pd.isna(v) else v) for k, v in raw_dict.items()}
+        raw_json = json.dumps(clean_raw, ensure_ascii=False)
+
+        # the pattern is: Param, Unit, Param, Unit ...
+        for idx, col in enumerate(fieldnames):
+            if col in ("ID", "id"):
+                continue
+            val = row.get(col)
+            if pd.isna(val) or val == "":
+                continue
+
+            # skip obvious unit columns themselves
+            if str(col).lower().startswith("unit"):
+                continue
+
+            param = str(col).strip()
+            unit = ""
+
+            # try to grab the next column if it's unit-like
+            if idx + 1 < len(fieldnames):
+                maybe_unit_col = fieldnames[idx + 1]
+                if str(maybe_unit_col).lower().startswith("unit"):
+                    uval = row.get(maybe_unit_col)
+                    if not pd.isna(uval):
+                        unit = str(uval).strip()
+
+            cur.execute(
+                """
+                INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(qr_code, param) DO UPDATE SET
+                  value=excluded.value,
+                  unit=excluded.unit,
+                  user_id=excluded.user_id,
+                  raw_row=excluded.raw_row,
+                  updated_at=datetime('now')
+                """,
+                (qr, param, str(val), unit, uploader_id, raw_json),
+            )
+
+    conn.commit()
+    conn.close()
+
+    # if your form in results.html posts here, you can redirect back to home
+    return redirect(url_for("web.home"))
+
+@web_bp.get("/lab-upload")
+@login_required
+def lab_upload():
+    return render_template("lab_upload.html")
+
+@web_bp.post("/lab-upload")
+@login_required
+def lab_upload_post():
+    file = request.files.get("file")
+    if not file:
+        abort(400, "No file")
+    # parse CSV/XLSX → loop rows → normalize ID (ECHO-ABCD1234 → ABCD-1234)
+    # insert into lab_enrichment with user_id = session.get("kc")... or email
+    ...
+    return redirect(url_for("web.home"))
