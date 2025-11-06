@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ECHO Data API</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <h1>ECHO Data API</h1>
+  <p>This API exposes sample data from a SQLite database and lets you upload “lab enrichment” data that gets joined to samples by QR code.</p>
+  <p><strong>Base path (typical):</strong> <code>/api/v1</code></p>
+
+  <h2>Authentication</h2>
+  <p>Every protected endpoint accepts one of:</p>
+  <ol>
+    <li><strong>API key</strong> — send <code>X-API-Key</code>, <code>x-api-key</code>, <code>Authorization: ApiKey &lt;key&gt;</code>, or <code>?api_key=</code>.</li>
+    <li><strong>OIDC / Keycloak bearer token</strong> — send <code>Authorization: Bearer &lt;JWT&gt;</code> and it will verify against the issuer.</li>
+    <li><strong>Flask session user</strong> — if you're logged in via <code>flask-login</code>.</li>
+  </ol>
+  <p>If none match, the API returns <strong>401</strong>.</p>
+
+  <h2>Database discovery</h2>
+  <ul>
+    <li>DB path = config <code>SQLITE_PATH</code> → env <code>SQLITE_PATH</code> → fallback inside repo.</li>
+    <li>Sample table = config/env <code>SAMPLE_TABLE</code> → common names → first table with <code>sampleId</code> → first table.</li>
+  </ul>
+
+  <h2>Field policy</h2>
+  <p>The API always excludes:</p>
+  <ul>
+    <li><code>email</code></li>
+    <li><code>userId</code></li>
+    <li>any column ending with <code>_state</code></li>
+  </ul>
+  <p>This applies even when you request <code>fields=*</code>.</p>
+
+  <h2>Endpoints</h2>
+
+  <h3>GET /api/v1/ping</h3>
+  <p>Health check.</p>
+  <pre><code>{ "ok": true }</code></pre>
+
+  <h3>GET /api/v1/samples</h3>
+  <p>List/filter samples.</p>
+  <h4>Query parameters</h4>
+  <ul>
+    <li><code>from</code>, <code>to</code> — date/time filters on <code>collectedAt</code></li>
+    <li><code>bbox</code> — <code>west,south,east,north</code> (lon/lat)</li>
+    <li><code>within</code> — <code>lat,lon,r_km</code></li>
+    <li><code>fields</code> — comma list or <code>*</code> for safe columns</li>
+    <li><code>limit</code>, <code>offset</code></li>
+    <li><code>order</code>, <code>dir</code></li>
+    <li><code>format</code> — <code>json</code> (default), <code>csv</code>, <code>geojson</code></li>
+  </ul>
+  <p>Response (JSON):</p>
+  <pre><code>{
+  "meta": { "count": 1234, "limit": 100, "offset": 0, "order": "collectedAt", "dir": "desc" },
+  "data": [
+    { "sampleId": "abc123", "collectedAt": "2025-11-02T10:00:00" }
+  ]
+}</code></pre>
+  <p><code>csv</code> format streams a CSV; <code>geojson</code> format returns a FeatureCollection using <code>GPS_long</code> and <code>GPS_lat</code>.</p>
+
+  <h3>GET /api/v1/samples/count</h3>
+  <p>Returns total count with optional date filters.</p>
+  <pre><code>{ "count": 3421 }</code></pre>
+
+  <h3>POST /api/v1/lab-enrichment</h3>
+  <p>Uploads lab / metals / chemistry data.</p>
+  <p>Accepted bodies:</p>
+  <ul>
+    <li><code>multipart/form-data</code> with <code>file=</code> (CSV/XLSX)</li>
+    <li>Raw CSV</li>
+    <li>Raw XLSX</li>
+    <li>JSON array or <code>{"rows": [...]}</code></li>
+  </ul>
+  <p>Each row must contain a QR/sample identifier (e.g. <code>qr_code</code>, <code>QR_qrCode</code>, <code>id</code>, <code>ID</code>). The identifier is normalized: leading <code>ECHO-</code> is stripped, and if there's no dash and length ≥ 5, a dash is inserted after 4 characters.</p>
+  <p>All other columns become parameters in the <code>lab_enrichment</code> table. A matching <code>&lt;column&gt;_unit</code> or a generic <code>unit</code> column is used as unit.</p>
+  <p>Data is upserted on <code>(qr_code, param)</code>.</p>
+  <p>Response:</p>
+  <pre><code>{
+  "ok": true,
+  "processed": 42,
+  "skipped": 1
+}</code></pre>
+
+  <h2>How it is used</h2>
+  <p>The web part of the app typically groups enrichment rows like this:</p>
+  <pre><code>SELECT
+  qr_code,
+  GROUP_CONCAT(
+    CASE WHEN unit IS NOT NULL AND unit &lt;&gt; ''
+      THEN param || '=' || value || ' ' || unit
+      ELSE param || '=' || value
+    END,
+    '; '
+  ) AS METALS_info
+FROM lab_enrichment
+GROUP BY qr_code;
+</code></pre>
+  <p>Then it LEFT JOINs this on the samples table to show a single, human-readable field.</p>
+
+  <h2>Examples</h2>
+  <h3>Download CSV</h3>
+  <pre><code>curl -H "X-API-Key: $API_KEY"   "https://yourhost/api/v1/samples?format=csv&limit=500"   -o samples.csv
+</code></pre>
+
+  <h3>Upload JSON</h3>
+  <pre><code>curl -H "X-API-Key: $API_KEY"   -H "Content-Type: application/json"   -d '[{"qr_code":"ECHO-TEST0001","As":11.2,"As_unit":"mg/kg"}]'   https://yourhost/api/v1/lab-enrichment
+</code></pre>
+
+</body>
+</html>
