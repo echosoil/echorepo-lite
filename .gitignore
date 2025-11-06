@@ -90,6 +90,9 @@ instance/*
 work/*
 minio-data/*
 !minio-data/.gitkeep
+storage/*
+!storage/.gitkeep
+
 
 # ── Misc temp files ───────────────────────────────────────────────────────────
 *.swp
