@@ -96,6 +96,15 @@
       background:#fff; border-radius:8px; padding:.4rem .6rem;
       box-shadow: 0 2px 6px rgba(0,0,0,.12); font-size:.85rem;
     }
+    #tableWrap table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    #tableWrap th,
+    #tableWrap td {
+      border-bottom: 1px solid #dee2e6;
+      vertical-align: top;
+    }
   </style>
 {% endblock %}
 
@@ -153,19 +162,19 @@
       </div>
     {% endif %}
 
-    {# existing "fix data issues" #}
-    {% if (issue_count|default(0)) > 0 %}
-      <div class="mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% if (issue_count|default(0)) > 0 %}
         <a href="{{ url_for('errors.issues') }}"
-           class="btn btn-danger btn-lg d-inline-flex align-items-center gap-2">
+           class="btn btn-danger d-inline-flex align-items-center gap-2">
           <i class="bi bi-exclamation-octagon-fill"></i>
           {% trans n=issue_count %}Fix data issues ({{ n }}){% endtrans %}
         </a>
-        <small class="text-muted ms-2">
-          {{ _('Some samples need attention to ensure correct maps and downloads.') }}
-        </small>
-      </div>
-    {% endif %}
+      {% endif %}
+
+      <a class="btn btn-outline-secondary" href="{{ url_for('web.lab_upload') }}">
+        <i class="bi bi-upload"></i> {{ _('Upload lab data') }}
+      </a>
+    </div>
 
     {% if columns is defined and (columns|length == 0) %}
       <div class="alert alert-info mb-0 mt-2">

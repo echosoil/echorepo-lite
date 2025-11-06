@@ -39,6 +39,9 @@
 - `/download/sample_csv`  _(in echorepo/routes/web.py)_
 - `/download/xlsx`  _(in echorepo/routes/web.py)_
 - `/i18n/labels`  _(in echorepo/routes/web.py)_
+- `/lab-import`  _(in echorepo/routes/web.py)_
+- `/lab-upload`  _(in echorepo/routes/web.py)_
+- `/lab-upload`  _(in echorepo/routes/web.py)_
 - `/x`  _(in tools/make_repo_overview.py)_
 - `/x`  _(in tools/make_repo_overview.py)_
 - `/x`  _(in tools/make_repo_overview.py)_
@@ -84,12 +87,14 @@
 ├── tools
 │   ├── auto_translate.py
 │   ├── create_indexes.py
+│   ├── create_lab_enrichment.sql
 │   ├── find_default_coords.py
 │   ├── firebase_kc_sync.py
 │   ├── i18n_override.py
 │   ├── make_repo_overview.py
 │   ├── pull_and_enrich_samples.py
-│   └── refresh_sqlite.py
+│   ├── refresh_sqlite.py
+│   └── run_sql.py
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
