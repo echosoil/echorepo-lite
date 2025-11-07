@@ -222,12 +222,40 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
 # ------------------------------------------------------------------------------ 
 # Firestore -> flattened rows
 # ------------------------------------------------------------------------------
-def fetch_samples_flat(mclient) -> pd.DataFrame:
-    db = firestore.client()
-    samples_ref = db.collection_group("samples")
-    rows = []
+def iter_samples_safe():
+    """
+    Stream all docs from collection_group('samples'), but if gRPC blows up with
+    the '_UnaryStreamMultiCallable ... _retry' nonsense, re-init and continue.
+    We dedupe later by doc.id, so it's ok if we re-see some docs.
+    """
+    while True:
+        db = firestore.client()
+        samples_ref = db.collection_group("samples")
+        try:
+            for doc in samples_ref.stream():
+                yield doc
+            break  # finished normally
+        except AttributeError as e:
+            if "_retry" in str(e):
+                print("[WARN] Firestore stream lost (_retry missing); reinitializing Firebase and continuing...")
+                # re-init firebase
+                try:
+                    app = firebase_admin.get_app()
+                    firebase_admin.delete_app(app)
+                except Exception:
+                    pass
+                init_firebase()
+                # loop again: we'll re-stream and dedupe by id
+                continue
+            else:
+                raise
 
-    for doc in samples_ref.stream():
+
+def fetch_samples_flat(mclient) -> pd.DataFrame:
+    # keep by doc.id so if we re-stream we overwrite the same entry
+    rows_by_id = {}
+
+    for doc in iter_samples_safe():
         data = doc.to_dict() or {}
         row = {
             "sampleId": doc.id,
@@ -244,7 +272,7 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
         steps = data.get("data", [])
         if not isinstance(steps, list):
             print(f"[WARN] sample {doc.id}: 'data' is {type(steps).__name__}, skipping steps flatten")
-            rows.append(row)
+            rows_by_id[doc.id] = row
             continue
 
         for step in steps:
@@ -285,9 +313,9 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
             else:
                 row[f"{step_type}_info"] = str(info)
 
-        rows.append(row)
+        rows_by_id[doc.id] = row
 
-    df = pd.DataFrame(rows, dtype=object)
+    df = pd.DataFrame(list(rows_by_id.values()), dtype=object)
     if not df.empty:
         if "collectedAt" in df.columns:
             df = df.sort_values(by=["collectedAt"], na_position="last")
