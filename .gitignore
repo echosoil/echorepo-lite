@@ -88,8 +88,9 @@ data/*
 instance/*
 !instance/.gitkeep
 work/*
-minio-data/*
-!minio-data/.gitkeep
+minio-data*/*
+!minio-data*/.gitkeep
+
 storage/*
 !storage/.gitkeep
 
