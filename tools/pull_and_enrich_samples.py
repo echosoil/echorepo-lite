@@ -70,7 +70,7 @@ USERS_CSV    = str(PROJECT_ROOT / USERS_CSV)
 # ------------------------------------------------------------------------------ 
 # MinIO config (we'll try to use it if present)
 # ------------------------------------------------------------------------------ 
-MINIO_ENDPOINT   = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+MINIO_ENDPOINT   = os.getenv("MINIO_ENDPOINT_OUTSIDE", "localhost:9000")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER") or ""
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD") or ""
 MINIO_BUCKET     = os.getenv("MINIO_BUCKET", "echorepo-uploads")
