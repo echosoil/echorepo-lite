@@ -11,7 +11,6 @@ from .routes.api import api_bp
 from .routes.i18n_admin import bp as i18n_admin_bp
 from .routes.errors import errors_bp
 from .routes import data_api
-from .routes.storage import storage_bp
 
 from .services.db import init_db_sanity
 from .services.i18n_overrides import get_overrides, get_overrides_msgid
@@ -236,6 +235,7 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp)
     app.register_blueprint(errors_bp)
     app.register_blueprint(data_api.data_api, url_prefix="/api/v1")  # or url_prefix="/api"
+    from echorepo.routes.storage import storage_bp
     app.register_blueprint(storage_bp)               # ← add this
 
     # ---- Back-compat endpoint aliases ----
