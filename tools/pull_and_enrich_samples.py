@@ -31,14 +31,24 @@ try:
     from minio.error import S3Error
 except ImportError:
     Minio = None
-    S3Error = Exception  # just to have the name
+    # make S3Error exist so except S3Error works even without minio
+    class S3Error(Exception):
+        pass
+
+# --- OPTIONAL: tolerate truncated images (like we did in the off-line script) --
+try:
+    from PIL import ImageFile
+    ImageFile.LOAD_TRUNCATED_IMAGES = True   # <--- important
+except Exception:
+    # Pillow not installed — it's fine, we just skip this
+    pass
 
 # ------------------------------------------------------------------------------ 
 # env + basic paths
-# ------------------------------------------------------------------------------
-load_dotenv(dotenv_path=Path.cwd() / ".env")
-
-print(f"[INFO] Loaded environment from {os.getenv('PROJECT_ROOT')}/.env")
+# ------------------------------------------------------------------------------ 
+env_path = Path.cwd() / ".env"
+load_dotenv(dotenv_path=env_path)
+print(f"[INFO] Loaded environment from {env_path}")
 
 PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite"))
 CREDS_PATH   = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
@@ -59,20 +69,18 @@ USERS_CSV    = str(PROJECT_ROOT / USERS_CSV)
 
 # ------------------------------------------------------------------------------ 
 # MinIO config (we'll try to use it if present)
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------ 
 MINIO_ENDPOINT   = os.getenv("MINIO_ENDPOINT", "localhost:9000")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER") or ""
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD") or ""
 MINIO_BUCKET     = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-# what your Flask app will later expose as public URL (reverse-proxy)
 PUBLIC_STORAGE_BASE = os.getenv("PUBLIC_STORAGE_BASE", "/storage")
 
-# firebase storage URL prefix
 FBS_PREFIX = "https://firebasestorage.googleapis.com/"
 
 # ------------------------------------------------------------------------------ 
 # Firebase init
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------ 
 def init_firebase():
     if firebase_admin._apps:
         return
@@ -85,16 +93,12 @@ def init_firebase():
 
 # ------------------------------------------------------------------------------ 
 # MinIO init
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------ 
 def init_minio():
-    """
-    Return a ready Minio client or None if not available.
-    """
     if Minio is None:
         print("[INFO] python-minio not installed; will keep Firebase URLs.")
         return None
 
-    # allow endpoints like https://minio.example.com:9000
     secure = False
     endpoint = MINIO_ENDPOINT
     if endpoint.startswith("https://"):
@@ -121,6 +125,9 @@ def init_minio():
         if not found:
             client.make_bucket(MINIO_BUCKET)
             print(f"[INFO] Created MinIO bucket {MINIO_BUCKET}")
+    except S3Error as e:
+        print(f"[WARN] Could not ensure MinIO bucket (S3Error): {e}")
+        return None
     except Exception as e:
         print(f"[WARN] Could not ensure MinIO bucket: {e}")
         return None
@@ -130,11 +137,8 @@ def init_minio():
 
 # ------------------------------------------------------------------------------ 
 # helpers
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------ 
 def _ts_to_iso(ts):
-    """
-    Convert Firestore / protobuf timestamp → ISO8601 string in UTC.
-    """
     if ts is None:
         return ""
     if isinstance(ts, str):
@@ -155,16 +159,15 @@ def _safe_part(s: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]", "_", s) or "x"
 
 def _guess_ext_from_firebase_url(url: str) -> str:
-    # .../o/some%2Fpath%2Fphoto.jpg?alt=media&token=...
     parsed = urlparse(url)
-    last = parsed.path.rsplit("/", 1)[-1]  # "photo.jpg" (still URL-encoded, but .jpg is visible)
+    last = parsed.path.rsplit("/", 1)[-1]
     if "." in last:
         return "." + last.rsplit(".", 1)[-1]
     return ".bin"
 
 def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str, mclient) -> str:
     """
-    Option A:
+    Option A with extra safety:
     - if not Firebase URL → return as is
     - else build object_name = user_id/sample_id/field.ext
     - try stat; if exists → return PUBLIC_STORAGE_BASE/object_name
@@ -183,14 +186,12 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
     # 1) check if already there
     try:
         mclient.stat_object(MINIO_BUCKET, object_name)
-        # exists
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
     except S3Error as e:
-        # if it's something other than NotFound, also bail out
-        if e.code not in ("NoSuchKey", "NoSuchObject", "NoSuchBucket"):
-            print(f"[WARN] stat_object error for {object_name}: {e}")
+        # not found or other S3 error — we’ll try to re-upload below
+        if getattr(e, "code", "") not in ("NoSuchKey", "NoSuchObject", "NoSuchBucket"):
+            print(f"[WARN] stat_object S3Error for {object_name}: {e}")
             return url
-        # else: we will try to download+upload
     except Exception as e:
         print(f"[WARN] generic stat error for {object_name}: {e}")
         return url
@@ -212,16 +213,19 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
             object_name,
             data=io.BytesIO(data),
             length=len(data),
-            content_type="image/jpeg",  # good enough; you can detect later
+            content_type="image/jpeg",  # or guess later
         )
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
+    except S3Error as e:
+        print(f"[WARN] S3Error uploading to MinIO {object_name}: {e}")
+        return url
     except Exception as e:
         print(f"[WARN] could not upload to MinIO {object_name}: {e}")
         return url
 
 # ------------------------------------------------------------------------------ 
 # Firestore -> flattened rows
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------ 
 def fetch_samples_flat(mclient) -> pd.DataFrame:
     db = firestore.client()
     samples_ref = db.collection_group("samples")
@@ -297,7 +301,7 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
 
 # ------------------------------------------------------------------------------ 
 # Firebase Auth -> {uid: email}
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------ 
 def fetch_uid_to_email() -> dict:
     mapping = {}
     page = auth.list_users()
@@ -310,7 +314,7 @@ def fetch_uid_to_email() -> dict:
 
 # ------------------------------------------------------------------------------ 
 # Atomic CSV writer
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------ 
 def write_csv_atomic(df: pd.DataFrame, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with tempfile.NamedTemporaryFile("w", delete=False, dir=os.path.dirname(path), suffix=".csv") as tmp:
@@ -321,26 +325,22 @@ def write_csv_atomic(df: pd.DataFrame, path: str):
 
 # ------------------------------------------------------------------------------ 
 # main
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------ 
 def main():
     init_firebase()
     minio_client = init_minio()
 
-    # 1) fetch & flatten (this is where URLs are rewritten)
     df_raw = fetch_samples_flat(minio_client)
     write_csv_atomic(df_raw, RAW_CSV)
 
-    # 2) enrich with email
     uid_to_email = fetch_uid_to_email()
     df_enriched = df_raw.copy()
     if not df_enriched.empty:
         if "userId" not in df_enriched.columns:
             df_enriched["userId"] = ""
         df_enriched["email"] = df_enriched["userId"].map(uid_to_email).fillna("")
-
     write_csv_atomic(df_enriched, ENRICHED_CSV)
 
-    # 3) distinct users
     df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
     write_csv_atomic(df_users, USERS_CSV)
 
