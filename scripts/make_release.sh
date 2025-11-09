@@ -1,190 +1,154 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# path to your main repo
-REPO_DIR="../echorepo-lite"
+# figure out paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEV_REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"                  # echorepo-lite-dev
+PROD_REPO_DIR="$(cd "$DEV_REPO_DIR/../echorepo-lite" && pwd)" # echorepo-lite
 
-cd "$REPO_DIR"
-
-# temp place to stash the files from develop
 TMPDIR="$(mktemp -d)"
 cleanup() {
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT
 
-echo "Fetching origin..."
-git fetch --all
+echo "[INFO] dev repo : $DEV_REPO_DIR"
+echo "[INFO] prod repo: $PROD_REPO_DIR"
 
 # ---------------------------------------------------------------------------
-# 1) find where 'develop' is actually checked out
+# 1) stash from DEV
 # ---------------------------------------------------------------------------
-DEV_WORKTREE=""
-while IFS= read -r line; do
-  case "$line" in
-    worktree\ *)
-      wt_path="${line#worktree }"
-      current_wt="$wt_path"
-      ;;
-    branch\ refs/heads/develop)
-      DEV_WORKTREE="$current_wt"
-      ;;
-  esac
-done < <(git worktree list --porcelain)
+# 1a) .env
+if [[ -f "$DEV_REPO_DIR/.env" ]]; then
+  cp "$DEV_REPO_DIR/.env" "$TMPDIR/.env"
 
-SWITCHED_TO_DEVELOP=0
+  # remove literal "-dev" substrings (your earlier requirement)
+  sed -i 's/-dev//g' "$TMPDIR/.env"
 
-if [[ -n "$DEV_WORKTREE" && "$DEV_WORKTREE" != "$(pwd)" ]]; then
-  echo "develop is checked out in another worktree: $DEV_WORKTREE"
-  SRC_DIR="$DEV_WORKTREE"
+  # change APP_ENV=dev → APP_ENV=prod
+  sed -i 's/^APP_ENV=dev$/APP_ENV=prod/' "$TMPDIR/.env"
+
+  echo "[INFO] copied and sanitized .env from dev"
 else
-  # develop is NOT checked out elsewhere, so we can just switch here
-  echo "develop is not checked out elsewhere, switching in this repo..."
-  git switch develop
-  SWITCHED_TO_DEVELOP=1
-  SRC_DIR="$(pwd)"
+  echo "[WARN] no .env in $DEV_REPO_DIR"
 fi
 
-# ---------------------------------------------------------------------------
-# 2) copy the untracked stuff from that develop tree
-# ---------------------------------------------------------------------------
-# 2a) .env
-if [[ -f "$SRC_DIR/.env" ]]; then
-  cp "$SRC_DIR/.env" "$TMPDIR/.env"
-fi
-
-# 2b) compiled translations: echorepo/translations/**/LC_MESSAGES/messages.mo
+# 1b) compiled translations
 mkdir -p "$TMPDIR/echorepo/translations"
 rsync -a \
   --prune-empty-dirs \
   --include '*/' \
   --include 'messages.mo' \
   --exclude '*' \
-  "$SRC_DIR/echorepo/translations/" "$TMPDIR/echorepo/translations/"
-
-# if we temporarily switched to develop in this repo, go back to main now
-if [[ $SWITCHED_TO_DEVELOP -eq 1 ]]; then
-  git switch main
-else
-  # we're already in the main repo root but maybe on some branch; make sure
-  git switch main
-fi
+  "$DEV_REPO_DIR/echorepo/translations/" \
+  "$TMPDIR/echorepo/translations/"
+echo "[INFO] copied .mo files from dev into tmp"
 
 # ---------------------------------------------------------------------------
-# 3) merge origin/develop into main
+# 2) go to PROD and do git stuff
 # ---------------------------------------------------------------------------
+cd "$PROD_REPO_DIR"
+
+echo "[INFO] fetching + switching to main..."
+git fetch --all
+git switch main
+
+echo "[INFO] merging origin/develop into main..."
 git merge --no-ff origin/develop
 
 # ---------------------------------------------------------------------------
-# 4) restore the files into main's working tree
+# 3) restore into PROD
 # ---------------------------------------------------------------------------
 if [[ -f "$TMPDIR/.env" ]]; then
   cp "$TMPDIR/.env" .env
-fi#!/usr/bin/env bash
+  echo "[INFO] restored .env into prod"
+fi
+
+rsync -a "$TMPDIR/echorepo/translations/" echorepo/translations/
+echo "[INFO] restored .mo files into prod"
+
+# ---------------------------------------------------------------------------
+# 4) tag + push
+# ---------------------------------------------------------------------------
+TAG="v$(date +%Y.%m.%d-%H%M)"
+git tag -a "$TAG" -m "Release"
+git push --follow-tags
+echo "[INFO] Release done: $TAG"
+#!/usr/bin/env bash
 set -euo pipefail
 
-# path to your main repo
-REPO_DIR="../echorepo-lite"
+# figure out paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEV_REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"                  # echorepo-lite-dev
+PROD_REPO_DIR="$(cd "$DEV_REPO_DIR/../echorepo-lite" && pwd)" # echorepo-lite
 
-cd "$REPO_DIR"
-
-# temp place to stash the files from develop
 TMPDIR="$(mktemp -d)"
 cleanup() {
   rm -rf "$TMPDIR"
 }
 trap cleanup EXIT
 
-echo "Fetching origin..."
-git fetch --all
+echo "[INFO] dev repo : $DEV_REPO_DIR"
+echo "[INFO] prod repo: $PROD_REPO_DIR"
 
 # ---------------------------------------------------------------------------
-# 1) find where 'develop' is actually checked out
+# 1) stash from DEV
 # ---------------------------------------------------------------------------
-DEV_WORKTREE=""
-while IFS= read -r line; do
-  case "$line" in
-    worktree\ *)
-      wt_path="${line#worktree }"
-      current_wt="$wt_path"
-      ;;
-    branch\ refs/heads/develop)
-      DEV_WORKTREE="$current_wt"
-      ;;
-  esac
-done < <(git worktree list --porcelain)
+if [[ -f "$DEV_REPO_DIR/.env" ]]; then
+  cp "$DEV_REPO_DIR/.env" "$TMPDIR/.env"
 
-SWITCHED_TO_DEVELOP=0
+  # 1) APP_ENV=dev -> APP_ENV=prod
+  sed -i 's/^APP_ENV=dev$/APP_ENV=prod/' "$TMPDIR/.env"
 
-if [[ -n "$DEV_WORKTREE" && "$DEV_WORKTREE" != "$(pwd)" ]]; then
-  echo "develop is checked out in another worktree: $DEV_WORKTREE"
-  SRC_DIR="$DEV_WORKTREE"
-else
-  # develop is NOT checked out elsewhere, so we can just switch here
-  echo "develop is not checked out elsewhere, switching in this repo..."
-  git switch develop
-  SWITCHED_TO_DEVELOP=1
-  SRC_DIR="$(pwd)"
-fi
-
-# ---------------------------------------------------------------------------
-# 2) copy the untracked stuff from that develop tree
-# ---------------------------------------------------------------------------
-# 2a) .env
-if [[ -f "$SRC_DIR/.env" ]]; then
-  cp "$SRC_DIR/.env" "$TMPDIR/.env"
-  # remove all literal "-dev" substrings from the copied .env
+  # 2) remove literal "-dev" everywhere (for paths like echorepo-lite-dev, etc.)
   sed -i 's/-dev//g' "$TMPDIR/.env"
+
+  # 3) but restore the real Keycloak host, which *must* have -dev
+  sed -i 's/keycloak\.quanta-labs\.com/keycloak-dev.quanta-labs.com/g' "$TMPDIR/.env"
+
+  echo "[INFO] copied and sanitized .env from dev"
+else
+  echo "[WARN] no .env in $DEV_REPO_DIR"
 fi
 
-# 2b) compiled translations: echorepo/translations/**/LC_MESSAGES/messages.mo
+# 1b) compiled translations (.mo)
 mkdir -p "$TMPDIR/echorepo/translations"
 rsync -a \
   --prune-empty-dirs \
   --include '*/' \
   --include 'messages.mo' \
   --exclude '*' \
-  "$SRC_DIR/echorepo/translations/" "$TMPDIR/echorepo/translations/"
-
-# if we temporarily switched to develop in this repo, go back to main now
-if [[ $SWITCHED_TO_DEVELOP -eq 1 ]]; then
-  git switch main
-else
-  # we're already in the main repo root but maybe on some branch; make sure
-  git switch main
-fi
+  "$DEV_REPO_DIR/echorepo/translations/" \
+  "$TMPDIR/echorepo/translations/"
+echo "[INFO] copied .mo files from dev into tmp"
 
 # ---------------------------------------------------------------------------
-# 3) merge origin/develop into main
+# 2) go to PROD and do git stuff
 # ---------------------------------------------------------------------------
+cd "$PROD_REPO_DIR"
+
+echo "[INFO] fetching + switching to main..."
+git fetch --all
+git switch main
+
+echo "[INFO] merging origin/develop into main..."
 git merge --no-ff origin/develop
 
 # ---------------------------------------------------------------------------
-# 4) restore the files into main's working tree
+# 3) restore into PROD
 # ---------------------------------------------------------------------------
 if [[ -f "$TMPDIR/.env" ]]; then
   cp "$TMPDIR/.env" .env
+  echo "[INFO] restored .env into prod"
 fi
 
 rsync -a "$TMPDIR/echorepo/translations/" echorepo/translations/
+echo "[INFO] restored .mo files into prod"
 
 # ---------------------------------------------------------------------------
-# 5) tag + push
-# ---------------------------------------------------------------------------
-TAG="v$(date +%Y.%m.%d-%H%M)"
-git tag -a "$TAG" -m "Release"
-git push --follow-tags
-
-echo "Release done: $TAG"
-
-
-rsync -a "$TMPDIR/echorepo/translations/" echorepo/translations/
-
-# ---------------------------------------------------------------------------
-# 5) tag + push
+# 4) tag + push
 # ---------------------------------------------------------------------------
 TAG="v$(date +%Y.%m.%d-%H%M)"
 git tag -a "$TAG" -m "Release"
 git push --follow-tags
-
-echo "Release done: $TAG"
+echo "[INFO] Release done: $TAG"
