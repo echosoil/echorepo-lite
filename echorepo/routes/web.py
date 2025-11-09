@@ -104,6 +104,7 @@ def _js_base_labels() -> dict:
         "cancel": _("Cancel"),
         "deleteLastPoint": _("Delete last point"),
         "drawRectangleHint": _("Click and drag to draw a rectangle."),
+        "releaseToFinish": _("Release mouse to finish drawing."),
     }
 
 
