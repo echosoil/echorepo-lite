@@ -16,6 +16,8 @@
     minZoom: 3,        // don’t let them see the whole Earth at once
     maxZoom: 18
   }).setView([40, 0], 4);
+  window.__echomap = map;
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
@@ -436,16 +438,14 @@
 
   // ---- Localize Leaflet.Draw built-in strings ----
   function applyLeafletDrawTranslations() {
-    if (!L.drawLocal) return;   // safety
+    if (!L.drawLocal) return;
 
     // toolbar button text
     if (L.drawLocal.draw && L.drawLocal.draw.toolbar) {
       const tb = L.drawLocal.draw.toolbar;
-      // the little button you hover on the map
       if (tb.buttons) {
         tb.buttons.rectangle = T('drawRectangle', {}, 'Draw a rectangle');
       }
-      // cancel / finish stuff
       if (tb.actions) {
         tb.actions.title = T('cancelDrawing', {}, 'Cancel drawing');
         tb.actions.text  = T('cancel', {}, 'Cancel');
@@ -459,14 +459,29 @@
     // tooltips while drawing
     if (L.drawLocal.draw && L.drawLocal.draw.handlers) {
       const h = L.drawLocal.draw.handlers;
+
+      const startText = T(
+        'drawRectangleHint',
+        {},
+        'Click and drag to draw a rectangle.'
+      );
+      const endText = T(
+        'releaseToFinish',
+        {},
+        'Release mouse to finish drawing.'
+      );
+
+      // what you had
       if (h.rectangle && h.rectangle.tooltip) {
-        h.rectangle.tooltip.start = T(
-          'drawRectangleHint',
-          {},
-          'Click and drag to draw a rectangle.'
-        );
+        h.rectangle.tooltip.start = startText;
+        h.rectangle.tooltip.end   = endText;
       }
-      // you can add other handlers later (polygon, polyline, marker, …)
+
+      // what Leaflet.Draw's SimpleShape actually uses
+      if (h.simpleshape && h.simpleshape.tooltip) {
+        h.simpleshape.tooltip.start = startText;
+        h.simpleshape.tooltip.end   = endText;
+      }
     }
   }
 
@@ -506,6 +521,12 @@
       edit: false
     });
     map.addControl(drawControl);
+    window.__echodraw = drawControl;
+
+    const rectHandler = drawControl._toolbars.draw._modes.rectangle.handler;
+    const endText   = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
+    
+    rectHandler._endLabelText   = endText;
 
     map.on(L.Draw.Event.CREATED, (e) => {
       const layer = e.layer;
@@ -651,13 +672,22 @@
 
   // ---- Boot ----
   Promise.all([
+    fetch('/i18n/labels?ts=' + Date.now(), { credentials:'same-origin' }).then(r => r.json()),
     fetch('/api/user_geojson',   { credentials:'same-origin' }).then(r=>r.json()),
     fetch('/api/others_geojson', { credentials:'same-origin' }).then(r=>r.json())
-  ]).then(([u,o])=>{
-    userGJ=u; othersGJ=o;
-    computeAllHeaders(); buildLayers();
+  ]).then(([i18n, u, o])=>{
+    // normalize shape if your endpoint returns {labels:{...}}
+    const labels = i18n.labels || i18n;
+    window.I18N = { labels };
+
+    userGJ = u;
+    othersGJ = o;
+
+    computeAllHeaders();
+    buildLayers(); // this will call addSelectionControl() which uses T(...)
   }).catch(err=>{
-    console.warn('GeoJSON fetch failed:', err);
+    console.warn('Init failed:', err);
     mapDiv.style.display='none';
   });
+
 })();
