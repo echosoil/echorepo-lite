@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-06 10:46+0000\n"
+"POT-Creation-Date: 2025-11-09 22:00+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt\n"
@@ -18,119 +18,123 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: /work/echorepo/routes/web.py:23
+#: /work/echorepo/routes/web.py:79
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Raio de privacidade (~±{km} km)"
 
-#: /work/echorepo/routes/web.py:24
+#: /work/echorepo/routes/web.py:80
 msgid "Soil pH"
 msgstr "PH do solo"
 
-#: /work/echorepo/routes/web.py:25
+#: /work/echorepo/routes/web.py:81
 msgid "Acidic (≤5.5)"
 msgstr "Ácido (5,5)"
 
-#: /work/echorepo/routes/web.py:26
+#: /work/echorepo/routes/web.py:82
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Ligeiramente ácido (5,5–6,5)"
 
-#: /work/echorepo/routes/web.py:27
+#: /work/echorepo/routes/web.py:83
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutro (6.5–7.5)"
 
-#: /work/echorepo/routes/web.py:28
+#: /work/echorepo/routes/web.py:84
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Ligeiramente alcalino (7.5–8.5)"
 
-#: /work/echorepo/routes/web.py:29
+#: /work/echorepo/routes/web.py:85
 msgid "Alkaline (≥8.5)"
 msgstr "Alcalina (≥8.5)"
 
-#: /work/echorepo/routes/web.py:30
+#: /work/echorepo/routes/web.py:86
 msgid "Your samples"
 msgstr "As suas amostras"
 
-#: /work/echorepo/routes/web.py:31
+#: /work/echorepo/routes/web.py:87
 msgid "Other samples"
 msgstr "Outras amostras"
 
-#: /work/echorepo/routes/web.py:32
+#: /work/echorepo/routes/web.py:88
 msgid "Export"
 msgstr "Exportação"
 
-#: /work/echorepo/routes/web.py:33
+#: /work/echorepo/routes/web.py:89
 msgid "Clear"
 msgstr "Limpar"
 
-#: /work/echorepo/routes/web.py:34
+#: /work/echorepo/routes/web.py:90
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Exportar filtrado ({n})"
 
-#: /work/echorepo/routes/web.py:35
+#: /work/echorepo/routes/web.py:91
 msgid "Date"
 msgstr "Data"
 
-#: /work/echorepo/routes/web.py:36
+#: /work/echorepo/routes/web.py:92
 msgid "QR code"
 msgstr "Código QR"
 
-#: /work/echorepo/routes/web.py:37 /work/echorepo/templates/results.html:225
+#: /work/echorepo/routes/web.py:93 /work/echorepo/templates/results.html:225
 msgid "pH"
 msgstr "p H"
 
-#: /work/echorepo/routes/web.py:38
+#: /work/echorepo/routes/web.py:94
 msgid "Colour"
 msgstr "Cor"
 
-#: /work/echorepo/routes/web.py:39
+#: /work/echorepo/routes/web.py:95
 msgid "Texture"
 msgstr "Textura"
 
-#: /work/echorepo/routes/web.py:40
+#: /work/echorepo/routes/web.py:96
 msgid "Structure"
 msgstr "Estrutura"
 
-#: /work/echorepo/routes/web.py:41
+#: /work/echorepo/routes/web.py:97
 msgid "Earthworms"
 msgstr "Vermes"
 
-#: /work/echorepo/routes/web.py:42
+#: /work/echorepo/routes/web.py:98
 msgid "Plastic"
 msgstr "Plástico"
 
-#: /work/echorepo/routes/web.py:43
+#: /work/echorepo/routes/web.py:99
 msgid "Debris"
 msgstr "Detritos"
 
-#: /work/echorepo/routes/web.py:44
+#: /work/echorepo/routes/web.py:100
 msgid "Contamination"
 msgstr "Contaminação"
 
-#: /work/echorepo/routes/web.py:45
+#: /work/echorepo/routes/web.py:101
 msgid "Metals"
 msgstr "Metais"
 
-#: /work/echorepo/routes/web.py:46
+#: /work/echorepo/routes/web.py:102
 msgid "Draw a rectangle"
 msgstr "Desenhar um retângulo"
 
-#: /work/echorepo/routes/web.py:47
+#: /work/echorepo/routes/web.py:103
 msgid "Cancel drawing"
 msgstr "Cancelar desenho"
 
-#: /work/echorepo/routes/web.py:48
+#: /work/echorepo/routes/web.py:104
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: /work/echorepo/routes/web.py:49
+#: /work/echorepo/routes/web.py:105
 msgid "Delete last point"
 msgstr "Apagar o último ponto"
 
-#: /work/echorepo/routes/web.py:50
+#: /work/echorepo/routes/web.py:106
 msgid "Click and drag to draw a rectangle."
 msgstr "Clique e arraste para desenhar um retângulo."
+
+#: /work/echorepo/routes/web.py:107
+msgid "Release mouse to finish drawing."
+msgstr "Solte o mouse para terminar o desenho."
 
 #: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
