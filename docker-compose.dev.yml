@@ -10,4 +10,4 @@ services:
   postgres:
     # dev can keep 5432 on host
     ports:
-      - "5432:5432"
+      - "5433:5432"

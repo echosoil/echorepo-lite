@@ -43,8 +43,6 @@ services:
       - default
       - echorepo-shared
     # 👇 make host port overridable
-    ports:
-      - "${PG_PORT:-5432}:5432"
   libretranslate:
     profiles: ["devtools"]
     image: libretranslate/libretranslate:latest
