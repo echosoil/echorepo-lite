@@ -54,8 +54,17 @@ echo "[INFO] copied .mo files from dev into tmp"
 # ---------------------------------------------------------------------------
 cd "$PROD_REPO_DIR"
 
-echo "[INFO] fetching + switching to main..."
+echo "[INFO] fetching..."
 git fetch --all
+
+# bail if repo is mid-merge
+if [ -f .git/MERGE_HEAD ]; then
+  echo "[ERROR] This repo is currently in the middle of a merge."
+  echo "        Run 'git status' and either 'git merge --abort' or finish the merge."
+  exit 1
+fi
+
+echo "[INFO] switching to main..."
 git switch main
 
 echo "[INFO] merging origin/develop into main..."
