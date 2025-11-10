@@ -106,6 +106,9 @@ if [[ -f "$DEV_REPO_DIR/.env" ]]; then
   # 3) but restore the real Keycloak host, which *must* have -dev
   sed -i 's/keycloak\.quanta-labs\.com/keycloak-dev.quanta-labs.com/g' "$TMPDIR/.env"
 
+  # 4) localhost:18080 -> echorepo.quanta-labs.com
+  sed -i 's/^localhost:18080$/APP_ENV=echorepo.quanta-labs.com/' "$TMPDIR/.env"
+
   echo "[INFO] copied and sanitized .env from dev"
 else
   echo "[WARN] no .env in $DEV_REPO_DIR"
