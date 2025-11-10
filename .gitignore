@@ -93,7 +93,8 @@ minio-data*/*
 
 storage/*
 !storage/.gitkeep
-
+pgdata/*
+!pgdata/.gitkeep
 
 # ── Misc temp files ───────────────────────────────────────────────────────────
 *.swp

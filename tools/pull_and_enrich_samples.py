@@ -138,6 +138,26 @@ def init_minio():
 # ------------------------------------------------------------------------------ 
 # helpers
 # ------------------------------------------------------------------------------ 
+def infer_country_from_latlon(lat, lon):
+    """
+    Very simple placeholder.
+    Replace with a proper point-in-polygon (Natural Earth) if you need.
+    """
+    if pd.isna(lat) or pd.isna(lon):
+        return ""
+    # rough boxes just to not return empty
+    # Spain
+    if 27.0 <= lat <= 44.5 and -19.0 <= lon <= 5.0:
+        return "ES"
+    # Portugal
+    if 36.8 <= lat <= 42.3 and -9.6 <= lon <= -6.0:
+        return "PT"
+    # France
+    if 41.0 <= lat <= 51.5 and -5.5 <= lon <= 9.8:
+        return "FR"
+    # fallback
+    return ""
+
 def _ts_to_iso(ts):
     if ts is None:
         return ""
