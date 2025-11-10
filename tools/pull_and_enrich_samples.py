@@ -22,6 +22,7 @@ import math
 import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
+
 import re
 import requests
 from urllib.parse import urlparse
@@ -227,6 +228,54 @@ def _ts_to_iso(ts):
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat()
     return str(ts)
+
+def _ts_to_iso_loose(v):
+    """
+    Convert various Firestore-ish timestamp shapes to ISO 8601.
+    Handles:
+      - datetime(...)
+      - objects with .seconds / .nanos
+      - strings like "seconds: 1747091048\nnanos: 20637000"
+      - already-ISO strings
+    Otherwise returns original value.
+    """
+    if v is None:
+        return ""
+
+    # already a datetime
+    if hasattr(v, "isoformat"):
+        dt = v
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+
+    # Firestore timestamp object
+    if hasattr(v, "seconds") and hasattr(v, "nanos"):
+        sec = int(v.seconds)
+        nanos = int(v.nanos or 0)
+        dt = datetime.fromtimestamp(sec + nanos / 1_000_000_000, tz=timezone.utc)
+        return dt.isoformat()
+
+    # ugly string: "seconds: ... nanos: ..."
+    if isinstance(v, str) and "seconds:" in v:
+        # collapse newlines just in case
+        s = v.replace("\r", " ").replace("\n", " ")
+        m_sec = re.search(r"seconds:\s*(\d+)", s)
+        m_nanos = re.search(r"nanos:\s*(\d+)", s)
+        if m_sec:
+            sec = int(m_sec.group(1))
+            nanos = int(m_nanos.group(1)) if m_nanos else 0
+            dt = datetime.fromtimestamp(sec + nanos / 1_000_000_000, tz=timezone.utc)
+            return dt.isoformat()
+        # if we can't parse, just return original
+        return v
+
+    # looks like ISO already
+    if isinstance(v, str) and re.match(r"\d{4}-\d{2}-\d{2}T", v):
+        return v
+
+    return v
+
 
 def _safe_part(s: str) -> str:
     s = (s or "").strip()
@@ -495,7 +544,7 @@ def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
             "lat": lat,
             "lon": lon,
             "country_code": country,
-            "location_accuracy_m": None,
+            "location_accuracy_m": MAX_JITTER_METERS,
             "ph": r.get("PH_ph"),
             "organic_carbon_pct": None,
             "soil_structure": r.get("SOIL_STRUCTURE_structure"),
@@ -730,6 +779,12 @@ def main():
 
     # 1) fetch from Firestore
     df_raw = fetch_samples_flat(minio_client)
+
+    # normalize timestamps    
+    for col in ("collectedAt", "fs_createdAt", "fs_updatedAt"):
+        if col in df_raw.columns:
+            df_raw[col] = df_raw[col].apply(_ts_to_iso_loose)
+            
     write_csv_atomic(df_raw, RAW_CSV)
 
     # 2) enrich with emails
@@ -739,6 +794,12 @@ def main():
         if "userId" not in df_enriched.columns:
             df_enriched["userId"] = ""
         df_enriched["email"] = df_enriched["userId"].map(uid_to_email).fillna("")
+    
+    # normalize timestamps again just in case
+    for col in ("collectedAt", "fs_createdAt", "fs_updatedAt"):
+        if col in df_enriched.columns:
+            df_enriched[col] = df_enriched[col].apply(_ts_to_iso_loose)
+
     write_csv_atomic(df_enriched, ENRICHED_CSV)
 
     # 3) users.csv
