@@ -31,7 +31,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: echorepo-postgres
+    # 👇 important: no container_name here
     restart: unless-stopped
     environment:
       POSTGRES_DB: echorepo
@@ -42,8 +42,9 @@ services:
     networks:
       - default
       - echorepo-shared
+    # 👇 make host port overridable
     ports:
-      - "5432:5432"
+      - "${PG_PORT:-5432}:5432"
   libretranslate:
     profiles: ["devtools"]
     image: libretranslate/libretranslate:latest
