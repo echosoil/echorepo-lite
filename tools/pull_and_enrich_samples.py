@@ -29,7 +29,12 @@ from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 
-# --- Postgres (optional) ------------------------------------------------------
+import shapefile  # pyshp
+from shapely.geometry import shape as shp_shape, Point
+
+_COUNTRY_SHAPES = []  # (geometry, iso2) list
+
+# --- Postgres ------------------------------------------------------
 try:
     import psycopg2
     from psycopg2.extras import execute_values
@@ -85,6 +90,7 @@ MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD") or ""
 MINIO_BUCKET = os.getenv("MINIO_BUCKET", "echorepo-uploads")
 PUBLIC_STORAGE_BASE = os.getenv("PUBLIC_STORAGE_BASE", "/storage")
+MIRROR_VERBOSE = os.getenv("MIRROR_VERBOSE", "0") == "1"
 
 FBS_PREFIX = "https://firebasestorage.googleapis.com/"
 
@@ -153,6 +159,55 @@ def init_minio():
 # ------------------------------------------------------------------------------
 # helpers
 # ------------------------------------------------------------------------------
+
+def load_country_shapes_from_shp(shp_path="data/ne_50m_admin_0_countries.shp"):
+    """
+    Load country polygons from a Natural Earth shapefile.
+    Keep (shapely_geom, ISO_A2) in memory for fast lookup.
+    """
+    global _COUNTRY_SHAPES
+    r = shapefile.Reader(shp_path)
+    # inspect fields to find where ISO is stored
+    # r.fields is like: [('DeletionFlag', 'C', 1, 0), ('FEATURECLA', 'C', ...), ...]
+    field_names = [f[0] for f in r.fields[1:]]  # skip DeletionFlag
+    # Natural Earth usually has 'ISO_A2'
+    try:
+        iso_idx = field_names.index("ISO_A2")
+    except ValueError:
+        # fallback: try lowercase or admin name
+        iso_idx = None
+
+    shapes = []
+    for sr in r.shapeRecords():
+        geom = shp_shape(sr.shape.__geo_interface__)
+        rec = sr.record
+        if iso_idx is not None:
+            iso2 = rec[iso_idx]
+        else:
+            # last resort: try to read by name
+            iso2 = rec.get("ISO_A2", "") if hasattr(rec, "get") else ""
+        if iso2 == "-99":
+            iso2 = ""
+        shapes.append((geom, iso2))
+    _COUNTRY_SHAPES = shapes
+    return shapes
+
+def latlon_to_country_code(lat, lon):
+    """
+    Returns ISO 3166-1 alpha-2 (e.g. 'ES', 'FR') or '' if none.
+    Call load_country_shapes_from_shp(...) once before using this.
+    """
+    if lat is None or lon is None:
+        return ""
+    if not _COUNTRY_SHAPES:
+        # load default if not yet loaded
+        load_country_shapes_from_shp()
+    pt = Point(lon, lat)  # shapely uses (x=lon, y=lat)
+    for geom, iso2 in _COUNTRY_SHAPES:
+        if geom.contains(pt):
+            return iso2 or ""
+    return ""
+
 def parse_ph(value):
     """
     Turn things like 'ph 8.5', 'pH:7', '8,2' into float.
@@ -253,28 +308,31 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
     ext = _guess_ext_from_firebase_url(url)
     object_name = f"{user_id}/{sample_id}/{field}{ext}"
 
+    # 1) check if already there
     try:
         mclient.stat_object(MINIO_BUCKET, object_name)
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
     except S3Error as e:
-        if getattr(e, "code", "") not in ("NoSuchKey", "NoSuchObject", "NoSuchBucket"):
-            print(f"[WARN] stat_object S3Error for {object_name}: {e}")
-            return url
+        # not found is fine, we'll try to download
+        pass
     except Exception as e:
-        print(f"[WARN] generic stat error for {object_name}: {e}")
+        if MIRROR_VERBOSE:
+            print(f"[WARN] generic stat error for {object_name}: {e}")
         return url
 
+    # 2) download from Firebase
     try:
         resp = requests.get(url, timeout=15)
         resp.raise_for_status()
         data = resp.content
     except Exception as e:
-        print(f"[WARN] could not download {url}: {e}")
+        if MIRROR_VERBOSE:
+            print(f"[WARN] could not download {url}: {e}")
         return url
 
+    # 3) upload to MinIO
     try:
         import io
-
         mclient.put_object(
             MINIO_BUCKET,
             object_name,
@@ -283,11 +341,9 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
             content_type="image/jpeg",
         )
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
-    except S3Error as e:
-        print(f"[WARN] S3Error uploading to MinIO {object_name}: {e}")
-        return url
     except Exception as e:
-        print(f"[WARN] could not upload to MinIO {object_name}: {e}")
+        if MIRROR_VERBOSE:
+            print(f"[WARN] could not upload to MinIO {object_name}: {e}")
         return url
 
 
@@ -393,7 +449,8 @@ def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     for _, r in df_flat.iterrows():
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
-        country = r.get("country_code") or infer_country_from_latlon(lat, lon)
+        country = r.get("country_code") or latlon_to_country_code(lat, lon)
+
 
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
         cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
@@ -439,7 +496,7 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     for _, r in df_flat.iterrows():
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
-        country = r.get("country_code") or infer_country_from_latlon(lat, lon)
+        country = r.get("country_code") or latlon_to_country_code(lat, lon)
 
         for i in photo_slots:
             path_col = f"PHOTO_photos_{i}_path"
@@ -481,7 +538,7 @@ def build_sample_parameters_df(df_flat: pd.DataFrame) -> pd.DataFrame:
             continue
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
-        country = r.get("country_code") or infer_country_from_latlon(lat, lon)
+        country = r.get("country_code") or latlon_to_country_code(lat, lon)
         qr_to_sample[qr] = r.get("sampleId")
         qr_to_country[qr] = country
 
@@ -539,6 +596,117 @@ def get_pg_conn():
         password=os.getenv("DB_PASSWORD", "echorepo-pass"),
     )
 
+from datetime import datetime
+
+def _to_ts(v):
+    """
+    Normalize various timestamp-ish values to ISO8601 string or None.
+    Handles:
+      - already ISO strings
+      - '2025' -> '2025-01-01T00:00:00Z'
+      - pandas/py datetime
+      - empty / weird -> None
+    """
+    if v is None:
+        return None
+
+    # if it's already a datetime
+    if hasattr(v, "isoformat"):
+        return v.isoformat()
+
+    # turn into string
+    s = str(v).strip()
+    if s == "":
+        return None
+
+    # ISO-ish already
+    # e.g. 2025-11-10T14:10:00Z
+    try:
+        # try to parse a full ISO first
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt.isoformat()
+    except Exception:
+        pass
+
+    # bare year, like '2025'
+    if s.isdigit() and len(s) == 4:
+        return f"{s}-01-01T00:00:00Z"
+
+    # unix timestamp seconds?
+    if s.isdigit() and len(s) >= 10:
+        try:
+            ts = int(s)
+            dt = datetime.utcfromtimestamp(ts)
+            return dt.isoformat() + "Z"
+        except Exception:
+            pass
+
+    # give up
+    return None
+
+
+import re
+
+def _to_py(v):
+    """
+    Convert pandas/numpy values to plain Python for psycopg2, and:
+    - treat "", "-", "--", "null" as NULL
+    - treat known 'zero' words (en, fi, es, nl) as 0
+    - if a string has a leading/included number, extract that number
+    - else return None for strings that can't be numbers
+    """
+    import numpy as np
+
+    if v is None:
+        return None
+
+    # --- strings ---
+    if isinstance(v, str):
+        s = v.strip()
+        # empty-ish
+        if s == "" or s == "-" or s == "--" or s.lower() == "null":
+            return None
+
+        # words for 0
+        zero_words = {
+            "zero",   # en
+            "nolla",  # fi
+            "cero",   # es
+            "nul",    # some nl/fr-ish
+        }
+        if s.lower() in zero_words:
+            return 0
+
+        # try to extract a number from the string
+        # allow comma or dot as decimal separator
+        m = re.search(r"(-?\d+(?:[.,]\d+)?)", s)
+        if m:
+            num_txt = m.group(1).replace(",", ".")
+            try:
+                # if it looks integer, store int; else float
+                if "." in num_txt:
+                    return float(num_txt)
+                else:
+                    return int(num_txt)
+            except ValueError:
+                # fall through to None
+                return None
+
+        # if we get here: it's a string but not numeric -> NULL
+        return None
+
+    # --- NaN -> NULL ---
+    if isinstance(v, float) and (v != v):  # NaN
+        return None
+
+    # --- numpy ints/floats ---
+    if isinstance(v, (np.integer, )):
+        return int(v)
+
+    if isinstance(v, (np.floating, )):
+        return float(v)
+
+    return v
 
 def upsert_to_postgres(samples_df, images_df, params_df):
     if psycopg2 is None:
@@ -548,32 +716,30 @@ def upsert_to_postgres(samples_df, images_df, params_df):
     conn = get_pg_conn()
     cur = conn.cursor()
 
-    # samples
+    # ---- samples
     if not samples_df.empty:
         cols = [
-            "sample_id",
-            "timestamp_utc",
-            "lat",
-            "lon",
-            "country_code",
-            "location_accuracy_m",
-            "ph",
-            "organic_carbon_pct",
-            "soil_structure",
-            "earthworms_count",
-            "contamination_debris",
-            "contamination_plastic",
-            "contamination_other_orig",
-            "contamination_other_en",
-            "pollutants_count",
-            "vegetation_cover_pct",
-            "forest_cover_pct",
-            "collected_by",
-            "data_source",
-            "qa_status",
-            "licence",
+            "sample_id","timestamp_utc","lat","lon","country_code",
+            "location_accuracy_m","ph","organic_carbon_pct","soil_structure",
+            "earthworms_count","contamination_debris","contamination_plastic",
+            "contamination_other_orig","contamination_other_en",
+            "pollutants_count","vegetation_cover_pct","forest_cover_pct",
+            "collected_by","data_source","qa_status","licence"
         ]
-        records = [tuple(samples_df.get(c).iloc[i] for c in cols) for i in range(len(samples_df))]
+        records = []
+
+        timestamp_cols = {"timestamp_utc"}
+
+        for i in range(len(samples_df)):
+            rec = []
+            for c in cols:
+                val = samples_df.get(c).iloc[i]
+                if c in timestamp_cols:
+                    rec.append(_to_ts(val))
+                else:
+                    rec.append(_to_py(val))
+            records.append(tuple(rec))
+
         sql = f"""
         INSERT INTO samples ({", ".join(cols)})
         VALUES %s
@@ -596,20 +762,24 @@ def upsert_to_postgres(samples_df, images_df, params_df):
         """
         execute_values(cur, sql, records)
 
-    # images
+    # ---- images
     if not images_df.empty:
         cols = [
-            "sample_id",
-            "country_code",
-            "image_id",
-            "image_url",
-            "image_description_orig",
-            "image_description_en",
-            "collected_by",
-            "timestamp_utc",
-            "licence",
+            "sample_id","country_code","image_id","image_url",
+            "image_description_orig","image_description_en",
+            "collected_by","timestamp_utc","licence"
         ]
-        records = [tuple(images_df.get(c).iloc[i] for c in cols) for i in range(len(images_df))]
+        records = []
+        for i in range(len(images_df)):
+            rec = []
+            for c in cols:
+                ts_cols_img = {"timestamp_utc"}
+                if c in ts_cols_img:
+                    rec.append(_to_ts(images_df.get(c).iloc[i]))
+                else:   
+                    rec.append(_to_py(images_df.get(c).iloc[i]))
+            records.append(tuple(rec))
+
         sql = f"""
         INSERT INTO sample_images ({", ".join(cols)})
         VALUES %s
@@ -624,23 +794,24 @@ def upsert_to_postgres(samples_df, images_df, params_df):
         """
         execute_values(cur, sql, records)
 
-    # parameters
+    # ---- parameters
     if not params_df.empty:
         cols = [
-            "sample_id",
-            "country_code",
-            "parameter_code",
-            "parameter_name",
-            "value",
-            "uom",
-            "analysis_method",
-            "analysis_date",
-            "lab_id",
-            "created_by",
-            "licence",
-            "parameter_uri",
+            "sample_id","country_code","parameter_code","parameter_name",
+            "value","uom","analysis_method","analysis_date",
+            "lab_id","created_by","licence","parameter_uri"
         ]
-        records = [tuple(params_df.get(c).iloc[i] for c in cols) for i in range(len(params_df))]
+        records = []
+        for i in range(len(params_df)):
+            rec = []
+            for c in cols:
+                ts_cols_param = {"analysis_date"}
+                if c in ts_cols_param:
+                    rec.append(_to_ts(params_df.get(c).iloc[i]))
+                else:
+                    rec.append(_to_py(params_df.get(c).iloc[i]))
+            records.append(tuple(rec))
+
         sql = f"""
         INSERT INTO sample_parameters ({", ".join(cols)})
         VALUES %s
@@ -728,6 +899,9 @@ CREATE TABLE IF NOT EXISTS sample_images (
 def main():
     init_firebase()
     minio_client = init_minio()
+
+    # preload country shapes
+    load_country_shapes_from_shp("data/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp")
 
     # 1) pull raw
     df_raw = fetch_samples_flat(minio_client)
