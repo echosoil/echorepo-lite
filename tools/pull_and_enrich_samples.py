@@ -62,7 +62,12 @@ RAW_CSV = str(PROJECT_ROOT / INPUT_CSV)
 ENRICHED_CSV = str(PROJECT_ROOT / OUTPUT_CSV)
 USERS_CSV = str(PROJECT_ROOT / USERS_CSV)
 
+# location jitter in meters
+MAX_JITTER_METERS = int(os.getenv("MAX_JITTER_METERS", "1000"))
+
+# Firebase config
 PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", None)
+FBS_PREFIX = "https://firebasestorage.googleapis.com/"
 
 # SQLite path
 SQLITE_PATH = os.getenv("SQLITE_PATH", str(PROJECT_ROOT / "data" / "db" / "echo.db"))
@@ -75,7 +80,6 @@ MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWO
 MINIO_BUCKET = os.getenv("MINIO_BUCKET", "echorepo-uploads")
 PUBLIC_STORAGE_BASE = os.getenv("PUBLIC_STORAGE_BASE", "/storage")
 MIRROR_VERBOSE = os.getenv("MIRROR_VERBOSE", "0") == "1"
-FBS_PREFIX = "https://firebasestorage.googleapis.com/"
 
 DEFAULT_LICENCE = os.getenv("DEFAULT_LICENCE", "CC-BY-4.0")
 DEFAULT_LAB_ID = os.getenv("DEFAULT_LAB_ID", "ECHO-LAB-1")
