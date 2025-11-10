@@ -6,11 +6,12 @@ services:
       - .env
     environment:
       APP_ENV: ${APP_ENV:-prod}
-      # If you run Flask dev server, set these in .env or here:
-      # FLASK_RUN_HOST: 0.0.0.0
-      # FLASK_RUN_PORT: 8000
-      # If you run gunicorn, either use GUNICORN_CMD_ARGS below or your own command
-      # GUNICORN_CMD_ARGS: "--bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 60"
+      # tell the app where Postgres is
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: echorepo
+      DB_USER: echorepo
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
     expose:
       - "8000"
     volumes:
@@ -20,13 +21,31 @@ services:
       - ./keys:/keys:ro
       - ./echorepo/translations:/app/echorepo/translations
       - ./translations:/app/translations:ro
-      - ./storage:/data/storage    
+      - ./storage:/data/storage
     restart: unless-stopped
     networks:
       - default
-      - echorepo-shared   
+      - echorepo-shared
+    depends_on:
+      - postgres   # <--- make sure postgres is up first
+
+  postgres:
+    image: postgres:16
+    container_name: echorepo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: echorepo
+      POSTGRES_USER: echorepo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - default
+      - echorepo-shared
+    ports:
+      - "5432:5432"
   libretranslate:
-    profiles: ["devtools"]        
+    profiles: ["devtools"]
     image: libretranslate/libretranslate:latest
     container_name: libretranslate
     ports:
@@ -36,6 +55,7 @@ services:
     restart: unless-stopped
     networks:
       - default
+
   i18n:
     profiles: ["devtools"]
     build:
@@ -53,6 +73,10 @@ services:
       - libretranslate
     networks:
       - default
+
+volumes:
+  pgdata:   # <--- persistent Postgres data
+
 networks:
   echorepo-shared:
     external: true
