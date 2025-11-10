@@ -15,3 +15,5 @@ polib>=1.2
 google-api-python-client
 minio
 psycopg2-binary
+pyshp
+shapely

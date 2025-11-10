@@ -1,39 +1,44 @@
-from flask import Blueprint, render_template, request, send_file, abort, session, redirect, url_for, jsonify, current_app
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    send_file,
+    abort,
+    session,
+    redirect,
+    url_for,
+    jsonify,
+)
 import pandas as pd
 from io import BytesIO
 import pathlib
+from datetime import datetime
+import sqlite3
+import os
+import json
+import io
+import zipfile  # kept in case you later want to build ZIPs locally
+import logging
+
+from flask_babel import gettext as _, get_locale
+
 from ..config import settings
 from ..auth.decorators import login_required
 from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment
 from ..services.validation import find_default_coord_rows, annotate_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
-from flask_babel import gettext as _, get_locale
-from datetime import datetime
-import sqlite3
-import os
-import json
 
+# blueprint
 web_bp = Blueprint("web", __name__)
 
-# SosciSurvey language code mapping
-# browser locale → sosci 3-letter code
-from flask_babel import get_locale
-from flask import request
-from ..config import settings
-
+# --------------------------------------------------------------------------
+# SoSci survey helper
+# --------------------------------------------------------------------------
 def _build_sosci_url(user_id: str | None) -> str | None:
-    """
-    Build the final SoSci survey URL with:
-      1) user-chosen/site language first,
-      2) if that's 'en', try browser locale,
-      3) fallback to English.
-    Then map to SoSci's 3-letter language codes and append &r=<user_id>.
-    """
     if not user_id:
         return None
 
-    # 2-letter -> SoSci 3-letter
     sosci_map = {
         "de": "deu",
         "el": "gre",
@@ -46,11 +51,9 @@ def _build_sosci_url(user_id: str | None) -> str | None:
         "ro": "rum",
     }
 
-    # 1) current (explicit) site language
     current = str(get_locale() or "en")
     current_base = current.split("_", 1)[0].split("-", 1)[0].lower()
 
-    # 2) if site is en, try browser
     if current_base == "en":
         browser = request.accept_languages.best_match(
             ["de", "it", "fi", "el", "es", "po", "pt", "ro", "en"]
@@ -58,22 +61,21 @@ def _build_sosci_url(user_id: str | None) -> str | None:
         if browser:
             current_base = browser.split("-", 1)[0].lower()
 
-    # 3) map → SoSci
     sosci_lang = sosci_map.get(current_base, "eng")
 
-    # base URL from settings or default
     base = getattr(
         settings,
         "SURVEY_BASE_URL",
         "https://www.soscisurvey.de/default",
     )
 
-    # make sure we append params correctly
     sep = "&" if "?" in base else "?"
     return f"{base}{sep}l={sosci_lang}&r={user_id}"
 
 
-# ---------- base UI labels used by map.js / UI ----------
+# --------------------------------------------------------------------------
+# labels for front-end
+# --------------------------------------------------------------------------
 def _js_base_labels() -> dict:
     return {
         "privacyRadius": _("Privacy radius (~±{km} km)"),
@@ -108,12 +110,10 @@ def _js_base_labels() -> dict:
     }
 
 
-# ---------- Adjust QR code formats ----------
+# --------------------------------------------------------------------------
+# helpers for lab upload / QR
+# --------------------------------------------------------------------------
 def _normalize_qr(raw: str) -> str:
-    """
-    Lab gives: 'ECHO-ABCD1234'
-    DB uses:   'ABCD-1234'
-    """
     if not raw:
         return ""
     raw = str(raw).strip()
@@ -124,12 +124,7 @@ def _normalize_qr(raw: str) -> str:
     return raw
 
 
-# ---------- does the user have any metals in the joined DF? ----------
 def _user_has_metals(df: pd.DataFrame) -> bool:
-    """
-    Return True only if we see at least one row that looks like a lab-enriched
-    string (i.e. contains "param=value").
-    """
     if df is None or df.empty:
         return False
 
@@ -142,27 +137,116 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
             df[col]
             .fillna("")
             .astype(str)
-            # your query_user_df uses <br> when html=True, turn it back to ';'
             .str.replace("<br>", ";", regex=False)
             .str.strip()
         )
-
-        # strip a few common junk values
-        series = series.replace(
-            {"nan": "", "None": "", "0": "", "0.0": "", "NaN": ""}
-        )
-
-        # a “real” lab line should have at least one "="
+        series = series.replace({"nan": "", "None": "", "0": "", "0.0": "", "NaN": ""})
         if series.str.contains("=", regex=False).any():
             return True
 
     return False
 
 
+# --------------------------------------------------------------------------
+# MinIO helpers + canonical download routes (proxy through Flask)
+# --------------------------------------------------------------------------
+try:
+    from minio import Minio
+except ImportError:
+    Minio = None
+
+
+def _get_minio_client():
+    """
+    Build a MinIO client from env / app config.
+    We use it server-side to fetch objects and stream them to the user.
+    """
+    if Minio is None:
+        return None
+
+    endpoint = os.getenv("MINIO_ENDPOINT", "minio:9000")
+    access_key = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER") or ""
+    secret_key = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD") or ""
+    secure = False
+    if endpoint.startswith("https://"):
+        secure = True
+        endpoint = endpoint[len("https://") :]
+    elif endpoint.startswith("http://"):
+        secure = False
+        endpoint = endpoint[len("http://") :]
+
+    if not access_key or not secret_key:
+        return None
+
+    return Minio(
+        endpoint,
+        access_key=access_key,
+        secret_key=secret_key,
+        secure=secure,
+    )
+
+
+def _stream_minio_canonical(obj_name: str):
+    """
+    Instead of redirecting the browser to MinIO (which you don't expose),
+    we, the Flask app, download the object from MinIO and send it to the client.
+    """
+    client = _get_minio_client()
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+
+    if client is None:
+        abort(503, description="MinIO not configured on this instance")
+
+    key = f"canonical/{obj_name}"
+    try:
+        resp = client.get_object(bucket, key)
+    except Exception as e:
+        abort(404, description=f"object not found in MinIO: {key}, error: {e}")
+
+    # read into memory, then close the MinIO response
+    data = resp.read()
+    resp.close()
+    resp.release_conn()
+
+    mimetype = "application/zip" if obj_name.endswith(".zip") else "text/csv"
+    return send_file(
+        io.BytesIO(data),
+        mimetype=mimetype,
+        as_attachment=True,
+        download_name=obj_name,
+    )
+
+
+@web_bp.route("/download/canonical/samples.csv")
+@login_required
+def download_canonical_samples():
+    return _stream_minio_canonical("samples.csv")
+
+
+@web_bp.route("/download/canonical/sample_images.csv")
+@login_required
+def download_canonical_sample_images():
+    return _stream_minio_canonical("sample_images.csv")
+
+
+@web_bp.route("/download/canonical/sample_parameters.csv")
+@login_required
+def download_canonical_sample_parameters():
+    return _stream_minio_canonical("sample_parameters.csv")
+
+
+@web_bp.route("/download/canonical/all.zip")
+@login_required
+def download_canonical_zip():
+    return _stream_minio_canonical("all.zip")
+
+
+# --------------------------------------------------------------------------
+# main UI
+# --------------------------------------------------------------------------
 @web_bp.get("/", endpoint="home")
 @login_required
 def home():
-    # user_key is still the "logical" key / email
     user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
     if not user_key:
         return redirect(url_for("auth.login"))
@@ -170,7 +254,6 @@ def home():
     df = query_user_df(user_key)
     i18n = {"labels": build_i18n_labels(_js_base_labels())}
 
-    # try to get the KC / internal user id from the data
     kc_user_id = None
     if not df.empty:
         for col in ("userId", "user_id", "kc_user_id"):
@@ -178,15 +261,13 @@ def home():
                 kc_user_id = df[col].dropna().astype(str).iloc[0].strip()
                 break
 
-    # build survey URL (you already have _build_sosci_url somewhere above)
     survey_user_id = kc_user_id or user_key
     survey_url = _build_sosci_url(survey_user_id)
 
-    # decide if we should show it → only if user has metals
     has_metals = _user_has_metals(df)
     show_survey = bool(survey_url) and has_metals
 
-    # EMPTY CASE ------------------------------------------------------------
+    # empty state
     if df.empty:
         return render_template(
             "results.html",
@@ -200,29 +281,26 @@ def home():
             lon_col=settings.LON_COL,
             I18N=i18n,
             survey_url=survey_url,
-            show_survey=False,  # empty df → no metals → don't show
+            show_survey=False,
         )
 
-    # NON-EMPTY: data issues ------------------------------------------------
+    # issues
     defaults = find_default_coord_rows(df)
     mism = annotate_country_mismatches(df)
     issue_count = len(defaults) + len(mism)
 
-    # HTML-SPECIFIC COPY ----------------------------------------------------
-    # we don't want to mutate the DF that other routes might reuse
     df_html = df.copy()
     print("[--------TEST-----------]", df_html.columns, df_html.head())
     if "fs_createdAt" in df_html.columns:
-        # make it nicer to read
         df_html["fs_createdAt"] = (
             df_html["fs_createdAt"]
             .fillna("")
-            .astype(str).str.split(".").str[0]  # remove fractional seconds
-            .str.replace("T", " ", regex=False) # space between date and time
-            .str.replace("Z", "", regex=False)  # remove Zulu designator
+            .astype(str)
+            .str.split(".")
+            .str[0]
+            .str.replace("T", " ", regex=False)
+            .str.replace("Z", "", regex=False)
         )
-
-        # optional: move it right after sampleId if present
         cols = list(df_html.columns)
         if "fs_createdAt" in cols:
             if "sampleId" in cols:
@@ -231,7 +309,6 @@ def home():
                 cols.insert(0, cols.pop(cols.index("fs_createdAt")))
             df_html = df_html[cols]
 
-    # build HTML from the prettified DF
     table_html = make_table_html(df_html)
 
     return render_template(
@@ -239,7 +316,6 @@ def home():
         issue_count=issue_count,
         user_key=user_key,
         kc_user_id=kc_user_id,
-        # keep original columns list (not the renamed one) — you already pass this
         columns=list(df.columns),
         table_html=table_html,
         jitter_m=int(settings.MAX_JITTER_METERS),
@@ -250,7 +326,10 @@ def home():
         show_survey=show_survey,
     )
 
-# (Optional) JSON endpoint if you prefer fetching labels via XHR
+
+# --------------------------------------------------------------------------
+# misc routes
+# --------------------------------------------------------------------------
 @web_bp.get("/i18n/labels")
 @login_required
 def i18n_labels():
@@ -398,6 +477,9 @@ def download_sample_csv():
     )
 
 
+# --------------------------------------------------------------------------
+# lab upload
+# --------------------------------------------------------------------------
 @web_bp.post("/lab-import")
 @login_required
 def lab_import():
@@ -434,7 +516,7 @@ def lab_import():
         abort(500, description=f"SQLite database not found at {db_path}")
 
     conn = sqlite3.connect(db_path)
-    _ensure_lab_enrichment(conn)   # ← make sure schema is up-to-date
+    _ensure_lab_enrichment(conn)
     cur = conn.cursor()
     cur.execute(
         """
@@ -513,5 +595,4 @@ def lab_upload_post():
     file = request.files.get("file")
     if not file:
         abort(400, "No file")
-    # TODO: implement if you want a second upload path
     return redirect(url_for("web.home"))
