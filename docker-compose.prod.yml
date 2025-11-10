@@ -10,3 +10,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
+  postgres:
+    # dev can keep 5432 on host
+    ports:
+      - "5433:5432"
