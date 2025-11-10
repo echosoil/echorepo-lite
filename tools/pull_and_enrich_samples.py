@@ -1,27 +1,34 @@
 #!/usr/bin/env python3
 """
-Pipeline:
-  1) Read Firestore collection group 'samples' and flatten to CSV.
-  2) Enrich with Firebase Auth emails (by userId).
-  3) Mirror Firebase Storage file URLs into MinIO (if configured) and rewrite the URLs.
-  4) Build canonical 3-file export (samples, sample_images, sample_parameters).
-  5) Write:
-       - RAW_CSV            (raw flattened)
+Unified pipeline
+
+Steps:
+  1) Read Firestore "samples" (collection group), flatten, mirror images to MinIO.
+  2) Enrich with Firebase Auth emails.
+  3) Write CSVs:
+       - RAW_CSV            (flattened raw)
        - ENRICHED_CSV       (flattened + email)
-       - USERS_CSV          (distinct valid emails)
-       - data/canonical/*.csv
-  6) (optional) Upsert canonical data into Postgres.
+       - USERS_CSV          (distinct emails)
+  4) Refresh local SQLite from ENRICHED_CSV (like refresh_sqlite.py) but KEEP lab_enrichment.
+  5) Build canonical 3-file export (samples.csv, sample_images.csv, sample_parameters.csv),
+     where sample_parameters are read from THAT SQLite.
+  6) Upload canonical files to MinIO under canonical/.
+  7) (optional) upsert canonical data into Postgres.
 """
 
 import os
 import sys
+import math
 import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
+
 import re
 import requests
 from urllib.parse import urlparse
 import sqlite3
+import io
+import zipfile
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -29,14 +36,61 @@ from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 
-# --- Postgres (optional) ------------------------------------------------------
+import shapefile  # pyshp
+from shapely.geometry import shape as shp_shape, Point
+
+import numpy as np
+
+# ---------------------------------------------------------------------------
+# 0. load env and basic paths
+# ---------------------------------------------------------------------------
+env_path = Path.cwd() / ".env"
+load_dotenv(dotenv_path=env_path)
+print(f"[INFO] Loaded environment from {env_path}")
+
+PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite"))
+
+# Firestore output CSVs
+INPUT_CSV = os.getenv("INPUT_CSV", "/data/echorepo_samples.csv")
+INPUT_CSV = INPUT_CSV if not INPUT_CSV.startswith("/") else INPUT_CSV[1:]
+OUTPUT_CSV = os.getenv("OUTPUT_CSV", "/data/echorepo_samples_with_email.csv")
+OUTPUT_CSV = OUTPUT_CSV if not OUTPUT_CSV.startswith("/") else OUTPUT_CSV[1:]
+USERS_CSV = os.getenv("USERS_CSV", "/data/users.csv")
+USERS_CSV = USERS_CSV if not USERS_CSV.startswith("/") else USERS_CSV[1:]
+
+RAW_CSV = str(PROJECT_ROOT / INPUT_CSV)
+ENRICHED_CSV = str(PROJECT_ROOT / OUTPUT_CSV)
+USERS_CSV = str(PROJECT_ROOT / USERS_CSV)
+
+PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", None)
+
+# SQLite path
+SQLITE_PATH = os.getenv("SQLITE_PATH", str(PROJECT_ROOT / "data" / "db" / "echo.db"))
+LAB_ENRICHMENT_DB = os.getenv("LAB_ENRICHMENT_DB", SQLITE_PATH)
+
+# MinIO config
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT_OUTSIDE", "localhost:9000")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER") or ""
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD") or ""
+MINIO_BUCKET = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+PUBLIC_STORAGE_BASE = os.getenv("PUBLIC_STORAGE_BASE", "/storage")
+MIRROR_VERBOSE = os.getenv("MIRROR_VERBOSE", "0") == "1"
+FBS_PREFIX = "https://firebasestorage.googleapis.com/"
+
+DEFAULT_LICENCE = os.getenv("DEFAULT_LICENCE", "CC-BY-4.0")
+DEFAULT_LAB_ID = os.getenv("DEFAULT_LAB_ID", "ECHO-LAB-1")
+
+# ---------------------------------------------------------------------------
+# optional: Postgres (we only ensure tables here)
+# ---------------------------------------------------------------------------
 try:
     import psycopg2
-    from psycopg2.extras import execute_values
 except ImportError:
     psycopg2 = None
 
-# --- MinIO (optional) ---------------------------------------------------------
+# ---------------------------------------------------------------------------
+# MinIO
+# ---------------------------------------------------------------------------
 try:
     from minio import Minio
     from minio.error import S3Error
@@ -46,85 +100,50 @@ except ImportError:
     class S3Error(Exception):
         pass
 
-# --- tolerate truncated images ------------------------------------------------
+# ---------------------------------------------------------------------------
+# tolerate truncated images
+# ---------------------------------------------------------------------------
 try:
     from PIL import ImageFile
     ImageFile.LOAD_TRUNCATED_IMAGES = True
 except Exception:
     pass
 
-# ------------------------------------------------------------------------------
-# env + basic paths
-# ------------------------------------------------------------------------------
-env_path = Path.cwd() / ".env"
-load_dotenv(dotenv_path=env_path)
-print(f"[INFO] Loaded environment from {env_path}")
-
-PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite"))
-CREDS_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
-CREDS_PATH = CREDS_PATH if not CREDS_PATH.startswith("/keys") else str(PROJECT_ROOT / CREDS_PATH[1:])
-
-INPUT_CSV = os.getenv("INPUT_CSV", "/data/echorepo_samples.csv")
-INPUT_CSV = INPUT_CSV if not INPUT_CSV.startswith("/") else INPUT_CSV[1:]
-OUTPUT_CSV = os.getenv("OUTPUT_CSV", "/data/echorepo_samples_with_email.csv")
-OUTPUT_CSV = OUTPUT_CSV if not OUTPUT_CSV.startswith("/") else OUTPUT_CSV[1:]
-USERS_CSV = os.getenv("USERS_CSV", "/data/users.csv")
-USERS_CSV = USERS_CSV if not USERS_CSV.startswith("/") else USERS_CSV[1:]
-
-PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", None)
-
-RAW_CSV = str(PROJECT_ROOT / INPUT_CSV)
-ENRICHED_CSV = str(PROJECT_ROOT / OUTPUT_CSV)
-USERS_CSV = str(PROJECT_ROOT / USERS_CSV)
-
-# ------------------------------------------------------------------------------
-# MinIO config
-# ------------------------------------------------------------------------------
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT_OUTSIDE", "localhost:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER") or ""
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD") or ""
-MINIO_BUCKET = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-PUBLIC_STORAGE_BASE = os.getenv("PUBLIC_STORAGE_BASE", "/storage")
-
-FBS_PREFIX = "https://firebasestorage.googleapis.com/"
-
-DEFAULT_LICENCE = os.getenv("DEFAULT_LICENCE", "CC-BY-4.0")
-DEFAULT_LAB_ID = os.getenv("DEFAULT_LAB_ID", "ECHO-LAB-1")
-LAB_ENRICHMENT_DB = os.getenv("LAB_ENRICHMENT_DB", "")
-
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Firebase init
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 def init_firebase():
     if firebase_admin._apps:
         return
-    if not CREDS_PATH or not os.path.exists(CREDS_PATH):
-        print(f"[ERROR] Service account JSON not found: {CREDS_PATH}")
+    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
+    if creds_path.startswith("/keys"):
+        creds_path = str(PROJECT_ROOT / creds_path[1:])
+    if not creds_path or not os.path.exists(creds_path):
+        print(f"[ERROR] Service account JSON not found: {creds_path}")
         sys.exit(1)
-    print(f"[INFO] Initializing Firebase with creds: {CREDS_PATH}")
-    cred = credentials.Certificate(CREDS_PATH)
+    print(f"[INFO] Initializing Firebase with creds: {creds_path}")
+    cred = credentials.Certificate(creds_path)
     firebase_admin.initialize_app(cred, {"projectId": PROJECT_ID} if PROJECT_ID else None)
 
-
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # MinIO init
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 def init_minio():
     if Minio is None:
-        print("[INFO] python-minio not installed; will keep Firebase URLs.")
+        print("[INFO] python-minio not installed; will keep Firebase URLs and local canonical.")
         return None
 
     secure = False
     endpoint = MINIO_ENDPOINT
     if endpoint.startswith("https://"):
         secure = True
-        endpoint = endpoint[len("https://") :]
+        endpoint = endpoint[len("https://"):]
     elif endpoint.startswith("http://"):
         secure = False
-        endpoint = endpoint[len("http://") :]
+        endpoint = endpoint[len("http://"):]
 
     if not MINIO_ACCESS_KEY or not MINIO_SECRET_KEY:
-        print("[WARN] MinIO credentials not set; skipping mirroring.")
+        print("[WARN] MinIO credentials not set; skipping mirroring & canonical upload.")
         return None
 
     client = Minio(
@@ -139,31 +158,60 @@ def init_minio():
         if not found:
             client.make_bucket(MINIO_BUCKET)
             print(f"[INFO] Created MinIO bucket {MINIO_BUCKET}")
-    except S3Error as e:
-        print(f"[WARN] Could not ensure MinIO bucket (S3Error): {e}")
-        return None
     except Exception as e:
         print(f"[WARN] Could not ensure MinIO bucket: {e}")
         return None
-
     print(f"[INFO] MinIO ready at {MINIO_ENDPOINT}, bucket={MINIO_BUCKET}")
     return client
 
+# ---------------------------------------------------------------------------
+# helper: shapefile -> country polygons
+# ---------------------------------------------------------------------------
+_COUNTRY_SHAPES = []
 
-# ------------------------------------------------------------------------------
-# helpers
-# ------------------------------------------------------------------------------
+def load_country_shapes_from_shp(shp_path="data/ne_50m_admin_0_countries.shp"):
+    global _COUNTRY_SHAPES
+    r = shapefile.Reader(shp_path)
+    field_names = [f[0] for f in r.fields[1:]]
+    try:
+        iso_idx = field_names.index("ISO_A2")
+    except ValueError:
+        iso_idx = None
+    shapes = []
+    for sr in r.shapeRecords():
+        geom = shp_shape(sr.shape.__geo_interface__)
+        rec = sr.record
+        if iso_idx is not None:
+            iso2 = rec[iso_idx]
+        else:
+            iso2 = rec.get("ISO_A2", "") if hasattr(rec, "get") else ""
+        if iso2 == "-99":
+            iso2 = ""
+        shapes.append((geom, iso2))
+    _COUNTRY_SHAPES = shapes
+    return shapes
+
+def latlon_to_country_code(lat, lon):
+    if lat is None or lon is None:
+        return ""
+    if not _COUNTRY_SHAPES:
+        load_country_shapes_from_shp()
+    pt = Point(lon, lat)
+    for geom, iso2 in _COUNTRY_SHAPES:
+        if geom.contains(pt):
+            return iso2 or ""
+    return ""
+
+# ---------------------------------------------------------------------------
+# misc helpers
+# ---------------------------------------------------------------------------
 def parse_ph(value):
-    """
-    Turn things like 'ph 8.5', 'pH:7', '8,2' into float.
-    Return original value if we can't parse (so we don't crash).
-    """
     if value is None:
         return None
     s = str(value).strip().lower().replace(",", ".")
     m = re.search(r"(-?\d+(\.\d+)?)", s)
     if not m:
-        return value  # keep original if it's something unexpected
+        return value
     try:
         return float(m.group(1))
     except ValueError:
@@ -179,17 +227,59 @@ def _ts_to_iso(ts):
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat()
-    if hasattr(ts, "seconds") and hasattr(ts, "nanos"):
-        total = ts.seconds + ts.nanos / 1_000_000_000
-        dt = datetime.fromtimestamp(total, tz=timezone.utc)
-        return dt.isoformat()
     return str(ts)
+
+def _ts_to_iso_loose(v):
+    """
+    Convert various Firestore-ish timestamp shapes to ISO 8601.
+    Handles:
+      - datetime(...)
+      - objects with .seconds / .nanos
+      - strings like "seconds: 1747091048\nnanos: 20637000"
+      - already-ISO strings
+    Otherwise returns original value.
+    """
+    if v is None:
+        return ""
+
+    # already a datetime
+    if hasattr(v, "isoformat"):
+        dt = v
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+
+    # Firestore timestamp object
+    if hasattr(v, "seconds") and hasattr(v, "nanos"):
+        sec = int(v.seconds)
+        nanos = int(v.nanos or 0)
+        dt = datetime.fromtimestamp(sec + nanos / 1_000_000_000, tz=timezone.utc)
+        return dt.isoformat()
+
+    # ugly string: "seconds: ... nanos: ..."
+    if isinstance(v, str) and "seconds:" in v:
+        # collapse newlines just in case
+        s = v.replace("\r", " ").replace("\n", " ")
+        m_sec = re.search(r"seconds:\s*(\d+)", s)
+        m_nanos = re.search(r"nanos:\s*(\d+)", s)
+        if m_sec:
+            sec = int(m_sec.group(1))
+            nanos = int(m_nanos.group(1)) if m_nanos else 0
+            dt = datetime.fromtimestamp(sec + nanos / 1_000_000_000, tz=timezone.utc)
+            return dt.isoformat()
+        # if we can't parse, just return original
+        return v
+
+    # looks like ISO already
+    if isinstance(v, str) and re.match(r"\d{4}-\d{2}-\d{2}T", v):
+        return v
+
+    return v
 
 
 def _safe_part(s: str) -> str:
     s = (s or "").strip()
     return re.sub(r"[^A-Za-z0-9_.-]", "_", s) or "x"
-
 
 def _guess_ext_from_firebase_url(url: str) -> str:
     parsed = urlparse(url)
@@ -198,34 +288,8 @@ def _guess_ext_from_firebase_url(url: str) -> str:
         return "." + last.rsplit(".", 1)[-1]
     return ".bin"
 
-
-def infer_country_from_latlon(lat, lon):
-    """placeholder country detector; replace with proper PIP later"""
-    try:
-        if pd.isna(lat) or pd.isna(lon):
-            return ""
-    except Exception:
-        if lat is None or lon is None:
-            return ""
-    try:
-        lat = float(lat)
-        lon = float(lon)
-    except (TypeError, ValueError):
-        return ""
-    # Spain
-    if 27.0 <= lat <= 44.5 and -19.0 <= lon <= 5.0:
-        return "ES"
-    # Portugal
-    if 36.8 <= lat <= 42.3 and -9.6 <= lon <= -6.0:
-        return "PT"
-    # France
-    if 41.0 <= lat <= 51.5 and -5.5 <= lon <= 9.8:
-        return "FR"
-    return ""
-
-
 def translate_to_en(text: str) -> str:
-    LT_ENDPOINT = os.getenv("LT_ENDPOINT")  # e.g. http://libretranslate:5000
+    LT_ENDPOINT = os.getenv("LT_ENDPOINT")
     if not text or not LT_ENDPOINT:
         return ""
     try:
@@ -242,39 +306,28 @@ def translate_to_en(text: str) -> str:
     except Exception:
         return ""
 
-
 def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str, mclient) -> str:
     if not url or not url.startswith(FBS_PREFIX) or mclient is None:
         return url
-
     user_id = _safe_part(user_id)
     sample_id = _safe_part(sample_id)
     field = _safe_part(field)
     ext = _guess_ext_from_firebase_url(url)
     object_name = f"{user_id}/{sample_id}/{field}{ext}"
-
     try:
         mclient.stat_object(MINIO_BUCKET, object_name)
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
-    except S3Error as e:
-        if getattr(e, "code", "") not in ("NoSuchKey", "NoSuchObject", "NoSuchBucket"):
-            print(f"[WARN] stat_object S3Error for {object_name}: {e}")
-            return url
-    except Exception as e:
-        print(f"[WARN] generic stat error for {object_name}: {e}")
-        return url
-
+    except Exception:
+        pass
     try:
         resp = requests.get(url, timeout=15)
         resp.raise_for_status()
         data = resp.content
     except Exception as e:
-        print(f"[WARN] could not download {url}: {e}")
+        if MIRROR_VERBOSE:
+            print(f"[WARN] could not download {url}: {e}")
         return url
-
     try:
-        import io
-
         mclient.put_object(
             MINIO_BUCKET,
             object_name,
@@ -283,22 +336,18 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
             content_type="image/jpeg",
         )
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
-    except S3Error as e:
-        print(f"[WARN] S3Error uploading to MinIO {object_name}: {e}")
-        return url
     except Exception as e:
-        print(f"[WARN] could not upload to MinIO {object_name}: {e}")
+        if MIRROR_VERBOSE:
+            print(f"[WARN] could not upload to MinIO {object_name}: {e}")
         return url
 
-
-# ------------------------------------------------------------------------------
-# Firestore -> flattened rows
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 1. Firestore -> flattened rows
+# ---------------------------------------------------------------------------
 def fetch_samples_flat(mclient) -> pd.DataFrame:
     db = firestore.client()
     samples_ref = db.collection_group("samples")
     rows = []
-
     for doc in samples_ref.stream():
         data = doc.to_dict() or {}
         row = {
@@ -312,22 +361,16 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
             "fs_createdAt": _ts_to_iso(getattr(doc, "create_time", None)),
             "fs_updatedAt": _ts_to_iso(getattr(doc, "update_time", None)),
         }
-
         steps = data.get("data", [])
         if not isinstance(steps, list):
-            print(
-                f"[WARN] sample {doc.id}: 'data' is {type(steps).__name__}, skipping steps flatten"
-            )
             rows.append(row)
             continue
-
         for step in steps:
             if not isinstance(step, dict):
                 continue
             step_type = step.get("type") or "unknown"
             state = step.get("state")
             info = step.get("info", {})
-
             row[f"{step_type}_state"] = state
             if isinstance(info, dict):
                 for key, val in info.items():
@@ -361,7 +404,6 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
         if "PH_ph" in row:
             row["PH_ph"] = parse_ph(row["PH_ph"])
         rows.append(row)
-
     df = pd.DataFrame(rows, dtype=object)
     if not df.empty:
         if "collectedAt" in df.columns:
@@ -370,10 +412,9 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
             df = df.drop_duplicates(subset=["QR_qrCode"], keep="first")
     return df
 
-
-# ------------------------------------------------------------------------------
-# Firebase Auth -> {uid: email}
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 2. Firebase Auth
+# ---------------------------------------------------------------------------
 def fetch_uid_to_email() -> dict:
     mapping = {}
     page = auth.list_users()
@@ -384,54 +425,143 @@ def fetch_uid_to_email() -> dict:
     print(f"[INFO] Retrieved {len(mapping)} users from Firebase Auth.")
     return mapping
 
+# ---------------------------------------------------------------------------
+# 3. refresh sqlite (merged)
+# ---------------------------------------------------------------------------
+def _resolve_path(maybe_path: str) -> str:
+    p = Path(maybe_path)
+    if p.is_absolute():
+        if p.exists():
+            return str(p)
+        alt = PROJECT_ROOT / p.relative_to("/")
+        return str(alt)
+    return str(PROJECT_ROOT / p)
 
-# ------------------------------------------------------------------------------
+def _backup_lab_enrichment(db_path: str):
+    if not os.path.exists(db_path):
+        return None
+    conn = sqlite3.connect(db_path)
+    try:
+        cur = conn.execute("PRAGMA table_info(lab_enrichment)")
+        cols = [r[1] for r in cur.fetchall()]
+        if not cols:
+            conn.close()
+            return None
+        cur = conn.execute("SELECT * FROM lab_enrichment")
+        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        conn.close()
+        return {"cols": cols, "rows": rows}
+    except sqlite3.OperationalError:
+        conn.close()
+        return None
+
+def _restore_lab_enrichment(db_path: str, backup):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS lab_enrichment (
+          qr_code    TEXT NOT NULL,
+          param      TEXT NOT NULL,
+          value      TEXT,
+          unit       TEXT,
+          user_id    TEXT,
+          raw_row    TEXT,
+          updated_at TEXT DEFAULT (datetime('now')),
+          PRIMARY KEY (qr_code, param)
+        )
+    """)
+    if backup:
+        for r in backup["rows"]:
+            qr_code = r.get("qr_code") or r.get("QR_code") or ""
+            param   = r.get("param") or ""
+            value   = r.get("value")
+            unit    = r.get("unit")
+            user_id = r.get("user_id")
+            raw_row = r.get("raw_row")
+            updated = r.get("updated_at")
+            if not qr_code or not param:
+                continue
+            cur.execute("""
+                INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, datetime('now')))
+                ON CONFLICT(qr_code, param) DO UPDATE SET
+                  value = excluded.value,
+                  unit = excluded.unit,
+                  user_id = excluded.user_id,
+                  raw_row = excluded.raw_row,
+                  updated_at = excluded.updated_at
+            """, (qr_code, param, value, unit, user_id, raw_row, updated))
+    conn.commit()
+    conn.close()
+
+def refresh_sqlite_from_csv(enriched_csv: str, sqlite_path: str):
+    sys.path.insert(0, str(PROJECT_ROOT))
+    from echorepo.utils.load_csv import ensure_sqlite
+
+    csv_path = _resolve_path(enriched_csv)
+    db_path = _resolve_path(sqlite_path)
+
+    os.environ["CSV_PATH"] = csv_path
+    os.environ["SQLITE_PATH"] = db_path
+
+    print(f"[sqlite] CSV_PATH={csv_path}")
+    print(f"[sqlite] SQLITE_PATH={db_path}")
+
+    backup = _backup_lab_enrichment(db_path)
+    if backup:
+        print(f"[sqlite] backed up {len(backup['rows'])} lab_enrichment rows")
+    else:
+        print("[sqlite] no lab_enrichment to back up")
+
+    ensure_sqlite()
+    print("[sqlite] base SQLite refreshed from CSV")
+
+    _restore_lab_enrichment(db_path, backup)
+    print("[sqlite] lab_enrichment restored")
+
+    return db_path
+
+# ---------------------------------------------------------------------------
 # canonical builders
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for _, r in df_flat.iterrows():
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
-        country = r.get("country_code") or infer_country_from_latlon(lat, lon)
-
+        country = r.get("country_code") or latlon_to_country_code(lat, lon)
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
         cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
         cont_other_orig = r.get("SOIL_CONTAMINATION_comments") or ""
         cont_other_en = translate_to_en(cont_other_orig) if cont_other_orig else ""
-
         pollutants_count = 0
         for v in (cont_debris, cont_plastic, cont_other_orig):
             if v not in (0, "", None, False):
                 pollutants_count += 1
-
-        rows.append(
-            {
-                "sample_id": r.get("sampleId"),
-                "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
-                "lat": lat,
-                "lon": lon,
-                "country_code": country,
-                "location_accuracy_m": None,
-                "ph": r.get("PH_ph"),
-                "organic_carbon_pct": None,
-                "soil_structure": r.get("SOIL_STRUCTURE_structure"),
-                "earthworms_count": r.get("SOIL_DIVER_earthworms"),
-                "contamination_debris": cont_debris,
-                "contamination_plastic": cont_plastic,
-                "contamination_other_orig": cont_other_orig,
-                "contamination_other_en": cont_other_en,
-                "pollutants_count": pollutants_count,
-                "vegetation_cover_pct": None,
-                "forest_cover_pct": None,
-                "collected_by": r.get("userId"),
-                "data_source": "mobile",
-                "qa_status": r.get("QA_state") or "",
-                "licence": DEFAULT_LICENCE,
-            }
-        )
+        rows.append({
+            "sample_id": r.get("sampleId"),
+            "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
+            "lat": lat,
+            "lon": lon,
+            "country_code": country,
+            "location_accuracy_m": MAX_JITTER_METERS,
+            "ph": r.get("PH_ph"),
+            "organic_carbon_pct": None,
+            "soil_structure": r.get("SOIL_STRUCTURE_structure"),
+            "earthworms_count": r.get("SOIL_DIVER_earthworms"),
+            "contamination_debris": cont_debris,
+            "contamination_plastic": cont_plastic,
+            "contamination_other_orig": cont_other_orig,
+            "contamination_other_en": cont_other_en,
+            "pollutants_count": pollutants_count,
+            "vegetation_cover_pct": None,
+            "forest_cover_pct": None,
+            "collected_by": r.get("userId"),
+            "data_source": "mobile",
+            "qa_status": r.get("QA_state") or "",
+            "licence": DEFAULT_LICENCE,
+        })
     return pd.DataFrame(rows)
-
 
 def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     img_rows = []
@@ -439,39 +569,42 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     for _, r in df_flat.iterrows():
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
-        country = r.get("country_code") or infer_country_from_latlon(lat, lon)
-
+        country = r.get("country_code") or latlon_to_country_code(lat, lon)
         for i in photo_slots:
             path_col = f"PHOTO_photos_{i}_path"
             comment_col = f"PHOTO_photos_{i}_comment"
             path = r.get(path_col)
             if not path:
                 continue
+            if isinstance(path, float) and math.isnan(path):
+                continue
+            if str(path).strip().lower() == "nan":
+                continue
             comment_orig = r.get(comment_col) or ""
             comment_en = translate_to_en(comment_orig) if comment_orig else ""
-            img_rows.append(
-                {
-                    "sample_id": r.get("sampleId"),
-                    "country_code": country,
-                    "image_id": i,
-                    "image_url": path,
-                    "image_description_orig": comment_orig,
-                    "image_description_en": comment_en,
-                    "collected_by": r.get("userId"),
-                    "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
-                    "licence": DEFAULT_LICENCE,
-                }
-            )
+            img_rows.append({
+                "sample_id": r.get("sampleId"),
+                "country_code": country,
+                "image_id": i,
+                "image_url": path,
+                "image_description_orig": comment_orig,
+                "image_description_en": comment_en,
+                "collected_by": r.get("userId"),
+                "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
+                "licence": DEFAULT_LICENCE,
+            })
     return pd.DataFrame(img_rows)
 
-
-def build_sample_parameters_df(df_flat: pd.DataFrame) -> pd.DataFrame:
-    if not LAB_ENRICHMENT_DB or not os.path.exists(LAB_ENRICHMENT_DB):
+def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) -> pd.DataFrame:
+    if not db_path or not os.path.exists(db_path):
+        print(f"[INFO] SQLite for lab_enrichment not found at {db_path}, skipping parameters.")
         return pd.DataFrame([])
 
-    conn = sqlite3.connect(LAB_ENRICHMENT_DB)
-    lab_df = pd.read_sql_query("SELECT * FROM lab_enrichment", conn)
-    conn.close()
+    def norm_qr(q):
+        if q is None:
+            return ""
+        s = str(q).strip()
+        return s.upper().replace(" ", "").replace("-", "")
 
     qr_to_sample = {}
     qr_to_country = {}
@@ -479,193 +612,106 @@ def build_sample_parameters_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         qr = r.get("QR_qrCode")
         if not qr:
             continue
+        qr_n = norm_qr(qr)
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
-        country = r.get("country_code") or infer_country_from_latlon(lat, lon)
-        qr_to_sample[qr] = r.get("sampleId")
-        qr_to_country[qr] = country
+        country = r.get("country_code") or latlon_to_country_code(lat, lon)
+        qr_to_sample[qr_n] = r.get("sampleId")
+        qr_to_country[qr_n] = country
+
+    conn = sqlite3.connect(db_path)
+    try:
+        lab_df = pd.read_sql_query("SELECT * FROM lab_enrichment", conn)
+    except Exception as e:
+        conn.close()
+        print(f"[INFO] no lab_enrichment table in {db_path}: {e}")
+        return pd.DataFrame([])
+    conn.close()
+
+    if lab_df.empty:
+        print("[INFO] lab_enrichment table is empty, nothing to export.")
+        return pd.DataFrame([])
 
     rows = []
+    unmatched = 0
     for _, r in lab_df.iterrows():
-        qr = r["qr_code"]
-        sample_id = qr_to_sample.get(qr)
+        qr_raw = r["qr_code"]
+        qr_n = norm_qr(qr_raw)
+        sample_id = qr_to_sample.get(qr_n)
         if not sample_id:
+            unmatched += 1
             continue
-        country = qr_to_country.get(qr, "")
-        rows.append(
-            {
-                "sample_id": sample_id,
-                "country_code": country,
-                "parameter_code": r["param"],
-                "parameter_name": r["param"],
-                "value": r["value"],
-                "uom": r["unit"],
-                "analysis_method": "",
-                "analysis_date": r.get("updated_at"),
-                "lab_id": DEFAULT_LAB_ID,
-                "created_by": r.get("user_id"),
-                "licence": DEFAULT_LICENCE,
-                "parameter_uri": "",
-            }
-        )
+        country = qr_to_country.get(qr_n, "")
+        rows.append({
+            "sample_id": sample_id,
+            "country_code": country,
+            "parameter_code": r["param"],
+            "parameter_name": r["param"],
+            "value": r["value"],
+            "uom": r["unit"],
+            "analysis_method": "",
+            "analysis_date": r.get("updated_at"),
+            "lab_id": DEFAULT_LAB_ID,
+            "created_by": r.get("user_id"),
+            "licence": DEFAULT_LICENCE,
+            "parameter_uri": "",
+        })
+    if unmatched:
+        print(f"[INFO] lab rows that didn't match any Firestore QR: {unmatched}")
+    print(f"[INFO] built sample_parameters from sqlite: {len(rows)} rows")
     return pd.DataFrame(rows)
 
-
-# ------------------------------------------------------------------------------
-# Atomic CSV writer
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# CSV writer
+# ---------------------------------------------------------------------------
 def write_csv_atomic(df: pd.DataFrame, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w", delete=False, dir=os.path.dirname(path), suffix=".csv"
-    ) as tmp:
+    with tempfile.NamedTemporaryFile("w", delete=False, dir=os.path.dirname(path), suffix=".csv") as tmp:
         df.to_csv(tmp.name, index=False)
         tmp_path = tmp.name
     os.replace(tmp_path, path)
     print(f"[OK] Wrote {path} (rows: {len(df)})")
 
+# ---------------------------------------------------------------------------
+# MinIO: upload canonical files
+# ---------------------------------------------------------------------------
+def upload_canonical_to_minio(mclient, local_path: Path, object_name: str):
+    """
+    Upload a local canonical file to MinIO under canonical/<object_name>.
+    """
+    if mclient is None:
+        return
+    key = f"canonical/{object_name}"
+    try:
+        size = local_path.stat().st_size
+        with local_path.open("rb") as f:
+            mclient.put_object(
+                MINIO_BUCKET,
+                key,
+                data=f,
+                length=size,
+                content_type="text/csv" if object_name.endswith(".csv") else "application/zip",
+            )
+        print(f"[OK] uploaded to MinIO: {key}")
+    except Exception as e:
+        print(f"[WARN] could not upload {local_path} to MinIO as {key}: {e}")
 
-# ------------------------------------------------------------------------------
-# Postgres helpers (optional)
-# ------------------------------------------------------------------------------
-def get_pg_conn():
+# ---------------------------------------------------------------------------
+# Postgres tables
+# ---------------------------------------------------------------------------
+def ensure_pg_tables():
     if psycopg2 is None:
-        raise RuntimeError("psycopg2 not installed")
-    return psycopg2.connect(
+        return
+    conn = psycopg2.connect(
         host=os.getenv("DB_HOST", "echorepo-postgres"),
         port=int(os.getenv("DB_PORT", "5432")),
         dbname=os.getenv("DB_NAME", "echorepo"),
         user=os.getenv("DB_USER", "echorepo"),
         password=os.getenv("DB_PASSWORD", "echorepo-pass"),
     )
-
-
-def upsert_to_postgres(samples_df, images_df, params_df):
-    if psycopg2 is None:
-        print("[INFO] psycopg2 not available; skipping Postgres upsert.")
-        return
-
-    conn = get_pg_conn()
     cur = conn.cursor()
-
-    # samples
-    if not samples_df.empty:
-        cols = [
-            "sample_id",
-            "timestamp_utc",
-            "lat",
-            "lon",
-            "country_code",
-            "location_accuracy_m",
-            "ph",
-            "organic_carbon_pct",
-            "soil_structure",
-            "earthworms_count",
-            "contamination_debris",
-            "contamination_plastic",
-            "contamination_other_orig",
-            "contamination_other_en",
-            "pollutants_count",
-            "vegetation_cover_pct",
-            "forest_cover_pct",
-            "collected_by",
-            "data_source",
-            "qa_status",
-            "licence",
-        ]
-        records = [tuple(samples_df.get(c).iloc[i] for c in cols) for i in range(len(samples_df))]
-        sql = f"""
-        INSERT INTO samples ({", ".join(cols)})
-        VALUES %s
-        ON CONFLICT (sample_id) DO UPDATE SET
-          timestamp_utc = EXCLUDED.timestamp_utc,
-          lat = EXCLUDED.lat,
-          lon = EXCLUDED.lon,
-          country_code = EXCLUDED.country_code,
-          ph = EXCLUDED.ph,
-          soil_structure = EXCLUDED.soil_structure,
-          earthworms_count = EXCLUDED.earthworms_count,
-          contamination_debris = EXCLUDED.contamination_debris,
-          contamination_plastic = EXCLUDED.contamination_plastic,
-          contamination_other_orig = EXCLUDED.contamination_other_orig,
-          contamination_other_en = EXCLUDED.contamination_other_en,
-          pollutants_count = EXCLUDED.pollutants_count,
-          collected_by = EXCLUDED.collected_by,
-          qa_status = EXCLUDED.qa_status,
-          licence = EXCLUDED.licence;
-        """
-        execute_values(cur, sql, records)
-
-    # images
-    if not images_df.empty:
-        cols = [
-            "sample_id",
-            "country_code",
-            "image_id",
-            "image_url",
-            "image_description_orig",
-            "image_description_en",
-            "collected_by",
-            "timestamp_utc",
-            "licence",
-        ]
-        records = [tuple(images_df.get(c).iloc[i] for c in cols) for i in range(len(images_df))]
-        sql = f"""
-        INSERT INTO sample_images ({", ".join(cols)})
-        VALUES %s
-        ON CONFLICT (sample_id, image_id) DO UPDATE SET
-          country_code = EXCLUDED.country_code,
-          image_url = EXCLUDED.image_url,
-          image_description_orig = EXCLUDED.image_description_orig,
-          image_description_en = EXCLUDED.image_description_en,
-          collected_by = EXCLUDED.collected_by,
-          timestamp_utc = EXCLUDED.timestamp_utc,
-          licence = EXCLUDED.licence;
-        """
-        execute_values(cur, sql, records)
-
-    # parameters
-    if not params_df.empty:
-        cols = [
-            "sample_id",
-            "country_code",
-            "parameter_code",
-            "parameter_name",
-            "value",
-            "uom",
-            "analysis_method",
-            "analysis_date",
-            "lab_id",
-            "created_by",
-            "licence",
-            "parameter_uri",
-        ]
-        records = [tuple(params_df.get(c).iloc[i] for c in cols) for i in range(len(params_df))]
-        sql = f"""
-        INSERT INTO sample_parameters ({", ".join(cols)})
-        VALUES %s
-        ON CONFLICT (sample_id, parameter_code) DO UPDATE SET
-          country_code    = EXCLUDED.country_code,
-          value           = EXCLUDED.value,
-          uom             = EXCLUDED.uom,
-          analysis_method = EXCLUDED.analysis_method,
-          analysis_date   = EXCLUDED.analysis_date,
-          lab_id          = EXCLUDED.lab_id,
-          created_by      = EXCLUDED.created_by,
-          licence         = EXCLUDED.licence,
-          parameter_uri   = EXCLUDED.parameter_uri;
-        """
-        execute_values(cur, sql, records)
-
-    conn.commit()
-    cur.close()
-    conn.close()
-    print("[OK] Upserted canonical data into Postgres.")
-
-def ensure_pg_tables():
-    conn = get_pg_conn()
-    cur = conn.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS samples (
+    cur.execute("""
+CREATE TABLE IF NOT EXISTS samples (
   sample_id TEXT PRIMARY KEY,
   timestamp_utc TIMESTAMPTZ,
   lat DOUBLE PRECISION,
@@ -717,20 +763,28 @@ CREATE TABLE IF NOT EXISTS sample_images (
   licence TEXT,
   PRIMARY KEY (sample_id, image_id)
 );""")
-    
     conn.commit()
     cur.close()
     conn.close()
 
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # main
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 def main():
     init_firebase()
     minio_client = init_minio()
 
-    # 1) pull raw
+    # load country polygons once
+    load_country_shapes_from_shp("data/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp")
+
+    # 1) fetch from Firestore
     df_raw = fetch_samples_flat(minio_client)
+
+    # normalize timestamps    
+    for col in ("collectedAt", "fs_createdAt", "fs_updatedAt"):
+        if col in df_raw.columns:
+            df_raw[col] = df_raw[col].apply(_ts_to_iso_loose)
+            
     write_csv_atomic(df_raw, RAW_CSV)
 
     # 2) enrich with emails
@@ -740,37 +794,58 @@ def main():
         if "userId" not in df_enriched.columns:
             df_enriched["userId"] = ""
         df_enriched["email"] = df_enriched["userId"].map(uid_to_email).fillna("")
+    
+    # normalize timestamps again just in case
+    for col in ("collectedAt", "fs_createdAt", "fs_updatedAt"):
+        if col in df_enriched.columns:
+            df_enriched[col] = df_enriched[col].apply(_ts_to_iso_loose)
+
     write_csv_atomic(df_enriched, ENRICHED_CSV)
 
-    # 3) users CSV
+    # 3) users.csv
     df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
     write_csv_atomic(df_users, USERS_CSV)
 
-    # 4) canonical exports
+    # 4) refresh sqlite from ENRICHED_CSV, preserve lab_enrichment
+    refreshed_db_path = refresh_sqlite_from_csv(ENRICHED_CSV, SQLITE_PATH)
+
+    # 5) build canonical export
     if not df_enriched.empty:
         canon_dir = PROJECT_ROOT / "data" / "canonical"
         canon_dir.mkdir(parents=True, exist_ok=True)
 
         samples_df = build_samples_df(df_enriched)
-        sample_images_df = build_sample_images_df(df_enriched)
-        sample_parameters_df = build_sample_parameters_df(df_enriched)
+        images_df = build_sample_images_df(df_enriched)
+        params_df = build_sample_parameters_df_from_sqlite(df_enriched, refreshed_db_path)
 
-        write_csv_atomic(samples_df, str(canon_dir / "samples.csv"))
-        write_csv_atomic(sample_images_df, str(canon_dir / "sample_images.csv"))
-        write_csv_atomic(sample_parameters_df, str(canon_dir / "sample_parameters.csv"))
+        samples_path = canon_dir / "samples.csv"
+        images_path = canon_dir / "sample_images.csv"
+        params_path = canon_dir / "sample_parameters.csv"
+
+        write_csv_atomic(samples_df, str(samples_path))
+        write_csv_atomic(images_df, str(images_path))
+        write_csv_atomic(params_df, str(params_path))
         print("[OK] Wrote canonical 3-file export.")
 
-        # 5) optional Postgres sink
+        # 5b) produce all.zip locally
+        all_zip_path = canon_dir / "all.zip"
+        with zipfile.ZipFile(all_zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.write(samples_path, arcname="samples.csv")
+            zf.write(images_path, arcname="sample_images.csv")
+            zf.write(params_path, arcname="sample_parameters.csv")
+        print(f"[OK] Wrote {all_zip_path}")
+
+        # 6) upload canonical files to MinIO (so Flask can just redirect)
+        upload_canonical_to_minio(minio_client, samples_path, "samples.csv")
+        upload_canonical_to_minio(minio_client, images_path, "sample_images.csv")
+        upload_canonical_to_minio(minio_client, params_path, "sample_parameters.csv")
+        upload_canonical_to_minio(minio_client, all_zip_path, "all.zip")
+
+        # 7) optional: Postgres (just ensuring tables for now)
         try:
             ensure_pg_tables()
         except Exception as e:
             print(f"[WARN] Could not ensure Postgres tables: {e}")
-
-        try:
-            upsert_to_postgres(samples_df, sample_images_df, sample_parameters_df)
-        except Exception as e:
-            print(f"[WARN] Could not upsert into Postgres: {e}")
-
 
 if __name__ == "__main__":
     try:
