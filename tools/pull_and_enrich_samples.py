@@ -169,6 +169,34 @@ def init_minio():
     return client
 
 # ---------------------------------------------------------------------------
+# helper: input sanitization
+# ---------------------------------------------------------------------------
+BAD_NUM = {"", " ", "-", "NA", "N/A", "null", "None"}
+
+def _clean_int_val(v):
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", ".")
+    if s in BAD_NUM:
+        return None
+    try:
+        # this handles "256.0", "12.00", "5"
+        return int(float(s))
+    except ValueError:
+        return None
+
+def _clean_float_val(v):
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", ".")
+    if s in BAD_NUM:
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+# ---------------------------------------------------------------------------
 # helper: shapefile -> country polygons
 # ---------------------------------------------------------------------------
 _COUNTRY_SHAPES = []
@@ -715,7 +743,7 @@ def ensure_pg_tables():
     if psycopg2 is None:
         return
     conn = psycopg2.connect(
-        host=os.getenv("DB_HOST", "echorepo-postgres"),
+        host=os.getenv("DB_HOST_OUTSIDE", "echorepo-postgres"),
         port=int(os.getenv("DB_PORT_OUTSIDE", "5432")),
         dbname=os.getenv("DB_NAME", "echorepo"),
         user=os.getenv("DB_USER", "echorepo"),
@@ -779,6 +807,246 @@ CREATE TABLE IF NOT EXISTS sample_images (
     cur.close()
     conn.close()
 
+def load_canonical_into_pg_staging(samples_path, images_path, params_path):
+    """
+    Load canonical CSVs into Postgres using TEXT staging tables,
+    then normalize+cast into real tables.
+    """
+    if psycopg2 is None:
+        print("[PG] psycopg2 not installed, skipping PG load.")
+        return
+
+    conn = psycopg2.connect(
+        host=os.getenv("DB_HOST_OUTSIDE", "echorepo-postgres"),
+        port=int(os.getenv("DB_PORT_OUTSIDE", "5432")),
+        dbname=os.getenv("DB_NAME", "echorepo"),
+        user=os.getenv("DB_USER", "echorepo"),
+        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
+    )
+    cur = conn.cursor()
+    try:
+        # 1) text-only staging tables
+        cur.execute("DROP TABLE IF EXISTS samples_stage_raw;")
+        cur.execute("""
+            CREATE TABLE samples_stage_raw (
+              sample_id              TEXT,
+              timestamp_utc          TEXT,
+              lat                    TEXT,
+              lon                    TEXT,
+              country_code           TEXT,
+              location_accuracy_m    TEXT,
+              ph                     TEXT,
+              organic_carbon_pct     TEXT,
+              soil_structure         TEXT,
+              earthworms_count       TEXT,
+              contamination_debris   TEXT,
+              contamination_plastic  TEXT,
+              contamination_other_orig TEXT,
+              contamination_other_en   TEXT,
+              pollutants_count       TEXT,
+              vegetation_cover_pct   TEXT,
+              forest_cover_pct       TEXT,
+              collected_by           TEXT,
+              data_source            TEXT,
+              qa_status              TEXT,
+              licence                TEXT
+            );
+        """)
+
+        cur.execute("DROP TABLE IF EXISTS sample_images_stage_raw;")
+        cur.execute("""
+            CREATE TABLE sample_images_stage_raw (
+              sample_id              TEXT,
+              country_code           TEXT,
+              image_id               TEXT,
+              image_url              TEXT,
+              image_description_orig TEXT,
+              image_description_en   TEXT,
+              collected_by           TEXT,
+              timestamp_utc          TEXT,
+              licence                TEXT
+            );
+        """)
+
+        cur.execute("DROP TABLE IF EXISTS sample_parameters_stage_raw;")
+        cur.execute("""
+            CREATE TABLE sample_parameters_stage_raw (
+              sample_id      TEXT,
+              country_code   TEXT,
+              parameter_code TEXT,
+              parameter_name TEXT,
+              value          TEXT,
+              uom            TEXT,
+              analysis_method TEXT,
+              analysis_date  TEXT,
+              lab_id         TEXT,
+              created_by     TEXT,
+              licence        TEXT,
+              parameter_uri  TEXT
+            );
+        """)
+
+        # 2) COPY raw CSVs → TEXT staging
+        with open(samples_path, "r", encoding="utf-8") as f:
+            cur.copy_expert(
+                """
+                COPY samples_stage_raw FROM STDIN
+                WITH CSV HEADER NULL '' 
+                """,
+                f,
+            )
+
+        with open(images_path, "r", encoding="utf-8") as f:
+            cur.copy_expert(
+                """
+                COPY sample_images_stage_raw FROM STDIN
+                WITH CSV HEADER NULL ''
+                """,
+                f,
+            )
+
+        with open(params_path, "r", encoding="utf-8") as f:
+            cur.copy_expert(
+                """
+                COPY sample_parameters_stage_raw FROM STDIN
+                WITH CSV HEADER NULL ''
+                """,
+                f,
+            )
+
+        # commit COPY (it’s big)
+        conn.commit()
+        conn.autocommit = False
+        cur = conn.cursor()
+
+        # 3) swap into real tables
+        # children first
+        cur.execute("TRUNCATE sample_parameters, sample_images, samples;")
+
+        # samples
+        cur.execute("""
+            INSERT INTO samples (
+              sample_id,
+              timestamp_utc,
+              lat,
+              lon,
+              country_code,
+              location_accuracy_m,
+              ph,
+              organic_carbon_pct,
+              soil_structure,
+              earthworms_count,
+              contamination_debris,
+              contamination_plastic,
+              contamination_other_orig,
+              contamination_other_en,
+              pollutants_count,
+              vegetation_cover_pct,
+              forest_cover_pct,
+              collected_by,
+              data_source,
+              qa_status,
+              licence
+            )
+            SELECT
+              TRIM(sample_id),
+              NULLIF(TRIM(timestamp_utc), '')::timestamptz,
+              NULLIF(TRIM(lat), '')::double precision,
+              NULLIF(TRIM(lon), '')::double precision,
+              NULLIF(TRIM(country_code), ''),
+              NULLIF(TRIM(location_accuracy_m), '')::integer,
+              NULLIF(TRIM(ph), '')::double precision,
+              NULLIF(TRIM(organic_carbon_pct), '')::double precision,
+              NULLIF(TRIM(soil_structure), ''),
+              NULLIF(TRIM(earthworms_count), '')::integer,
+              NULLIF(TRIM(contamination_debris), '')::integer,
+              NULLIF(TRIM(contamination_plastic), '')::integer,
+              NULLIF(TRIM(contamination_other_orig), ''),
+              NULLIF(TRIM(contamination_other_en), ''),
+              NULLIF(TRIM(pollutants_count), '')::integer,
+              NULLIF(TRIM(vegetation_cover_pct), '')::double precision,
+              NULLIF(TRIM(forest_cover_pct), '')::double precision,
+              NULLIF(TRIM(collected_by), ''),
+              NULLIF(TRIM(data_source), ''),
+              NULLIF(TRIM(qa_status), ''),
+              NULLIF(TRIM(licence), '')
+            FROM samples_stage_raw;
+        """)
+
+        # sample_images
+        cur.execute("""
+            INSERT INTO sample_images (
+              sample_id,
+              country_code,
+              image_id,
+              image_url,
+              image_description_orig,
+              image_description_en,
+              collected_by,
+              timestamp_utc,
+              licence
+            )
+            SELECT
+              TRIM(sample_id),
+              NULLIF(TRIM(country_code), ''),
+              NULLIF(TRIM(image_id), '')::integer,
+              NULLIF(TRIM(image_url), ''),
+              NULLIF(TRIM(image_description_orig), ''),
+              NULLIF(TRIM(image_description_en), ''),
+              NULLIF(TRIM(collected_by), ''),
+              NULLIF(TRIM(timestamp_utc), '')::timestamptz,
+              NULLIF(TRIM(licence), '')
+            FROM sample_images_stage_raw;
+        """)
+
+        # sample_parameters
+        cur.execute("""
+            INSERT INTO sample_parameters (
+              sample_id,
+              country_code,
+              parameter_code,
+              parameter_name,
+              value,
+              uom,
+              analysis_method,
+              analysis_date,
+              lab_id,
+              created_by,
+              licence,
+              parameter_uri
+            )
+            SELECT
+              TRIM(sample_id),
+              NULLIF(TRIM(country_code), ''),
+              NULLIF(TRIM(parameter_code), ''),
+              NULLIF(TRIM(parameter_name), ''),
+              NULLIF(TRIM(value), '')::double precision,
+              NULLIF(TRIM(uom), ''),
+              NULLIF(TRIM(analysis_method), ''),
+              NULLIF(TRIM(analysis_date), '')::timestamptz,
+              NULLIF(TRIM(lab_id), ''),
+              NULLIF(TRIM(created_by), ''),
+              NULLIF(TRIM(licence), ''),
+              NULLIF(TRIM(parameter_uri), '')
+            FROM sample_parameters_stage_raw;
+        """)
+
+        conn.commit()
+        print("[PG] staging swap completed.")
+    except Exception as e:
+        conn.rollback()
+        print(f"[PG] staging load failed: {e}")
+    finally:
+        try:
+            cur.execute("DROP TABLE IF EXISTS samples_stage_raw;")
+            cur.execute("DROP TABLE IF EXISTS sample_images_stage_raw;")
+            cur.execute("DROP TABLE IF EXISTS sample_parameters_stage_raw;")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+        cur.close()
+        conn.close()
+
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
@@ -830,10 +1098,70 @@ def main():
         images_df = build_sample_images_df(df_enriched)
         params_df = build_sample_parameters_df_from_sqlite(df_enriched, refreshed_db_path)
 
+        # 1) build a set of valid sample_ids (whatever you decided sample_id is now — QR)
+        valid_sample_ids = set(
+            samples_df["sample_id"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+        )
+
+        # log orphaned parameters
+        orphan_params = params_df[~params_df["sample_id"].isin(valid_sample_ids)]
+        orphan_params.to_csv("data/canonical/orphan_sample_parameters.csv", index=False)
+
+        # 2) drop parameter rows that point to a non-existing sample
+        if not params_df.empty:
+            before = len(params_df)
+            params_df = params_df[
+                params_df["sample_id"]
+                .astype(str)
+                .str.strip()
+                .isin(valid_sample_ids)
+            ].copy()
+            after = len(params_df)
+            if before != after:
+                print(f"[INFO] dropped {before - after} parameter rows without matching sample")
+
+        # sanitize numeric-ish columns so Postgres COPY is happy
+        if not samples_df.empty:
+            int_cols = [
+                "location_accuracy_m",
+                "earthworms_count",
+                "contamination_debris",
+                "contamination_plastic",
+                "pollutants_count",
+            ]
+            float_cols = [
+                "ph",
+                "organic_carbon_pct",
+                "vegetation_cover_pct",
+                "forest_cover_pct",
+            ]
+
+            for col in int_cols:
+                if col in samples_df.columns:
+                    samples_df[col] = samples_df[col].apply(_clean_int_val)
+                    # IMPORTANT: make pandas actually store as integer so CSV becomes "256" not "256.0"
+                    samples_df[col] = samples_df[col].astype("Int64")  # nullable int
+
+            for col in float_cols:
+                if col in samples_df.columns:
+                    samples_df[col] = samples_df[col].apply(_clean_float_val)
+
+        # 2) images: image_id should also be int
+        if not images_df.empty and "image_id" in images_df.columns:
+            images_df["image_id"] = images_df["image_id"].apply(_clean_int_val).astype("Int64")
+
+        # 3) params: value is usually numeric but may be text — keep as float/str if you want
+        if not params_df.empty and "value" in params_df.columns:
+            params_df["value"] = params_df["value"].apply(_clean_float_val)        
+
+        # 5a) write canonical CSVs
         samples_path = canon_dir / "samples.csv"
         images_path = canon_dir / "sample_images.csv"
         params_path = canon_dir / "sample_parameters.csv"
-
+           
         write_csv_atomic(samples_df, str(samples_path))
         write_csv_atomic(images_df, str(images_path))
         write_csv_atomic(params_df, str(params_path))
@@ -859,70 +1187,15 @@ def main():
         except Exception as e:
             print(f"[WARN] Could not ensure Postgres tables: {e}")
 
-@web_bp.get("/search-samples")
-@login_required
-def search_samples():
-    # read query params
-    sample_id = (request.args.get("sampleId") or "").strip()
-    ph_min = request.args.get("ph_min")
-    ph_max = request.args.get("ph_max")
-    country = (request.args.get("country") or "").strip()
-    date_from = request.args.get("date_from")
-    date_to = request.args.get("date_to")
-
-    # build SQL dynamically but safely
-    sql = "SELECT * FROM samples WHERE 1=1"
-    params = []
-
-    if sample_id:
-        sql += " AND sampleid ILIKE %s"
-        params.append(f"%{sample_id}%")
-
-    if ph_min:
-        sql += " AND ph_ph >= %s"
-        params.append(ph_min)
-
-    if ph_max:
-        sql += " AND ph_ph <= %s"
-        params.append(ph_max)
-
-    if country:
-        sql += " AND country = %s"
-        params.append(country)
-
-    if date_from:
-        sql += " AND fs_createdat >= %s"
-        params.append(date_from)
-
-    if date_to:
-        sql += " AND fs_createdat <= %s"
-        params.append(date_to)
-
-    # optional: limit
-    sql += " ORDER BY fs_createdat DESC LIMIT 500"
-
-    # use your existing DB helper if you have one;
-    # I'll show a raw psycopg style:
-    import psycopg2
-    conn = psycopg2.connect(
-        host=os.getenv("DB_HOST", "postgres"),
-        port=os.getenv("DB_PORT", "5432"),
-        dbname=os.getenv("DB_NAME", "echorepo"),
-        user=os.getenv("DB_USER", "echorepo"),
-        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
-    )
-    cur = conn.cursor()
-    cur.execute(sql, params)
-    rows = cur.fetchall()
-    cols = [c[0] for c in cur.description]
-    cur.close()
-    conn.close()
-
-    # return JSON, front-end can render it
-    return jsonify({
-        "columns": cols,
-        "rows": rows,
-    })
+        # 8) optional: load into Postgres staging + swap
+        try:
+            load_canonical_into_pg_staging(
+                str(samples_path),
+                str(images_path),
+                str(params_path),
+            )
+        except Exception as e:
+            print(f"[WARN] PG staging load skipped/failed: {e}")
 
 if __name__ == "__main__":
     try:
