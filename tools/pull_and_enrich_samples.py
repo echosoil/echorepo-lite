@@ -708,7 +708,7 @@ def ensure_pg_tables():
         return
     conn = psycopg2.connect(
         host=os.getenv("DB_HOST", "echorepo-postgres"),
-        port=int(os.getenv("DB_PORT", "5432")),
+        port=int(os.getenv("DB_PORT_OUTSIDE", "5432")),
         dbname=os.getenv("DB_NAME", "echorepo"),
         user=os.getenv("DB_USER", "echorepo"),
         password=os.getenv("DB_PASSWORD", "echorepo-pass"),
