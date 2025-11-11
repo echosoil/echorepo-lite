@@ -209,6 +209,15 @@ def latlon_to_country_code(lat, lon):
 # ---------------------------------------------------------------------------
 # misc helpers
 # ---------------------------------------------------------------------------
+def norm_qr_for_id(q):
+    """Make QR suitable as canonical sample_id."""
+    if not q:
+        return ""
+    s = str(q).strip()
+    # common cleanup: remove spaces, uppercase
+    s = s.replace(" ", "").upper()
+    return s
+
 def parse_ph(value):
     if value is None:
         return None
@@ -534,6 +543,10 @@ def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
         country = r.get("country_code") or latlon_to_country_code(lat, lon)
+
+        qr = norm_qr_for_id(r.get("QR_qrCode"))
+        sample_id = qr or r.get("sampleId")
+
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
         cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
         cont_other_orig = r.get("SOIL_CONTAMINATION_comments") or ""
@@ -542,8 +555,9 @@ def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         for v in (cont_debris, cont_plastic, cont_other_orig):
             if v not in (0, "", None, False):
                 pollutants_count += 1
+
         rows.append({
-            "sample_id": r.get("sampleId"),
+            "sample_id": sample_id,
             "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
             "lat": lat,
             "lon": lon,
@@ -574,20 +588,20 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
         country = r.get("country_code") or latlon_to_country_code(lat, lon)
+
+        qr = norm_qr_for_id(r.get("QR_qrCode"))
+        sample_id = qr or r.get("sampleId")
+
         for i in photo_slots:
             path_col = f"PHOTO_photos_{i}_path"
             comment_col = f"PHOTO_photos_{i}_comment"
             path = r.get(path_col)
-            if not path:
-                continue
-            if isinstance(path, float) and math.isnan(path):
-                continue
-            if str(path).strip().lower() == "nan":
+            if not path or (isinstance(path, float) and math.isnan(path)) or str(path).strip().lower() == "nan":
                 continue
             comment_orig = r.get(comment_col) or ""
             comment_en = translate_to_en(comment_orig) if comment_orig else ""
             img_rows.append({
-                "sample_id": r.get("sampleId"),
+                "sample_id": sample_id,
                 "country_code": country,
                 "image_id": i,
                 "image_url": path,
@@ -605,12 +619,9 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         return pd.DataFrame([])
 
     def norm_qr(q):
-        if q is None:
-            return ""
-        s = str(q).strip()
-        return s.upper().replace(" ", "").replace("-", "")
+        return norm_qr_for_id(q)
 
-    qr_to_sample = {}
+    # we need QR -> country
     qr_to_country = {}
     for _, r in df_flat.iterrows():
         qr = r.get("QR_qrCode")
@@ -620,7 +631,6 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
         country = r.get("country_code") or latlon_to_country_code(lat, lon)
-        qr_to_sample[qr_n] = r.get("sampleId")
         qr_to_country[qr_n] = country
 
     conn = sqlite3.connect(db_path)
@@ -637,17 +647,16 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         return pd.DataFrame([])
 
     rows = []
-    unmatched = 0
     for _, r in lab_df.iterrows():
         qr_raw = r["qr_code"]
         qr_n = norm_qr(qr_raw)
-        sample_id = qr_to_sample.get(qr_n)
-        if not sample_id:
-            unmatched += 1
+        if not qr_n:
             continue
+
         country = qr_to_country.get(qr_n, "")
+
         rows.append({
-            "sample_id": sample_id,
+            "sample_id": qr_n,                  # <- HERE: use QR as sample_id
             "country_code": country,
             "parameter_code": r["param"],
             "parameter_name": r["param"],
@@ -660,8 +669,7 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
             "licence": DEFAULT_LICENCE,
             "parameter_uri": "",
         })
-    if unmatched:
-        print(f"[INFO] lab rows that didn't match any Firestore QR: {unmatched}")
+
     print(f"[INFO] built sample_parameters from sqlite: {len(rows)} rows")
     return pd.DataFrame(rows)
 
@@ -850,6 +858,71 @@ def main():
             ensure_pg_tables()
         except Exception as e:
             print(f"[WARN] Could not ensure Postgres tables: {e}")
+
+@web_bp.get("/search-samples")
+@login_required
+def search_samples():
+    # read query params
+    sample_id = (request.args.get("sampleId") or "").strip()
+    ph_min = request.args.get("ph_min")
+    ph_max = request.args.get("ph_max")
+    country = (request.args.get("country") or "").strip()
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+
+    # build SQL dynamically but safely
+    sql = "SELECT * FROM samples WHERE 1=1"
+    params = []
+
+    if sample_id:
+        sql += " AND sampleid ILIKE %s"
+        params.append(f"%{sample_id}%")
+
+    if ph_min:
+        sql += " AND ph_ph >= %s"
+        params.append(ph_min)
+
+    if ph_max:
+        sql += " AND ph_ph <= %s"
+        params.append(ph_max)
+
+    if country:
+        sql += " AND country = %s"
+        params.append(country)
+
+    if date_from:
+        sql += " AND fs_createdat >= %s"
+        params.append(date_from)
+
+    if date_to:
+        sql += " AND fs_createdat <= %s"
+        params.append(date_to)
+
+    # optional: limit
+    sql += " ORDER BY fs_createdat DESC LIMIT 500"
+
+    # use your existing DB helper if you have one;
+    # I'll show a raw psycopg style:
+    import psycopg2
+    conn = psycopg2.connect(
+        host=os.getenv("DB_HOST", "postgres"),
+        port=os.getenv("DB_PORT", "5432"),
+        dbname=os.getenv("DB_NAME", "echorepo"),
+        user=os.getenv("DB_USER", "echorepo"),
+        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
+    )
+    cur = conn.cursor()
+    cur.execute(sql, params)
+    rows = cur.fetchall()
+    cols = [c[0] for c in cur.description]
+    cur.close()
+    conn.close()
+
+    # return JSON, front-end can render it
+    return jsonify({
+        "columns": cols,
+        "rows": rows,
+    })
 
 if __name__ == "__main__":
     try:
