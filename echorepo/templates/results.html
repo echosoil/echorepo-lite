@@ -168,14 +168,80 @@
 
   <!-- Toolbar -->
   <div class="d-flex flex-wrap align-items-center toolbar mb-3">
+    <!-- Download dropdown -->
     <div class="btn-group">
-      <!-- your download dropdown as before -->
-      ...
+      <button type="button" class="btn btn-earth dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-download me-1"></i> {{ _('Download') }}
+      </button>
+      <ul class="dropdown-menu">
+        <li>
+          <form method="POST" action="{{ url_for('download_csv') }}" class="px-3 py-1">
+            <input type="hidden" name="user_key" value="{{ user_key }}">
+            <button class="btn btn-link p-0" type="submit">
+              <i class="bi bi-filetype-csv me-1"></i> {{ _('CSV (per-user)') }}
+            </button>
+          </form>
+        </li>
+        <li>
+          <form method="POST" action="{{ url_for('download_xlsx') }}" class="px-3 py-1">
+            <input type="hidden" name="user_key" value="{{ user_key }}">
+            <button class="btn btn-link p-0" type="submit">
+              <i class="bi bi-filetype-xls me-1"></i> {{ _('XLSX (per-user)') }}
+            </button>
+          </form>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('download_all_csv') }}">
+            <i class="bi bi-archive me-1"></i> {{ _('All samples (CSV, anonymised)') }}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="/api/user_geojson" target="_blank" rel="noopener">
+            <i class="bi bi-braces-asterisk me-1"></i> {{ _('GeoJSON (per-user)') }}
+          </a>
+        </li>
+
+        <!-- new canonical section -->
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">{{ _('Canonical exports') }}</li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_samples') }}">
+            <i class="bi bi-filetype-csv me-1"></i> {{ _('samples.csv') }}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_sample_images') }}">
+            <i class="bi bi-filetype-csv me-1"></i> {{ _('sample_images.csv') }}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_sample_parameters') }}">
+            <i class="bi bi-filetype-csv me-1"></i> {{ _('sample_parameters.csv') }}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_zip') }}">
+            <i class="bi bi-file-zip me-1"></i> {{ _('All canonical (zip)') }}
+          </a>
+        </li>
+      </ul>
     </div>
 
-    <div class="ms-auto d-flex align-items-center gap-2">
-      <!-- your pH filter as before -->
-      ...
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <span class="text-muted small">{{ _('pH') }}</span>
+        <input type="number" step="0.1" min="0" max="14" id="phMin" class="form-control form-control-sm"
+              placeholder="{{ _('min') }}" style="width:6rem">
+        <span class="text-muted">–</span>
+        <input type="number" step="0.1" min="0" max="14" id="phMax" class="form-control form-control-sm"
+              placeholder="{{ _('max') }}" style="width:6rem">
+        <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button"
+                title="{{ _('Apply pH filter') }}">{{ _('Apply') }}</button>
+        <button class="btn btn-sm btn-primary" id="btnExportFiltered" type="button" disabled
+                title="{{ _('Export rows matching current pH filter') }}">
+          {{ _('Export filtered (0)') }}
+        </button>
+      </div>
     </div>
   </div>
 

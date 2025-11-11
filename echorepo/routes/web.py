@@ -40,6 +40,19 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 web_bp = Blueprint("web", __name__)
 
 # --------------------------------------------------------------------------
+# --- Postgres helpers -----------------------------------------------------
+# --------------------------------------------------------------------------
+def _pg_conn():
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST_INSIDE", "echorepo-postgres"),
+        port=int(os.getenv("DB_PORT_INSIDE", "5432")),
+        dbname=os.getenv("DB_NAME", "echorepo"),
+        user=os.getenv("DB_USER", "echorepo"),
+        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
+    )
+
+
+# --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
 # --------------------------------------------------------------------------
 def _get_repo_user_id_from_db() -> str | None:
@@ -736,70 +749,123 @@ def lab_upload_post():
         abort(400, "No file")
     return redirect(url_for("web.home"))
 
-@web_bp.route("/search", endpoint="search_samples", methods=["GET", "POST"])
+@web_bp.route("/search", endpoint="search_samples", methods=["GET"])
 @login_required
 def search_samples():
-    rows = []
+    # read filters from query string
     criteria = {
-        "sample_id": "",
-        "country_code": "",
-        "ph_min": "",
-        "ph_max": "",
-        "date_from": "",
-        "date_to": "",
+        "sample_id": (request.args.get("sample_id") or "").strip(),
+        "country_code": (request.args.get("country_code") or "").strip().upper(),
+        "ph_min": (request.args.get("ph_min") or "").strip(),
+        "ph_max": (request.args.get("ph_max") or "").strip(),
+        "date_from": (request.args.get("date_from") or "").strip(),
+        "date_to": (request.args.get("date_to") or "").strip(),
     }
 
-    if request.method == "POST":
-        criteria["sample_id"] = (request.form.get("sample_id") or "").strip()
-        criteria["country_code"] = (request.form.get("country_code") or "").strip().upper()
-        criteria["ph_min"] = (request.form.get("ph_min") or "").strip()
-        criteria["ph_max"] = (request.form.get("ph_max") or "").strip()
-        criteria["date_from"] = (request.form.get("date_from") or "").strip()
-        criteria["date_to"] = (request.form.get("date_to") or "").strip()
+    page = max(int(request.args.get("page", 1)), 1)
+    per_page = 50
+    offset = (page - 1) * per_page
 
-        sql = """
-            SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
-            FROM samples
-            WHERE 1=1
-        """
-        params = []
+    filters = []
+    params = []
 
-        if criteria["sample_id"]:
-            sql += " AND sample_id ILIKE %s"
-            params.append(f"%{criteria['sample_id']}%")
+    if criteria["sample_id"]:
+        filters.append("s.sample_id ILIKE %s")
+        params.append(f"%{criteria['sample_id']}%")
 
-        if criteria["country_code"]:
-            sql += " AND country_code = %s"
-            params.append(criteria["country_code"])
+    if criteria["country_code"]:
+        filters.append("s.country_code = %s")
+        params.append(criteria["country_code"])
 
-        if criteria["ph_min"]:
-            sql += " AND ph >= %s"
-            params.append(float(criteria["ph_min"]))
+    if criteria["ph_min"]:
+        filters.append("s.ph >= %s")
+        params.append(criteria["ph_min"])
 
-        if criteria["ph_max"]:
-            sql += " AND ph <= %s"
-            params.append(float(criteria["ph_max"]))
+    if criteria["ph_max"]:
+        filters.append("s.ph <= %s")
+        params.append(criteria["ph_max"])
 
-        if criteria["date_from"]:
-            sql += " AND timestamp_utc >= %s"
-            params.append(criteria["date_from"])
+    if criteria["date_from"]:
+        filters.append("s.timestamp_utc >= %s")
+        params.append(criteria["date_from"])
 
-        if criteria["date_to"]:
-            sql += " AND timestamp_utc <= %s"
-            params.append(criteria["date_to"])
+    if criteria["date_to"]:
+        filters.append("s.timestamp_utc <= %s")
+        params.append(criteria["date_to"])
 
-        sql += " ORDER BY timestamp_utc DESC LIMIT 200"
+    where_sql = f"WHERE {' AND '.join(filters)}" if filters else ""
 
-        try:
-            with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(sql, params)
-                rows = cur.fetchall()
-        except Exception as e:
-            # you can log it
-            print("[search] error:", e)
+    # CSV export of *filtered* data
+    wants_csv = (request.args.get("format") == "csv")
+
+    rows = []
+    total_rows = 0
+    total_pages = 1
+
+    try:
+        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # count for pagination
+            count_sql = f"SELECT COUNT(*) AS cnt FROM samples s {where_sql}"
+            cur.execute(count_sql, params)
+            total_rows = cur.fetchone()["cnt"]
+            total_pages = (total_rows + per_page - 1) // per_page or 1
+
+            if wants_csv:
+                # export everything that matches the filter
+                export_sql = f"""
+                    SELECT s.sample_id, s.timestamp_utc, s.country_code,
+                           s.ph, s.lat, s.lon, s.collected_by
+                    FROM samples s
+                    {where_sql}
+                    ORDER BY s.timestamp_utc DESC NULLS LAST
+                """
+                cur.execute(export_sql, params)
+                export_rows = cur.fetchall()
+
+                # build CSV in memory
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow(["sample_id", "timestamp_utc", "country_code",
+                                 "ph", "lat", "lon", "collected_by"])
+                for r in export_rows:
+                    writer.writerow([
+                        r["sample_id"],
+                        r["timestamp_utc"],
+                        r["country_code"],
+                        r["ph"],
+                        r["lat"],
+                        r["lon"],
+                        r["collected_by"],
+                    ])
+                output.seek(0)
+                return send_file(
+                    io.BytesIO(output.read().encode("utf-8")),
+                    mimetype="text/csv",
+                    as_attachment=True,
+                    download_name="samples_filtered.csv",
+                )
+
+            # normal paged query
+            data_sql = f"""
+                SELECT s.sample_id, s.timestamp_utc, s.country_code,
+                       s.ph, s.lat, s.lon, s.collected_by
+                FROM samples s
+                {where_sql}
+                ORDER BY s.timestamp_utc DESC NULLS LAST
+                LIMIT %s OFFSET %s
+            """
+            cur.execute(data_sql, params + [per_page, offset])
+            rows = cur.fetchall()
+    except Exception as e:
+        # log if you want
+        print("[search] error:", e)
 
     return render_template(
         "search.html",
         criteria=criteria,
         rows=rows,
+        page=page,
+        total_pages=total_pages,
+        total_rows=total_rows,
+        per_page=per_page,
     )
