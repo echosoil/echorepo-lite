@@ -20,6 +20,8 @@ import io
 import zipfile  # kept in case you later want to build ZIPs locally
 import logging
 import csv
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 from flask_babel import gettext as _, get_locale
 
@@ -37,7 +39,9 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 # blueprint
 web_bp = Blueprint("web", __name__)
 
-# --- privacy acceptance helpers ----------------------------------------------
+# --------------------------------------------------------------------------
+# --- Privacy acceptance helpers -------------------------------------------
+# --------------------------------------------------------------------------
 def _get_repo_user_id_from_db() -> str | None:
     """
     Return the userId we store in the samples table (the same we use for the
@@ -242,6 +246,18 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
 
 
 # --------------------------------------------------------------------------
+# Postgres helpers
+# -------------------------------------------------------------------------
+def get_pg_conn():
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST_INSIDE", "echorepo-postgres"),
+        port=int(os.getenv("DB_PORT_INSIDE", "5432")),
+        dbname=os.getenv("DB_NAME", "echorepo"),
+        user=os.getenv("DB_USER", "echorepo"),
+        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
+    )
+
+# --------------------------------------------------------------------------
 # MinIO helpers + canonical download routes (proxy through Flask)
 # --------------------------------------------------------------------------
 try:
@@ -411,7 +427,6 @@ def home():
 
     # HTML copy — prettify timestamp column
     df_html = df.copy()
-    print("[--------TEST-----------]", df_html.columns, df_html.head())
     if "fs_createdAt" in df_html.columns:
         df_html["fs_createdAt"] = (
             df_html["fs_createdAt"]
@@ -720,3 +735,71 @@ def lab_upload_post():
     if not file:
         abort(400, "No file")
     return redirect(url_for("web.home"))
+
+@web_bp.route("/search", endpoint="search_samples", methods=["GET", "POST"])
+@login_required
+def search_samples():
+    rows = []
+    criteria = {
+        "sample_id": "",
+        "country_code": "",
+        "ph_min": "",
+        "ph_max": "",
+        "date_from": "",
+        "date_to": "",
+    }
+
+    if request.method == "POST":
+        criteria["sample_id"] = (request.form.get("sample_id") or "").strip()
+        criteria["country_code"] = (request.form.get("country_code") or "").strip().upper()
+        criteria["ph_min"] = (request.form.get("ph_min") or "").strip()
+        criteria["ph_max"] = (request.form.get("ph_max") or "").strip()
+        criteria["date_from"] = (request.form.get("date_from") or "").strip()
+        criteria["date_to"] = (request.form.get("date_to") or "").strip()
+
+        sql = """
+            SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
+            FROM samples
+            WHERE 1=1
+        """
+        params = []
+
+        if criteria["sample_id"]:
+            sql += " AND sample_id ILIKE %s"
+            params.append(f"%{criteria['sample_id']}%")
+
+        if criteria["country_code"]:
+            sql += " AND country_code = %s"
+            params.append(criteria["country_code"])
+
+        if criteria["ph_min"]:
+            sql += " AND ph >= %s"
+            params.append(float(criteria["ph_min"]))
+
+        if criteria["ph_max"]:
+            sql += " AND ph <= %s"
+            params.append(float(criteria["ph_max"]))
+
+        if criteria["date_from"]:
+            sql += " AND timestamp_utc >= %s"
+            params.append(criteria["date_from"])
+
+        if criteria["date_to"]:
+            sql += " AND timestamp_utc <= %s"
+            params.append(criteria["date_to"])
+
+        sql += " ORDER BY timestamp_utc DESC LIMIT 200"
+
+        try:
+            with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(sql, params)
+                rows = cur.fetchall()
+        except Exception as e:
+            # you can log it
+            print("[search] error:", e)
+
+    return render_template(
+        "search.html",
+        criteria=criteria,
+        rows=rows,
+    )
