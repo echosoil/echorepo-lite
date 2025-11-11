@@ -38,9 +38,46 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 web_bp = Blueprint("web", __name__)
 
 # --- privacy acceptance helpers ----------------------------------------------
-def _current_user_id():
-    # same logic you used elsewhere
-    return session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+def _get_repo_user_id_from_db() -> str | None:
+    """
+    Return the userId we store in the samples table (the same we use for the
+    survey r= param). Falls back to the display user_key if nothing else is found.
+    """
+    # this is the same way you find the "logical" user
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    if not user_key:
+        return None
+
+    df = query_user_df(user_key)
+    if df is None or df.empty:
+        return user_key  # last resort
+
+    for col in ("userId", "user_id", "kc_user_id"):
+        if col in df.columns:
+            val = df[col].dropna().astype(str).iloc[0].strip()
+            if val:
+                return val
+
+    return user_key
+
+def _current_user_id() -> str | None:
+    kc_profile = (session.get("kc") or {}).get("profile") or {}
+
+    # prefer a stable internal KC id
+    if kc_profile.get("id"):
+        return kc_profile["id"]
+    if kc_profile.get("sub"):
+        return kc_profile["sub"]
+
+    # then fall back to whatever you used before
+    if session.get("user"):
+        return session["user"]
+
+    # last resort: email
+    if kc_profile.get("email"):
+        return kc_profile["email"]
+
+    return None
 
 def _has_accepted_privacy(user_id: str) -> bool:
     if not user_id:
@@ -276,16 +313,16 @@ def _stream_minio_canonical(obj_name: str):
 @web_bp.post("/privacy/accept")
 @login_required
 def privacy_accept():
-    user_id = _current_user_id()
-    if not user_id:
-        abort(401)
+    repo_user_id = _get_repo_user_id_from_db()
+    if not repo_user_id:
+        abort(400, description="Cannot determine userId from database")
 
     # make sure the dir exists (handle the case when path has no dir part)
     dir_name = os.path.dirname(PRIVACY_CSV_PATH)
     if dir_name:
       os.makedirs(dir_name, exist_ok=True)
 
-    _append_privacy_acceptance(user_id)
+    _append_privacy_acceptance(repo_user_id)
     return redirect(url_for("web.home"))
 
 @web_bp.route("/download/canonical/samples.csv")
@@ -324,7 +361,8 @@ def home():
         return redirect(url_for("auth.login"))
 
     # privacy gate
-    needs_privacy = not _has_accepted_privacy(user_key)
+    privacy_user_id = _get_repo_user_id_from_db()
+    needs_privacy = not _has_accepted_privacy(privacy_user_id or "")
 
     # user data
     df = query_user_df(user_key)
