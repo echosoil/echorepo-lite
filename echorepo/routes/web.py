@@ -19,6 +19,7 @@ import json
 import io
 import zipfile  # kept in case you later want to build ZIPs locally
 import logging
+import csv
 
 from flask_babel import gettext as _, get_locale
 
@@ -29,8 +30,101 @@ from ..services.validation import find_default_coord_rows, annotate_country_mism
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 
+# constants for privacy acceptance
+PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
+PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv")
+
 # blueprint
 web_bp = Blueprint("web", __name__)
+
+# --- privacy acceptance helpers ----------------------------------------------
+def _get_repo_user_id_from_db() -> str | None:
+    """
+    Return the userId we store in the samples table (the same we use for the
+    survey r= param). Falls back to the display user_key if nothing else is found.
+    """
+    # this is the same way you find the "logical" user
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    if not user_key:
+        return None
+
+    df = query_user_df(user_key)
+    if df is None or df.empty:
+        return user_key  # last resort
+
+    for col in ("userId", "user_id", "kc_user_id"):
+        if col in df.columns:
+            val = df[col].dropna().astype(str).iloc[0].strip()
+            if val:
+                return val
+
+    return user_key
+
+def _current_user_id() -> str | None:
+    kc_profile = (session.get("kc") or {}).get("profile") or {}
+
+    # prefer a stable internal KC id
+    if kc_profile.get("id"):
+        return kc_profile["id"]
+    if kc_profile.get("sub"):
+        return kc_profile["sub"]
+
+    # then fall back to whatever you used before
+    if session.get("user"):
+        return session["user"]
+
+    # last resort: email
+    if kc_profile.get("email"):
+        return kc_profile["email"]
+
+    return None
+
+def _has_accepted_privacy(user_id: str) -> bool:
+    if not user_id:
+        return False
+    # fast path: we can also store in session
+    if session.get("privacy_accepted_version") == PRIVACY_VERSION:
+        return True
+
+    if not os.path.exists(PRIVACY_CSV_PATH):
+        return False
+
+    try:
+        with open(PRIVACY_CSV_PATH, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if (
+                    row.get("user_id") == user_id
+                    and row.get("version") == PRIVACY_VERSION
+                ):
+                    # cache in session
+                    session["privacy_accepted_version"] = PRIVACY_VERSION
+                    return True
+    except Exception:
+        return False
+
+    return False
+
+
+def _append_privacy_acceptance(user_id: str):
+    dir_name = os.path.dirname(PRIVACY_CSV_PATH)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+
+    file_exists = os.path.exists(PRIVACY_CSV_PATH)
+    with open(PRIVACY_CSV_PATH, "a", newline="", encoding="utf-8") as f:
+        fieldnames = ["user_id", "accepted_at", "version"]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(
+            {
+                "user_id": user_id,
+                "accepted_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                "version": PRIVACY_VERSION,
+            }
+        )
+    session["privacy_accepted_version"] = PRIVACY_VERSION
 
 # --------------------------------------------------------------------------
 # SoSci survey helper
@@ -216,6 +310,20 @@ def _stream_minio_canonical(obj_name: str):
         download_name=obj_name,
     )
 
+@web_bp.post("/privacy/accept")
+@login_required
+def privacy_accept():
+    repo_user_id = _get_repo_user_id_from_db()
+    if not repo_user_id:
+        abort(400, description="Cannot determine userId from database")
+
+    # make sure the dir exists (handle the case when path has no dir part)
+    dir_name = os.path.dirname(PRIVACY_CSV_PATH)
+    if dir_name:
+      os.makedirs(dir_name, exist_ok=True)
+
+    _append_privacy_acceptance(repo_user_id)
+    return redirect(url_for("web.home"))
 
 @web_bp.route("/download/canonical/samples.csv")
 @login_required
@@ -247,13 +355,20 @@ def download_canonical_zip():
 @web_bp.get("/", endpoint="home")
 @login_required
 def home():
+    # who is this
     user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
     if not user_key:
         return redirect(url_for("auth.login"))
 
+    # privacy gate
+    privacy_user_id = _get_repo_user_id_from_db()
+    needs_privacy = not _has_accepted_privacy(privacy_user_id or "")
+
+    # user data
     df = query_user_df(user_key)
     i18n = {"labels": build_i18n_labels(_js_base_labels())}
 
+    # try to get "real" internal user id from data
     kc_user_id = None
     if not df.empty:
         for col in ("userId", "user_id", "kc_user_id"):
@@ -261,13 +376,15 @@ def home():
                 kc_user_id = df[col].dropna().astype(str).iloc[0].strip()
                 break
 
+    # survey url
     survey_user_id = kc_user_id or user_key
     survey_url = _build_sosci_url(survey_user_id)
 
+    # only show survey if user actually has metals-like data
     has_metals = _user_has_metals(df)
     show_survey = bool(survey_url) and has_metals
 
-    # empty state
+    # EMPTY CASE ------------------------------------------------------------
     if df.empty:
         return render_template(
             "results.html",
@@ -282,13 +399,17 @@ def home():
             I18N=i18n,
             survey_url=survey_url,
             show_survey=False,
+            # privacy
+            needs_privacy=needs_privacy,
+            privacy_version=PRIVACY_VERSION,
         )
 
-    # issues
+    # NON-EMPTY: data issues ------------------------------------------------
     defaults = find_default_coord_rows(df)
     mism = annotate_country_mismatches(df)
     issue_count = len(defaults) + len(mism)
 
+    # HTML copy — prettify timestamp column
     df_html = df.copy()
     print("[--------TEST-----------]", df_html.columns, df_html.head())
     if "fs_createdAt" in df_html.columns:
@@ -324,6 +445,9 @@ def home():
         I18N=i18n,
         survey_url=survey_url,
         show_survey=show_survey,
+        # privacy flags for the modal
+        needs_privacy=needs_privacy,
+        privacy_version=PRIVACY_VERSION,
     )
 
 

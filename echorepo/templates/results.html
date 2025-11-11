@@ -105,6 +105,22 @@
       border-bottom: 1px solid #dee2e6;
       vertical-align: top;
     }
+
+    /* privacy doc styling */
+    .privacy-doc {
+      font-size: 0.9rem;
+    }
+    .privacy-section {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .privacy-section:last-child {
+      border-bottom: 0;
+    }
+    .privacy-doc h5 {
+      margin-bottom: .4rem;
+      font-size: 1rem;
+    }
   </style>
 {% endblock %}
 
@@ -269,6 +285,49 @@
   <div id="tableWrap" class="table-wrap bg-white rounded-3 p-2 card-elevated">
     {{ table_html | safe }}
   </div>
+
+  {# ✳️ PRIVACY MODAL GOES HERE, OUTSIDE OF TOOLBAR #}
+  {% if needs_privacy %}
+    <!-- backdrop -->
+    <div class="modal-backdrop fade show" style="opacity:.45;"></div>
+
+    <!-- fixed modal -->
+    <div class="modal show" id="privacyModal"
+        tabindex="-1"
+        style="display:block; position:fixed; inset:0; z-index:1080;">
+      <div class="modal-dialog modal-lg"
+          style="height:100%; max-height:100vh; margin:2.5rem auto;">
+        <div class="modal-content d-flex flex-column"
+            style="height:100%; max-height:calc(100vh - 5rem);">
+          <form method="post" action="{{ url_for('web.privacy_accept') }}" id="privacyForm"
+                class="d-flex flex-column" style="height:100%;">
+            <input type="hidden" name="version" value="{{ privacy_version }}">
+
+            <div class="modal-header flex-shrink-0">
+              <h5 class="modal-title">{{ _('Privacy information') }}</h5>
+            </div>
+
+            <!-- 👇 this is the scrollable area -->
+            <div class="modal-body" style="flex:1 1 auto; overflow-y:auto; min-height:0;">
+              {% include 'privacy/2025-11.html' %}
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" value="1" id="privacyAgree" name="agree" required>
+                <label class="form-check-label" for="privacyAgree">
+                  {{ _('I have read the privacy information above and I consent to the processing of my personal data for this project.') }}
+                </label>
+              </div>
+            </div>
+
+            <div class="modal-footer flex-shrink-0">
+              <button type="submit" class="btn btn-primary" id="privacySubmit" disabled>
+                {{ _('Accept and continue') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -303,4 +362,20 @@
 
   <!-- Your map logic (consumes window.I18N.labels) -->
   <script src="{{ url_for('static', filename='js/map.js') }}?v=8"></script>
+
+  {% if needs_privacy %}
+  <script>
+    (function () {
+      var cb = document.getElementById('privacyAgree');
+      var btn = document.getElementById('privacySubmit');
+      if (cb && btn) {
+        cb.addEventListener('change', function () {
+          btn.disabled = !this.checked;
+        });
+      }
+      // lock background scroll while modal is open
+      document.body.style.overflow = 'hidden';
+    })();
+  </script>
+  {% endif %}
 {% endblock %}
