@@ -68,8 +68,13 @@ echo "[INFO] switching to main..."
 git switch main
 
 echo "[INFO] merging origin/develop into main..."
-git merge --no-ff origin/develop
-
+if ! git merge --no-ff origin/develop; then
+  echo "[WARN] merge had conflicts, trying to auto-resolve docker-compose.prod.yml by keeping main version..."
+  # keep main’s version of the prod compose file
+  git checkout --ours docker-compose.prod.yml
+  git add docker-compose.prod.yml
+  git commit -m "Merge origin/develop into main (auto-resolve docker-compose.prod.yml)"
+fi
 # ---------------------------------------------------------------------------
 # 3) restore into PROD
 # ---------------------------------------------------------------------------
