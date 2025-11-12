@@ -1,6 +1,29 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('Search samples') }}{% endblock %}
 
+{# extra CSS just for this page #}
+{% block extra_css %}
+<style>
+  /* 1) load the font you dropped into static/fonts/ */
+  @font-face {
+    font-family: 'Inconsolata';
+    src: url("{{ url_for('static', filename='fonts/Inconsolata-VariableFont_wdth,wght.ttf') }}") format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+  }
+
+  /* 2) apply only to the result table */
+  .search-results-table {
+    font-family: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.8rem;
+  }
+  .search-results-table td,
+  .search-results-table th {
+    white-space: nowrap;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <h2 class="h4 mb-3">{{ _('Search samples') }}</h2>
 
@@ -58,7 +81,7 @@
 <div class="card">
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0">
+      <table class="table table-sm table-hover mb-0 search-results-table">
         <thead class="table-light">
           <tr>
             <th>{{ _('Sample / QR') }}</th>
