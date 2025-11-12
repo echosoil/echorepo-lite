@@ -23,7 +23,6 @@ JITTER_SALT = os.getenv("JITTER_SALT", "change-this-salt")
 
 # Overwrite original GPS values. If you want to keep originals renamed, set KEEP_ORIGINALS=true
 KEEP_ORIGINALS = os.getenv("KEEP_ORIGINALS", "false").lower() in ("1", "true", "yes")
-print("KEEP_ORIGINALS=", KEEP_ORIGINALS)
 
 # Prefer explicit column names, but also try candidates (case-insensitive)
 PREFERRED_LAT = os.getenv("LAT_COL", "GPS_lat")
