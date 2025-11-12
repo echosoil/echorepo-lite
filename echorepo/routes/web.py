@@ -752,7 +752,7 @@ def lab_upload_post():
 @web_bp.route("/search", endpoint="search_samples", methods=["GET"])
 @login_required
 def search_samples():
-    # read filters from query string
+    # ----- read filters from querystring -----
     criteria = {
         "sample_id": (request.args.get("sample_id") or "").strip(),
         "country_code": (request.args.get("country_code") or "").strip().upper(),
@@ -761,104 +761,159 @@ def search_samples():
         "date_from": (request.args.get("date_from") or "").strip(),
         "date_to": (request.args.get("date_to") or "").strip(),
     }
+    fmt = (request.args.get("format") or "").lower()
 
+    # pagination (for HTML)
     page = max(int(request.args.get("page", 1)), 1)
     per_page = 50
     offset = (page - 1) * per_page
 
-    filters = []
-    params = []
+    # helper to build WHERE + params
+    def _build_where(criteria):
+        where = ["1=1"]
+        params = []
+        if criteria["sample_id"]:
+            where.append("sample_id ILIKE %s")
+            params.append(f"%{criteria['sample_id']}%")
+        if criteria["country_code"]:
+            where.append("country_code = %s")
+            params.append(criteria["country_code"])
+        if criteria["ph_min"]:
+            where.append("ph >= %s")
+            params.append(float(criteria["ph_min"]))
+        if criteria["ph_max"]:
+            where.append("ph <= %s")
+            params.append(float(criteria["ph_max"]))
+        if criteria["date_from"]:
+            where.append("timestamp_utc >= %s")
+            params.append(criteria["date_from"])
+        if criteria["date_to"]:
+            where.append("timestamp_utc <= %s")
+            params.append(criteria["date_to"])
+        return " AND ".join(where), params
 
-    if criteria["sample_id"]:
-        filters.append("s.sample_id ILIKE %s")
-        params.append(f"%{criteria['sample_id']}%")
+    where_sql, params = _build_where(criteria)
 
-    if criteria["country_code"]:
-        filters.append("s.country_code = %s")
-        params.append(criteria["country_code"])
+    # ---- special case: export as ZIP ----
+    if fmt == "zip":
+        import csv, io, zipfile
 
-    if criteria["ph_min"]:
-        filters.append("s.ph >= %s")
-        params.append(criteria["ph_min"])
+        # we need *all* matching sample_ids (no limit)
+        sql_all = f"""
+            SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
+            FROM samples
+            WHERE {where_sql}
+            ORDER BY timestamp_utc DESC
+        """
 
-    if criteria["ph_max"]:
-        filters.append("s.ph <= %s")
-        params.append(criteria["ph_max"])
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            # 1) get all matching samples
+            cur.execute(sql_all, params)
+            samples = cur.fetchall()
+            sample_ids = [row[0] for row in samples if row[0]]
 
-    if criteria["date_from"]:
-        filters.append("s.timestamp_utc >= %s")
-        params.append(criteria["date_from"])
-
-    if criteria["date_to"]:
-        filters.append("s.timestamp_utc <= %s")
-        params.append(criteria["date_to"])
-
-    where_sql = f"WHERE {' AND '.join(filters)}" if filters else ""
-
-    # CSV export of *filtered* data
-    wants_csv = (request.args.get("format") == "csv")
-
-    rows = []
-    total_rows = 0
-    total_pages = 1
-
-    try:
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # count for pagination
-            count_sql = f"SELECT COUNT(*) AS cnt FROM samples s {where_sql}"
-            cur.execute(count_sql, params)
-            total_rows = cur.fetchone()["cnt"]
-            total_pages = (total_rows + per_page - 1) // per_page or 1
-
-            if wants_csv:
-                # export everything that matches the filter
-                export_sql = f"""
-                    SELECT s.sample_id, s.timestamp_utc, s.country_code,
-                           s.ph, s.lat, s.lon, s.collected_by
-                    FROM samples s
-                    {where_sql}
-                    ORDER BY s.timestamp_utc DESC NULLS LAST
-                """
-                cur.execute(export_sql, params)
-                export_rows = cur.fetchall()
-
-                # build CSV in memory
-                output = io.StringIO()
-                writer = csv.writer(output)
-                writer.writerow(["sample_id", "timestamp_utc", "country_code",
-                                 "ph", "lat", "lon", "collected_by"])
-                for r in export_rows:
-                    writer.writerow([
-                        r["sample_id"],
-                        r["timestamp_utc"],
-                        r["country_code"],
-                        r["ph"],
-                        r["lat"],
-                        r["lon"],
-                        r["collected_by"],
-                    ])
-                output.seek(0)
+            # to avoid "IN ()" when no results
+            if not sample_ids:
+                # return empty zip
+                mem = io.BytesIO()
+                with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+                    zf.writestr("samples_filtered.csv", "sample_id,timestamp_utc,country_code,ph,lat,lon,collected_by\n")
+                    zf.writestr("sample_images_filtered.csv", "sample_id,country_code,image_id,image_url,image_description_orig,image_description_en,collected_by,timestamp_utc,licence\n")
+                    zf.writestr("sample_parameters_filtered.csv", "sample_id,country_code,parameter_code,parameter_name,value,uom,analysis_method,analysis_date,lab_id,created_by,licence,parameter_uri\n")
+                mem.seek(0)
                 return send_file(
-                    io.BytesIO(output.read().encode("utf-8")),
-                    mimetype="text/csv",
+                    mem,
                     as_attachment=True,
-                    download_name="samples_filtered.csv",
+                    download_name="search_export.zip",
+                    mimetype="application/zip",
                 )
 
-            # normal paged query
-            data_sql = f"""
-                SELECT s.sample_id, s.timestamp_utc, s.country_code,
-                       s.ph, s.lat, s.lon, s.collected_by
-                FROM samples s
-                {where_sql}
-                ORDER BY s.timestamp_utc DESC NULLS LAST
-                LIMIT %s OFFSET %s
+            # 2) fetch images for those sample_ids
+            sql_imgs = """
+                SELECT sample_id, country_code, image_id, image_url,
+                       image_description_orig, image_description_en,
+                       collected_by, timestamp_utc, licence
+                FROM sample_images
+                WHERE sample_id = ANY(%s)
+                ORDER BY sample_id, image_id
             """
-            cur.execute(data_sql, params + [per_page, offset])
-            rows = cur.fetchall()
-    except Exception as e:
-        # log if you want
-        print("[search] error:", e)
+            cur.execute(sql_imgs, (sample_ids,))
+            images = cur.fetchall()
+
+            # 3) fetch parameters for those sample_ids
+            sql_params = """
+                SELECT sample_id, country_code, parameter_code, parameter_name,
+                       value, uom, analysis_method, analysis_date,
+                       lab_id, created_by, licence, parameter_uri
+                FROM sample_parameters
+                WHERE sample_id = ANY(%s)
+                ORDER BY sample_id, parameter_code
+            """
+            cur.execute(sql_params, (sample_ids,))
+            params_rows = cur.fetchall()
+
+        # build zip in-memory
+        mem = io.BytesIO()
+        with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+            # samples_filtered.csv
+            out1 = io.StringIO()
+            w1 = csv.writer(out1)
+            w1.writerow(["sample_id", "timestamp_utc", "country_code", "ph", "lat", "lon", "collected_by"])
+            for r in samples:
+                w1.writerow(r)
+            zf.writestr("samples_filtered.csv", out1.getvalue())
+
+            # sample_images_filtered.csv
+            out2 = io.StringIO()
+            w2 = csv.writer(out2)
+            w2.writerow(["sample_id", "country_code", "image_id", "image_url",
+                         "image_description_orig", "image_description_en",
+                         "collected_by", "timestamp_utc", "licence"])
+            for r in images:
+                w2.writerow(r)
+            zf.writestr("sample_images_filtered.csv", out2.getvalue())
+
+            # sample_parameters_filtered.csv
+            out3 = io.StringIO()
+            w3 = csv.writer(out3)
+            w3.writerow(["sample_id", "country_code", "parameter_code", "parameter_name",
+                         "value", "uom", "analysis_method", "analysis_date",
+                         "lab_id", "created_by", "licence", "parameter_uri"])
+            for r in params_rows:
+                w3.writerow(r)
+            zf.writestr("sample_parameters_filtered.csv", out3.getvalue())
+
+        mem.seek(0)
+        return send_file(
+            mem,
+            as_attachment=True,
+            download_name="search_export.zip",
+            mimetype="application/zip",
+        )
+
+    # ---- normal HTML search with pagination ----
+    total_rows = 0
+    rows = []
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        # count
+        cur.execute(f"SELECT COUNT(*) FROM samples WHERE {where_sql}", params)
+        total_rows = cur.fetchone()["count"]
+
+        # page
+        cur.execute(
+            f"""
+            SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
+            FROM samples
+            WHERE {where_sql}
+            ORDER BY timestamp_utc DESC
+            LIMIT %s OFFSET %s
+            """,
+            params + [per_page, offset],
+        )
+        rows = cur.fetchall()
+
+    total_pages = max((total_rows + per_page - 1) // per_page, 1)
 
     return render_template(
         "search.html",
@@ -867,5 +922,4 @@ def search_samples():
         page=page,
         total_pages=total_pages,
         total_rows=total_rows,
-        per_page=per_page,
     )
