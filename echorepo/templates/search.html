@@ -1,29 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('Search samples') }}{% endblock %}
 
-{# extra CSS just for this page #}
-{% block extra_css %}
-<style>
-  /* 1) load the font you dropped into static/fonts/ */
-  @font-face {
-    font-family: 'Inconsolata';
-    src: url("{{ url_for('static', filename='fonts/Inconsolata-VariableFont_wdth,wght.ttf') }}") format('truetype');
-    font-weight: 100 900;
-    font-style: normal;
-  }
-
-  /* 2) apply only to the result table */
-  .search-results-table {
-    font-family: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 0.8rem;
-  }
-  .search-results-table td,
-  .search-results-table th {
-    white-space: nowrap;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
 <h2 class="h4 mb-3">{{ _('Search samples') }}</h2>
 
@@ -33,10 +10,27 @@
       <label class="form-label" for="sample_id">{{ _('Sample / QR') }}</label>
       <input type="text" id="sample_id" name="sample_id" value="{{ criteria.sample_id }}" class="form-control">
     </div>
-    <div class="col-md-2">
+
+    <div class="col-md-3">
       <label class="form-label" for="country_code">{{ _('Country') }}</label>
-      <input type="text" id="country_code" name="country_code" value="{{ criteria.country_code }}" class="form-control" placeholder="IT">
+      <select id="country_code" name="country_code" class="form-select">
+        <option value="">{{ _('Any country') }}</option>
+        <option value="GB" {% if criteria.country_code == 'GB' %}selected{% endif %}>United Kingdom</option>
+        <option value="CZ" {% if criteria.country_code == 'CZ' %}selected{% endif %}>Czechia</option>
+        <option value="DE" {% if criteria.country_code == 'DE' %}selected{% endif %}>Germany</option>
+        <option value="GR" {% if criteria.country_code == 'GR' %}selected{% endif %}>Greece</option>
+        <option value="ES" {% if criteria.country_code == 'ES' %}selected{% endif %}>Spain</option>
+        <option value="FI" {% if criteria.country_code == 'FI' %}selected{% endif %}>Finland</option>
+        <option value="FR" {% if criteria.country_code == 'FR' %}selected{% endif %}>France</option>
+        <option value="IT" {% if criteria.country_code == 'IT' %}selected{% endif %}>Italy</option>
+        <option value="NL" {% if criteria.country_code == 'NL' %}selected{% endif %}>Netherlands</option>
+        <option value="PL" {% if criteria.country_code == 'PL' %}selected{% endif %}>Poland</option>
+        <option value="PT" {% if criteria.country_code == 'PT' %}selected{% endif %}>Portugal</option>
+        <option value="RO" {% if criteria.country_code == 'RO' %}selected{% endif %}>Romania</option>
+        <option value="SK" {% if criteria.country_code == 'SK' %}selected{% endif %}>Slovakia</option>
+      </select>
     </div>
+
     <div class="col-md-2">
       <label class="form-label" for="ph_min">{{ _('pH min') }}</label>
       <input type="number" step="0.1" id="ph_min" name="ph_min" value="{{ criteria.ph_min }}" class="form-control">
@@ -45,7 +39,7 @@
       <label class="form-label" for="ph_max">{{ _('pH max') }}</label>
       <input type="number" step="0.1" id="ph_max" name="ph_max" value="{{ criteria.ph_max }}" class="form-control">
     </div>
-    <div class="col-md-3 text-md-end">
+    <div class="col-md-2 text-md-end">
       <button type="submit" class="btn btn-primary mt-3 mt-md-0">
         <i class="bi bi-search"></i> {{ _('Search') }}
       </button>
@@ -81,7 +75,7 @@
 <div class="card">
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0 search-results-table">
+      <table class="table table-sm table-hover mb-0 sample-table">
         <thead class="table-light">
           <tr>
             <th>{{ _('Sample / QR') }}</th>
@@ -169,4 +163,17 @@
   </div>
   {% endif %}
 </div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* keep the earlier monospaced style if you want aligned columns */
+  .sample-table td,
+  .sample-table th {
+    font-family: "Inconsolata", ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+</style>
 {% endblock %}
