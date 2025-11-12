@@ -111,7 +111,10 @@
         txt.setAttribute('x', String(tick + 2));
         txt.setAttribute('y', String(y + 3));
         txt.setAttribute('font-size', String(font));
-        txt.setAttribute('font-family', 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif');
+        txt.setAttribute(
+          'font-family',
+          'Satoshi, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif'
+        );
         txt.setAttribute('fill', 'rgba(0,0,0,0.65)');
         txt.setAttribute('paint-order', 'stroke');
         txt.setAttribute('stroke', 'white');
@@ -142,7 +145,10 @@
         txt.setAttribute('x', String(x));
         txt.setAttribute('y', String(size.y - tick - pad));
         txt.setAttribute('font-size', String(font));
-        txt.setAttribute('font-family', 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif');
+        txt.setAttribute(
+          'font-family',
+          'Satoshi, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif'
+        );
         txt.setAttribute('fill', 'rgba(0,0,0,0.65)');
         txt.setAttribute('paint-order', 'stroke');
         txt.setAttribute('stroke', 'white');
