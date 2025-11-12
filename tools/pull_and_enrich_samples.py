@@ -6,10 +6,10 @@ Steps:
   1) Read Firestore "samples" (collection group), flatten, mirror images to MinIO.
   2) Enrich with Firebase Auth emails.
   3) Write CSVs:
-       - RAW_CSV            (flattened raw)
-       - ENRICHED_CSV       (flattened + email)
+       - INPUT_CSV            (flattened raw)
+       - OUTPUT_CSV       (flattened + email)
        - USERS_CSV          (distinct emails)
-  4) Refresh local SQLite from ENRICHED_CSV (like refresh_sqlite.py) but KEEP lab_enrichment.
+  4) Refresh local SQLite from OUTPUT_CSV (like refresh_sqlite.py) but KEEP lab_enrichment.
   5) Build canonical 3-file export (samples.csv, sample_images.csv, sample_parameters.csv),
      where sample_parameters are read from THAT SQLite.
   6) Upload canonical files to MinIO under canonical/.
@@ -41,6 +41,7 @@ from shapely.geometry import shape as shp_shape, Point
 
 import numpy as np
 
+
 # ---------------------------------------------------------------------------
 # 0. load env and basic paths
 # ---------------------------------------------------------------------------
@@ -49,18 +50,42 @@ load_dotenv(dotenv_path=env_path)
 print(f"[INFO] Loaded environment from {env_path}")
 
 PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
-# Firestore output CSVs
-INPUT_CSV = os.getenv("INPUT_CSV", "/data/echorepo_samples.csv")
-INPUT_CSV = INPUT_CSV if not INPUT_CSV.startswith("/") else INPUT_CSV[1:]
-OUTPUT_CSV = os.getenv("OUTPUT_CSV", "/data/echorepo_samples_with_email.csv")
-OUTPUT_CSV = OUTPUT_CSV if not OUTPUT_CSV.startswith("/") else OUTPUT_CSV[1:]
-USERS_CSV = os.getenv("USERS_CSV", "/data/users.csv")
-USERS_CSV = USERS_CSV if not USERS_CSV.startswith("/") else USERS_CSV[1:]
+# helper: QR to country code
+try:
+    from echorepo.services.planned import load_qr_to_planned
+    print("[INFO] imported load_qr_to_planned from echorepo.services.planned")
+except Exception:
+    load_qr_to_planned = None  # we'll guard later
 
-RAW_CSV = str(PROJECT_ROOT / INPUT_CSV)
-ENRICHED_CSV = str(PROJECT_ROOT / OUTPUT_CSV)
-USERS_CSV = str(PROJECT_ROOT / USERS_CSV)
+try:
+    # optional: reuse your parsing / jitter helpers if you like
+    from echorepo.utils.geo import _parse_coord as geo_parse_coord
+except Exception:
+    geo_parse_coord = None
+
+from echorepo.utils.load_csv import (
+    _parse_coord as lc_parse_coord,
+    deterministic_jitter as lc_det_jitter,
+    _choose_stable_key as lc_choose_key,
+    MAX_JITTER_METERS as LC_MAX_JITTER_METERS,
+)
+
+# helper to convert local or absolute paths to project-root-relative paths
+def _local_path_to_abs(maybe_path: str) -> str:
+    p = Path(maybe_path)
+    if p.is_absolute():
+        if p.exists():
+            return str(p)
+        alt = PROJECT_ROOT / p.relative_to("/")
+        return str(alt)
+    return str(PROJECT_ROOT / p)
+
+USERS_CSV = _local_path_to_abs(os.getenv("USERS_CSV", "/data/users.csv"))
+PLANNED_XLSX = _local_path_to_abs(os.getenv("PLANNED_XLSX", "/echorepo/utils/data/planned.xlsx"))
+INPUT_CSV = _local_path_to_abs(os.getenv("INPUT_CSV", "/data/echorepo_samples.csv"))
+OUTPUT_CSV = _local_path_to_abs(os.getenv("OUTPUT_CSV", "/data/echorepo_samples_with_email.csv"))
 
 # location jitter in meters
 MAX_JITTER_METERS = int(os.getenv("MAX_JITTER_METERS", "1000"))
@@ -70,7 +95,7 @@ PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", None)
 FBS_PREFIX = "https://firebasestorage.googleapis.com/"
 
 # SQLite path
-SQLITE_PATH = os.getenv("SQLITE_PATH", str(PROJECT_ROOT / "data" / "db" / "echo.db"))
+SQLITE_PATH = _local_path_to_abs(os.getenv("SQLITE_PATH", "/data/db/echo.db"))
 LAB_ENRICHMENT_DB = os.getenv("LAB_ENRICHMENT_DB", SQLITE_PATH)
 
 # MinIO config
@@ -119,9 +144,7 @@ except Exception:
 def init_firebase():
     if firebase_admin._apps:
         return
-    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
-    if creds_path.startswith("/keys"):
-        creds_path = str(PROJECT_ROOT / creds_path[1:])
+    creds_path = _local_path_to_abs(os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json"))
     if not creds_path or not os.path.exists(creds_path):
         print(f"[ERROR] Service account JSON not found: {creds_path}")
         sys.exit(1)
@@ -535,11 +558,11 @@ def _restore_lab_enrichment(db_path: str, backup):
     conn.commit()
     conn.close()
 
-def refresh_sqlite_from_csv(enriched_csv: str, sqlite_path: str):
+def refresh_sqlite_from_csv(OUTPUT_CSV: str, sqlite_path: str):
     sys.path.insert(0, str(PROJECT_ROOT))
     from echorepo.utils.load_csv import ensure_sqlite
 
-    csv_path = _resolve_path(enriched_csv)
+    csv_path = _resolve_path(OUTPUT_CSV)
     db_path = _resolve_path(sqlite_path)
 
     os.environ["CSV_PATH"] = csv_path
@@ -565,16 +588,94 @@ def refresh_sqlite_from_csv(enriched_csv: str, sqlite_path: str):
 # ---------------------------------------------------------------------------
 # canonical builders
 # ---------------------------------------------------------------------------
-def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
+def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | None = None) -> pd.DataFrame:
+    planned_map = planned_map or {}
     rows = []
-    for _, r in df_flat.iterrows():
-        lat = r.get("GPS_lat")
-        lon = r.get("GPS_long")
-        country = r.get("country_code") or latlon_to_country_code(lat, lon)
+    debug_missing = []   # collect rows that still have no country
 
-        qr = norm_qr_for_id(r.get("QR_qrCode"))
-        sample_id = qr or r.get("sampleId")
+    for idx, r in df_flat.iterrows():
+        # --- 0) IDs / QR
+        qr_raw = r.get("QR_qrCode")
+        qr_norm = norm_qr_for_id(qr_raw)
+        sample_id = qr_norm or r.get("sampleId")
 
+        # --- 1) get original coords from Firestore
+        orig_lat = r.get("GPS_lat")
+        orig_lon = r.get("GPS_long")
+
+        # normalize to float using existing helpers
+        lat_f = None
+        lon_f = None
+
+        # prefer load_csv parser (you already imported it)
+        if lc_parse_coord is not None:
+            lat_f = lc_parse_coord(orig_lat, "lat")
+            lon_f = lc_parse_coord(orig_lon, "lon")
+        elif geo_parse_coord is not None:
+            lat_f = geo_parse_coord(orig_lat, "lat")
+            lon_f = geo_parse_coord(orig_lon, "lon")
+        else:
+            # ultra simple fallback
+            try:
+                lat_f = float(orig_lat) if orig_lat not in (None, "") else None
+                lon_f = float(orig_lon) if orig_lon not in (None, "") else None
+            except Exception:
+                lat_f = lon_f = None
+
+        # --- 2) country from ORIGINAL coords
+        orig_country = ""
+        if lat_f is not None and lon_f is not None:
+            try:
+                orig_country = latlon_to_country_code(lat_f, lon_f) or ""
+            except Exception as e:
+                orig_country = ""
+                # we could print here, but let's collect below
+
+        # --- 3) country from PLANNED file (by QR)
+        planned_country = ""
+        if qr_norm and qr_norm in planned_map:
+            s = planned_map[qr_norm]
+            if len(s) == 1:
+                planned_country = next(iter(s))
+            elif s:
+                planned_country = sorted(s)[0]
+
+        # --- 4) jittered coords (we actually want to use the same jitter as SQLite)
+        # if you want to actually jitter here, do it deterministically:
+        lat_j = lat_f
+        lon_j = lon_f
+        if lat_f is not None and lon_f is not None and lc_det_jitter is not None:
+            key = sample_id or r.get("userId") or str(idx)
+            lat_j, lon_j = lc_det_jitter(lat_f, lon_f, key, LC_MAX_JITTER_METERS)
+
+        # --- 5) country from jittered coords
+        jitter_country = ""
+        if lat_j is not None and lon_j is not None:
+            try:
+                jitter_country = latlon_to_country_code(lat_j, lon_j) or ""
+            except Exception:
+                jitter_country = ""
+
+        # --- 6) final pick
+        country = jitter_country or planned_country or orig_country
+
+        if not country:
+            debug_missing.append({
+                "row_index": idx,
+                "sample_id": sample_id,
+                "qr": qr_norm,
+                "orig_lat": orig_lat,
+                "orig_lon": orig_lon,
+                "lat_f": lat_f,
+                "lon_f": lon_f,
+                "jitter_lat": lat_j,
+                "jitter_lon": lon_j,
+                "orig_country": orig_country,
+                "jitter_country": jitter_country,
+                "planned_country": planned_country,
+            })
+
+        # contamination
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
         cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
         cont_other_orig = r.get("SOIL_CONTAMINATION_comments") or ""
@@ -587,8 +688,8 @@ def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         rows.append({
             "sample_id": sample_id,
             "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
-            "lat": lat,
-            "lon": lon,
+            "lat": lat_j,
+            "lon": lon_j,
             "country_code": country,
             "location_accuracy_m": MAX_JITTER_METERS,
             "ph": r.get("PH_ph"),
@@ -607,6 +708,14 @@ def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
             "qa_status": r.get("QA_state") or "",
             "licence": DEFAULT_LICENCE,
         })
+
+    # --- write a tiny diag file so you can open it
+    if debug_missing:
+        diag_path = PROJECT_ROOT / "data" / "canonical" / "country_missing_diag.csv"
+        os.makedirs(diag_path.parent, exist_ok=True)
+        pd.DataFrame(debug_missing).to_csv(diag_path, index=False)
+        print(f"[DIAG] wrote {len(debug_missing)} rows with missing country to {diag_path}")
+
     return pd.DataFrame(rows)
 
 def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
@@ -1065,7 +1174,7 @@ def main():
         if col in df_raw.columns:
             df_raw[col] = df_raw[col].apply(_ts_to_iso_loose)
             
-    write_csv_atomic(df_raw, RAW_CSV)
+    write_csv_atomic(df_raw, INPUT_CSV)
 
     # 2) enrich with emails
     uid_to_email = fetch_uid_to_email()
@@ -1080,21 +1189,30 @@ def main():
         if col in df_enriched.columns:
             df_enriched[col] = df_enriched[col].apply(_ts_to_iso_loose)
 
-    write_csv_atomic(df_enriched, ENRICHED_CSV)
+    write_csv_atomic(df_enriched, OUTPUT_CSV)
 
     # 3) users.csv
     df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
     write_csv_atomic(df_users, USERS_CSV)
 
-    # 4) refresh sqlite from ENRICHED_CSV, preserve lab_enrichment
-    refreshed_db_path = refresh_sqlite_from_csv(ENRICHED_CSV, SQLITE_PATH)
+    # 4) refresh sqlite from OUTPUT_CSV, preserve lab_enrichment
+    refreshed_db_path = refresh_sqlite_from_csv(OUTPUT_CSV, SQLITE_PATH)
+    
+    # 5) load planned QR -> country map
+    planned_map = {}
+    if load_qr_to_planned is not None:
+        try:
+            planned_map = load_qr_to_planned(PLANNED_XLSX)
+            print(f"[INFO] loaded planned QR countries: {len(planned_map)} entries")
+        except Exception as e:
+            print(f"[WARN] could not load planned QR countries: {e}")
 
-    # 5) build canonical export
+    # 6) build canonical export
     if not df_enriched.empty:
         canon_dir = PROJECT_ROOT / "data" / "canonical"
         canon_dir.mkdir(parents=True, exist_ok=True)
 
-        samples_df = build_samples_df(df_enriched)
+        samples_df = build_samples_df(df_enriched, planned_map=planned_map)
         images_df = build_sample_images_df(df_enriched)
         params_df = build_sample_parameters_df_from_sqlite(df_enriched, refreshed_db_path)
 
@@ -1106,7 +1224,7 @@ def main():
             .str.strip()
         )
 
-        # log orphaned parameters
+        # 1a) log orphaned parameters
         orphan_params = params_df[~params_df["sample_id"].isin(valid_sample_ids)]
         orphan_params.to_csv("data/canonical/orphan_sample_parameters.csv", index=False)
 
@@ -1157,7 +1275,7 @@ def main():
         if not params_df.empty and "value" in params_df.columns:
             params_df["value"] = params_df["value"].apply(_clean_float_val)        
 
-        # 5a) write canonical CSVs
+        # 4a) write canonical CSVs
         samples_path = canon_dir / "samples.csv"
         images_path = canon_dir / "sample_images.csv"
         params_path = canon_dir / "sample_parameters.csv"
@@ -1167,7 +1285,7 @@ def main():
         write_csv_atomic(params_df, str(params_path))
         print("[OK] Wrote canonical 3-file export.")
 
-        # 5b) produce all.zip locally
+        # 4b) produce all.zip locally
         all_zip_path = canon_dir / "all.zip"
         with zipfile.ZipFile(all_zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.write(samples_path, arcname="samples.csv")
@@ -1175,19 +1293,19 @@ def main():
             zf.write(params_path, arcname="sample_parameters.csv")
         print(f"[OK] Wrote {all_zip_path}")
 
-        # 6) upload canonical files to MinIO (so Flask can just redirect)
+        # 5) upload canonical files to MinIO (so Flask can just redirect)
         upload_canonical_to_minio(minio_client, samples_path, "samples.csv")
         upload_canonical_to_minio(minio_client, images_path, "sample_images.csv")
         upload_canonical_to_minio(minio_client, params_path, "sample_parameters.csv")
         upload_canonical_to_minio(minio_client, all_zip_path, "all.zip")
 
-        # 7) optional: Postgres (just ensuring tables for now)
+        # 6) optional: Postgres (just ensuring tables for now)
         try:
             ensure_pg_tables()
         except Exception as e:
             print(f"[WARN] Could not ensure Postgres tables: {e}")
 
-        # 8) optional: load into Postgres staging + swap
+        # 7) optional: load into Postgres staging + swap
         try:
             load_canonical_into_pg_staging(
                 str(samples_path),
