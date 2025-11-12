@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-12 12:43+0000\n"
+"POT-Creation-Date: 2025-11-12 13:09+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ro\n"
@@ -79,7 +79,7 @@ msgstr "Codul QR"
 
 #: /work/echorepo/routes/web.py:206 /work/echorepo/templates/results.html:243
 #: /work/echorepo/templates/results1.html:253
-#: /work/echorepo/templates/search.html:90
+#: /work/echorepo/templates/search.html:83
 msgid "pH"
 msgstr "p H"
 
@@ -263,12 +263,12 @@ msgid "QR"
 msgstr "QR"
 
 #: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:71
-#: /work/echorepo/templates/search.html:91
+#: /work/echorepo/templates/search.html:84
 msgid "Lat"
 msgstr "Lat"
 
 #: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:72
-#: /work/echorepo/templates/search.html:92
+#: /work/echorepo/templates/search.html:85
 msgid "Lon"
 msgstr "Lon"
 
@@ -364,7 +364,7 @@ msgstr "Descărcați toate eșantioanele (CSV)"
 
 #: /work/echorepo/templates/results.html:13
 #: /work/echorepo/templates/results.html:119 /work/echorepo/templates/search.html:2
-#: /work/echorepo/templates/search.html:28
+#: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Probe de căutare"
 
@@ -619,59 +619,111 @@ msgstr "Acceptă şi continuă"
 msgid "Copy user key"
 msgstr "Copiază tasta utilizator"
 
-#: /work/echorepo/templates/search.html:33 /work/echorepo/templates/search.html:87
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:80
 msgid "Sample / QR"
 msgstr "Mostră / QR"
 
-#: /work/echorepo/templates/search.html:37 /work/echorepo/templates/search.html:89
+#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:82
 msgid "Country"
 msgstr "Țara"
 
-#: /work/echorepo/templates/search.html:41
+#: /work/echorepo/templates/search.html:17
+msgid "Czechia"
+msgstr "Cehia"
+
+#: /work/echorepo/templates/search.html:18
+msgid "Germany"
+msgstr "Germania"
+
+#: /work/echorepo/templates/search.html:19
+msgid "Spain"
+msgstr "Spania"
+
+#: /work/echorepo/templates/search.html:20
+msgid "Finland"
+msgstr "Finlanda"
+
+#: /work/echorepo/templates/search.html:21
+msgid "France"
+msgstr "Franța"
+
+#: /work/echorepo/templates/search.html:22
+msgid "United Kingdom"
+msgstr "Regatul Unit"
+
+#: /work/echorepo/templates/search.html:23
+msgid "Greece"
+msgstr "Grecia"
+
+#: /work/echorepo/templates/search.html:24
+msgid "Italy"
+msgstr "Italia"
+
+#: /work/echorepo/templates/search.html:25
+msgid "Netherlands"
+msgstr "Țările de Jos"
+
+#: /work/echorepo/templates/search.html:26
+msgid "Poland"
+msgstr "Polonia"
+
+#: /work/echorepo/templates/search.html:27
+msgid "Portugal"
+msgstr "Portugalia"
+
+#: /work/echorepo/templates/search.html:28
+msgid "Romania"
+msgstr "România"
+
+#: /work/echorepo/templates/search.html:29
+msgid "Slovakia"
+msgstr "Slovacia"
+
+#: /work/echorepo/templates/search.html:34
 msgid "pH min"
 msgstr "p H min"
 
-#: /work/echorepo/templates/search.html:45
+#: /work/echorepo/templates/search.html:38
 msgid "pH max"
 msgstr "p H max"
 
-#: /work/echorepo/templates/search.html:50
+#: /work/echorepo/templates/search.html:43
 msgid "Search"
 msgstr "Caută"
 
-#: /work/echorepo/templates/search.html:57
+#: /work/echorepo/templates/search.html:50
 msgid "Date from"
 msgstr "Data de la"
 
-#: /work/echorepo/templates/search.html:61
+#: /work/echorepo/templates/search.html:54
 msgid "Date to"
 msgstr "Data la"
 
-#: /work/echorepo/templates/search.html:75
+#: /work/echorepo/templates/search.html:68
 msgid "Export current search"
 msgstr "Exportă căutarea curentă"
 
-#: /work/echorepo/templates/search.html:88
+#: /work/echorepo/templates/search.html:81
 msgid "Timestamp"
 msgstr "Timestamp"
 
-#: /work/echorepo/templates/search.html:93
+#: /work/echorepo/templates/search.html:86
 msgid "Collected by"
 msgstr "Colectat de"
 
-#: /work/echorepo/templates/search.html:112
+#: /work/echorepo/templates/search.html:105
 msgid "No results for these filters."
 msgstr "Niciun rezultat pentru aceste filtre."
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "Showing page"
 msgstr "Afișează pagina"
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "of"
 msgstr "din"
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "results"
 msgstr "rezultate"
 
@@ -689,4 +741,7 @@ msgstr "rezultate"
 #~ "Unele probe au nevoie de atenție "
 #~ "pentru a asigura hărți și descărcări "
 #~ "corecte."
+
+#~ msgid "Any country"
+#~ msgstr "Orice țară"
 

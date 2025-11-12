@@ -14,20 +14,19 @@
     <div class="col-md-3">
       <label class="form-label" for="country_code">{{ _('Country') }}</label>
       <select id="country_code" name="country_code" class="form-select">
-        <option value="">{{ _('Any country') }}</option>
-        <option value="GB" {% if criteria.country_code == 'GB' %}selected{% endif %}>United Kingdom</option>
-        <option value="CZ" {% if criteria.country_code == 'CZ' %}selected{% endif %}>Czechia</option>
-        <option value="DE" {% if criteria.country_code == 'DE' %}selected{% endif %}>Germany</option>
-        <option value="GR" {% if criteria.country_code == 'GR' %}selected{% endif %}>Greece</option>
-        <option value="ES" {% if criteria.country_code == 'ES' %}selected{% endif %}>Spain</option>
-        <option value="FI" {% if criteria.country_code == 'FI' %}selected{% endif %}>Finland</option>
-        <option value="FR" {% if criteria.country_code == 'FR' %}selected{% endif %}>France</option>
-        <option value="IT" {% if criteria.country_code == 'IT' %}selected{% endif %}>Italy</option>
-        <option value="NL" {% if criteria.country_code == 'NL' %}selected{% endif %}>Netherlands</option>
-        <option value="PL" {% if criteria.country_code == 'PL' %}selected{% endif %}>Poland</option>
-        <option value="PT" {% if criteria.country_code == 'PT' %}selected{% endif %}>Portugal</option>
-        <option value="RO" {% if criteria.country_code == 'RO' %}selected{% endif %}>Romania</option>
-        <option value="SK" {% if criteria.country_code == 'SK' %}selected{% endif %}>Slovakia</option>
+        <option value="CZ" {% if criteria.country_code == 'CZ' %}selected{% endif %}>{{ _('Czechia') }}</option>
+        <option value="DE" {% if criteria.country_code == 'DE' %}selected{% endif %}>{{ _('Germany') }}</option>
+        <option value="ES" {% if criteria.country_code == 'ES' %}selected{% endif %}>{{ _('Spain') }}</option>
+        <option value="FI" {% if criteria.country_code == 'FI' %}selected{% endif %}>{{ _('Finland') }}</option>
+        <option value="FR" {% if criteria.country_code == 'FR' %}selected{% endif %}>{{ _('France') }}</option>
+        <option value="GB" {% if criteria.country_code == 'GB' %}selected{% endif %}>{{ _('United Kingdom') }}</option>
+        <option value="GR" {% if criteria.country_code == 'GR' %}selected{% endif %}>{{ _('Greece') }}</option>
+        <option value="IT" {% if criteria.country_code == 'IT' %}selected{% endif %}>{{ _('Italy') }}</option>
+        <option value="NL" {% if criteria.country_code == 'NL' %}selected{% endif %}>{{ _('Netherlands') }}</option>
+        <option value="PL" {% if criteria.country_code == 'PL' %}selected{% endif %}>{{ _('Poland') }}</option>
+        <option value="PT" {% if criteria.country_code == 'PT' %}selected{% endif %}>{{ _('Portugal') }}</option>
+        <option value="RO" {% if criteria.country_code == 'RO' %}selected{% endif %}>{{ _('Romania') }}</option>
+        <option value="SK" {% if criteria.country_code == 'SK' %}selected{% endif %}>{{ _('Slovakia') }}</option>
       </select>
     </div>
 

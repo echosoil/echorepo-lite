@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-12 12:43+0000\n"
+"POT-Creation-Date: 2025-11-12 13:09+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -78,7 +78,7 @@ msgstr "Code QR"
 
 #: /work/echorepo/routes/web.py:206 /work/echorepo/templates/results.html:243
 #: /work/echorepo/templates/results1.html:253
-#: /work/echorepo/templates/search.html:90
+#: /work/echorepo/templates/search.html:83
 msgid "pH"
 msgstr "p H"
 
@@ -264,12 +264,12 @@ msgid "QR"
 msgstr "QR"
 
 #: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:71
-#: /work/echorepo/templates/search.html:91
+#: /work/echorepo/templates/search.html:84
 msgid "Lat"
 msgstr "Lat"
 
 #: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:72
-#: /work/echorepo/templates/search.html:92
+#: /work/echorepo/templates/search.html:85
 msgid "Lon"
 msgstr "Lon"
 
@@ -365,7 +365,7 @@ msgstr "Télécharger tous les échantillons (CSV)"
 
 #: /work/echorepo/templates/results.html:13
 #: /work/echorepo/templates/results.html:119 /work/echorepo/templates/search.html:2
-#: /work/echorepo/templates/search.html:28
+#: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Échantillons de recherche"
 
@@ -620,59 +620,111 @@ msgstr "Accepter et poursuivre"
 msgid "Copy user key"
 msgstr "Copier la clé utilisateur"
 
-#: /work/echorepo/templates/search.html:33 /work/echorepo/templates/search.html:87
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:80
 msgid "Sample / QR"
 msgstr "Échantillon / QR"
 
-#: /work/echorepo/templates/search.html:37 /work/echorepo/templates/search.html:89
+#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:82
 msgid "Country"
 msgstr "Pays"
 
-#: /work/echorepo/templates/search.html:41
+#: /work/echorepo/templates/search.html:17
+msgid "Czechia"
+msgstr "République tchèque"
+
+#: /work/echorepo/templates/search.html:18
+msgid "Germany"
+msgstr "Allemagne"
+
+#: /work/echorepo/templates/search.html:19
+msgid "Spain"
+msgstr "Espagne"
+
+#: /work/echorepo/templates/search.html:20
+msgid "Finland"
+msgstr "Finlande"
+
+#: /work/echorepo/templates/search.html:21
+msgid "France"
+msgstr "France"
+
+#: /work/echorepo/templates/search.html:22
+msgid "United Kingdom"
+msgstr "Royaume-Uni"
+
+#: /work/echorepo/templates/search.html:23
+msgid "Greece"
+msgstr "Grèce"
+
+#: /work/echorepo/templates/search.html:24
+msgid "Italy"
+msgstr "Italie"
+
+#: /work/echorepo/templates/search.html:25
+msgid "Netherlands"
+msgstr "Belgique"
+
+#: /work/echorepo/templates/search.html:26
+msgid "Poland"
+msgstr "Pologne"
+
+#: /work/echorepo/templates/search.html:27
+msgid "Portugal"
+msgstr "Espagne"
+
+#: /work/echorepo/templates/search.html:28
+msgid "Romania"
+msgstr "Roumanie"
+
+#: /work/echorepo/templates/search.html:29
+msgid "Slovakia"
+msgstr "Slovaquie"
+
+#: /work/echorepo/templates/search.html:34
 msgid "pH min"
 msgstr "p H min"
 
-#: /work/echorepo/templates/search.html:45
+#: /work/echorepo/templates/search.html:38
 msgid "pH max"
 msgstr "p H max"
 
-#: /work/echorepo/templates/search.html:50
+#: /work/echorepo/templates/search.html:43
 msgid "Search"
 msgstr "Rechercher"
 
-#: /work/echorepo/templates/search.html:57
+#: /work/echorepo/templates/search.html:50
 msgid "Date from"
 msgstr "Date"
 
-#: /work/echorepo/templates/search.html:61
+#: /work/echorepo/templates/search.html:54
 msgid "Date to"
 msgstr "À ce jour"
 
-#: /work/echorepo/templates/search.html:75
+#: /work/echorepo/templates/search.html:68
 msgid "Export current search"
 msgstr "Exporter la recherche actuelle"
 
-#: /work/echorepo/templates/search.html:88
+#: /work/echorepo/templates/search.html:81
 msgid "Timestamp"
 msgstr "Timbre"
 
-#: /work/echorepo/templates/search.html:93
+#: /work/echorepo/templates/search.html:86
 msgid "Collected by"
 msgstr "Collecte par"
 
-#: /work/echorepo/templates/search.html:112
+#: /work/echorepo/templates/search.html:105
 msgid "No results for these filters."
 msgstr "Aucun résultat pour ces filtres."
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "Showing page"
 msgstr "Afficher la page"
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "of"
 msgstr "des"
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "results"
 msgstr "résultats"
 
@@ -691,4 +743,7 @@ msgstr "résultats"
 #~ "d'une attention particulière afin d'assurer "
 #~ "l'exactitude des cartes et des "
 #~ "téléchargements."
+
+#~ msgid "Any country"
+#~ msgstr "Tout pays"
 

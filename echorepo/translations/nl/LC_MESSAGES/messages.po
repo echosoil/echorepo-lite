@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-12 12:43+0000\n"
+"POT-Creation-Date: 2025-11-12 13:09+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -78,7 +78,7 @@ msgstr "QR-code"
 
 #: /work/echorepo/routes/web.py:206 /work/echorepo/templates/results.html:243
 #: /work/echorepo/templates/results1.html:253
-#: /work/echorepo/templates/search.html:90
+#: /work/echorepo/templates/search.html:83
 msgid "pH"
 msgstr "p H"
 
@@ -262,12 +262,12 @@ msgid "QR"
 msgstr "QR"
 
 #: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:71
-#: /work/echorepo/templates/search.html:91
+#: /work/echorepo/templates/search.html:84
 msgid "Lat"
 msgstr "Lat"
 
 #: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:72
-#: /work/echorepo/templates/search.html:92
+#: /work/echorepo/templates/search.html:85
 msgid "Lon"
 msgstr "Lon"
 
@@ -363,7 +363,7 @@ msgstr "Alle monsters downloaden (CSV)"
 
 #: /work/echorepo/templates/results.html:13
 #: /work/echorepo/templates/results.html:119 /work/echorepo/templates/search.html:2
-#: /work/echorepo/templates/search.html:28
+#: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Zoekmonsters"
 
@@ -616,59 +616,111 @@ msgstr "Accepteren en voortzetten"
 msgid "Copy user key"
 msgstr "Gebruikerssleutel kopiëren"
 
-#: /work/echorepo/templates/search.html:33 /work/echorepo/templates/search.html:87
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:80
 msgid "Sample / QR"
 msgstr "Monster / QR"
 
-#: /work/echorepo/templates/search.html:37 /work/echorepo/templates/search.html:89
+#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:82
 msgid "Country"
 msgstr "Land"
 
-#: /work/echorepo/templates/search.html:41
+#: /work/echorepo/templates/search.html:17
+msgid "Czechia"
+msgstr "Tsjechië"
+
+#: /work/echorepo/templates/search.html:18
+msgid "Germany"
+msgstr "Duitsland"
+
+#: /work/echorepo/templates/search.html:19
+msgid "Spain"
+msgstr "Spanje"
+
+#: /work/echorepo/templates/search.html:20
+msgid "Finland"
+msgstr "Finland"
+
+#: /work/echorepo/templates/search.html:21
+msgid "France"
+msgstr "Frankrijk"
+
+#: /work/echorepo/templates/search.html:22
+msgid "United Kingdom"
+msgstr "Verenigd Koninkrijk"
+
+#: /work/echorepo/templates/search.html:23
+msgid "Greece"
+msgstr "Griekenland"
+
+#: /work/echorepo/templates/search.html:24
+msgid "Italy"
+msgstr "Italië"
+
+#: /work/echorepo/templates/search.html:25
+msgid "Netherlands"
+msgstr "Nederland"
+
+#: /work/echorepo/templates/search.html:26
+msgid "Poland"
+msgstr "Polen"
+
+#: /work/echorepo/templates/search.html:27
+msgid "Portugal"
+msgstr "Portugal"
+
+#: /work/echorepo/templates/search.html:28
+msgid "Romania"
+msgstr "Roemenië"
+
+#: /work/echorepo/templates/search.html:29
+msgid "Slovakia"
+msgstr "Slowakije"
+
+#: /work/echorepo/templates/search.html:34
 msgid "pH min"
 msgstr "p H min"
 
-#: /work/echorepo/templates/search.html:45
+#: /work/echorepo/templates/search.html:38
 msgid "pH max"
 msgstr "p H max"
 
-#: /work/echorepo/templates/search.html:50
+#: /work/echorepo/templates/search.html:43
 msgid "Search"
 msgstr "Zoeken"
 
-#: /work/echorepo/templates/search.html:57
+#: /work/echorepo/templates/search.html:50
 msgid "Date from"
 msgstr "Datum"
 
-#: /work/echorepo/templates/search.html:61
+#: /work/echorepo/templates/search.html:54
 msgid "Date to"
 msgstr "Datum tot"
 
-#: /work/echorepo/templates/search.html:75
+#: /work/echorepo/templates/search.html:68
 msgid "Export current search"
 msgstr "Huidige zoekopdracht exporteren"
 
-#: /work/echorepo/templates/search.html:88
+#: /work/echorepo/templates/search.html:81
 msgid "Timestamp"
 msgstr "Tijdstempel"
 
-#: /work/echorepo/templates/search.html:93
+#: /work/echorepo/templates/search.html:86
 msgid "Collected by"
 msgstr "Verzameld door"
 
-#: /work/echorepo/templates/search.html:112
+#: /work/echorepo/templates/search.html:105
 msgid "No results for these filters."
 msgstr "Geen resultaten voor deze filters."
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "Showing page"
 msgstr "Resultaat pagina"
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "of"
 msgstr "van"
 
-#: /work/echorepo/templates/search.html:124
+#: /work/echorepo/templates/search.html:117
 msgid "results"
 msgstr "resultaten"
 
@@ -686,4 +738,7 @@ msgstr "resultaten"
 #~ "Sommige samples hebben aandacht nodig om "
 #~ "te zorgen voor correcte kaarten en "
 #~ "downloads."
+
+#~ msgid "Any country"
+#~ msgstr "Elk land"
 
