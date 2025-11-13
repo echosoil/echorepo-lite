@@ -83,7 +83,7 @@ def _local_path_to_abs(maybe_path: str) -> str:
     return str(PROJECT_ROOT / p)
 
 USERS_CSV = _local_path_to_abs(os.getenv("USERS_CSV", "/data/users.csv"))
-PLANNED_XLSX = _local_path_to_abs(os.getenv("PLANNED_XLSX", "/echorepo/utils/data/planned.xlsx"))
+PLANNED_XLSX = _local_path_to_abs(os.getenv("PLANNED_XLSX", "/data/utils/planned.xlsx"))
 INPUT_CSV = _local_path_to_abs(os.getenv("INPUT_CSV", "/data/echorepo_samples.csv"))
 OUTPUT_CSV = _local_path_to_abs(os.getenv("OUTPUT_CSV", "/data/echorepo_samples_with_email.csv"))
 
@@ -260,6 +260,68 @@ def latlon_to_country_code(lat, lon):
 # ---------------------------------------------------------------------------
 # misc helpers
 # ---------------------------------------------------------------------------
+def _add_jitter_columns_to_sqlite(db_path: str, jitter_fn):
+    """
+    Adds/updates jittered columns 'lat'/'lon' in the main samples table,
+    computed deterministically from original GPS_lat/GPS_long and a stable key.
+    We do NOT overwrite the original GPS_lat/GPS_long.
+    """
+    if jitter_fn is None:
+        print("[sqlite] jitter function missing; skipping jitter columns")
+        return
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    # Find a table that has sampleId, GPS_lat, GPS_long
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = [r[0] for r in cur.fetchall()]
+
+    target = None
+    for t in tables:
+        cur.execute(f"PRAGMA table_info({t})")
+        cols = {r[1] for r in cur.fetchall()}
+        if {"sampleId", "GPS_lat", "GPS_long"}.issubset(cols):
+            target = t
+            break
+    if not target:
+        print("[sqlite] could not find a table with sampleId/GPS_lat/GPS_long; skipping jitter columns")
+        conn.close()
+        return
+
+    # Ensure columns exist
+    def _ensure_col(name: str):
+        cur.execute(f"PRAGMA table_info({target})")
+        cols = {r[1] for r in cur.fetchall()}
+        if name not in cols:
+            cur.execute(f"ALTER TABLE {target} ADD COLUMN {name} REAL")
+
+    _ensure_col("lat")
+    _ensure_col("lon")
+
+    # Compute jittered coords row-by-row
+    df = pd.read_sql_query(f"SELECT sampleId, GPS_lat, GPS_long FROM {target}", conn)
+    updates = []
+    for _, r in df.iterrows():
+        sid = str(r["sampleId"])
+        try:
+            lt = float(str(r["GPS_lat"]).replace(",", ".")) if r["GPS_lat"] not in (None, "", "nan") else None
+            ln = float(str(r["GPS_long"]).replace(",", ".")) if r["GPS_long"] not in (None, "", "nan") else None
+        except Exception:
+            lt = ln = None
+
+        if lt is not None and ln is not None:
+            jlt, jln = jitter_fn(lt, ln, sid, LC_MAX_JITTER_METERS)
+        else:
+            jlt = jln = None
+        updates.append((jlt, jln, sid))
+
+    cur.executemany(f"UPDATE {target} SET lat = ?, lon = ? WHERE sampleId = ?", updates)
+    conn.commit()
+    conn.close()
+    print(f"[sqlite] added/updated jittered columns 'lat','lon' in {target}")
+
 def norm_qr_for_id(q):
     """Make QR suitable as canonical sample_id."""
     if not q:
@@ -558,9 +620,75 @@ def _restore_lab_enrichment(db_path: str, backup):
     conn.commit()
     conn.close()
 
+def _restore_original_coords_from_csv(db_path: str, csv_path: str,
+                                      orig_lat_col: str = "GPS_lat",
+                                      orig_lon_col: str = "GPS_long"):
+    """
+    Force the ORIGINAL coordinates back into SQLite after ensure_sqlite(),
+    in case that step overwrote them. We DO NOT touch jitter columns.
+    """
+    if not (os.path.exists(db_path) and os.path.exists(csv_path)):
+        print("[sqlite] skip restore originals: db or csv missing")
+        return
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    # find a table that has sampleId + the two original columns
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = [r[0] for r in cur.fetchall()]
+
+    target = None
+    for t in tables:
+        cur.execute(f"PRAGMA table_info({t})")
+        cols = {r[1] for r in cur.fetchall()}
+        if {"sampleId", orig_lat_col, orig_lon_col}.issubset(cols):
+            target = t
+            break
+
+    if not target:
+        print("[sqlite] could not find table with sampleId/GPS_lat/GPS_long; nothing to restore")
+        conn.close()
+        return
+
+    df_csv = pd.read_csv(csv_path, dtype=object)
+    if orig_lat_col not in df_csv.columns or orig_lon_col not in df_csv.columns or "sampleId" not in df_csv.columns:
+        print("[sqlite] CSV missing required columns; nothing to restore")
+        conn.close()
+        return
+
+    def _to_float(v):
+        if v is None:
+            return None
+        s = str(v).strip().replace(",", ".")
+        try:
+            return float(s)
+        except Exception:
+            return None
+
+    updates = []
+    for _, r in df_csv.iterrows():
+        sid = str(r.get("sampleId") or "").strip()
+        if not sid:
+            continue
+        lt = _to_float(r.get(orig_lat_col))
+        ln = _to_float(r.get(orig_lon_col))
+        # write back *originals* exactly (can be NULL)
+        updates.append((lt, ln, sid))
+
+    cur.executemany(
+        f"UPDATE {target} SET {orig_lat_col} = ?, {orig_lon_col} = ? WHERE sampleId = ?",
+        updates
+    )
+    conn.commit()
+    conn.close()
+    print(f"[sqlite] restored originals into {target}.{orig_lat_col}/{orig_lon_col} from CSV")
+
+
 def refresh_sqlite_from_csv(OUTPUT_CSV: str, sqlite_path: str):
     sys.path.insert(0, str(PROJECT_ROOT))
-    from echorepo.utils.load_csv import ensure_sqlite
+    from echorepo.utils.load_csv import ensure_sqlite, deterministic_jitter as lc_det_jitter
 
     csv_path = _resolve_path(OUTPUT_CSV)
     db_path = _resolve_path(sqlite_path)
@@ -577,11 +705,18 @@ def refresh_sqlite_from_csv(OUTPUT_CSV: str, sqlite_path: str):
     else:
         print("[sqlite] no lab_enrichment to back up")
 
+    # Rebuild DB (may jitter internally—we’ll fix originals next)
     ensure_sqlite()
     print("[sqlite] base SQLite refreshed from CSV")
 
+    # Force ORIGINALS back (so GPS_lat/GPS_long are raw, not jittered)
+    _restore_original_coords_from_csv(db_path, csv_path, orig_lat_col="GPS_lat", orig_lon_col="GPS_long")
+
     _restore_lab_enrichment(db_path, backup)
     print("[sqlite] lab_enrichment restored")
+
+    # Add/refresh separate jitter columns (lat/lon) without touching originals
+    _add_jitter_columns_to_sqlite(db_path, lc_det_jitter)
 
     return db_path
 

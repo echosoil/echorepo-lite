@@ -35,8 +35,12 @@ def find_default_coord_rows(df: pd.DataFrame,
     if df is None or df.empty:
         return df.iloc[0:0].copy()
 
-    lat_col = lat_col or settings.LAT_COL
-    lon_col = lon_col or settings.LON_COL
+    # 👇 prefer original columns if available
+    orig_lat_col = getattr(settings, "ORIG_LAT_COL", None)
+    print(f"[DEBUG] ORIG_LAT_COL={orig_lat_col}")
+    print(f"[DEBUG] DF[ORIG_LAT_COL]={df[orig_lat_col] if orig_lat_col in df.columns else 'N/A'}")  
+    lat_col = lat_col or getattr(settings, "ORIG_LAT_COL", None) or settings.LAT_COL
+    lon_col = lon_col or getattr(settings, "ORIG_LON_COL", None) or settings.LON_COL
 
     lat_s = df[lat_col].astype(str).str.replace(",", ".", regex=False).str.strip()
     lon_s = df[lon_col].astype(str).str.replace(",", ".", regex=False).str.strip()
@@ -46,6 +50,26 @@ def find_default_coord_rows(df: pd.DataFrame,
     mask_default = (lat_f == settings.DEFAULT_COORD_LAT) & (lon_f == settings.DEFAULT_COORD_LON)
     return df.loc[mask_default].copy()
 
+def select_country_mismatches(df: pd.DataFrame,
+                              qr_col: str | None = None,
+                              lat_col: str | None = None,
+                              lon_col: str | None = None) -> pd.DataFrame:
+    """
+    Return *only* rows that are true mismatches:
+      - have valid coords (not sentinel defaults)
+      - have an actual country code
+      - have a planned set (non-empty)
+      - actual_cc NOT in planned_iso2_set
+    """
+    ann = annotate_country_mismatches(df, qr_col=qr_col, lat_col=lat_col, lon_col=lon_col)
+    if ann is None or ann.empty:
+        return ann
+
+    # planned present & actual present & NOT match
+    has_planned = ann["planned_iso2_set"].apply(bool)
+    has_actual  = ann["actual_cc"].notna()
+    mism_mask   = has_planned & has_actual & (~ann["planned_match"])
+    return ann.loc[mism_mask].copy()
 
 def annotate_country_mismatches(df: pd.DataFrame,
                                 qr_col: str | None = None,
@@ -68,8 +92,9 @@ def annotate_country_mismatches(df: pd.DataFrame,
         return out
 
     qr_col  = qr_col  or ("QR_qrCode" if "QR_qrCode" in df.columns else settings.USER_KEY_COLUMN)
-    lat_col = lat_col or settings.LAT_COL
-    lon_col = lon_col or settings.LON_COL
+    # 👇 prefer original columns if available
+    lat_col = lat_col or getattr(settings, "ORIG_LAT_COL", None) or settings.LAT_COL
+    lon_col = lon_col or getattr(settings, "ORIG_LON_COL", None) or settings.LON_COL
 
     df2 = df.copy()
 
@@ -126,6 +151,5 @@ def annotate_country_mismatches(df: pd.DataFrame,
     df2.loc[mask_eval, "planned_match"] = df2.loc[mask_eval].apply(
         lambda r: r["actual_cc"] in r["planned_iso2_set"],
         axis=1
-    ).astype(bool)
-
+    ).astype(bool)    
     return df2
