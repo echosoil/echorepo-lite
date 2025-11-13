@@ -4,15 +4,59 @@ import sqlite3
 import pandas as pd
 from ..config import settings
 
+from echorepo.utils.load_csv import deterministic_jitter, MAX_JITTER_METERS as LC_MAX_JITTER_METERS
 
-def update_coords_sqlite(sample_id: str, lat: float, lon: float):
-    with sqlite3.connect(settings.SQLITE_PATH) as conn:
-        conn.execute(
-            f"UPDATE {settings.TABLE_NAME} SET {settings.LAT_COL}=?, {settings.LON_COL}=? WHERE sampleId=?",
-            (float(lat), float(lon), sample_id)
-        )
+def _find_main_table(conn: sqlite3.Connection) -> str | None:
+    cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    for (tname,) in cur.fetchall():
+        c2 = conn.execute(f"PRAGMA table_info({tname})")
+        cols = {r[1] for r in c2.fetchall()}
+        if {"sampleId", "GPS_lat", "GPS_long"}.issubset(cols):
+            return tname
+    return None
+
+def _ensure_col(conn: sqlite3.Connection, table: str, name: str, decl: str):
+    cur = conn.execute(f"PRAGMA table_info({table})")
+    cols = {r[1] for r in cur.fetchall()}
+    if name not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
+
+def update_coords_sqlite(sample_id: str, lat: float, lon: float) -> tuple[bool, str]:
+    """
+    Update the local SQLite so the change is visible immediately:
+      - write ORIGINAL columns (GPS_lat/GPS_long)
+      - recompute deterministic jitter into 'lat'/'lon'
+    """
+    db_path = getattr(settings, "SQLITE_PATH", os.getenv("SQLITE_PATH", "/data/db/echo.db"))
+    if not os.path.exists(db_path):
+        return False, f"SQLite not found at {db_path}"
+
+    conn = sqlite3.connect(db_path)
+    try:
+        tbl = _find_main_table(conn)
+        if not tbl:
+            return False, "Could not locate main samples table with sampleId/GPS_lat/GPS_long"
+
+        # ensure jittered columns exist
+        _ensure_col(conn, tbl, "lat", "REAL")
+        _ensure_col(conn, tbl, "lon", "REAL")
+
+        # write ORIGINAL coords
+        conn.execute(f"UPDATE {tbl} SET GPS_lat = ?, GPS_long = ? WHERE sampleId = ?",
+                     (lat, lon, sample_id))
+
+        # recompute jitter
+        jlat, jlon = deterministic_jitter(lat, lon, sample_id, LC_MAX_JITTER_METERS)
+        conn.execute(f"UPDATE {tbl} SET lat = ?, lon = ? WHERE sampleId = ?",
+                     (jlat, jlon, sample_id))
+
         conn.commit()
-
+        return True, f"SQLite updated: GPS=({lat},{lon}) / jitter=({jlat},{jlon})"
+    except Exception as e:
+        conn.rollback()
+        return False, f"SQLite update failed: {e}"
+    finally:
+        conn.close()
 
 def _ensure_lab_enrichment(conn: sqlite3.Connection):
     conn.execute("""
