@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Search samples') }}{% endblock %}
+
+{% block content %}
+<h2 class="h4 mb-3">{{ _('Search samples') }}</h2>
+
+<form method="get" class="card card-body mb-3">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label" for="sample_id">{{ _('Sample / QR') }}</label>
+      <input type="text" id="sample_id" name="sample_id" value="{{ criteria.sample_id }}" class="form-control">
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label" for="country_code">{{ _('Country') }}</label>
+      <select id="country_code" name="country_code" class="form-select">
+        <option value="">{{ _('Any country') }}</option>
+        <option value="CZ" {% if criteria.country_code == 'CZ' %}selected{% endif %}>{{ _('Czechia') }}</option>
+        <option value="DE" {% if criteria.country_code == 'DE' %}selected{% endif %}>{{ _('Germany') }}</option>
+        <option value="ES" {% if criteria.country_code == 'ES' %}selected{% endif %}>{{ _('Spain') }}</option>
+        <option value="FI" {% if criteria.country_code == 'FI' %}selected{% endif %}>{{ _('Finland') }}</option>
+        <option value="FR" {% if criteria.country_code == 'FR' %}selected{% endif %}>{{ _('France') }}</option>
+        <option value="GB" {% if criteria.country_code == 'GB' %}selected{% endif %}>{{ _('United Kingdom') }}</option>
+        <option value="GR" {% if criteria.country_code == 'GR' %}selected{% endif %}>{{ _('Greece') }}</option>
+        <option value="IT" {% if criteria.country_code == 'IT' %}selected{% endif %}>{{ _('Italy') }}</option>
+        <option value="NL" {% if criteria.country_code == 'NL' %}selected{% endif %}>{{ _('Netherlands') }}</option>
+        <option value="PL" {% if criteria.country_code == 'PL' %}selected{% endif %}>{{ _('Poland') }}</option>
+        <option value="PT" {% if criteria.country_code == 'PT' %}selected{% endif %}>{{ _('Portugal') }}</option>
+        <option value="RO" {% if criteria.country_code == 'RO' %}selected{% endif %}>{{ _('Romania') }}</option>
+        <option value="SK" {% if criteria.country_code == 'SK' %}selected{% endif %}>{{ _('Slovakia') }}</option>
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label" for="ph_min">{{ _('pH min') }}</label>
+      <input type="number" step="0.1" id="ph_min" name="ph_min" value="{{ criteria.ph_min }}" class="form-control">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="ph_max">{{ _('pH max') }}</label>
+      <input type="number" step="0.1" id="ph_max" name="ph_max" value="{{ criteria.ph_max }}" class="form-control">
+    </div>
+    <div class="col-md-2 text-md-end">
+      <button type="submit" class="btn btn-primary mt-3 mt-md-0">
+        <i class="bi bi-search"></i> {{ _('Search') }}
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-2">
+    <div class="col-md-3">
+      <label class="form-label" for="date_from">{{ _('Date from') }}</label>
+      <input type="date" id="date_from" name="date_from" value="{{ criteria.date_from }}" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="date_to">{{ _('Date to') }}</label>
+      <input type="date" id="date_to" name="date_to" value="{{ criteria.date_to }}" class="form-control">
+    </div>
+    <div class="col-md-6 d-flex align-items-end justify-content-md-end">
+      <a
+        class="btn btn-outline-secondary"
+        href="{{ url_for('web.search_samples',
+                        sample_id=criteria.sample_id,
+                        country_code=criteria.country_code,
+                        ph_min=criteria.ph_min,
+                        ph_max=criteria.ph_max,
+                        date_from=criteria.date_from,
+                        date_to=criteria.date_to,
+                        format='zip') }}">
+        <i class="bi bi-download"></i> {{ _('Export current search') }}
+      </a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0 sample-table">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('Sample / QR') }}</th>
+            <th>{{ _('Timestamp') }}</th>
+            <th>{{ _('Country') }}</th>
+            <th>{{ _('pH') }}</th>
+            <th>{{ _('Lat') }}</th>
+            <th>{{ _('Lon') }}</th>
+            <th>{{ _('Collected by') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% if rows %}
+          {% for r in rows %}
+            <tr>
+              <td>{{ r.sample_id }}</td>
+              <td>{{ r.timestamp_utc }}</td>
+              <td>{{ r.country_code or '' }}</td>
+              <td>{{ r.ph if r.ph is not none else '' }}</td>
+              <td>{{ r.lat if r.lat is not none else '' }}</td>
+              <td>{{ r.lon if r.lon is not none else '' }}</td>
+              <td>{{ r.collected_by or '' }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              {{ _('No results for these filters.') }}
+            </td>
+          </tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <span class="text-muted small">
+      {{ _('Showing page') }} {{ page }} {{ _('of') }} {{ total_pages }} ({{ total_rows }} {{ _('results') }})
+    </span>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+          <a class="page-link"
+             href="{{ url_for('web.search_samples',
+                              sample_id=criteria.sample_id,
+                              country_code=criteria.country_code,
+                              ph_min=criteria.ph_min,
+                              ph_max=criteria.ph_max,
+                              date_from=criteria.date_from,
+                              date_to=criteria.date_to,
+                              page=page-1) }}">&laquo;</a>
+        </li>
+
+        {% set start = page-2 if page-2 > 1 else 1 %}
+        {% set end = page+2 if page+2 < total_pages else total_pages %}
+        {% for p in range(start, end+1) %}
+          <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('web.search_samples',
+                                sample_id=criteria.sample_id,
+                                country_code=criteria.country_code,
+                                ph_min=criteria.ph_min,
+                                ph_max=criteria.ph_max,
+                                date_from=criteria.date_from,
+                                date_to=criteria.date_to,
+                                page=p) }}">{{ p }}</a>
+          </li>
+        {% endfor %}
+
+        <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+          <a class="page-link"
+             href="{{ url_for('web.search_samples',
+                              sample_id=criteria.sample_id,
+                              country_code=criteria.country_code,
+                              ph_min=criteria.ph_min,
+                              ph_max=criteria.ph_max,
+                              date_from=criteria.date_from,
+                              date_to=criteria.date_to,
+                              page=page+1) }}">&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* keep the earlier monospaced style if you want aligned columns */
+  .sample-table td,
+  .sample-table th {
+    font-family: "Inconsolata", ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+</style>
+{% endblock %}

@@ -13,7 +13,7 @@
   const JITTER_M = Number(cfg.jitter_m) || 1000;
 
   const map = L.map('map', {
-    minZoom: 3,        // don’t let them see the whole Earth at once
+    minZoom: 3,
     maxZoom: 18
   }).setView([40, 0], 4);
   window.__echomap = map;
@@ -111,7 +111,10 @@
         txt.setAttribute('x', String(tick + 2));
         txt.setAttribute('y', String(y + 3));
         txt.setAttribute('font-size', String(font));
-        txt.setAttribute('font-family', 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif');
+        txt.setAttribute(
+          'font-family',
+          'Satoshi, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif'
+        );
         txt.setAttribute('fill', 'rgba(0,0,0,0.65)');
         txt.setAttribute('paint-order', 'stroke');
         txt.setAttribute('stroke', 'white');
@@ -142,7 +145,10 @@
         txt.setAttribute('x', String(x));
         txt.setAttribute('y', String(size.y - tick - pad));
         txt.setAttribute('font-size', String(font));
-        txt.setAttribute('font-family', 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif');
+        txt.setAttribute(
+          'font-family',
+          'Satoshi, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif'
+        );
         txt.setAttribute('fill', 'rgba(0,0,0,0.65)');
         txt.setAttribute('paint-order', 'stroke');
         txt.setAttribute('stroke', 'white');
@@ -192,6 +198,37 @@
     if(isNaN(d)) return iso;
     return d.toLocaleDateString(UI_LANG,{year:'numeric',month:'short',day:'2-digit'});
   }
+
+  // ---- i18n: T() with msgid override fallback ----
+  function T(key, vars = {}, defaultText) {
+    const dict    = (window.I18N && window.I18N.labels)   || {};
+    const byMsgid = (window.I18N && window.I18N.by_msgid) || {};
+
+    // 1) key-based label (catalog+overrides already merged server-side)
+    // 2) else msgid-override when defaultText is a msgid
+    // 3) else fallback to defaultText → key
+    let raw =
+      (key != null && Object.prototype.hasOwnProperty.call(dict, key))
+        ? dict[key]
+        : (defaultText != null && Object.prototype.hasOwnProperty.call(byMsgid, defaultText))
+            ? byMsgid[defaultText]
+            : (defaultText != null ? defaultText : key);
+
+    let out = String(raw);
+
+    // {name}
+    out = out.replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
+      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
+    );
+    // %(name)s
+    out = out.replace(/%\(([A-Za-z0-9_]+)\)s/g, (_, k) =>
+      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `%(${k})s`
+    );
+
+    return out;
+  }
+  window.T = T;
+
   function formatPopup(f, isOwnerLayer){
     const p=f.properties||{}; const fmt=(v)=>(v==null||(typeof v==="string"&&v.trim()===""))?"—":v;
     const rows=[
@@ -257,28 +294,6 @@
     const ph = getPhFromProps(props || {});
     return inRangeGiven(ph, activePhMin, activePhMax);
   }
-  
-  function T(key, vars = {}, defaultText) {
-    const dict = (window.I18N && (window.I18N.labels || window.I18N)) || {};
-    const s = (dict && Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : undefined)
-          ?? defaultText
-          ?? key;
-
-    let out = String(s);
-
-    // {name}
-    out = out.replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
-      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
-    );
-
-    // %(name)s
-    out = out.replace(/%\(([A-Za-z0-9_]+)\)s/g, (_, k) =>
-      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `%(${k})s`
-    );
-
-    return out;
-  }
-  window.T = T; // expose for DevTools only
 
   function computeAllHeaders(){
     const preferred=[
@@ -440,7 +455,6 @@
   function applyLeafletDrawTranslations() {
     if (!L.drawLocal) return;
 
-    // toolbar button text
     if (L.drawLocal.draw && L.drawLocal.draw.toolbar) {
       const tb = L.drawLocal.draw.toolbar;
       if (tb.buttons) {
@@ -456,28 +470,16 @@
       }
     }
 
-    // tooltips while drawing
     if (L.drawLocal.draw && L.drawLocal.draw.handlers) {
       const h = L.drawLocal.draw.handlers;
 
-      const startText = T(
-        'drawRectangleHint',
-        {},
-        'Click and drag to draw a rectangle.'
-      );
-      const endText = T(
-        'releaseToFinish',
-        {},
-        'Release mouse to finish drawing.'
-      );
+      const startText = T('drawRectangleHint', {}, 'Click and drag to draw a rectangle.');
+      const endText   = T('releaseToFinish',  {}, 'Release mouse to finish drawing.');
 
-      // what you had
       if (h.rectangle && h.rectangle.tooltip) {
         h.rectangle.tooltip.start = startText;
         h.rectangle.tooltip.end   = endText;
       }
-
-      // what Leaflet.Draw's SimpleShape actually uses
       if (h.simpleshape && h.simpleshape.tooltip) {
         h.simpleshape.tooltip.start = startText;
         h.simpleshape.tooltip.end   = endText;
@@ -525,8 +527,7 @@
 
     const rectHandler = drawControl._toolbars.draw._modes.rectangle.handler;
     const endText   = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
-    
-    rectHandler._endLabelText   = endText;
+    rectHandler._endLabelText = endText;
 
     map.on(L.Draw.Event.CREATED, (e) => {
       const layer = e.layer;
@@ -676,15 +677,18 @@
     fetch('/api/user_geojson',   { credentials:'same-origin' }).then(r=>r.json()),
     fetch('/api/others_geojson', { credentials:'same-origin' }).then(r=>r.json())
   ]).then(([i18n, u, o])=>{
-    // normalize shape if your endpoint returns {labels:{...}}
-    const labels = i18n.labels || i18n;
-    window.I18N = { labels };
+    // Normalize whether server returns {labels, by_msgid} or a flat {key:text} map
+    const payload = (i18n && (i18n.labels || i18n.by_msgid)) ? i18n : { labels: i18n, by_msgid: {} };
+    window.I18N = {
+      labels:  payload.labels  || {},
+      by_msgid: payload.by_msgid || {}
+    };
 
     userGJ = u;
     othersGJ = o;
 
     computeAllHeaders();
-    buildLayers(); // this will call addSelectionControl() which uses T(...)
+    buildLayers();
   }).catch(err=>{
     console.warn('Init failed:', err);
     mapDiv.style.display='none';

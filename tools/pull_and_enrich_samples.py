@@ -6,10 +6,10 @@ Steps:
   1) Read Firestore "samples" (collection group), flatten, mirror images to MinIO.
   2) Enrich with Firebase Auth emails.
   3) Write CSVs:
-       - RAW_CSV            (flattened raw)
-       - ENRICHED_CSV       (flattened + email)
+       - INPUT_CSV            (flattened raw)
+       - OUTPUT_CSV       (flattened + email)
        - USERS_CSV          (distinct emails)
-  4) Refresh local SQLite from ENRICHED_CSV (like refresh_sqlite.py) but KEEP lab_enrichment.
+  4) Refresh local SQLite from OUTPUT_CSV (like refresh_sqlite.py) but KEEP lab_enrichment.
   5) Build canonical 3-file export (samples.csv, sample_images.csv, sample_parameters.csv),
      where sample_parameters are read from THAT SQLite.
   6) Upload canonical files to MinIO under canonical/.
@@ -41,6 +41,7 @@ from shapely.geometry import shape as shp_shape, Point
 
 import numpy as np
 
+
 # ---------------------------------------------------------------------------
 # 0. load env and basic paths
 # ---------------------------------------------------------------------------
@@ -49,18 +50,42 @@ load_dotenv(dotenv_path=env_path)
 print(f"[INFO] Loaded environment from {env_path}")
 
 PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
-# Firestore output CSVs
-INPUT_CSV = os.getenv("INPUT_CSV", "/data/echorepo_samples.csv")
-INPUT_CSV = INPUT_CSV if not INPUT_CSV.startswith("/") else INPUT_CSV[1:]
-OUTPUT_CSV = os.getenv("OUTPUT_CSV", "/data/echorepo_samples_with_email.csv")
-OUTPUT_CSV = OUTPUT_CSV if not OUTPUT_CSV.startswith("/") else OUTPUT_CSV[1:]
-USERS_CSV = os.getenv("USERS_CSV", "/data/users.csv")
-USERS_CSV = USERS_CSV if not USERS_CSV.startswith("/") else USERS_CSV[1:]
+# helper: QR to country code
+try:
+    from echorepo.services.planned import load_qr_to_planned
+    print("[INFO] imported load_qr_to_planned from echorepo.services.planned")
+except Exception:
+    load_qr_to_planned = None  # we'll guard later
 
-RAW_CSV = str(PROJECT_ROOT / INPUT_CSV)
-ENRICHED_CSV = str(PROJECT_ROOT / OUTPUT_CSV)
-USERS_CSV = str(PROJECT_ROOT / USERS_CSV)
+try:
+    # optional: reuse your parsing / jitter helpers if you like
+    from echorepo.utils.geo import _parse_coord as geo_parse_coord
+except Exception:
+    geo_parse_coord = None
+
+from echorepo.utils.load_csv import (
+    _parse_coord as lc_parse_coord,
+    deterministic_jitter as lc_det_jitter,
+    _choose_stable_key as lc_choose_key,
+    MAX_JITTER_METERS as LC_MAX_JITTER_METERS,
+)
+
+# helper to convert local or absolute paths to project-root-relative paths
+def _local_path_to_abs(maybe_path: str) -> str:
+    p = Path(maybe_path)
+    if p.is_absolute():
+        if p.exists():
+            return str(p)
+        alt = PROJECT_ROOT / p.relative_to("/")
+        return str(alt)
+    return str(PROJECT_ROOT / p)
+
+USERS_CSV = _local_path_to_abs(os.getenv("USERS_CSV", "/data/users.csv"))
+PLANNED_XLSX = _local_path_to_abs(os.getenv("PLANNED_XLSX", "/echorepo/utils/data/planned.xlsx"))
+INPUT_CSV = _local_path_to_abs(os.getenv("INPUT_CSV", "/data/echorepo_samples.csv"))
+OUTPUT_CSV = _local_path_to_abs(os.getenv("OUTPUT_CSV", "/data/echorepo_samples_with_email.csv"))
 
 # location jitter in meters
 MAX_JITTER_METERS = int(os.getenv("MAX_JITTER_METERS", "1000"))
@@ -70,7 +95,7 @@ PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", None)
 FBS_PREFIX = "https://firebasestorage.googleapis.com/"
 
 # SQLite path
-SQLITE_PATH = os.getenv("SQLITE_PATH", str(PROJECT_ROOT / "data" / "db" / "echo.db"))
+SQLITE_PATH = _local_path_to_abs(os.getenv("SQLITE_PATH", "/data/db/echo.db"))
 LAB_ENRICHMENT_DB = os.getenv("LAB_ENRICHMENT_DB", SQLITE_PATH)
 
 # MinIO config
@@ -119,9 +144,7 @@ except Exception:
 def init_firebase():
     if firebase_admin._apps:
         return
-    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
-    if creds_path.startswith("/keys"):
-        creds_path = str(PROJECT_ROOT / creds_path[1:])
+    creds_path = _local_path_to_abs(os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json"))
     if not creds_path or not os.path.exists(creds_path):
         print(f"[ERROR] Service account JSON not found: {creds_path}")
         sys.exit(1)
@@ -169,6 +192,34 @@ def init_minio():
     return client
 
 # ---------------------------------------------------------------------------
+# helper: input sanitization
+# ---------------------------------------------------------------------------
+BAD_NUM = {"", " ", "-", "NA", "N/A", "null", "None"}
+
+def _clean_int_val(v):
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", ".")
+    if s in BAD_NUM:
+        return None
+    try:
+        # this handles "256.0", "12.00", "5"
+        return int(float(s))
+    except ValueError:
+        return None
+
+def _clean_float_val(v):
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", ".")
+    if s in BAD_NUM:
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+# ---------------------------------------------------------------------------
 # helper: shapefile -> country polygons
 # ---------------------------------------------------------------------------
 _COUNTRY_SHAPES = []
@@ -209,6 +260,15 @@ def latlon_to_country_code(lat, lon):
 # ---------------------------------------------------------------------------
 # misc helpers
 # ---------------------------------------------------------------------------
+def norm_qr_for_id(q):
+    """Make QR suitable as canonical sample_id."""
+    if not q:
+        return ""
+    s = str(q).strip()
+    # common cleanup: remove spaces, uppercase
+    s = s.replace(" ", "").upper()
+    return s
+
 def parse_ph(value):
     if value is None:
         return None
@@ -498,11 +558,11 @@ def _restore_lab_enrichment(db_path: str, backup):
     conn.commit()
     conn.close()
 
-def refresh_sqlite_from_csv(enriched_csv: str, sqlite_path: str):
+def refresh_sqlite_from_csv(OUTPUT_CSV: str, sqlite_path: str):
     sys.path.insert(0, str(PROJECT_ROOT))
     from echorepo.utils.load_csv import ensure_sqlite
 
-    csv_path = _resolve_path(enriched_csv)
+    csv_path = _resolve_path(OUTPUT_CSV)
     db_path = _resolve_path(sqlite_path)
 
     os.environ["CSV_PATH"] = csv_path
@@ -528,12 +588,94 @@ def refresh_sqlite_from_csv(enriched_csv: str, sqlite_path: str):
 # ---------------------------------------------------------------------------
 # canonical builders
 # ---------------------------------------------------------------------------
-def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
+def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | None = None) -> pd.DataFrame:
+    planned_map = planned_map or {}
     rows = []
-    for _, r in df_flat.iterrows():
-        lat = r.get("GPS_lat")
-        lon = r.get("GPS_long")
-        country = r.get("country_code") or latlon_to_country_code(lat, lon)
+    debug_missing = []   # collect rows that still have no country
+
+    for idx, r in df_flat.iterrows():
+        # --- 0) IDs / QR
+        qr_raw = r.get("QR_qrCode")
+        qr_norm = norm_qr_for_id(qr_raw)
+        sample_id = qr_norm or r.get("sampleId")
+
+        # --- 1) get original coords from Firestore
+        orig_lat = r.get("GPS_lat")
+        orig_lon = r.get("GPS_long")
+
+        # normalize to float using existing helpers
+        lat_f = None
+        lon_f = None
+
+        # prefer load_csv parser (you already imported it)
+        if lc_parse_coord is not None:
+            lat_f = lc_parse_coord(orig_lat, "lat")
+            lon_f = lc_parse_coord(orig_lon, "lon")
+        elif geo_parse_coord is not None:
+            lat_f = geo_parse_coord(orig_lat, "lat")
+            lon_f = geo_parse_coord(orig_lon, "lon")
+        else:
+            # ultra simple fallback
+            try:
+                lat_f = float(orig_lat) if orig_lat not in (None, "") else None
+                lon_f = float(orig_lon) if orig_lon not in (None, "") else None
+            except Exception:
+                lat_f = lon_f = None
+
+        # --- 2) country from ORIGINAL coords
+        orig_country = ""
+        if lat_f is not None and lon_f is not None:
+            try:
+                orig_country = latlon_to_country_code(lat_f, lon_f) or ""
+            except Exception as e:
+                orig_country = ""
+                # we could print here, but let's collect below
+
+        # --- 3) country from PLANNED file (by QR)
+        planned_country = ""
+        if qr_norm and qr_norm in planned_map:
+            s = planned_map[qr_norm]
+            if len(s) == 1:
+                planned_country = next(iter(s))
+            elif s:
+                planned_country = sorted(s)[0]
+
+        # --- 4) jittered coords (we actually want to use the same jitter as SQLite)
+        # if you want to actually jitter here, do it deterministically:
+        lat_j = lat_f
+        lon_j = lon_f
+        if lat_f is not None and lon_f is not None and lc_det_jitter is not None:
+            key = sample_id or r.get("userId") or str(idx)
+            lat_j, lon_j = lc_det_jitter(lat_f, lon_f, key, LC_MAX_JITTER_METERS)
+
+        # --- 5) country from jittered coords
+        jitter_country = ""
+        if lat_j is not None and lon_j is not None:
+            try:
+                jitter_country = latlon_to_country_code(lat_j, lon_j) or ""
+            except Exception:
+                jitter_country = ""
+
+        # --- 6) final pick
+        country = jitter_country or planned_country or orig_country
+
+        if not country:
+            debug_missing.append({
+                "row_index": idx,
+                "sample_id": sample_id,
+                "qr": qr_norm,
+                "orig_lat": orig_lat,
+                "orig_lon": orig_lon,
+                "lat_f": lat_f,
+                "lon_f": lon_f,
+                "jitter_lat": lat_j,
+                "jitter_lon": lon_j,
+                "orig_country": orig_country,
+                "jitter_country": jitter_country,
+                "planned_country": planned_country,
+            })
+
+        # contamination
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
         cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
         cont_other_orig = r.get("SOIL_CONTAMINATION_comments") or ""
@@ -542,11 +684,12 @@ def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         for v in (cont_debris, cont_plastic, cont_other_orig):
             if v not in (0, "", None, False):
                 pollutants_count += 1
+
         rows.append({
-            "sample_id": r.get("sampleId"),
+            "sample_id": sample_id,
             "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
-            "lat": lat,
-            "lon": lon,
+            "lat": lat_j,
+            "lon": lon_j,
             "country_code": country,
             "location_accuracy_m": MAX_JITTER_METERS,
             "ph": r.get("PH_ph"),
@@ -565,6 +708,14 @@ def build_samples_df(df_flat: pd.DataFrame) -> pd.DataFrame:
             "qa_status": r.get("QA_state") or "",
             "licence": DEFAULT_LICENCE,
         })
+
+    # --- write a tiny diag file so you can open it
+    if debug_missing:
+        diag_path = PROJECT_ROOT / "data" / "canonical" / "country_missing_diag.csv"
+        os.makedirs(diag_path.parent, exist_ok=True)
+        pd.DataFrame(debug_missing).to_csv(diag_path, index=False)
+        print(f"[DIAG] wrote {len(debug_missing)} rows with missing country to {diag_path}")
+
     return pd.DataFrame(rows)
 
 def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
@@ -574,20 +725,20 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
         country = r.get("country_code") or latlon_to_country_code(lat, lon)
+
+        qr = norm_qr_for_id(r.get("QR_qrCode"))
+        sample_id = qr or r.get("sampleId")
+
         for i in photo_slots:
             path_col = f"PHOTO_photos_{i}_path"
             comment_col = f"PHOTO_photos_{i}_comment"
             path = r.get(path_col)
-            if not path:
-                continue
-            if isinstance(path, float) and math.isnan(path):
-                continue
-            if str(path).strip().lower() == "nan":
+            if not path or (isinstance(path, float) and math.isnan(path)) or str(path).strip().lower() == "nan":
                 continue
             comment_orig = r.get(comment_col) or ""
             comment_en = translate_to_en(comment_orig) if comment_orig else ""
             img_rows.append({
-                "sample_id": r.get("sampleId"),
+                "sample_id": sample_id,
                 "country_code": country,
                 "image_id": i,
                 "image_url": path,
@@ -605,12 +756,9 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         return pd.DataFrame([])
 
     def norm_qr(q):
-        if q is None:
-            return ""
-        s = str(q).strip()
-        return s.upper().replace(" ", "").replace("-", "")
+        return norm_qr_for_id(q)
 
-    qr_to_sample = {}
+    # we need QR -> country
     qr_to_country = {}
     for _, r in df_flat.iterrows():
         qr = r.get("QR_qrCode")
@@ -620,7 +768,6 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
         country = r.get("country_code") or latlon_to_country_code(lat, lon)
-        qr_to_sample[qr_n] = r.get("sampleId")
         qr_to_country[qr_n] = country
 
     conn = sqlite3.connect(db_path)
@@ -637,17 +784,16 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         return pd.DataFrame([])
 
     rows = []
-    unmatched = 0
     for _, r in lab_df.iterrows():
         qr_raw = r["qr_code"]
         qr_n = norm_qr(qr_raw)
-        sample_id = qr_to_sample.get(qr_n)
-        if not sample_id:
-            unmatched += 1
+        if not qr_n:
             continue
+
         country = qr_to_country.get(qr_n, "")
+
         rows.append({
-            "sample_id": sample_id,
+            "sample_id": qr_n,                  # <- HERE: use QR as sample_id
             "country_code": country,
             "parameter_code": r["param"],
             "parameter_name": r["param"],
@@ -660,8 +806,7 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
             "licence": DEFAULT_LICENCE,
             "parameter_uri": "",
         })
-    if unmatched:
-        print(f"[INFO] lab rows that didn't match any Firestore QR: {unmatched}")
+
     print(f"[INFO] built sample_parameters from sqlite: {len(rows)} rows")
     return pd.DataFrame(rows)
 
@@ -707,7 +852,7 @@ def ensure_pg_tables():
     if psycopg2 is None:
         return
     conn = psycopg2.connect(
-        host=os.getenv("DB_HOST", "echorepo-postgres"),
+        host=os.getenv("DB_HOST_OUTSIDE", "echorepo-postgres"),
         port=int(os.getenv("DB_PORT_OUTSIDE", "5432")),
         dbname=os.getenv("DB_NAME", "echorepo"),
         user=os.getenv("DB_USER", "echorepo"),
@@ -771,6 +916,246 @@ CREATE TABLE IF NOT EXISTS sample_images (
     cur.close()
     conn.close()
 
+def load_canonical_into_pg_staging(samples_path, images_path, params_path):
+    """
+    Load canonical CSVs into Postgres using TEXT staging tables,
+    then normalize+cast into real tables.
+    """
+    if psycopg2 is None:
+        print("[PG] psycopg2 not installed, skipping PG load.")
+        return
+
+    conn = psycopg2.connect(
+        host=os.getenv("DB_HOST_OUTSIDE", "echorepo-postgres"),
+        port=int(os.getenv("DB_PORT_OUTSIDE", "5432")),
+        dbname=os.getenv("DB_NAME", "echorepo"),
+        user=os.getenv("DB_USER", "echorepo"),
+        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
+    )
+    cur = conn.cursor()
+    try:
+        # 1) text-only staging tables
+        cur.execute("DROP TABLE IF EXISTS samples_stage_raw;")
+        cur.execute("""
+            CREATE TABLE samples_stage_raw (
+              sample_id              TEXT,
+              timestamp_utc          TEXT,
+              lat                    TEXT,
+              lon                    TEXT,
+              country_code           TEXT,
+              location_accuracy_m    TEXT,
+              ph                     TEXT,
+              organic_carbon_pct     TEXT,
+              soil_structure         TEXT,
+              earthworms_count       TEXT,
+              contamination_debris   TEXT,
+              contamination_plastic  TEXT,
+              contamination_other_orig TEXT,
+              contamination_other_en   TEXT,
+              pollutants_count       TEXT,
+              vegetation_cover_pct   TEXT,
+              forest_cover_pct       TEXT,
+              collected_by           TEXT,
+              data_source            TEXT,
+              qa_status              TEXT,
+              licence                TEXT
+            );
+        """)
+
+        cur.execute("DROP TABLE IF EXISTS sample_images_stage_raw;")
+        cur.execute("""
+            CREATE TABLE sample_images_stage_raw (
+              sample_id              TEXT,
+              country_code           TEXT,
+              image_id               TEXT,
+              image_url              TEXT,
+              image_description_orig TEXT,
+              image_description_en   TEXT,
+              collected_by           TEXT,
+              timestamp_utc          TEXT,
+              licence                TEXT
+            );
+        """)
+
+        cur.execute("DROP TABLE IF EXISTS sample_parameters_stage_raw;")
+        cur.execute("""
+            CREATE TABLE sample_parameters_stage_raw (
+              sample_id      TEXT,
+              country_code   TEXT,
+              parameter_code TEXT,
+              parameter_name TEXT,
+              value          TEXT,
+              uom            TEXT,
+              analysis_method TEXT,
+              analysis_date  TEXT,
+              lab_id         TEXT,
+              created_by     TEXT,
+              licence        TEXT,
+              parameter_uri  TEXT
+            );
+        """)
+
+        # 2) COPY raw CSVs → TEXT staging
+        with open(samples_path, "r", encoding="utf-8") as f:
+            cur.copy_expert(
+                """
+                COPY samples_stage_raw FROM STDIN
+                WITH CSV HEADER NULL '' 
+                """,
+                f,
+            )
+
+        with open(images_path, "r", encoding="utf-8") as f:
+            cur.copy_expert(
+                """
+                COPY sample_images_stage_raw FROM STDIN
+                WITH CSV HEADER NULL ''
+                """,
+                f,
+            )
+
+        with open(params_path, "r", encoding="utf-8") as f:
+            cur.copy_expert(
+                """
+                COPY sample_parameters_stage_raw FROM STDIN
+                WITH CSV HEADER NULL ''
+                """,
+                f,
+            )
+
+        # commit COPY (it’s big)
+        conn.commit()
+        conn.autocommit = False
+        cur = conn.cursor()
+
+        # 3) swap into real tables
+        # children first
+        cur.execute("TRUNCATE sample_parameters, sample_images, samples;")
+
+        # samples
+        cur.execute("""
+            INSERT INTO samples (
+              sample_id,
+              timestamp_utc,
+              lat,
+              lon,
+              country_code,
+              location_accuracy_m,
+              ph,
+              organic_carbon_pct,
+              soil_structure,
+              earthworms_count,
+              contamination_debris,
+              contamination_plastic,
+              contamination_other_orig,
+              contamination_other_en,
+              pollutants_count,
+              vegetation_cover_pct,
+              forest_cover_pct,
+              collected_by,
+              data_source,
+              qa_status,
+              licence
+            )
+            SELECT
+              TRIM(sample_id),
+              NULLIF(TRIM(timestamp_utc), '')::timestamptz,
+              NULLIF(TRIM(lat), '')::double precision,
+              NULLIF(TRIM(lon), '')::double precision,
+              NULLIF(TRIM(country_code), ''),
+              NULLIF(TRIM(location_accuracy_m), '')::integer,
+              NULLIF(TRIM(ph), '')::double precision,
+              NULLIF(TRIM(organic_carbon_pct), '')::double precision,
+              NULLIF(TRIM(soil_structure), ''),
+              NULLIF(TRIM(earthworms_count), '')::integer,
+              NULLIF(TRIM(contamination_debris), '')::integer,
+              NULLIF(TRIM(contamination_plastic), '')::integer,
+              NULLIF(TRIM(contamination_other_orig), ''),
+              NULLIF(TRIM(contamination_other_en), ''),
+              NULLIF(TRIM(pollutants_count), '')::integer,
+              NULLIF(TRIM(vegetation_cover_pct), '')::double precision,
+              NULLIF(TRIM(forest_cover_pct), '')::double precision,
+              NULLIF(TRIM(collected_by), ''),
+              NULLIF(TRIM(data_source), ''),
+              NULLIF(TRIM(qa_status), ''),
+              NULLIF(TRIM(licence), '')
+            FROM samples_stage_raw;
+        """)
+
+        # sample_images
+        cur.execute("""
+            INSERT INTO sample_images (
+              sample_id,
+              country_code,
+              image_id,
+              image_url,
+              image_description_orig,
+              image_description_en,
+              collected_by,
+              timestamp_utc,
+              licence
+            )
+            SELECT
+              TRIM(sample_id),
+              NULLIF(TRIM(country_code), ''),
+              NULLIF(TRIM(image_id), '')::integer,
+              NULLIF(TRIM(image_url), ''),
+              NULLIF(TRIM(image_description_orig), ''),
+              NULLIF(TRIM(image_description_en), ''),
+              NULLIF(TRIM(collected_by), ''),
+              NULLIF(TRIM(timestamp_utc), '')::timestamptz,
+              NULLIF(TRIM(licence), '')
+            FROM sample_images_stage_raw;
+        """)
+
+        # sample_parameters
+        cur.execute("""
+            INSERT INTO sample_parameters (
+              sample_id,
+              country_code,
+              parameter_code,
+              parameter_name,
+              value,
+              uom,
+              analysis_method,
+              analysis_date,
+              lab_id,
+              created_by,
+              licence,
+              parameter_uri
+            )
+            SELECT
+              TRIM(sample_id),
+              NULLIF(TRIM(country_code), ''),
+              NULLIF(TRIM(parameter_code), ''),
+              NULLIF(TRIM(parameter_name), ''),
+              NULLIF(TRIM(value), '')::double precision,
+              NULLIF(TRIM(uom), ''),
+              NULLIF(TRIM(analysis_method), ''),
+              NULLIF(TRIM(analysis_date), '')::timestamptz,
+              NULLIF(TRIM(lab_id), ''),
+              NULLIF(TRIM(created_by), ''),
+              NULLIF(TRIM(licence), ''),
+              NULLIF(TRIM(parameter_uri), '')
+            FROM sample_parameters_stage_raw;
+        """)
+
+        conn.commit()
+        print("[PG] staging swap completed.")
+    except Exception as e:
+        conn.rollback()
+        print(f"[PG] staging load failed: {e}")
+    finally:
+        try:
+            cur.execute("DROP TABLE IF EXISTS samples_stage_raw;")
+            cur.execute("DROP TABLE IF EXISTS sample_images_stage_raw;")
+            cur.execute("DROP TABLE IF EXISTS sample_parameters_stage_raw;")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+        cur.close()
+        conn.close()
+
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
@@ -789,7 +1174,7 @@ def main():
         if col in df_raw.columns:
             df_raw[col] = df_raw[col].apply(_ts_to_iso_loose)
             
-    write_csv_atomic(df_raw, RAW_CSV)
+    write_csv_atomic(df_raw, INPUT_CSV)
 
     # 2) enrich with emails
     uid_to_email = fetch_uid_to_email()
@@ -804,34 +1189,103 @@ def main():
         if col in df_enriched.columns:
             df_enriched[col] = df_enriched[col].apply(_ts_to_iso_loose)
 
-    write_csv_atomic(df_enriched, ENRICHED_CSV)
+    write_csv_atomic(df_enriched, OUTPUT_CSV)
 
     # 3) users.csv
     df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
     write_csv_atomic(df_users, USERS_CSV)
 
-    # 4) refresh sqlite from ENRICHED_CSV, preserve lab_enrichment
-    refreshed_db_path = refresh_sqlite_from_csv(ENRICHED_CSV, SQLITE_PATH)
+    # 4) refresh sqlite from OUTPUT_CSV, preserve lab_enrichment
+    refreshed_db_path = refresh_sqlite_from_csv(OUTPUT_CSV, SQLITE_PATH)
+    
+    # 5) load planned QR -> country map
+    planned_map = {}
+    if load_qr_to_planned is not None:
+        try:
+            planned_map = load_qr_to_planned(PLANNED_XLSX)
+            print(f"[INFO] loaded planned QR countries: {len(planned_map)} entries")
+        except Exception as e:
+            print(f"[WARN] could not load planned QR countries: {e}")
 
-    # 5) build canonical export
+    # 6) build canonical export
     if not df_enriched.empty:
         canon_dir = PROJECT_ROOT / "data" / "canonical"
         canon_dir.mkdir(parents=True, exist_ok=True)
 
-        samples_df = build_samples_df(df_enriched)
+        samples_df = build_samples_df(df_enriched, planned_map=planned_map)
         images_df = build_sample_images_df(df_enriched)
         params_df = build_sample_parameters_df_from_sqlite(df_enriched, refreshed_db_path)
 
+        # 1) build a set of valid sample_ids (whatever you decided sample_id is now — QR)
+        valid_sample_ids = set(
+            samples_df["sample_id"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+        )
+
+        # 1a) log orphaned parameters
+        orphan_params = params_df[~params_df["sample_id"].isin(valid_sample_ids)]
+        orphan_params.to_csv("data/canonical/orphan_sample_parameters.csv", index=False)
+
+        # 2) drop parameter rows that point to a non-existing sample
+        if not params_df.empty:
+            before = len(params_df)
+            params_df = params_df[
+                params_df["sample_id"]
+                .astype(str)
+                .str.strip()
+                .isin(valid_sample_ids)
+            ].copy()
+            after = len(params_df)
+            if before != after:
+                print(f"[INFO] dropped {before - after} parameter rows without matching sample")
+
+        # sanitize numeric-ish columns so Postgres COPY is happy
+        if not samples_df.empty:
+            int_cols = [
+                "location_accuracy_m",
+                "earthworms_count",
+                "contamination_debris",
+                "contamination_plastic",
+                "pollutants_count",
+            ]
+            float_cols = [
+                "ph",
+                "organic_carbon_pct",
+                "vegetation_cover_pct",
+                "forest_cover_pct",
+            ]
+
+            for col in int_cols:
+                if col in samples_df.columns:
+                    samples_df[col] = samples_df[col].apply(_clean_int_val)
+                    # IMPORTANT: make pandas actually store as integer so CSV becomes "256" not "256.0"
+                    samples_df[col] = samples_df[col].astype("Int64")  # nullable int
+
+            for col in float_cols:
+                if col in samples_df.columns:
+                    samples_df[col] = samples_df[col].apply(_clean_float_val)
+
+        # 2) images: image_id should also be int
+        if not images_df.empty and "image_id" in images_df.columns:
+            images_df["image_id"] = images_df["image_id"].apply(_clean_int_val).astype("Int64")
+
+        # 3) params: value is usually numeric but may be text — keep as float/str if you want
+        if not params_df.empty and "value" in params_df.columns:
+            params_df["value"] = params_df["value"].apply(_clean_float_val)        
+
+        # 4a) write canonical CSVs
         samples_path = canon_dir / "samples.csv"
         images_path = canon_dir / "sample_images.csv"
         params_path = canon_dir / "sample_parameters.csv"
-
+           
         write_csv_atomic(samples_df, str(samples_path))
         write_csv_atomic(images_df, str(images_path))
         write_csv_atomic(params_df, str(params_path))
         print("[OK] Wrote canonical 3-file export.")
 
-        # 5b) produce all.zip locally
+        # 4b) produce all.zip locally
         all_zip_path = canon_dir / "all.zip"
         with zipfile.ZipFile(all_zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.write(samples_path, arcname="samples.csv")
@@ -839,17 +1293,27 @@ def main():
             zf.write(params_path, arcname="sample_parameters.csv")
         print(f"[OK] Wrote {all_zip_path}")
 
-        # 6) upload canonical files to MinIO (so Flask can just redirect)
+        # 5) upload canonical files to MinIO (so Flask can just redirect)
         upload_canonical_to_minio(minio_client, samples_path, "samples.csv")
         upload_canonical_to_minio(minio_client, images_path, "sample_images.csv")
         upload_canonical_to_minio(minio_client, params_path, "sample_parameters.csv")
         upload_canonical_to_minio(minio_client, all_zip_path, "all.zip")
 
-        # 7) optional: Postgres (just ensuring tables for now)
+        # 6) optional: Postgres (just ensuring tables for now)
         try:
             ensure_pg_tables()
         except Exception as e:
             print(f"[WARN] Could not ensure Postgres tables: {e}")
+
+        # 7) optional: load into Postgres staging + swap
+        try:
+            load_canonical_into_pg_staging(
+                str(samples_path),
+                str(images_path),
+                str(params_path),
+            )
+        except Exception as e:
+            print(f"[WARN] PG staging load skipped/failed: {e}")
 
 if __name__ == "__main__":
     try:

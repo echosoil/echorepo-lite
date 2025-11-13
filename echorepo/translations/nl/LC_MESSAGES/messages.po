@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-09 22:00+0000\n"
+"POT-Creation-Date: 2025-11-12 14:12+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -18,121 +18,122 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: /work/echorepo/routes/web.py:79
+#: /work/echorepo/routes/web.py:192
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Privacyradius (~±{km} km)"
 
-#: /work/echorepo/routes/web.py:80
+#: /work/echorepo/routes/web.py:193
 msgid "Soil pH"
 msgstr "Bodem pH"
 
-#: /work/echorepo/routes/web.py:81
+#: /work/echorepo/routes/web.py:194
 msgid "Acidic (≤5.5)"
 msgstr "Zuur (≤5,5)"
 
-#: /work/echorepo/routes/web.py:82
+#: /work/echorepo/routes/web.py:195
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Een beetje zuur (-5,5)"
 
-#: /work/echorepo/routes/web.py:83
+#: /work/echorepo/routes/web.py:196
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutraal"
 
-#: /work/echorepo/routes/web.py:84
+#: /work/echorepo/routes/web.py:197
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Een beetje alkalisch (7.5"
 
-#: /work/echorepo/routes/web.py:85
+#: /work/echorepo/routes/web.py:198
 msgid "Alkaline (≥8.5)"
 msgstr "Alkaline (≥ 8,5)"
 
-#: /work/echorepo/routes/web.py:86
+#: /work/echorepo/routes/web.py:199
 msgid "Your samples"
 msgstr "Uw monsters"
 
-#: /work/echorepo/routes/web.py:87
+#: /work/echorepo/routes/web.py:200
 msgid "Other samples"
 msgstr "Andere monsters"
 
-#: /work/echorepo/routes/web.py:88
+#: /work/echorepo/routes/web.py:201
 msgid "Export"
 msgstr "Uitvoer"
 
-#: /work/echorepo/routes/web.py:89
+#: /work/echorepo/routes/web.py:202
 msgid "Clear"
 msgstr "Wissen"
 
-#: /work/echorepo/routes/web.py:90
+#: /work/echorepo/routes/web.py:203
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Gefilterd exporteren ({n})"
 
-#: /work/echorepo/routes/web.py:91
+#: /work/echorepo/routes/web.py:204
 msgid "Date"
 msgstr "Datum"
 
-#: /work/echorepo/routes/web.py:92
+#: /work/echorepo/routes/web.py:205
 msgid "QR code"
 msgstr "QR-code"
 
-#: /work/echorepo/routes/web.py:93 /work/echorepo/templates/results.html:225
+#: /work/echorepo/routes/web.py:206 /work/echorepo/templates/results.html:243
+#: /work/echorepo/templates/search.html:84
 msgid "pH"
 msgstr "p H"
 
-#: /work/echorepo/routes/web.py:94
+#: /work/echorepo/routes/web.py:207
 msgid "Colour"
 msgstr "Kleur"
 
-#: /work/echorepo/routes/web.py:95
+#: /work/echorepo/routes/web.py:208
 msgid "Texture"
 msgstr "Textuur"
 
-#: /work/echorepo/routes/web.py:96
+#: /work/echorepo/routes/web.py:209
 msgid "Structure"
 msgstr "Structuur"
 
-#: /work/echorepo/routes/web.py:97
+#: /work/echorepo/routes/web.py:210
 msgid "Earthworms"
 msgstr "Aardwormen"
 
-#: /work/echorepo/routes/web.py:98
+#: /work/echorepo/routes/web.py:211
 msgid "Plastic"
 msgstr "Kunststof"
 
-#: /work/echorepo/routes/web.py:99
+#: /work/echorepo/routes/web.py:212
 msgid "Debris"
 msgstr "Afval"
 
-#: /work/echorepo/routes/web.py:100
+#: /work/echorepo/routes/web.py:213
 msgid "Contamination"
 msgstr "Besmetting"
 
-#: /work/echorepo/routes/web.py:101
+#: /work/echorepo/routes/web.py:214
 msgid "Metals"
 msgstr "Metaal"
 
-#: /work/echorepo/routes/web.py:102
+#: /work/echorepo/routes/web.py:215
 msgid "Draw a rectangle"
 msgstr "Teken een rechthoek"
 
-#: /work/echorepo/routes/web.py:103
+#: /work/echorepo/routes/web.py:216
 msgid "Cancel drawing"
 msgstr "Tekening annuleren"
 
-#: /work/echorepo/routes/web.py:104
+#: /work/echorepo/routes/web.py:217
 msgid "Cancel"
 msgstr "Annuleren"
 
-#: /work/echorepo/routes/web.py:105
+#: /work/echorepo/routes/web.py:218
 msgid "Delete last point"
 msgstr "Laatste paragraaf schrappen"
 
-#: /work/echorepo/routes/web.py:106
+#: /work/echorepo/routes/web.py:219
 msgid "Click and drag to draw a rectangle."
 msgstr "Klik en sleep om een rechthoek te tekenen."
 
-#: /work/echorepo/routes/web.py:107
+#: /work/echorepo/routes/web.py:220
 msgid "Release mouse to finish drawing."
 msgstr "Laat de muis vrij om de tekening af te maken."
 
@@ -226,8 +227,7 @@ msgstr "Door de EU gefinancierd initiatief"
 msgid "Data quality issues — ECHOrepo"
 msgstr "ECHOrepo"
 
-#: /work/echorepo/templates/issues.html:7
-#: /work/echorepo/templates/issues.html:15
+#: /work/echorepo/templates/issues.html:7 /work/echorepo/templates/issues.html:15
 msgid "Back to My Data"
 msgstr "Terug naar mijn gegevens"
 
@@ -248,48 +248,41 @@ msgstr "Standaardcoördinaten (%(lat)s, %(lon)s)"
 msgid "No entries with default coordinates"
 msgstr "Geen items met standaardcoördinaten"
 
-#: /work/echorepo/templates/issues.html:29
-#: /work/echorepo/templates/issues.html:68
+#: /work/echorepo/templates/issues.html:29 /work/echorepo/templates/issues.html:68
 msgid "Sample"
 msgstr "Monster"
 
-#: /work/echorepo/templates/issues.html:30
-#: /work/echorepo/templates/issues.html:69
+#: /work/echorepo/templates/issues.html:30 /work/echorepo/templates/issues.html:69
 msgid "User"
 msgstr "Gebruiker"
 
-#: /work/echorepo/templates/issues.html:31
-#: /work/echorepo/templates/issues.html:70
+#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:70
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:32
-#: /work/echorepo/templates/issues.html:71
+#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:71
+#: /work/echorepo/templates/search.html:85
 msgid "Lat"
 msgstr "Lat"
 
-#: /work/echorepo/templates/issues.html:33
-#: /work/echorepo/templates/issues.html:72
+#: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:72
+#: /work/echorepo/templates/search.html:86
 msgid "Lon"
 msgstr "Lon"
 
-#: /work/echorepo/templates/issues.html:34
-#: /work/echorepo/templates/issues.html:73
+#: /work/echorepo/templates/issues.html:34 /work/echorepo/templates/issues.html:73
 msgid "Fix"
 msgstr "Repareren"
 
-#: /work/echorepo/templates/issues.html:49
-#: /work/echorepo/templates/issues.html:88
+#: /work/echorepo/templates/issues.html:49 /work/echorepo/templates/issues.html:88
 msgid "Lat (dec or DMS)"
 msgstr "Lat (dec of DMS)"
 
-#: /work/echorepo/templates/issues.html:50
-#: /work/echorepo/templates/issues.html:89
+#: /work/echorepo/templates/issues.html:50 /work/echorepo/templates/issues.html:89
 msgid "Lon (dec or DMS)"
 msgstr "Lon (dec of DMS)"
 
-#: /work/echorepo/templates/issues.html:51
-#: /work/echorepo/templates/issues.html:90
+#: /work/echorepo/templates/issues.html:51 /work/echorepo/templates/issues.html:90
 msgid "Save"
 msgstr "Opslaan"
 
@@ -306,7 +299,7 @@ msgid "No country mismatches"
 msgstr "Geen landenverschillen"
 
 #: /work/echorepo/templates/lab_upload.html:3
-#: /work/echorepo/templates/results.html:175
+#: /work/echorepo/templates/results.html:115
 msgid "Upload lab data"
 msgstr "Labgegevens uploaden"
 
@@ -362,190 +355,337 @@ msgstr "Uw gegevens altijd downloaden"
 msgid "ECHOrepo — Your Data"
 msgstr "ECHOrepo Uw gegevens"
 
-#: /work/echorepo/templates/results.html:7
+#: /work/echorepo/templates/results.html:8
 msgid "Download all samples (CSV)"
 msgstr "Alle monsters downloaden (CSV)"
 
-#: /work/echorepo/templates/results.html:14
+#: /work/echorepo/templates/results.html:13
+#: /work/echorepo/templates/results.html:119 /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/search.html:5
+msgid "Search samples"
+msgstr "Zoekmonsters"
+
+#: /work/echorepo/templates/results.html:20
 msgid "Logged in as"
 msgstr "Aangemeld als"
 
-#: /work/echorepo/templates/results.html:19
-msgid "Copy user key"
-msgstr "Gebruikerssleutel kopiëren"
-
-#: /work/echorepo/templates/results.html:23
+#: /work/echorepo/templates/results.html:26
 msgid "Logout"
 msgstr "Afmelden"
 
-#: /work/echorepo/templates/results.html:113
+#: /work/echorepo/templates/results.html:101
 msgid "Your data"
 msgstr "Uw gegevens"
 
-#: /work/echorepo/templates/results.html:114
+#: /work/echorepo/templates/results.html:102
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
 msgstr ""
-"Verken uw bodemmonsterlocaties op de kaart en exporteer of blader door de"
-" tabel."
+"Verken uw bodemmonsterlocaties op de kaart en exporteer of blader door de "
+"tabel."
 
-#: /work/echorepo/templates/results.html:119
-msgid "Final survey"
-msgstr "Eindonderzoek"
-
-#: /work/echorepo/templates/results.html:121
-msgid "We sincerely thank you for your commitment to this project!"
-msgstr "Wij danken u oprecht voor uw inzet voor dit project!"
-
-#: /work/echorepo/templates/results.html:124
-msgid ""
-"This is the third and final survey in the project, following the initial "
-"ones you completed before and after soil sampling. The majority of "
-"questions are consistent with the previous surveys so that we can "
-"accurately measure changes over time and understand the impact of project"
-" participation."
-msgstr ""
-"Dit is de derde en laatste enquête in het project, na de eerste die je "
-"voor en na bodembemonstering hebt afgerond. De meeste vragen komen "
-"overeen met de vorige enquêtes, zodat we veranderingen in de tijd "
-"nauwkeurig kunnen meten en de impact van projectparticipatie kunnen "
-"begrijpen."
-
-#: /work/echorepo/templates/results.html:127
-msgid ""
-"Before you start: please only complete this survey if the lab results "
-"from your soil sample(s) have already been added to the repository. If "
-"the results are pending, please check back at a later time."
-msgstr ""
-"Voordat u start: vul dit onderzoek alleen in als het lab resultaten van "
-"uw bodemmonster(s) al zijn toegevoegd aan de repository. Als de "
-"resultaten in behandeling zijn, kijk dan later terug."
-
-#: /work/echorepo/templates/results.html:132
-msgid "Go to final survey"
-msgstr "Ga naar de laatste enquête"
-
-#: /work/echorepo/templates/results.html:140
-msgid "Data use information"
-msgstr "Informatie over gegevensgebruik"
-
-#: /work/echorepo/templates/results.html:145
-msgid "Processing survey data in the ECHO project"
-msgstr "Verwerking van enquêtegegevens in het ECHO-project"
-
-#: /work/echorepo/templates/results.html:147
-msgid ""
-"The objective of this survey data is to examine the impact of project "
-"participation on participant attitudes and motivation towards soil."
-msgstr ""
-"Het doel van deze enquêtegegevens is de impact van projectparticipatie op"
-" de attitudes van deelnemers en motivatie ten opzichte van de bodem te "
-"onderzoeken."
-
-#: /work/echorepo/templates/results.html:150
-msgid ""
-"Your information will only be used for scientific purposes. We do not "
-"collect names or addresses. Your details regarding age and gender are "
-"only used for statistical purposes and all details are collected and "
-"evaluated anonymously. It is not possible to draw conclusions about your "
-"person at any time."
-msgstr ""
-"Uw informatie wordt alleen gebruikt voor wetenschappelijke doeleinden. We"
-" verzamelen geen namen of adressen. Uw gegevens over leeftijd en geslacht"
-" worden alleen gebruikt voor statistische doeleinden en alle details "
-"worden anoniem verzameld en geëvalueerd. Het is op geen enkel moment "
-"mogelijk om conclusies over uw persoon te trekken."
-
-#: /work/echorepo/templates/results.html:153
-msgid ""
-"Answering each question in the survey is most appreciated as it plays a "
-"crucial role in providing valuable insights that enhance the relevance "
-"and impact of the ECHO project. Your honest responses are essential for "
-"understanding how engagement with the project influences attitudes and "
-"motivations, ensuring the project’s outcomes are meaningful and well-"
-"informed."
-msgstr ""
-"Het beantwoorden van elke vraag in de enquête wordt het meest gewaardeerd"
-" omdat het een cruciale rol speelt bij het verschaffen van waardevolle "
-"inzichten die de relevantie en impact van het ECHO-project vergroten. Uw "
-"eerlijke reacties zijn essentieel om te begrijpen hoe betrokkenheid met "
-"het project invloed heeft op attitudes en motivaties, zodat de resultaten"
-" van het project zinvol en goed geïnformeerd zijn."
-
-#: /work/echorepo/templates/results.html:156
-msgid ""
-"The survey will take approximately 8–10 minutes to complete. Please find "
-"a quiet space where you won’t be interrupted. There are no right or wrong"
-" answers — answer spontaneously."
-msgstr ""
-"Het onderzoek duurt ongeveer 80.000 minuten. Zoek een rustige ruimte waar"
-" u niet onderbroken wordt. Er zijn geen goede of foute antwoorden."
-
-#: /work/echorepo/templates/results.html:159
-msgid ""
-"Based on the information provided to you, please consent to participate "
-"in the survey below."
-msgstr ""
-"Op basis van de aan u verstrekte informatie, stemt u ermee in om deel te "
-"nemen aan onderstaande enquête."
-
-#: /work/echorepo/templates/results.html:170
+#: /work/echorepo/templates/results.html:110
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Gegevensproblemen oplossen (%(n)s)"
 
-#: /work/echorepo/templates/results.html:181
+#: /work/echorepo/templates/results.html:126
+msgid "Final survey"
+msgstr "Eindonderzoek"
+
+#: /work/echorepo/templates/results.html:128
+msgid "We sincerely thank you for your commitment to this project!"
+msgstr "Wij danken u oprecht voor uw inzet voor dit project!"
+
+#: /work/echorepo/templates/results.html:131
+msgid ""
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after soil sampling. The majority of questions are "
+"consistent with the previous surveys so that we can accurately measure "
+"changes over time and understand the impact of project participation."
+msgstr ""
+"Dit is de derde en laatste enquête in het project, na de eerste die je voor "
+"en na bodembemonstering hebt afgerond. De meeste vragen komen overeen met de "
+"vorige enquêtes, zodat we veranderingen in de tijd nauwkeurig kunnen meten en"
+" de impact van projectparticipatie kunnen begrijpen."
+
+#: /work/echorepo/templates/results.html:134
+msgid ""
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already been added to the repository. If the results"
+" are pending, please check back at a later time."
+msgstr ""
+"Voordat u start: vul dit onderzoek alleen in als het lab resultaten van uw "
+"bodemmonster(s) al zijn toegevoegd aan de repository. Als de resultaten in "
+"behandeling zijn, kijk dan later terug."
+
+#: /work/echorepo/templates/results.html:139
+msgid "Go to final survey"
+msgstr "Ga naar de laatste enquête"
+
+#: /work/echorepo/templates/results.html:147
+msgid "Data use information"
+msgstr "Informatie over gegevensgebruik"
+
+#: /work/echorepo/templates/results.html:152
+msgid "Processing survey data in the ECHO project"
+msgstr "Verwerking van enquêtegegevens in het ECHO-project"
+
+#: /work/echorepo/templates/results.html:154
+msgid ""
+"The objective of this survey data is to examine the impact of project "
+"participation on participant attitudes and motivation towards soil."
+msgstr ""
+"Het doel van deze enquêtegegevens is de impact van projectparticipatie op de "
+"attitudes van deelnemers en motivatie ten opzichte van de bodem te "
+"onderzoeken."
+
+#: /work/echorepo/templates/results.html:157
+msgid ""
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your details regarding age and gender are only used for "
+"statistical purposes and all details are collected and evaluated anonymously."
+" It is not possible to draw conclusions about your person at any time."
+msgstr ""
+"Uw informatie wordt alleen gebruikt voor wetenschappelijke doeleinden. We "
+"verzamelen geen namen of adressen. Uw gegevens over leeftijd en geslacht "
+"worden alleen gebruikt voor statistische doeleinden en alle details worden "
+"anoniem verzameld en geëvalueerd. Het is op geen enkel moment mogelijk om "
+"conclusies over uw persoon te trekken."
+
+#: /work/echorepo/templates/results.html:160
+msgid ""
+"Answering each question in the survey is most appreciated as it plays a "
+"crucial role in providing valuable insights that enhance the relevance and "
+"impact of the ECHO project. Your honest responses are essential for "
+"understanding how engagement with the project influences attitudes and "
+"motivations, ensuring the project’s outcomes are meaningful and well-"
+"informed."
+msgstr ""
+"Het beantwoorden van elke vraag in de enquête wordt het meest gewaardeerd "
+"omdat het een cruciale rol speelt bij het verschaffen van waardevolle "
+"inzichten die de relevantie en impact van het ECHO-project vergroten. Uw "
+"eerlijke reacties zijn essentieel om te begrijpen hoe betrokkenheid met het "
+"project invloed heeft op attitudes en motivaties, zodat de resultaten van het"
+" project zinvol en goed geïnformeerd zijn."
+
+#: /work/echorepo/templates/results.html:163
+msgid ""
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be interrupted. There are no right or wrong "
+"answers — answer spontaneously."
+msgstr ""
+"Het onderzoek duurt ongeveer 80.000 minuten. Zoek een rustige ruimte waar u "
+"niet onderbroken wordt. Er zijn geen goede of foute antwoorden."
+
+#: /work/echorepo/templates/results.html:166
+msgid ""
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
+msgstr ""
+"Op basis van de aan u verstrekte informatie, stemt u ermee in om deel te "
+"nemen aan onderstaande enquête."
+
+#: /work/echorepo/templates/results.html:174
 msgid "No data found for"
 msgstr "Geen gegevens gevonden voor"
 
-#: /work/echorepo/templates/results.html:181
+#: /work/echorepo/templates/results.html:174
 msgid "If you recently submitted samples, try again later."
 msgstr "Als je onlangs monsters hebt ingediend, probeer het dan later nog eens."
 
-#: /work/echorepo/templates/results.html:194
+#: /work/echorepo/templates/results.html:187
 msgid "Download"
 msgstr "Downloaden"
 
-#: /work/echorepo/templates/results.html:200
+#: /work/echorepo/templates/results.html:194
 msgid "CSV (per-user)"
 msgstr "CSV (per gebruiker)"
 
-#: /work/echorepo/templates/results.html:206
+#: /work/echorepo/templates/results.html:202
 msgid "XLSX (per-user)"
 msgstr "XLSX (per gebruiker)"
 
-#: /work/echorepo/templates/results.html:212
+#: /work/echorepo/templates/results.html:209
 msgid "All samples (CSV, anonymised)"
 msgstr "Alle monsters (CSV, geanonimiseerd)"
 
-#: /work/echorepo/templates/results.html:217
+#: /work/echorepo/templates/results.html:214
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (per gebruiker)"
 
-#: /work/echorepo/templates/results.html:227
+#: /work/echorepo/templates/results.html:218
+msgid "Canonical exports"
+msgstr "Canonische uitvoer"
+
+#: /work/echorepo/templates/results.html:221
+msgid "samples.csv"
+msgstr "samples.csv"
+
+#: /work/echorepo/templates/results.html:226
+msgid "sample_images.csv"
+msgstr "sample_images.csv"
+
+#: /work/echorepo/templates/results.html:231
+msgid "sample_parameters.csv"
+msgstr "sample_parameters.csv"
+
+#: /work/echorepo/templates/results.html:236
+msgid "All canonical (zip)"
+msgstr "Alle canoniek (zip)"
+
+#: /work/echorepo/templates/results.html:245
 msgid "min"
 msgstr "min"
 
-#: /work/echorepo/templates/results.html:230
+#: /work/echorepo/templates/results.html:248
 msgid "max"
 msgstr "max"
 
-#: /work/echorepo/templates/results.html:232
+#: /work/echorepo/templates/results.html:250
 msgid "Apply pH filter"
 msgstr "PH-filter toepassen"
 
-#: /work/echorepo/templates/results.html:232
+#: /work/echorepo/templates/results.html:250
 msgid "Apply"
 msgstr "Toepassen"
 
-#: /work/echorepo/templates/results.html:234
+#: /work/echorepo/templates/results.html:252
 msgid "Export rows matching current pH filter"
 msgstr "Rijen exporteren die overeenkomen met het huidige pH-filter"
 
-#: /work/echorepo/templates/results.html:235
+#: /work/echorepo/templates/results.html:253
 msgid "Export filtered (0)"
 msgstr "Gefilterd exporteren (0)"
+
+#: /work/echorepo/templates/results.html:280
+msgid "Privacy information"
+msgstr "Privacy-informatie"
+
+#: /work/echorepo/templates/results.html:288
+msgid ""
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for this project."
+msgstr ""
+"Ik heb de privacy-informatie hierboven gelezen en ik stem in met de "
+"verwerking van mijn persoonsgegevens voor dit project."
+
+#: /work/echorepo/templates/results.html:295
+msgid "Accept and continue"
+msgstr "Accepteren en voortzetten"
+
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:81
+msgid "Sample / QR"
+msgstr "Monster / QR"
+
+#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:83
+msgid "Country"
+msgstr "Land"
+
+#: /work/echorepo/templates/search.html:17
+msgid "Any country"
+msgstr "Elk land"
+
+#: /work/echorepo/templates/search.html:18
+msgid "Czechia"
+msgstr "Tsjechië"
+
+#: /work/echorepo/templates/search.html:19
+msgid "Germany"
+msgstr "Duitsland"
+
+#: /work/echorepo/templates/search.html:20
+msgid "Spain"
+msgstr "Spanje"
+
+#: /work/echorepo/templates/search.html:21
+msgid "Finland"
+msgstr "Finland"
+
+#: /work/echorepo/templates/search.html:22
+msgid "France"
+msgstr "Frankrijk"
+
+#: /work/echorepo/templates/search.html:23
+msgid "United Kingdom"
+msgstr "Verenigd Koninkrijk"
+
+#: /work/echorepo/templates/search.html:24
+msgid "Greece"
+msgstr "Griekenland"
+
+#: /work/echorepo/templates/search.html:25
+msgid "Italy"
+msgstr "Italië"
+
+#: /work/echorepo/templates/search.html:26
+msgid "Netherlands"
+msgstr "Nederland"
+
+#: /work/echorepo/templates/search.html:27
+msgid "Poland"
+msgstr "Polen"
+
+#: /work/echorepo/templates/search.html:28
+msgid "Portugal"
+msgstr "Portugal"
+
+#: /work/echorepo/templates/search.html:29
+msgid "Romania"
+msgstr "Roemenië"
+
+#: /work/echorepo/templates/search.html:30
+msgid "Slovakia"
+msgstr "Slowakije"
+
+#: /work/echorepo/templates/search.html:35
+msgid "pH min"
+msgstr "p H min"
+
+#: /work/echorepo/templates/search.html:39
+msgid "pH max"
+msgstr "p H max"
+
+#: /work/echorepo/templates/search.html:44
+msgid "Search"
+msgstr "Zoeken"
+
+#: /work/echorepo/templates/search.html:51
+msgid "Date from"
+msgstr "Datum"
+
+#: /work/echorepo/templates/search.html:55
+msgid "Date to"
+msgstr "Datum tot"
+
+#: /work/echorepo/templates/search.html:69
+msgid "Export current search"
+msgstr "Huidige zoekopdracht exporteren"
+
+#: /work/echorepo/templates/search.html:82
+msgid "Timestamp"
+msgstr "Tijdstempel"
+
+#: /work/echorepo/templates/search.html:87
+msgid "Collected by"
+msgstr "Verzameld door"
+
+#: /work/echorepo/templates/search.html:106
+msgid "No results for these filters."
+msgstr "Geen resultaten voor deze filters."
+
+#: /work/echorepo/templates/search.html:118
+msgid "Showing page"
+msgstr "Resultaat pagina"
+
+#: /work/echorepo/templates/search.html:118
+msgid "of"
+msgstr "van"
+
+#: /work/echorepo/templates/search.html:118
+msgid "results"
+msgstr "resultaten"
 
 #~ msgid "Export filtered (%(n)s)"
 #~ msgstr "Gefilterd exporteren (%(n)s)"
@@ -558,7 +698,13 @@ msgstr "Gefilterd exporteren (0)"
 
 #~ msgid "Some samples need attention to ensure correct maps and downloads."
 #~ msgstr ""
-#~ "Sommige samples hebben aandacht nodig om"
-#~ " te zorgen voor correcte kaarten en"
-#~ " downloads."
+#~ "Sommige samples hebben aandacht nodig om "
+#~ "te zorgen voor correcte kaarten en "
+#~ "downloads."
+
+#~ msgid "Any country"
+#~ msgstr "Elk land"
+
+#~ msgid "Copy user key"
+#~ msgstr "Gebruikerssleutel kopiëren"
 
