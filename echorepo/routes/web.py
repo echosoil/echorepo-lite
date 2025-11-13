@@ -487,7 +487,17 @@ def home():
 def i18n_labels():
     return jsonify({"labels": build_i18n_labels(_js_base_labels())})
 
-
+@web_bp.get("/labels")
+@login_required
+def labels_json():
+    loc_raw = request.args.get("locale") or str(get_locale() or "en")
+    loc = _canon_locale(loc_raw)
+    payload = {
+        "labels": _make_labels(loc),               # key → text (already merges catalog + overrides)
+        "by_msgid": get_overrides_msgid(loc) or {} # msgid → override text (only overrides)
+    }
+    return jsonify(payload)
+    
 @web_bp.post("/download/csv")
 @login_required
 def download_csv():

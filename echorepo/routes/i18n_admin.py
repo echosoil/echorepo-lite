@@ -95,14 +95,16 @@ def admin_page():
 
     if scope == "page":
         entries = _load_pot_entries()
-        # also fold in JS msgids so you can fix them here too
-        for key, msgid in BASE_LABEL_MSGIDS.items():
-            entries.append({"msgid": msgid, "refs": ["static/js/map.js"]})
+        # Deduplicate just in case messages.pot has repeats
+        seen = set()
 
         msg_over = get_overrides_msgid(loc)
 
         for e in entries:
             msgid = e["msgid"]
+            if msgid in seen:
+                continue
+            seen.add(msgid)
             refs = e.get("refs", [])
 
             if file_filter and not any(file_filter in r for r in refs):
