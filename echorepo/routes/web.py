@@ -28,7 +28,7 @@ from flask_babel import gettext as _, get_locale
 from ..config import settings
 from ..auth.decorators import login_required
 from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment
-from ..services.validation import find_default_coord_rows, annotate_country_mismatches
+from ..services.validation import find_default_coord_rows, select_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 
@@ -444,7 +444,7 @@ def home():
 
     # NON-EMPTY: data issues ------------------------------------------------
     defaults = find_default_coord_rows(df)
-    mism = annotate_country_mismatches(df)
+    mism = select_country_mismatches(df)
     issue_count = len(defaults) + len(mism)
 
     # HTML copy — prettify timestamp column
