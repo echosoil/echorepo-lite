@@ -55,6 +55,12 @@ def _pg_conn():
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
 # --------------------------------------------------------------------------
+def _env_true(name: str, default: bool = True) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return str(val).strip().lower() in {"1", "true", "yes", "on", "y", "t"}
+
 def _get_repo_user_id_from_db() -> str | None:
     """
     Return the userId we store in the samples table (the same we use for the
@@ -342,6 +348,8 @@ def _stream_minio_canonical(obj_name: str):
 @web_bp.post("/privacy/accept")
 @login_required
 def privacy_accept():
+    if not _env_true("PRIVACY_GATE", True):  # short-circuit the accept route when off
+        return redirect(url_for("web.home"))
     repo_user_id = _get_repo_user_id_from_db()
     if not repo_user_id:
         abort(400, description="Cannot determine userId from database")
@@ -391,7 +399,8 @@ def home():
 
     # privacy gate
     privacy_user_id = _get_repo_user_id_from_db()
-    needs_privacy = not _has_accepted_privacy(privacy_user_id or "")
+    privacy_gate_on = _env_true("PRIVACY_GATE", True)  # default ON unless overridden
+    needs_privacy = privacy_gate_on and not _has_accepted_privacy(privacy_user_id or "")
 
     # user data
     df = query_user_df(user_key)
@@ -497,7 +506,7 @@ def labels_json():
         "by_msgid": get_overrides_msgid(loc) or {} # msgid → override text (only overrides)
     }
     return jsonify(payload)
-    
+
 @web_bp.post("/download/csv")
 @login_required
 def download_csv():
