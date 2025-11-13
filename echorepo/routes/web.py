@@ -19,6 +19,9 @@ import json
 import io
 import zipfile  # kept in case you later want to build ZIPs locally
 import logging
+import csv
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 from flask_babel import gettext as _, get_locale
 
@@ -29,8 +32,122 @@ from ..services.validation import find_default_coord_rows, annotate_country_mism
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 
+# constants for privacy acceptance
+PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
+PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv")
+
 # blueprint
 web_bp = Blueprint("web", __name__)
+
+# --------------------------------------------------------------------------
+# --- Postgres helpers -----------------------------------------------------
+# --------------------------------------------------------------------------
+def _pg_conn():
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST_INSIDE", "echorepo-postgres"),
+        port=int(os.getenv("DB_PORT_INSIDE", "5432")),
+        dbname=os.getenv("DB_NAME", "echorepo"),
+        user=os.getenv("DB_USER", "echorepo"),
+        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
+    )
+
+
+# --------------------------------------------------------------------------
+# --- Privacy acceptance helpers -------------------------------------------
+# --------------------------------------------------------------------------
+def _env_true(name: str, default: bool = True) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return str(val).strip().lower() in {"1", "true", "yes", "on", "y", "t"}
+
+def _get_repo_user_id_from_db() -> str | None:
+    """
+    Return the userId we store in the samples table (the same we use for the
+    survey r= param). Falls back to the display user_key if nothing else is found.
+    """
+    # this is the same way you find the "logical" user
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    if not user_key:
+        return None
+
+    df = query_user_df(user_key)
+    if df is None or df.empty:
+        return user_key  # last resort
+
+    for col in ("userId", "user_id", "kc_user_id"):
+        if col in df.columns:
+            val = df[col].dropna().astype(str).iloc[0].strip()
+            if val:
+                return val
+
+    return user_key
+
+def _current_user_id() -> str | None:
+    kc_profile = (session.get("kc") or {}).get("profile") or {}
+
+    # prefer a stable internal KC id
+    if kc_profile.get("id"):
+        return kc_profile["id"]
+    if kc_profile.get("sub"):
+        return kc_profile["sub"]
+
+    # then fall back to whatever you used before
+    if session.get("user"):
+        return session["user"]
+
+    # last resort: email
+    if kc_profile.get("email"):
+        return kc_profile["email"]
+
+    return None
+
+def _has_accepted_privacy(user_id: str) -> bool:
+    if not user_id:
+        return False
+    # fast path: we can also store in session
+    if session.get("privacy_accepted_version") == PRIVACY_VERSION:
+        return True
+
+    if not os.path.exists(PRIVACY_CSV_PATH):
+        return False
+
+    try:
+        with open(PRIVACY_CSV_PATH, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if (
+                    row.get("user_id") == user_id
+                    and row.get("version") == PRIVACY_VERSION
+                ):
+                    # cache in session
+                    session["privacy_accepted_version"] = PRIVACY_VERSION
+                    return True
+    except Exception:
+        return False
+
+    return False
+
+
+def _append_privacy_acceptance(user_id: str):
+    dir_name = os.path.dirname(PRIVACY_CSV_PATH)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+
+    file_exists = os.path.exists(PRIVACY_CSV_PATH)
+    with open(PRIVACY_CSV_PATH, "a", newline="", encoding="utf-8") as f:
+        fieldnames = ["user_id", "accepted_at", "version"]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(
+            {
+                "user_id": user_id,
+                "accepted_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                "version": PRIVACY_VERSION,
+            }
+        )
+    session["privacy_accepted_version"] = PRIVACY_VERSION
 
 # --------------------------------------------------------------------------
 # SoSci survey helper
@@ -148,6 +265,18 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
 
 
 # --------------------------------------------------------------------------
+# Postgres helpers
+# -------------------------------------------------------------------------
+def get_pg_conn():
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST_INSIDE", "echorepo-postgres"),
+        port=int(os.getenv("DB_PORT_INSIDE", "5432")),
+        dbname=os.getenv("DB_NAME", "echorepo"),
+        user=os.getenv("DB_USER", "echorepo"),
+        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
+    )
+
+# --------------------------------------------------------------------------
 # MinIO helpers + canonical download routes (proxy through Flask)
 # --------------------------------------------------------------------------
 try:
@@ -216,6 +345,22 @@ def _stream_minio_canonical(obj_name: str):
         download_name=obj_name,
     )
 
+@web_bp.post("/privacy/accept")
+@login_required
+def privacy_accept():
+    if not _env_true("PRIVACY_GATE", True):  # short-circuit the accept route when off
+        return redirect(url_for("web.home"))
+    repo_user_id = _get_repo_user_id_from_db()
+    if not repo_user_id:
+        abort(400, description="Cannot determine userId from database")
+
+    # make sure the dir exists (handle the case when path has no dir part)
+    dir_name = os.path.dirname(PRIVACY_CSV_PATH)
+    if dir_name:
+      os.makedirs(dir_name, exist_ok=True)
+
+    _append_privacy_acceptance(repo_user_id)
+    return redirect(url_for("web.home"))
 
 @web_bp.route("/download/canonical/samples.csv")
 @login_required
@@ -247,13 +392,21 @@ def download_canonical_zip():
 @web_bp.get("/", endpoint="home")
 @login_required
 def home():
+    # who is this
     user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
     if not user_key:
         return redirect(url_for("auth.login"))
 
+    # privacy gate
+    privacy_user_id = _get_repo_user_id_from_db()
+    privacy_gate_on = _env_true("PRIVACY_GATE", True)  # default ON unless overridden
+    needs_privacy = privacy_gate_on and not _has_accepted_privacy(privacy_user_id or "")
+
+    # user data
     df = query_user_df(user_key)
     i18n = {"labels": build_i18n_labels(_js_base_labels())}
 
+    # try to get "real" internal user id from data
     kc_user_id = None
     if not df.empty:
         for col in ("userId", "user_id", "kc_user_id"):
@@ -261,13 +414,15 @@ def home():
                 kc_user_id = df[col].dropna().astype(str).iloc[0].strip()
                 break
 
+    # survey url
     survey_user_id = kc_user_id or user_key
     survey_url = _build_sosci_url(survey_user_id)
 
+    # only show survey if user actually has metals-like data
     has_metals = _user_has_metals(df)
     show_survey = bool(survey_url) and has_metals
 
-    # empty state
+    # EMPTY CASE ------------------------------------------------------------
     if df.empty:
         return render_template(
             "results.html",
@@ -282,15 +437,18 @@ def home():
             I18N=i18n,
             survey_url=survey_url,
             show_survey=False,
+            # privacy
+            needs_privacy=needs_privacy,
+            privacy_version=PRIVACY_VERSION,
         )
 
-    # issues
+    # NON-EMPTY: data issues ------------------------------------------------
     defaults = find_default_coord_rows(df)
     mism = annotate_country_mismatches(df)
     issue_count = len(defaults) + len(mism)
 
+    # HTML copy — prettify timestamp column
     df_html = df.copy()
-    print("[--------TEST-----------]", df_html.columns, df_html.head())
     if "fs_createdAt" in df_html.columns:
         df_html["fs_createdAt"] = (
             df_html["fs_createdAt"]
@@ -324,6 +482,9 @@ def home():
         I18N=i18n,
         survey_url=survey_url,
         show_survey=show_survey,
+        # privacy flags for the modal
+        needs_privacy=needs_privacy,
+        privacy_version=PRIVACY_VERSION,
     )
 
 
@@ -335,6 +496,16 @@ def home():
 def i18n_labels():
     return jsonify({"labels": build_i18n_labels(_js_base_labels())})
 
+@web_bp.get("/labels")
+@login_required
+def labels_json():
+    loc_raw = request.args.get("locale") or str(get_locale() or "en")
+    loc = _canon_locale(loc_raw)
+    payload = {
+        "labels": _make_labels(loc),               # key → text (already merges catalog + overrides)
+        "by_msgid": get_overrides_msgid(loc) or {} # msgid → override text (only overrides)
+    }
+    return jsonify(payload)
 
 @web_bp.post("/download/csv")
 @login_required
@@ -596,3 +767,178 @@ def lab_upload_post():
     if not file:
         abort(400, "No file")
     return redirect(url_for("web.home"))
+
+@web_bp.route("/search", endpoint="search_samples", methods=["GET"])
+@login_required
+def search_samples():
+    # ----- read filters from querystring -----
+    criteria = {
+        "sample_id": (request.args.get("sample_id") or "").strip(),
+        "country_code": (request.args.get("country_code") or "").strip().upper(),
+        "ph_min": (request.args.get("ph_min") or "").strip(),
+        "ph_max": (request.args.get("ph_max") or "").strip(),
+        "date_from": (request.args.get("date_from") or "").strip(),
+        "date_to": (request.args.get("date_to") or "").strip(),
+    }
+    fmt = (request.args.get("format") or "").lower()
+
+    # pagination (for HTML)
+    page = max(int(request.args.get("page", 1)), 1)
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    # helper to build WHERE + params
+    def _build_where(criteria):
+        where = ["1=1"]
+        params = []
+        if criteria["sample_id"]:
+            where.append("sample_id ILIKE %s")
+            params.append(f"%{criteria['sample_id']}%")
+        if criteria["country_code"]:
+            where.append("country_code = %s")
+            params.append(criteria["country_code"])
+        if criteria["ph_min"]:
+            where.append("ph >= %s")
+            params.append(float(criteria["ph_min"]))
+        if criteria["ph_max"]:
+            where.append("ph <= %s")
+            params.append(float(criteria["ph_max"]))
+        if criteria["date_from"]:
+            where.append("timestamp_utc >= %s")
+            params.append(criteria["date_from"])
+        if criteria["date_to"]:
+            where.append("timestamp_utc <= %s")
+            params.append(criteria["date_to"])
+        return " AND ".join(where), params
+
+    where_sql, params = _build_where(criteria)
+
+    # ---- special case: export as ZIP ----
+    if fmt == "zip":
+        import csv, io, zipfile
+
+        # we need *all* matching sample_ids (no limit)
+        sql_all = f"""
+            SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
+            FROM samples
+            WHERE {where_sql}
+            ORDER BY timestamp_utc DESC
+        """
+
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            # 1) get all matching samples
+            cur.execute(sql_all, params)
+            samples = cur.fetchall()
+            sample_ids = [row[0] for row in samples if row[0]]
+
+            # to avoid "IN ()" when no results
+            if not sample_ids:
+                # return empty zip
+                mem = io.BytesIO()
+                with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+                    zf.writestr("samples_filtered.csv", "sample_id,timestamp_utc,country_code,ph,lat,lon,collected_by\n")
+                    zf.writestr("sample_images_filtered.csv", "sample_id,country_code,image_id,image_url,image_description_orig,image_description_en,collected_by,timestamp_utc,licence\n")
+                    zf.writestr("sample_parameters_filtered.csv", "sample_id,country_code,parameter_code,parameter_name,value,uom,analysis_method,analysis_date,lab_id,created_by,licence,parameter_uri\n")
+                mem.seek(0)
+                return send_file(
+                    mem,
+                    as_attachment=True,
+                    download_name="search_export.zip",
+                    mimetype="application/zip",
+                )
+
+            # 2) fetch images for those sample_ids
+            sql_imgs = """
+                SELECT sample_id, country_code, image_id, image_url,
+                       image_description_orig, image_description_en,
+                       collected_by, timestamp_utc, licence
+                FROM sample_images
+                WHERE sample_id = ANY(%s)
+                ORDER BY sample_id, image_id
+            """
+            cur.execute(sql_imgs, (sample_ids,))
+            images = cur.fetchall()
+
+            # 3) fetch parameters for those sample_ids
+            sql_params = """
+                SELECT sample_id, country_code, parameter_code, parameter_name,
+                       value, uom, analysis_method, analysis_date,
+                       lab_id, created_by, licence, parameter_uri
+                FROM sample_parameters
+                WHERE sample_id = ANY(%s)
+                ORDER BY sample_id, parameter_code
+            """
+            cur.execute(sql_params, (sample_ids,))
+            params_rows = cur.fetchall()
+
+        # build zip in-memory
+        mem = io.BytesIO()
+        with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+            # samples_filtered.csv
+            out1 = io.StringIO()
+            w1 = csv.writer(out1)
+            w1.writerow(["sample_id", "timestamp_utc", "country_code", "ph", "lat", "lon", "collected_by"])
+            for r in samples:
+                w1.writerow(r)
+            zf.writestr("samples_filtered.csv", out1.getvalue())
+
+            # sample_images_filtered.csv
+            out2 = io.StringIO()
+            w2 = csv.writer(out2)
+            w2.writerow(["sample_id", "country_code", "image_id", "image_url",
+                         "image_description_orig", "image_description_en",
+                         "collected_by", "timestamp_utc", "licence"])
+            for r in images:
+                w2.writerow(r)
+            zf.writestr("sample_images_filtered.csv", out2.getvalue())
+
+            # sample_parameters_filtered.csv
+            out3 = io.StringIO()
+            w3 = csv.writer(out3)
+            w3.writerow(["sample_id", "country_code", "parameter_code", "parameter_name",
+                         "value", "uom", "analysis_method", "analysis_date",
+                         "lab_id", "created_by", "licence", "parameter_uri"])
+            for r in params_rows:
+                w3.writerow(r)
+            zf.writestr("sample_parameters_filtered.csv", out3.getvalue())
+
+        mem.seek(0)
+        return send_file(
+            mem,
+            as_attachment=True,
+            download_name="search_export.zip",
+            mimetype="application/zip",
+        )
+
+    # ---- normal HTML search with pagination ----
+    total_rows = 0
+    rows = []
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        # count
+        cur.execute(f"SELECT COUNT(*) FROM samples WHERE {where_sql}", params)
+        total_rows = cur.fetchone()["count"]
+
+        # page
+        cur.execute(
+            f"""
+            SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
+            FROM samples
+            WHERE {where_sql}
+            ORDER BY timestamp_utc DESC
+            LIMIT %s OFFSET %s
+            """,
+            params + [per_page, offset],
+        )
+        rows = cur.fetchall()
+
+    total_pages = max((total_rows + per_page - 1) // per_page, 1)
+
+    return render_template(
+        "search.html",
+        criteria=criteria,
+        rows=rows,
+        page=page,
+        total_pages=total_pages,
+        total_rows=total_rows,
+    )
