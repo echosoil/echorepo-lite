@@ -416,255 +416,6 @@ def _guess_ext_from_firebase_url(url: str) -> str:
         return "." + last.rsplit(".", 1)[-1]
     return ".bin"
 
-# ---- Translation helpers ------------------------------------------------------------
-COUNTRY_TO_LANG = {
-    "ES":"es","PT":"pt","FR":"fr","IT":"it","DE":"de","PL":"pl",
-    "CZ":"cs","SK":"sk","RO":"ro","HU":"hu","BG":"bg","EL":"el","GR":"el",
-    "FI":"fi","SE":"sv","DK":"da","NO":"no","NL":"nl","BE":"fr","CH":"de",
-    "LT":"lt","LV":"lv","EE":"et","HR":"hr","SI":"sl","UA":"uk","RU":"ru",
-    "TR":"tr","IE":"en","GB":"en","UK":"en"
-}
-
-_lt_ready = False
-_translate_cache : dict[tuple[str,str], str] = {}  # (text, cc) -> en
-
-def _ensure_lt_ready(timeout_sec: int | None = None) -> bool:
-    """Poll LT /languages until it responds, or timeout."""
-    global _lt_ready
-    if _lt_ready:
-        return True
-    LT = os.getenv("LT_ENDPOINT")
-    if not LT:
-        return False
-    timeout_sec = int(os.getenv("LT_WAIT_SECS", "60")) if timeout_sec is None else timeout_sec
-    deadline = time.time() + timeout_sec
-    while time.time() < deadline:
-        try:
-            r = requests.get(f"{LT}/languages", timeout=3)
-            if r.ok:
-                _lt_ready = True
-                return True
-        except Exception:
-            pass
-        time.sleep(2)
-    # last try won't crash the pipeline; just mark not-ready
-    return False
-
-def _lt_detect(text: str) -> tuple[str | None, float]:
-    """Return (lang, confidence) from LT /detect; fallback to (None, 0.0) on error."""
-    LT = os.getenv("LT_ENDPOINT")
-    if not LT:
-        return (None, 0.0)
-    try:
-        r = requests.post(f"{LT}/detect", data={"q": text}, timeout=6)
-        r.raise_for_status()
-        arr = r.json() or []
-        if isinstance(arr, list) and arr:
-            lang = arr[0].get("language")
-            conf = float(arr[0].get("confidence", 0.0) or 0.0)
-            return (lang, conf)
-    except Exception:
-        pass
-    return (None, 0.0)
-
-def _looks_englishish(s: str) -> bool:
-    if not s:
-        return True
-    # ASCII + common punctuation; reject if obvious diacritics
-    if re.search(r"[áéíóúñçøåäößřłęóśążźîôûêêčďťůýžășțğİı]", s, flags=re.IGNORECASE):
-        return False
-    return bool(re.fullmatch(r"[A-Za-z0-9 ,.;:'\"()/_+-]+", s))
-
-import time
-from collections import defaultdict
-
-COUNTRY_TO_LANG = {
-    "ES":"es","PT":"pt","FR":"fr","IT":"it","DE":"de","PL":"pl","CZ":"cs","SK":"sk","RO":"ro",
-    "HU":"hu","BG":"bg","EL":"el","GR":"el","FI":"fi","SE":"sv","DK":"da","NO":"no","NL":"nl",
-    "BE":"fr","CH":"de","LT":"lt","LV":"lv","EE":"et","HR":"hr","SI":"sl","UA":"uk","RU":"ru",
-    "TR":"tr","IE":"en","GB":"en","UK":"en"
-}
-
-_lt_ready = False
-_translate_cache : dict[tuple[str,str], str] = {}  # (text, cc) -> en
-
-def _ensure_lt_ready(timeout_sec: int | None = None) -> bool:
-    """Poll LibreTranslate /languages until it responds, or timeout."""
-    global _lt_ready
-    if _lt_ready:
-        return True
-    LT = os.getenv("LT_ENDPOINT")
-    if not LT:
-        return False
-    timeout_sec = int(os.getenv("LT_WAIT_SECS", "60")) if timeout_sec is None else timeout_sec
-    deadline = time.time() + timeout_sec
-    while time.time() < deadline:
-        try:
-            r = requests.get(f"{LT}/languages", timeout=3)
-            if r.ok:
-                _lt_ready = True
-                return True
-        except Exception:
-            pass
-        time.sleep(2)
-    return False
-
-def _lt_detect_batch(texts: list[str]) -> list[tuple[str | None, float]]:
-    """Detect languages for many texts in one go. Returns list of (lang, conf) aligned with `texts`."""
-    LT = os.getenv("LT_ENDPOINT")
-    out = [(None, 0.0)] * len(texts)
-    if not LT or not texts:
-        return out
-    _ensure_lt_ready()
-    # send as repeated q fields; fall back to per-item on error
-    try:
-        data = []
-        for t in texts:
-            data.append(("q", t))
-        r = requests.post(f"{LT}/detect", data=data, timeout=12)
-        r.raise_for_status()
-        resp = r.json()
-        # resp can be [{language,confidence}, ...] OR [[{...}], [...], ...]
-        norm = []
-        if isinstance(resp, list) and resp and isinstance(resp[0], dict):
-            norm = resp
-        elif isinstance(resp, list) and resp and isinstance(resp[0], list):
-            norm = [ (row[0] if row else {"language":None,"confidence":0.0}) for row in resp ]
-        else:
-            norm = []
-        ans = []
-        for item in norm:
-            lang = item.get("language") if isinstance(item, dict) else None
-            conf = float(item.get("confidence", 0.0) or 0.0) if isinstance(item, dict) else 0.0
-            ans.append((lang, conf))
-        # align lengths
-        if len(ans) == len(texts):
-            return ans
-        # else pad/trim
-        out = ans[:len(texts)] + [(None,0.0)] * max(0, len(texts)-len(ans))
-        return out
-    except Exception:
-        # fallback slow path
-        res = []
-        for t in texts:
-            try:
-                rr = requests.post(f"{LT}/detect", data={"q": t}, timeout=6)
-                rr.raise_for_status()
-                arr = rr.json() or []
-                if isinstance(arr, list) and arr:
-                    lang = arr[0].get("language")
-                    conf = float(arr[0].get("confidence", 0.0) or 0.0)
-                    res.append((lang, conf))
-                else:
-                    res.append((None, 0.0))
-            except Exception:
-                res.append((None, 0.0))
-        return res
-
-def translate_many_to_en(pairs: list[tuple[str, str | None]] ) -> dict[tuple[str,str], str]:
-    """
-    Batch translate many (text, country_code) pairs.
-    Returns {(text, CC): english_text}
-    """
-    LT = os.getenv("LT_ENDPOINT")
-    result : dict[tuple[str,str], str] = {}
-    if not pairs:
-        return result
-
-    # cache hit first
-    todo : list[tuple[str,str]] = []
-    for text, cc in pairs:
-        t = (text or "").strip()
-        CC = (cc or "").upper()
-        if not t:
-            result[(t, CC)] = ""
-            continue
-        key = (t, CC)
-        if key in _translate_cache:
-            result[key] = _translate_cache[key]
-        else:
-            todo.append((t, CC))
-
-    if not todo or not LT:
-        return result
-
-    _ensure_lt_ready()
-
-    # 1) detect in batch
-    detect_threshold = float(os.getenv("LT_DETECT_CONF", "0.60"))
-    texts = [t for (t, _) in todo]
-    det = _lt_detect_batch(texts)
-
-    # 2) decide source per item and group by source
-    by_source : dict[str, list[tuple[int, tuple[str,str]]]] = defaultdict(list)
-    for i, ((t, CC), (lang, conf)) in enumerate(zip(todo, det)):
-        if lang == "en" and conf >= 0.85:
-            _translate_cache[(t, CC)] = t
-            result[(t, CC)] = t
-            continue
-        if conf >= detect_threshold and lang:
-            src = lang
-        else:
-            src = COUNTRY_TO_LANG.get(CC, "auto")
-        by_source[src].append((i, (t, CC)))
-
-    # 3) translate per source in batches (repeat q field)
-    for src, lst in by_source.items():
-        if not lst:
-            continue
-        # prepare payload
-        payload = []
-        order_keys = []
-        for _, (t, CC) in lst:
-            payload.append(("q", t))
-            order_keys.append((t, CC))
-        payload.extend([("source", src or "auto"), ("target", "en")])
-        try:
-            rr = requests.post(f"{LT}/translate", data=payload, timeout=20)
-            rr.raise_for_status()
-            resp = rr.json()
-            # resp can be {"translatedText": "..."} or [{"translatedText": "..."}, ...]
-            if isinstance(resp, dict) and "translatedText" in resp:
-                outs = [resp["translatedText"]] * len(order_keys)
-            elif isinstance(resp, list):
-                outs = [ (x.get("translatedText") if isinstance(x, dict) else "") for x in resp ]
-            else:
-                outs = ["" for _ in order_keys]
-        except Exception:
-            # per-item fallback for this group
-            outs = []
-            for (t, _CC) in order_keys:
-                try:
-                    r1 = requests.post(
-                        f"{LT}/translate",
-                        data={"q": t, "source": src or "auto", "target": "en"},
-                        timeout=8,
-                    )
-                    r1.raise_for_status()
-                    outs.append((r1.json() or {}).get("translatedText") or t)
-                except Exception:
-                    outs.append(t)
-
-        # store
-        for (t, CC), out in zip(order_keys, outs):
-            out = out or t
-            _translate_cache[(t, CC)] = out
-            result[(t, CC)] = out
-
-    return result
-
-def translate_to_en(text: str, country_code: str | None = None) -> str:
-    """Keep a fast single-item API using the same cache and logic."""
-    text = (text or "").strip()
-    CC = (country_code or "").upper()
-    if not text:
-        return ""
-    key = (text, CC)
-    if key in _translate_cache:
-        return _translate_cache[key]
-    m = translate_many_to_en([key])
-    return m.get(key, text)
-
 # ----- Minio helpers ---------------------------------------------------------------------------
 def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str, mclient) -> str:
     if not url or not url.startswith(FBS_PREFIX) or mclient is None:
@@ -972,9 +723,15 @@ def _textify(v) -> str:
         return str(v)
 
 def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | None = None) -> pd.DataFrame:
+    """
+    Build canonical samples dataframe.
+
+    IMPORTANT: we NO LONGER call LibreTranslate here.
+    All *_en fields are left empty (NULL in Postgres) and will be
+    filled by translate_pg_en.py later, directly in Postgres.
+    """
     planned_map = planned_map or {}
-    pre_rows = []          # will hold per-row intermediates
-    translate_pairs = set()
+    pre_rows = []
     debug_missing = []
 
     for idx, r in df_flat.iterrows():
@@ -985,7 +742,8 @@ def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | N
         # original coords -> float
         orig_lat = r.get("GPS_lat")
         orig_lon = r.get("GPS_long")
-        lat_f = None; lon_f = None
+        lat_f = None
+        lon_f = None
         try:
             if lc_parse_coord is not None:
                 lat_f = lc_parse_coord(orig_lat, "lat")
@@ -1005,6 +763,7 @@ def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | N
         if qr_norm and qr_norm in planned_map:
             s = planned_map[qr_norm]
             planned_country = next(iter(s)) if len(s) == 1 else (sorted(s)[0] if s else "")
+
         # jitter like before
         lat_j, lon_j = lat_f, lon_f
         if (lat_f is not None and lon_f is not None and lc_det_jitter is not None):
@@ -1017,24 +776,22 @@ def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | N
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
         cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
         cont_other_orig = (r.get("SOIL_CONTAMINATION_comments") or "").strip()
-        pollutants_count = sum(1 for v in (cont_debris, cont_plastic, cont_other_orig) if v not in (0, "", None, False))
+        pollutants_count = sum(
+            1 for v in (cont_debris, cont_plastic, cont_other_orig)
+            if v not in (0, "", None, False)
+        )
 
-        # translatable fields (orig)
+        # translatable fields (orig only)
         soil_structure_orig = (r.get("SOIL_STRUCTURE_structure") or "").strip()
         soil_texture_orig   = (r.get("SOIL_TEXTURE_texture") or "").strip()
         observations_orig   = (r.get("SOIL_DIVER_observations") or "").strip()
         metals_info_orig    = (r.get("METALS_info") or "").strip()
 
-        # collect for batch translation (only non-empty)
-        CC = country or ""
-        for t in (cont_other_orig, soil_structure_orig, soil_texture_orig, observations_orig, metals_info_orig):
-            if t:
-                translate_pairs.add((t, CC))
-
         pre_rows.append({
             "sample_id": sample_id,
             "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
-            "lat": lat_j, "lon": lon_j,
+            "lat": lat_j,
+            "lon": lon_j,
             "country": country,
             "ph": r.get("PH_ph"),
             "earthworms_count": r.get("SOIL_DIVER_earthworms"),
@@ -1059,14 +816,9 @@ def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | N
                 "planned_country": planned_country,
             })
 
-    # batch translate once
-    en_map = translate_many_to_en(list(translate_pairs))
-
-    # build final rows
+    # Build final rows; *_en fields are intentionally empty
     rows = []
     for pr in pre_rows:
-        CC = pr["country"] or ""
-        get_en = lambda t: (en_map.get((t, CC)) if t else "")
         rows.append({
             "sample_id": pr["sample_id"],
             "timestamp_utc": pr["timestamp_utc"],
@@ -1080,18 +832,22 @@ def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | N
             "contamination_debris": pr["contamination_debris"],
             "contamination_plastic": pr["contamination_plastic"],
             "contamination_other_orig": pr["contamination_other_orig"],
-            "contamination_other_en": get_en(pr["contamination_other_orig"]),
-            "pollutants_count": sum(1 for v in (pr["contamination_debris"],
-                                                pr["contamination_plastic"],
-                                                pr["contamination_other_orig"]) if v not in (0, "", None, False)),
+            "contamination_other_en": "",  # will be filled later in Postgres
+            "pollutants_count": sum(
+                1 for v in (
+                    pr["contamination_debris"],
+                    pr["contamination_plastic"],
+                    pr["contamination_other_orig"],
+                ) if v not in (0, "", None, False)
+            ),
             "soil_structure_orig": pr["soil_structure_orig"],
-            "soil_structure_en":   get_en(pr["soil_structure_orig"]),
+            "soil_structure_en":   "",      # will be filled later
             "soil_texture_orig":   pr["soil_texture_orig"],
-            "soil_texture_en":     get_en(pr["soil_texture_orig"]),
+            "soil_texture_en":     "",      # will be filled later
             "observations_orig":   pr["observations_orig"],
-            "observations_en":     get_en(pr["observations_orig"]),
+            "observations_en":     "",      # will be filled later
             "metals_info_orig":    pr["metals_info_orig"],
-            "metals_info_en":      get_en(pr["metals_info_orig"]),
+            "metals_info_en":      "",      # will be filled later
             "collected_by": pr["collected_by"],
             "data_source": "mobile",
             "qa_status": pr["qa_status"],
@@ -1116,8 +872,15 @@ def _to_float_num(v):
         return None
 
 def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
+    """
+    Build canonical sample_images dataframe.
+
+    IMPORTANT: no translation here; image_description_en is empty
+    and will be filled in Postgres by translate_pg_en.py.
+    """
     img_rows = []
     photo_slots = list(range(1, 14))
+
     for _, r in df_flat.iterrows():
         lt = _to_float_num(r.get("GPS_lat"))
         ln = _to_float_num(r.get("GPS_long"))
@@ -1132,20 +895,21 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
             path = r.get(path_col)
             if not path or (isinstance(path, float) and math.isnan(path)) or str(path).strip().lower() == "nan":
                 continue
+
             comment_orig = (r.get(comment_col) or "").strip()
-            # keep as-is for now; see batch section below to translate images in bulk too
-            comment_en = translate_to_en(comment_orig, country_code=country) if comment_orig else ""
+
             img_rows.append({
                 "sample_id": sample_id,
                 "country_code": country,
                 "image_id": i,
                 "image_url": path,
                 "image_description_orig": comment_orig,
-                "image_description_en": comment_en,
+                "image_description_en": "",  # will be filled later in Postgres
                 "collected_by": r.get("userId"),
                 "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
                 "licence": DEFAULT_LICENCE,
             })
+
     return pd.DataFrame(img_rows)
 
 def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) -> pd.DataFrame:
@@ -1476,9 +1240,9 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
 
         # 3) swap into real tables
         # children first
-        cur.execute("TRUNCATE sample_parameters, sample_images, samples;")
+        cur.execute("TRUNCATE sample_parameters;")
 
-        # samples
+        # --- samples: upsert on sample_id, do NOT touch *_en on conflict ---
         cur.execute("""
         INSERT INTO samples (
             sample_id, timestamp_utc, lat, lon, country_code, location_accuracy_m,
@@ -1502,26 +1266,48 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
             NULLIF(TRIM(contamination_debris), '')::integer,
             NULLIF(TRIM(contamination_plastic), '')::integer,
             NULLIF(TRIM(contamination_other_orig), ''),
-            NULLIF(TRIM(contamination_other_en), ''),
+            NULLIF(TRIM(contamination_other_en), ''),   -- always NULL/empty from canonical
             NULLIF(TRIM(pollutants_count), '')::integer,
 
             NULLIF(TRIM(soil_structure_orig), ''),
-            NULLIF(TRIM(soil_structure_en), ''),
+            NULLIF(TRIM(soil_structure_en), ''),        -- always NULL/empty from canonical
             NULLIF(TRIM(soil_texture_orig), ''),
-            NULLIF(TRIM(soil_texture_en), ''),
+            NULLIF(TRIM(soil_texture_en), ''),          -- always NULL/empty from canonical
             NULLIF(TRIM(observations_orig), ''),
-            NULLIF(TRIM(observations_en), ''),
+            NULLIF(TRIM(observations_en), ''),          -- always NULL/empty from canonical
             NULLIF(TRIM(metals_info_orig), ''),
-            NULLIF(TRIM(metals_info_en), ''),
+            NULLIF(TRIM(metals_info_en), ''),           -- always NULL/empty from canonical
 
             NULLIF(TRIM(collected_by), ''),
             NULLIF(TRIM(data_source), ''),
             NULLIF(TRIM(qa_status), ''),
             NULLIF(TRIM(licence), '')
-        FROM samples_stage_raw;
+        FROM samples_stage_raw
+        ON CONFLICT (sample_id) DO UPDATE SET
+            -- DO NOT SET *_en here → we keep existing translations
+            timestamp_utc          = EXCLUDED.timestamp_utc,
+            lat                    = EXCLUDED.lat,
+            lon                    = EXCLUDED.lon,
+            country_code           = EXCLUDED.country_code,
+            location_accuracy_m    = EXCLUDED.location_accuracy_m,
+            ph                     = EXCLUDED.ph,
+            organic_carbon_pct     = EXCLUDED.organic_carbon_pct,
+            earthworms_count       = EXCLUDED.earthworms_count,
+            contamination_debris   = EXCLUDED.contamination_debris,
+            contamination_plastic  = EXCLUDED.contamination_plastic,
+            contamination_other_orig = EXCLUDED.contamination_other_orig,
+            pollutants_count       = EXCLUDED.pollutants_count,
+            soil_structure_orig    = EXCLUDED.soil_structure_orig,
+            soil_texture_orig      = EXCLUDED.soil_texture_orig,
+            observations_orig      = EXCLUDED.observations_orig,
+            metals_info_orig       = EXCLUDED.metals_info_orig,
+            collected_by           = EXCLUDED.collected_by,
+            data_source            = EXCLUDED.data_source,
+            qa_status              = EXCLUDED.qa_status,
+            licence                = EXCLUDED.licence;
         """)
 
-        # sample_images
+        # --- sample_images: upsert on (sample_id, image_id), keep *_en ---
         cur.execute("""
             INSERT INTO sample_images (
               sample_id,
@@ -1540,14 +1326,22 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
               NULLIF(TRIM(image_id), '')::integer,
               NULLIF(TRIM(image_url), ''),
               NULLIF(TRIM(image_description_orig), ''),
-              NULLIF(TRIM(image_description_en), ''),
+              NULLIF(TRIM(image_description_en), ''),  -- always NULL/empty from canonical
               NULLIF(TRIM(collected_by), ''),
               NULLIF(TRIM(timestamp_utc), '')::timestamptz,
               NULLIF(TRIM(licence), '')
-            FROM sample_images_stage_raw;
+            FROM sample_images_stage_raw
+            ON CONFLICT (sample_id, image_id) DO UPDATE SET
+              country_code           = EXCLUDED.country_code,
+              image_url              = EXCLUDED.image_url,
+              image_description_orig = EXCLUDED.image_description_orig,
+              -- keep existing image_description_en
+              collected_by           = EXCLUDED.collected_by,
+              timestamp_utc          = EXCLUDED.timestamp_utc,
+              licence                = EXCLUDED.licence;
         """)
 
-        # sample_parameters
+        # --- sample_parameters: still refresh from scratch (no translations here) ---
         cur.execute("""
             INSERT INTO sample_parameters (
               sample_id,
@@ -1730,19 +1524,13 @@ def main():
             zf.write(params_path, arcname="sample_parameters.csv")
         print(f"[OK] Wrote {all_zip_path}")
 
-        # 5) upload canonical files to MinIO (so Flask can just redirect)
-        upload_canonical_to_minio(minio_client, samples_path, "samples.csv")
-        upload_canonical_to_minio(minio_client, images_path, "sample_images.csv")
-        upload_canonical_to_minio(minio_client, params_path, "sample_parameters.csv")
-        upload_canonical_to_minio(minio_client, all_zip_path, "all.zip")
-
-        # 6) optional: Postgres (just ensuring tables for now)
+        # 5) optional: Postgres (just ensuring tables for now)
         try:
             ensure_pg_tables()
         except Exception as e:
             print(f"[WARN] Could not ensure Postgres tables: {e}")
 
-        # 7) optional: load into Postgres staging + swap
+        # 6) optional: load into Postgres staging + swap
         try:
             load_canonical_into_pg_staging(
                 str(samples_path),
