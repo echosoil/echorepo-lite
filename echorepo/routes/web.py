@@ -364,28 +364,174 @@ def privacy_accept():
     _append_privacy_acceptance(repo_user_id)
     return redirect(url_for("web.home"))
 
+# --------------------------------------------------------------------------
+# Canonical downloads (now built from Postgres on demand)
+# --------------------------------------------------------------------------
+from psycopg2.extras import RealDictCursor
+
 @web_bp.route("/download/canonical/samples.csv")
 @login_required
 def download_canonical_samples():
-    return _stream_minio_canonical("samples.csv")
+    sql = """
+        SELECT
+            sample_id,
+            timestamp_utc,
+            lat,
+            lon,
+            country_code,
+            location_accuracy_m,
+            ph,
+            organic_carbon_pct,
+            earthworms_count,
+            contamination_debris,
+            contamination_plastic,
+            contamination_other_orig,
+            contamination_other_en,
+            pollutants_count,
+            soil_structure_orig,
+            soil_structure_en,
+            soil_texture_orig,
+            soil_texture_en,
+            observations_orig,
+            observations_en,
+            metals_info_orig,
+            metals_info_en,
+            collected_by,
+            data_source,
+            qa_status,
+            licence
+        FROM samples
+        ORDER BY timestamp_utc DESC, sample_id
+    """
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    if not rows:
+        abort(404, description="No canonical samples found in database")
+
+    df = pd.DataFrame(rows)
+    buf = BytesIO()
+    df.to_csv(buf, index=False)
+    buf.seek(0)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="samples.csv",
+        mimetype="text/csv",
+    )
 
 
 @web_bp.route("/download/canonical/sample_images.csv")
 @login_required
 def download_canonical_sample_images():
-    return _stream_minio_canonical("sample_images.csv")
+    sql = """
+        SELECT
+            sample_id,
+            country_code,
+            image_id,
+            image_url,
+            image_description_orig,
+            image_description_en,
+            collected_by,
+            timestamp_utc,
+            licence
+        FROM sample_images
+        ORDER BY sample_id, image_id
+    """
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    if not rows:
+        abort(404, description="No canonical sample_images found in database")
+
+    df = pd.DataFrame(rows)
+    buf = BytesIO()
+    df.to_csv(buf, index=False)
+    buf.seek(0)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="sample_images.csv",
+        mimetype="text/csv",
+    )
 
 
 @web_bp.route("/download/canonical/sample_parameters.csv")
 @login_required
 def download_canonical_sample_parameters():
-    return _stream_minio_canonical("sample_parameters.csv")
+    sql = """
+        SELECT
+            sample_id,
+            country_code,
+            parameter_code,
+            parameter_name,
+            value,
+            uom,
+            analysis_method,
+            analysis_date,
+            lab_id,
+            created_by,
+            licence,
+            parameter_uri
+        FROM sample_parameters
+        ORDER BY sample_id, parameter_code
+    """
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
 
+    if not rows:
+        abort(404, description="No canonical sample_parameters found in database")
+
+    df = pd.DataFrame(rows)
+    buf = BytesIO()
+    df.to_csv(buf, index=False)
+    buf.seek(0)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="sample_parameters.csv",
+        mimetype="text/csv",
+    )
 
 @web_bp.route("/download/canonical/all.zip")
 @login_required
 def download_canonical_zip():
-    return _stream_minio_canonical("all.zip")
+    mem = BytesIO()
+    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        # 1) samples.csv
+        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM samples ORDER BY timestamp_utc DESC, sample_id")
+            df_samples = pd.DataFrame(cur.fetchall())
+        buf1 = io.StringIO()
+        df_samples.to_csv(buf1, index=False)
+        zf.writestr("samples.csv", buf1.getvalue())
+
+        # 2) sample_images.csv
+        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM sample_images ORDER BY sample_id, image_id")
+            df_imgs = pd.DataFrame(cur.fetchall())
+        buf2 = io.StringIO()
+        df_imgs.to_csv(buf2, index=False)
+        zf.writestr("sample_images.csv", buf2.getvalue())
+
+        # 3) sample_parameters.csv
+        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM sample_parameters ORDER BY sample_id, parameter_code")
+            df_params = pd.DataFrame(cur.fetchall())
+        buf3 = io.StringIO()
+        df_params.to_csv(buf3, index=False)
+        zf.writestr("sample_parameters.csv", buf3.getvalue())
+
+    mem.seek(0)
+    return send_file(
+        mem,
+        as_attachment=True,
+        download_name="all_canonical.zip",
+        mimetype="application/zip",
+    )
 
 
 # --------------------------------------------------------------------------
