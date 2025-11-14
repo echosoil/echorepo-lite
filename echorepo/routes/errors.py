@@ -167,7 +167,6 @@ def why():
     import pandas as pd
     pd.set_option("display.max_columns", None)   # show all columns
     pd.set_option("display.width", None)        # don't wrap to the next line
-    print("[DEBUG][QUERY_SAMPLE]", df)
 
     # Work with the first row (there should normally be 1 per sampleId)
     r = df.iloc[0].to_dict()
