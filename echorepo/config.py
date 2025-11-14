@@ -68,5 +68,6 @@ class Settings:
     # -------- Misc --------
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     SURVEY_BASE_URL: str = os.getenv("SURVEY_BASE_URL", "https://www.soscisurvey.de/default?r=")
-    
+    LAB_UPLOAD_ALLOWLIST_PATH = os.getenv("LAB_UPLOAD_ALLOWLIST_PATH", "/data/config/lab_upload_allowlist.csv")  
+
 settings = Settings()
