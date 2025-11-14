@@ -29,6 +29,8 @@ from ..config import settings
 from ..auth.decorators import login_required
 from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment
 from ..services.validation import find_default_coord_rows, select_country_mismatches
+from ..services.lab_permissions import can_upload_lab_data
+
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 
@@ -397,6 +399,9 @@ def home():
     if not user_key:
         return redirect(url_for("auth.login"))
 
+    # NEW: lab upload permission flag
+    can_upload = can_upload_lab_data(user_key)
+
     # privacy gate
     privacy_user_id = _get_repo_user_id_from_db()
     privacy_gate_on = _env_true("PRIVACY_GATE", True)  # default ON unless overridden
@@ -440,6 +445,8 @@ def home():
             # privacy
             needs_privacy=needs_privacy,
             privacy_version=PRIVACY_VERSION,
+            # NEW: pass flag to template
+            can_upload_lab_data=can_upload,
         )
 
     # NON-EMPTY: data issues ------------------------------------------------
@@ -485,8 +492,9 @@ def home():
         # privacy flags for the modal
         needs_privacy=needs_privacy,
         privacy_version=PRIVACY_VERSION,
+        # NEW: pass flag to template
+        can_upload_lab_data=can_upload,
     )
-
 
 # --------------------------------------------------------------------------
 # misc routes
@@ -654,6 +662,10 @@ def download_sample_csv():
 @web_bp.post("/lab-import")
 @login_required
 def lab_import():
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    if not can_upload_lab_data(user_key):
+        abort(403, description="Not authorised to upload lab data")
+
     file = request.files.get("file")
     if not file:
         abort(400, description="No file uploaded")
@@ -665,7 +677,7 @@ def lab_import():
         or session.get("user")
         or "unknown"
     )
-
+    
     filename = file.filename or ""
     try:
         if filename.lower().endswith(".xlsx"):
@@ -757,16 +769,24 @@ def lab_import():
 @web_bp.get("/lab-upload")
 @login_required
 def lab_upload():
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    if not can_upload_lab_data(user_key):
+        abort(403, description="Not authorised to upload lab data")
     return render_template("lab_upload.html")
 
 
 @web_bp.post("/lab-upload")
 @login_required
 def lab_upload_post():
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    if not can_upload_lab_data(user_key):
+        abort(403, description="Not authorised to upload lab data")
+
     file = request.files.get("file")
     if not file:
         abort(400, "No file")
     return redirect(url_for("web.home"))
+
 
 @web_bp.route("/search", endpoint="search_samples", methods=["GET"])
 @login_required

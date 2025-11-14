@@ -130,8 +130,6 @@ def load_qr_to_planned(xlsx_path: str | None = None) -> Dict[str, Set[str]]:
     if not path or not os.path.exists(path):
         print(f"[WARN][planned] planned countries XLSX not found at {path}, skipping")
         return {}
-    else:
-        print(f"[INFO][planned] loading planned countries from {path}")
     df = pd.read_excel(path, engine="openpyxl")
     qr_col, planned_col = _guess_columns(df)
     df = df[[qr_col, planned_col]].dropna(how="all")

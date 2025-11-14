@@ -32,7 +32,7 @@ if [[ -f "$DEV_REPO_DIR/.env" ]]; then
 
   # 4) normalize .env for prod
   sed -i 's|localhost:18080|echorepo.quanta-labs.com|g' "$TMPDIR/.env"
-  sed -i 's|echorepo_prod-postgres|eechorepo_dev-postgres|g' "$TMPDIR/.env"
+  sed -i 's|echorepo_dev|echorepo_prod|g' "$TMPDIR/.env"
 
   echo "[INFO] copied and sanitized .env from dev"
 else
