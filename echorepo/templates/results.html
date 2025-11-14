@@ -110,11 +110,11 @@
           {% trans n=issue_count %}Fix data issues ({{ n }}){% endtrans %}
         </a>
       {% endif %}
-
-      <a class="btn btn-outline-secondary" href="{{ url_for('web.lab_upload') }}">
-        <i class="bi bi-upload"></i> {{ _('Upload lab data') }}
-      </a>
-
+      {% if can_upload_lab_data %}
+        <a class="btn btn-outline-secondary" href="{{ url_for('web.lab_upload') }}">
+          <i class="bi bi-upload"></i> {{ _('Upload lab data') }}
+        </a>
+      {% endif %}
       <a class="btn btn-outline-primary" href="{{ url_for('web.search_samples') }}">
         <i class="bi bi-search"></i> {{ _('Search samples') }}
       </a>

@@ -23,6 +23,7 @@ import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 import time
+from collections import defaultdict
 
 import re
 import requests
@@ -424,8 +425,8 @@ COUNTRY_TO_LANG = {
     "TR":"tr","IE":"en","GB":"en","UK":"en"
 }
 
-_translate_cache = {}
 _lt_ready = False
+_translate_cache : dict[tuple[str,str], str] = {}  # (text, cc) -> en
 
 def _ensure_lt_ready(timeout_sec: int | None = None) -> bool:
     """Poll LT /languages until it responds, or timeout."""
@@ -474,65 +475,197 @@ def _looks_englishish(s: str) -> bool:
         return False
     return bool(re.fullmatch(r"[A-Za-z0-9 ,.;:'\"()/_+-]+", s))
 
-def translate_to_en(text: str, country_code: str | None = None) -> str:
-    """
-    Robust translate:
-      - Wait for LT readiness (up to LT_WAIT_SECS, default 60s).
-      - Detect language; if 'en' with high confidence, keep as-is.
-      - If detection confidence < threshold, bias source by country_code.
-      - Cache results.
-    """
-    text = (text or "").strip()
-    if not text:
-        return ""
+import time
+from collections import defaultdict
 
-    cache_key = (text, (country_code or "").upper())
-    if cache_key in _translate_cache:
-        return _translate_cache[cache_key]
+COUNTRY_TO_LANG = {
+    "ES":"es","PT":"pt","FR":"fr","IT":"it","DE":"de","PL":"pl","CZ":"cs","SK":"sk","RO":"ro",
+    "HU":"hu","BG":"bg","EL":"el","GR":"el","FI":"fi","SE":"sv","DK":"da","NO":"no","NL":"nl",
+    "BE":"fr","CH":"de","LT":"lt","LV":"lv","EE":"et","HR":"hr","SI":"sl","UA":"uk","RU":"ru",
+    "TR":"tr","IE":"en","GB":"en","UK":"en"
+}
 
+_lt_ready = False
+_translate_cache : dict[tuple[str,str], str] = {}  # (text, cc) -> en
+
+def _ensure_lt_ready(timeout_sec: int | None = None) -> bool:
+    """Poll LibreTranslate /languages until it responds, or timeout."""
+    global _lt_ready
+    if _lt_ready:
+        return True
     LT = os.getenv("LT_ENDPOINT")
     if not LT:
-        _translate_cache[cache_key] = text
-        return text
+        return False
+    timeout_sec = int(os.getenv("LT_WAIT_SECS", "60")) if timeout_sec is None else timeout_sec
+    deadline = time.time() + timeout_sec
+    while time.time() < deadline:
+        try:
+            r = requests.get(f"{LT}/languages", timeout=3)
+            if r.ok:
+                _lt_ready = True
+                return True
+        except Exception:
+            pass
+        time.sleep(2)
+    return False
 
-    _ensure_lt_ready()  # poll once on first use; non-blocking if LT missing
-
-    # 1) detect
-    detect_threshold = float(os.getenv("LT_DETECT_CONF", "0.60"))
-    lang, conf = _lt_detect(text)
-
-    # 2) decide source
-    if lang == "en" and conf >= 0.85:
-        # confidently English → keep
-        _translate_cache[cache_key] = text
-        return text
-
-    source = None
-    if conf >= detect_threshold and lang:
-        source = lang
-    else:
-        # low confidence → bias by country
-        cc = (country_code or "").upper()
-        source = COUNTRY_TO_LANG.get(cc, "auto")
-
-    # 3) translate
+def _lt_detect_batch(texts: list[str]) -> list[tuple[str | None, float]]:
+    """Detect languages for many texts in one go. Returns list of (lang, conf) aligned with `texts`."""
+    LT = os.getenv("LT_ENDPOINT")
+    out = [(None, 0.0)] * len(texts)
+    if not LT or not texts:
+        return out
+    _ensure_lt_ready()
+    # send as repeated q fields; fall back to per-item on error
     try:
-        r = requests.post(
-            f"{LT}/translate",
-            data={"q": text, "source": source or "auto", "target": "en"},
-            timeout=8,
-        )
+        data = []
+        for t in texts:
+            data.append(("q", t))
+        r = requests.post(f"{LT}/detect", data=data, timeout=12)
         r.raise_for_status()
-        out = (r.json() or {}).get("translatedText") or ""
-        # If server echoed back (happens), fall back to original
-        if not out:
-            out = text
-        _translate_cache[cache_key] = out
+        resp = r.json()
+        # resp can be [{language,confidence}, ...] OR [[{...}], [...], ...]
+        norm = []
+        if isinstance(resp, list) and resp and isinstance(resp[0], dict):
+            norm = resp
+        elif isinstance(resp, list) and resp and isinstance(resp[0], list):
+            norm = [ (row[0] if row else {"language":None,"confidence":0.0}) for row in resp ]
+        else:
+            norm = []
+        ans = []
+        for item in norm:
+            lang = item.get("language") if isinstance(item, dict) else None
+            conf = float(item.get("confidence", 0.0) or 0.0) if isinstance(item, dict) else 0.0
+            ans.append((lang, conf))
+        # align lengths
+        if len(ans) == len(texts):
+            return ans
+        # else pad/trim
+        out = ans[:len(texts)] + [(None,0.0)] * max(0, len(texts)-len(ans))
         return out
     except Exception:
-        _translate_cache[cache_key] = text
-        return text
+        # fallback slow path
+        res = []
+        for t in texts:
+            try:
+                rr = requests.post(f"{LT}/detect", data={"q": t}, timeout=6)
+                rr.raise_for_status()
+                arr = rr.json() or []
+                if isinstance(arr, list) and arr:
+                    lang = arr[0].get("language")
+                    conf = float(arr[0].get("confidence", 0.0) or 0.0)
+                    res.append((lang, conf))
+                else:
+                    res.append((None, 0.0))
+            except Exception:
+                res.append((None, 0.0))
+        return res
 
+def translate_many_to_en(pairs: list[tuple[str, str | None]] ) -> dict[tuple[str,str], str]:
+    """
+    Batch translate many (text, country_code) pairs.
+    Returns {(text, CC): english_text}
+    """
+    LT = os.getenv("LT_ENDPOINT")
+    result : dict[tuple[str,str], str] = {}
+    if not pairs:
+        return result
+
+    # cache hit first
+    todo : list[tuple[str,str]] = []
+    for text, cc in pairs:
+        t = (text or "").strip()
+        CC = (cc or "").upper()
+        if not t:
+            result[(t, CC)] = ""
+            continue
+        key = (t, CC)
+        if key in _translate_cache:
+            result[key] = _translate_cache[key]
+        else:
+            todo.append((t, CC))
+
+    if not todo or not LT:
+        return result
+
+    _ensure_lt_ready()
+
+    # 1) detect in batch
+    detect_threshold = float(os.getenv("LT_DETECT_CONF", "0.60"))
+    texts = [t for (t, _) in todo]
+    det = _lt_detect_batch(texts)
+
+    # 2) decide source per item and group by source
+    by_source : dict[str, list[tuple[int, tuple[str,str]]]] = defaultdict(list)
+    for i, ((t, CC), (lang, conf)) in enumerate(zip(todo, det)):
+        if lang == "en" and conf >= 0.85:
+            _translate_cache[(t, CC)] = t
+            result[(t, CC)] = t
+            continue
+        if conf >= detect_threshold and lang:
+            src = lang
+        else:
+            src = COUNTRY_TO_LANG.get(CC, "auto")
+        by_source[src].append((i, (t, CC)))
+
+    # 3) translate per source in batches (repeat q field)
+    for src, lst in by_source.items():
+        if not lst:
+            continue
+        # prepare payload
+        payload = []
+        order_keys = []
+        for _, (t, CC) in lst:
+            payload.append(("q", t))
+            order_keys.append((t, CC))
+        payload.extend([("source", src or "auto"), ("target", "en")])
+        try:
+            rr = requests.post(f"{LT}/translate", data=payload, timeout=20)
+            rr.raise_for_status()
+            resp = rr.json()
+            # resp can be {"translatedText": "..."} or [{"translatedText": "..."}, ...]
+            if isinstance(resp, dict) and "translatedText" in resp:
+                outs = [resp["translatedText"]] * len(order_keys)
+            elif isinstance(resp, list):
+                outs = [ (x.get("translatedText") if isinstance(x, dict) else "") for x in resp ]
+            else:
+                outs = ["" for _ in order_keys]
+        except Exception:
+            # per-item fallback for this group
+            outs = []
+            for (t, _CC) in order_keys:
+                try:
+                    r1 = requests.post(
+                        f"{LT}/translate",
+                        data={"q": t, "source": src or "auto", "target": "en"},
+                        timeout=8,
+                    )
+                    r1.raise_for_status()
+                    outs.append((r1.json() or {}).get("translatedText") or t)
+                except Exception:
+                    outs.append(t)
+
+        # store
+        for (t, CC), out in zip(order_keys, outs):
+            out = out or t
+            _translate_cache[(t, CC)] = out
+            result[(t, CC)] = out
+
+    return result
+
+def translate_to_en(text: str, country_code: str | None = None) -> str:
+    """Keep a fast single-item API using the same cache and logic."""
+    text = (text or "").strip()
+    CC = (country_code or "").upper()
+    if not text:
+        return ""
+    key = (text, CC)
+    if key in _translate_cache:
+        return _translate_cache[key]
+    m = translate_many_to_en([key])
+    return m.get(key, text)
+
+# ----- Minio helpers ---------------------------------------------------------------------------
 def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str, mclient) -> str:
     if not url or not url.startswith(FBS_PREFIX) or mclient is None:
         return url
@@ -840,108 +973,128 @@ def _textify(v) -> str:
 
 def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | None = None) -> pd.DataFrame:
     planned_map = planned_map or {}
-    rows = []
+    pre_rows = []          # will hold per-row intermediates
+    translate_pairs = set()
     debug_missing = []
 
     for idx, r in df_flat.iterrows():
-        # --- IDs / QR
-        qr_raw  = r.get("QR_qrCode")
+        qr_raw = r.get("QR_qrCode")
         qr_norm = norm_qr_for_id(qr_raw)
         sample_id = qr_norm or r.get("sampleId")
 
-        # --- original coords
+        # original coords -> float
         orig_lat = r.get("GPS_lat")
         orig_lon = r.get("GPS_long")
-
-        if lc_parse_coord is not None:
-            lat_f = lc_parse_coord(orig_lat, "lat")
-            lon_f = lc_parse_coord(orig_lon, "lon")
-        elif geo_parse_coord is not None:
-            lat_f = geo_parse_coord(orig_lat, "lat")
-            lon_f = geo_parse_coord(orig_lon, "lon")
-        else:
-            try:
+        lat_f = None; lon_f = None
+        try:
+            if lc_parse_coord is not None:
+                lat_f = lc_parse_coord(orig_lat, "lat")
+                lon_f = lc_parse_coord(orig_lon, "lon")
+            elif geo_parse_coord is not None:
+                lat_f = geo_parse_coord(orig_lat, "lat")
+                lon_f = geo_parse_coord(orig_lon, "lon")
+            else:
                 lat_f = float(orig_lat) if orig_lat not in (None, "") else None
                 lon_f = float(orig_lon) if orig_lon not in (None, "") else None
-            except Exception:
-                lat_f = lon_f = None
-        print(f"[BUILD_SAMPLES_DF] idx={idx} sample_id={sample_id} lat={lat_f} lon={lon_f}")
-        
-        # --- countries (original / planned / jitter)
+        except Exception:
+            lat_f = lon_f = None
+
+        # countries
         orig_country = latlon_to_country_code(lat_f, lon_f) if (lat_f is not None and lon_f is not None) else ""
         planned_country = ""
         if qr_norm and qr_norm in planned_map:
             s = planned_map[qr_norm]
             planned_country = next(iter(s)) if len(s) == 1 else (sorted(s)[0] if s else "")
-
+        # jitter like before
         lat_j, lon_j = lat_f, lon_f
-        if lat_f is not None and lon_f is not None and lc_det_jitter is not None:
+        if (lat_f is not None and lon_f is not None and lc_det_jitter is not None):
             key = sample_id or r.get("userId") or str(idx)
             lat_j, lon_j = lc_det_jitter(lat_f, lon_f, key, LC_MAX_JITTER_METERS)
-
         jitter_country = latlon_to_country_code(lat_j, lon_j) if (lat_j is not None and lon_j is not None) else ""
         country = jitter_country or planned_country or orig_country
-        if not country:
-            debug_missing.append({"row_index": idx, "sample_id": sample_id, "qr": qr_norm,
-                                  "orig_lat": orig_lat, "orig_lon": orig_lon})
 
-        # --- contamination
-        cont_debris   = r.get("SOIL_CONTAMINATION_debris")  or 0
-        cont_plastic  = r.get("SOIL_CONTAMINATION_plastic") or 0
-        cont_other_o  = _textify(r.get("SOIL_CONTAMINATION_comments"))
-        cont_other_en = translate_to_en(cont_other_o, country_code=country) if cont_other_o else ""
-        print("[BUILD_SAMPLES_DF]", cont_other_o, cont_other_en, "contamination_other")
-        pollutants_count = 0
-        for v in (cont_debris, cont_plastic, cont_other_o):
-            if v not in (0, "", None, False):
-                pollutants_count += 1
+        # contamination fields
+        cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
+        cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
+        cont_other_orig = (r.get("SOIL_CONTAMINATION_comments") or "").strip()
+        pollutants_count = sum(1 for v in (cont_debris, cont_plastic, cont_other_orig) if v not in (0, "", None, False))
 
-        # --- translatable text fields
-        soil_structure_o = _textify(r.get("SOIL_STRUCTURE_structure"))
-        soil_structure_en = translate_to_en(soil_structure_o, country_code=country) if soil_structure_o else ""
-        print("[BUILD_SAMPLES_DF]", soil_structure_o, soil_structure_en, "soil_structure")
-        soil_texture_o = _textify(r.get("SOIL_TEXTURE_texture"))
-        soil_texture_en = translate_to_en(soil_texture_o, country_code=country) if soil_texture_o else ""
-        print("[BUILD_SAMPLES_DF]", soil_texture_o, soil_texture_en, "soil_texture")
-        observations_o = _textify(r.get("SOIL_DIVER_observations"))
-        observations_en = translate_to_en(observations_o, country_code=country) if observations_o else ""
-        print("[BUILD_SAMPLES_DF]", observations_o, observations_en, "observations")
-        metals_info_o = _textify(r.get("METALS_info"))
-        metals_info_en = translate_to_en(metals_info_o, country_code=country) if metals_info_o else ""
-        print("[BUILD_SAMPLES_DF]", metals_info_o, metals_info_en, "metals_info")
+        # translatable fields (orig)
+        soil_structure_orig = (r.get("SOIL_STRUCTURE_structure") or "").strip()
+        soil_texture_orig   = (r.get("SOIL_TEXTURE_texture") or "").strip()
+        observations_orig   = (r.get("SOIL_DIVER_observations") or "").strip()
+        metals_info_orig    = (r.get("METALS_info") or "").strip()
 
-        rows.append({
+        # collect for batch translation (only non-empty)
+        CC = country or ""
+        for t in (cont_other_orig, soil_structure_orig, soil_texture_orig, observations_orig, metals_info_orig):
+            if t:
+                translate_pairs.add((t, CC))
+
+        pre_rows.append({
             "sample_id": sample_id,
             "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
-            "lat": lat_j,
-            "lon": lon_j,
-            "country_code": country,
-            "location_accuracy_m": MAX_JITTER_METERS,
+            "lat": lat_j, "lon": lon_j,
+            "country": country,
             "ph": r.get("PH_ph"),
-            "organic_carbon_pct": None,  # not collected in mobile app
             "earthworms_count": r.get("SOIL_DIVER_earthworms"),
-
             "contamination_debris": cont_debris,
             "contamination_plastic": cont_plastic,
-            "contamination_other_orig": cont_other_o,
-            "contamination_other_en": cont_other_en,
-            "pollutants_count": pollutants_count,
-
-            "soil_structure_orig": soil_structure_o,
-            "soil_structure_en": soil_structure_en,
-
-            "soil_texture_orig": soil_texture_o,
-            "soil_texture_en": soil_texture_en,
-
-            "observations_orig": observations_o,
-            "observations_en": observations_en,
-
-            "metals_info_orig": metals_info_o,
-            "metals_info_en": metals_info_en,
-
+            "contamination_other_orig": cont_other_orig,
+            "soil_structure_orig": soil_structure_orig,
+            "soil_texture_orig": soil_texture_orig,
+            "observations_orig": observations_orig,
+            "metals_info_orig": metals_info_orig,
             "collected_by": r.get("userId"),
-            "data_source": "mobile",
             "qa_status": r.get("QA_state") or "",
+        })
+
+        if not country:
+            debug_missing.append({
+                "row_index": idx, "sample_id": sample_id, "qr": qr_norm,
+                "orig_lat": orig_lat, "orig_lon": orig_lon,
+                "lat_f": lat_f, "lon_f": lon_f,
+                "jitter_lat": lat_j, "jitter_lon": lon_j,
+                "orig_country": orig_country, "jitter_country": jitter_country,
+                "planned_country": planned_country,
+            })
+
+    # batch translate once
+    en_map = translate_many_to_en(list(translate_pairs))
+
+    # build final rows
+    rows = []
+    for pr in pre_rows:
+        CC = pr["country"] or ""
+        get_en = lambda t: (en_map.get((t, CC)) if t else "")
+        rows.append({
+            "sample_id": pr["sample_id"],
+            "timestamp_utc": pr["timestamp_utc"],
+            "lat": pr["lat"],
+            "lon": pr["lon"],
+            "country_code": pr["country"],
+            "location_accuracy_m": MAX_JITTER_METERS,
+            "ph": pr["ph"],
+            "organic_carbon_pct": None,
+            "earthworms_count": pr["earthworms_count"],
+            "contamination_debris": pr["contamination_debris"],
+            "contamination_plastic": pr["contamination_plastic"],
+            "contamination_other_orig": pr["contamination_other_orig"],
+            "contamination_other_en": get_en(pr["contamination_other_orig"]),
+            "pollutants_count": sum(1 for v in (pr["contamination_debris"],
+                                                pr["contamination_plastic"],
+                                                pr["contamination_other_orig"]) if v not in (0, "", None, False)),
+            "soil_structure_orig": pr["soil_structure_orig"],
+            "soil_structure_en":   get_en(pr["soil_structure_orig"]),
+            "soil_texture_orig":   pr["soil_texture_orig"],
+            "soil_texture_en":     get_en(pr["soil_texture_orig"]),
+            "observations_orig":   pr["observations_orig"],
+            "observations_en":     get_en(pr["observations_orig"]),
+            "metals_info_orig":    pr["metals_info_orig"],
+            "metals_info_en":      get_en(pr["metals_info_orig"]),
+            "collected_by": pr["collected_by"],
+            "data_source": "mobile",
+            "qa_status": pr["qa_status"],
             "licence": DEFAULT_LICENCE,
         })
 
@@ -953,13 +1106,22 @@ def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | N
 
     return pd.DataFrame(rows)
 
+def _to_float_num(v):
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", ".")
+    try:
+        return float(s)
+    except Exception:
+        return None
+
 def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     img_rows = []
     photo_slots = list(range(1, 14))
     for _, r in df_flat.iterrows():
-        lat = r.get("GPS_lat")
-        lon = r.get("GPS_long")
-        country = r.get("country_code") or latlon_to_country_code(lat, lon)
+        lt = _to_float_num(r.get("GPS_lat"))
+        ln = _to_float_num(r.get("GPS_long"))
+        country = r.get("country_code") or latlon_to_country_code(lt, ln)
 
         qr = norm_qr_for_id(r.get("QR_qrCode"))
         sample_id = qr or r.get("sampleId")
@@ -970,7 +1132,8 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
             path = r.get(path_col)
             if not path or (isinstance(path, float) and math.isnan(path)) or str(path).strip().lower() == "nan":
                 continue
-            comment_orig = r.get(comment_col) or ""
+            comment_orig = (r.get(comment_col) or "").strip()
+            # keep as-is for now; see batch section below to translate images in bulk too
             comment_en = translate_to_en(comment_orig, country_code=country) if comment_orig else ""
             img_rows.append({
                 "sample_id": sample_id,
