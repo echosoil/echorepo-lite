@@ -119,6 +119,13 @@ def create_app() -> Flask:
         # Overrides storage path
         I18N_OVERRIDES_PATH=os.environ.get("I18N_OVERRIDES_PATH", "/data/i18n_overrides.json"),
         LOCAL_STORAGE_DIR=os.environ.get("LOCAL_STORAGE_DIR", "/data/storage"),
+        
+        # Expose allowlist path to current_app.config
+        LAB_UPLOAD_ALLOWLIST_PATH=getattr(
+            settings,
+            "LAB_UPLOAD_ALLOWLIST_PATH",
+            "/data/config/lab_upload_lab_allowlist.csv",
+        ),
     )
 
     # ---- i18n ----

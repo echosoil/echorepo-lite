@@ -37,8 +37,6 @@ def find_default_coord_rows(df: pd.DataFrame,
 
     # 👇 prefer original columns if available
     orig_lat_col = getattr(settings, "ORIG_LAT_COL", None)
-    print(f"[DEBUG] ORIG_LAT_COL={orig_lat_col}")
-    print(f"[DEBUG] DF[ORIG_LAT_COL]={df[orig_lat_col] if orig_lat_col in df.columns else 'N/A'}")  
     lat_col = lat_col or getattr(settings, "ORIG_LAT_COL", None) or settings.LAT_COL
     lon_col = lon_col or getattr(settings, "ORIG_LON_COL", None) or settings.LON_COL
 

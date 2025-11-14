@@ -22,6 +22,8 @@ import math
 import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
+import time
+from collections import defaultdict
 
 import re
 import requests
@@ -414,24 +416,256 @@ def _guess_ext_from_firebase_url(url: str) -> str:
         return "." + last.rsplit(".", 1)[-1]
     return ".bin"
 
-def translate_to_en(text: str) -> str:
-    LT_ENDPOINT = os.getenv("LT_ENDPOINT")
-    if not text or not LT_ENDPOINT:
-        return ""
-    try:
-        det = requests.post(f"{LT_ENDPOINT}/detect", data={"q": text}, timeout=5).json()
-        src = det[0]["language"]
-        if src == "en":
-            return text
-        trans = requests.post(
-            f"{LT_ENDPOINT}/translate",
-            data={"q": text, "source": src, "target": "en"},
-            timeout=5,
-        ).json()
-        return trans["translatedText"]
-    except Exception:
-        return ""
+# ---- Translation helpers ------------------------------------------------------------
+COUNTRY_TO_LANG = {
+    "ES":"es","PT":"pt","FR":"fr","IT":"it","DE":"de","PL":"pl",
+    "CZ":"cs","SK":"sk","RO":"ro","HU":"hu","BG":"bg","EL":"el","GR":"el",
+    "FI":"fi","SE":"sv","DK":"da","NO":"no","NL":"nl","BE":"fr","CH":"de",
+    "LT":"lt","LV":"lv","EE":"et","HR":"hr","SI":"sl","UA":"uk","RU":"ru",
+    "TR":"tr","IE":"en","GB":"en","UK":"en"
+}
 
+_lt_ready = False
+_translate_cache : dict[tuple[str,str], str] = {}  # (text, cc) -> en
+
+def _ensure_lt_ready(timeout_sec: int | None = None) -> bool:
+    """Poll LT /languages until it responds, or timeout."""
+    global _lt_ready
+    if _lt_ready:
+        return True
+    LT = os.getenv("LT_ENDPOINT")
+    if not LT:
+        return False
+    timeout_sec = int(os.getenv("LT_WAIT_SECS", "60")) if timeout_sec is None else timeout_sec
+    deadline = time.time() + timeout_sec
+    while time.time() < deadline:
+        try:
+            r = requests.get(f"{LT}/languages", timeout=3)
+            if r.ok:
+                _lt_ready = True
+                return True
+        except Exception:
+            pass
+        time.sleep(2)
+    # last try won't crash the pipeline; just mark not-ready
+    return False
+
+def _lt_detect(text: str) -> tuple[str | None, float]:
+    """Return (lang, confidence) from LT /detect; fallback to (None, 0.0) on error."""
+    LT = os.getenv("LT_ENDPOINT")
+    if not LT:
+        return (None, 0.0)
+    try:
+        r = requests.post(f"{LT}/detect", data={"q": text}, timeout=6)
+        r.raise_for_status()
+        arr = r.json() or []
+        if isinstance(arr, list) and arr:
+            lang = arr[0].get("language")
+            conf = float(arr[0].get("confidence", 0.0) or 0.0)
+            return (lang, conf)
+    except Exception:
+        pass
+    return (None, 0.0)
+
+def _looks_englishish(s: str) -> bool:
+    if not s:
+        return True
+    # ASCII + common punctuation; reject if obvious diacritics
+    if re.search(r"[áéíóúñçøåäößřłęóśążźîôûêêčďťůýžășțğİı]", s, flags=re.IGNORECASE):
+        return False
+    return bool(re.fullmatch(r"[A-Za-z0-9 ,.;:'\"()/_+-]+", s))
+
+import time
+from collections import defaultdict
+
+COUNTRY_TO_LANG = {
+    "ES":"es","PT":"pt","FR":"fr","IT":"it","DE":"de","PL":"pl","CZ":"cs","SK":"sk","RO":"ro",
+    "HU":"hu","BG":"bg","EL":"el","GR":"el","FI":"fi","SE":"sv","DK":"da","NO":"no","NL":"nl",
+    "BE":"fr","CH":"de","LT":"lt","LV":"lv","EE":"et","HR":"hr","SI":"sl","UA":"uk","RU":"ru",
+    "TR":"tr","IE":"en","GB":"en","UK":"en"
+}
+
+_lt_ready = False
+_translate_cache : dict[tuple[str,str], str] = {}  # (text, cc) -> en
+
+def _ensure_lt_ready(timeout_sec: int | None = None) -> bool:
+    """Poll LibreTranslate /languages until it responds, or timeout."""
+    global _lt_ready
+    if _lt_ready:
+        return True
+    LT = os.getenv("LT_ENDPOINT")
+    if not LT:
+        return False
+    timeout_sec = int(os.getenv("LT_WAIT_SECS", "60")) if timeout_sec is None else timeout_sec
+    deadline = time.time() + timeout_sec
+    while time.time() < deadline:
+        try:
+            r = requests.get(f"{LT}/languages", timeout=3)
+            if r.ok:
+                _lt_ready = True
+                return True
+        except Exception:
+            pass
+        time.sleep(2)
+    return False
+
+def _lt_detect_batch(texts: list[str]) -> list[tuple[str | None, float]]:
+    """Detect languages for many texts in one go. Returns list of (lang, conf) aligned with `texts`."""
+    LT = os.getenv("LT_ENDPOINT")
+    out = [(None, 0.0)] * len(texts)
+    if not LT or not texts:
+        return out
+    _ensure_lt_ready()
+    # send as repeated q fields; fall back to per-item on error
+    try:
+        data = []
+        for t in texts:
+            data.append(("q", t))
+        r = requests.post(f"{LT}/detect", data=data, timeout=12)
+        r.raise_for_status()
+        resp = r.json()
+        # resp can be [{language,confidence}, ...] OR [[{...}], [...], ...]
+        norm = []
+        if isinstance(resp, list) and resp and isinstance(resp[0], dict):
+            norm = resp
+        elif isinstance(resp, list) and resp and isinstance(resp[0], list):
+            norm = [ (row[0] if row else {"language":None,"confidence":0.0}) for row in resp ]
+        else:
+            norm = []
+        ans = []
+        for item in norm:
+            lang = item.get("language") if isinstance(item, dict) else None
+            conf = float(item.get("confidence", 0.0) or 0.0) if isinstance(item, dict) else 0.0
+            ans.append((lang, conf))
+        # align lengths
+        if len(ans) == len(texts):
+            return ans
+        # else pad/trim
+        out = ans[:len(texts)] + [(None,0.0)] * max(0, len(texts)-len(ans))
+        return out
+    except Exception:
+        # fallback slow path
+        res = []
+        for t in texts:
+            try:
+                rr = requests.post(f"{LT}/detect", data={"q": t}, timeout=6)
+                rr.raise_for_status()
+                arr = rr.json() or []
+                if isinstance(arr, list) and arr:
+                    lang = arr[0].get("language")
+                    conf = float(arr[0].get("confidence", 0.0) or 0.0)
+                    res.append((lang, conf))
+                else:
+                    res.append((None, 0.0))
+            except Exception:
+                res.append((None, 0.0))
+        return res
+
+def translate_many_to_en(pairs: list[tuple[str, str | None]] ) -> dict[tuple[str,str], str]:
+    """
+    Batch translate many (text, country_code) pairs.
+    Returns {(text, CC): english_text}
+    """
+    LT = os.getenv("LT_ENDPOINT")
+    result : dict[tuple[str,str], str] = {}
+    if not pairs:
+        return result
+
+    # cache hit first
+    todo : list[tuple[str,str]] = []
+    for text, cc in pairs:
+        t = (text or "").strip()
+        CC = (cc or "").upper()
+        if not t:
+            result[(t, CC)] = ""
+            continue
+        key = (t, CC)
+        if key in _translate_cache:
+            result[key] = _translate_cache[key]
+        else:
+            todo.append((t, CC))
+
+    if not todo or not LT:
+        return result
+
+    _ensure_lt_ready()
+
+    # 1) detect in batch
+    detect_threshold = float(os.getenv("LT_DETECT_CONF", "0.60"))
+    texts = [t for (t, _) in todo]
+    det = _lt_detect_batch(texts)
+
+    # 2) decide source per item and group by source
+    by_source : dict[str, list[tuple[int, tuple[str,str]]]] = defaultdict(list)
+    for i, ((t, CC), (lang, conf)) in enumerate(zip(todo, det)):
+        if lang == "en" and conf >= 0.85:
+            _translate_cache[(t, CC)] = t
+            result[(t, CC)] = t
+            continue
+        if conf >= detect_threshold and lang:
+            src = lang
+        else:
+            src = COUNTRY_TO_LANG.get(CC, "auto")
+        by_source[src].append((i, (t, CC)))
+
+    # 3) translate per source in batches (repeat q field)
+    for src, lst in by_source.items():
+        if not lst:
+            continue
+        # prepare payload
+        payload = []
+        order_keys = []
+        for _, (t, CC) in lst:
+            payload.append(("q", t))
+            order_keys.append((t, CC))
+        payload.extend([("source", src or "auto"), ("target", "en")])
+        try:
+            rr = requests.post(f"{LT}/translate", data=payload, timeout=20)
+            rr.raise_for_status()
+            resp = rr.json()
+            # resp can be {"translatedText": "..."} or [{"translatedText": "..."}, ...]
+            if isinstance(resp, dict) and "translatedText" in resp:
+                outs = [resp["translatedText"]] * len(order_keys)
+            elif isinstance(resp, list):
+                outs = [ (x.get("translatedText") if isinstance(x, dict) else "") for x in resp ]
+            else:
+                outs = ["" for _ in order_keys]
+        except Exception:
+            # per-item fallback for this group
+            outs = []
+            for (t, _CC) in order_keys:
+                try:
+                    r1 = requests.post(
+                        f"{LT}/translate",
+                        data={"q": t, "source": src or "auto", "target": "en"},
+                        timeout=8,
+                    )
+                    r1.raise_for_status()
+                    outs.append((r1.json() or {}).get("translatedText") or t)
+                except Exception:
+                    outs.append(t)
+
+        # store
+        for (t, CC), out in zip(order_keys, outs):
+            out = out or t
+            _translate_cache[(t, CC)] = out
+            result[(t, CC)] = out
+
+    return result
+
+def translate_to_en(text: str, country_code: str | None = None) -> str:
+    """Keep a fast single-item API using the same cache and logic."""
+    text = (text or "").strip()
+    CC = (country_code or "").upper()
+    if not text:
+        return ""
+    key = (text, CC)
+    if key in _translate_cache:
+        return _translate_cache[key]
+    m = translate_many_to_en([key])
+    return m.get(key, text)
+
+# ----- Minio helpers ---------------------------------------------------------------------------
 def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str, mclient) -> str:
     if not url or not url.startswith(FBS_PREFIX) or mclient is None:
         return url
@@ -723,128 +957,147 @@ def refresh_sqlite_from_csv(OUTPUT_CSV: str, sqlite_path: str):
 # ---------------------------------------------------------------------------
 # canonical builders
 # ---------------------------------------------------------------------------
+def _textify(v) -> str:
+    if v is None:
+        return ""
+    # flatten lists/dicts safely
+    try:
+        if isinstance(v, (list, tuple)):
+            return ", ".join(str(x) for x in v if x not in (None, ""))
+        if isinstance(v, dict):
+            # compact “k: v” pairs in stable order
+            return ", ".join(f"{k}: {v[k]}" for k in sorted(v.keys()))
+        return str(v)
+    except Exception:
+        return str(v)
+
 def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | None = None) -> pd.DataFrame:
     planned_map = planned_map or {}
-    rows = []
-    debug_missing = []   # collect rows that still have no country
+    pre_rows = []          # will hold per-row intermediates
+    translate_pairs = set()
+    debug_missing = []
 
     for idx, r in df_flat.iterrows():
-        # --- 0) IDs / QR
         qr_raw = r.get("QR_qrCode")
         qr_norm = norm_qr_for_id(qr_raw)
         sample_id = qr_norm or r.get("sampleId")
 
-        # --- 1) get original coords from Firestore
+        # original coords -> float
         orig_lat = r.get("GPS_lat")
         orig_lon = r.get("GPS_long")
-
-        # normalize to float using existing helpers
-        lat_f = None
-        lon_f = None
-
-        # prefer load_csv parser (you already imported it)
-        if lc_parse_coord is not None:
-            lat_f = lc_parse_coord(orig_lat, "lat")
-            lon_f = lc_parse_coord(orig_lon, "lon")
-        elif geo_parse_coord is not None:
-            lat_f = geo_parse_coord(orig_lat, "lat")
-            lon_f = geo_parse_coord(orig_lon, "lon")
-        else:
-            # ultra simple fallback
-            try:
+        lat_f = None; lon_f = None
+        try:
+            if lc_parse_coord is not None:
+                lat_f = lc_parse_coord(orig_lat, "lat")
+                lon_f = lc_parse_coord(orig_lon, "lon")
+            elif geo_parse_coord is not None:
+                lat_f = geo_parse_coord(orig_lat, "lat")
+                lon_f = geo_parse_coord(orig_lon, "lon")
+            else:
                 lat_f = float(orig_lat) if orig_lat not in (None, "") else None
                 lon_f = float(orig_lon) if orig_lon not in (None, "") else None
-            except Exception:
-                lat_f = lon_f = None
+        except Exception:
+            lat_f = lon_f = None
 
-        # --- 2) country from ORIGINAL coords
-        orig_country = ""
-        if lat_f is not None and lon_f is not None:
-            try:
-                orig_country = latlon_to_country_code(lat_f, lon_f) or ""
-            except Exception as e:
-                orig_country = ""
-                # we could print here, but let's collect below
-
-        # --- 3) country from PLANNED file (by QR)
+        # countries
+        orig_country = latlon_to_country_code(lat_f, lon_f) if (lat_f is not None and lon_f is not None) else ""
         planned_country = ""
         if qr_norm and qr_norm in planned_map:
             s = planned_map[qr_norm]
-            if len(s) == 1:
-                planned_country = next(iter(s))
-            elif s:
-                planned_country = sorted(s)[0]
-
-        # --- 4) jittered coords (we actually want to use the same jitter as SQLite)
-        # if you want to actually jitter here, do it deterministically:
-        lat_j = lat_f
-        lon_j = lon_f
-        if lat_f is not None and lon_f is not None and lc_det_jitter is not None:
+            planned_country = next(iter(s)) if len(s) == 1 else (sorted(s)[0] if s else "")
+        # jitter like before
+        lat_j, lon_j = lat_f, lon_f
+        if (lat_f is not None and lon_f is not None and lc_det_jitter is not None):
             key = sample_id or r.get("userId") or str(idx)
             lat_j, lon_j = lc_det_jitter(lat_f, lon_f, key, LC_MAX_JITTER_METERS)
-
-        # --- 5) country from jittered coords
-        jitter_country = ""
-        if lat_j is not None and lon_j is not None:
-            try:
-                jitter_country = latlon_to_country_code(lat_j, lon_j) or ""
-            except Exception:
-                jitter_country = ""
-
-        # --- 6) final pick
+        jitter_country = latlon_to_country_code(lat_j, lon_j) if (lat_j is not None and lon_j is not None) else ""
         country = jitter_country or planned_country or orig_country
 
-        if not country:
-            debug_missing.append({
-                "row_index": idx,
-                "sample_id": sample_id,
-                "qr": qr_norm,
-                "orig_lat": orig_lat,
-                "orig_lon": orig_lon,
-                "lat_f": lat_f,
-                "lon_f": lon_f,
-                "jitter_lat": lat_j,
-                "jitter_lon": lon_j,
-                "orig_country": orig_country,
-                "jitter_country": jitter_country,
-                "planned_country": planned_country,
-            })
-
-        # contamination
+        # contamination fields
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
         cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
-        cont_other_orig = r.get("SOIL_CONTAMINATION_comments") or ""
-        cont_other_en = translate_to_en(cont_other_orig) if cont_other_orig else ""
-        pollutants_count = 0
-        for v in (cont_debris, cont_plastic, cont_other_orig):
-            if v not in (0, "", None, False):
-                pollutants_count += 1
+        cont_other_orig = (r.get("SOIL_CONTAMINATION_comments") or "").strip()
+        pollutants_count = sum(1 for v in (cont_debris, cont_plastic, cont_other_orig) if v not in (0, "", None, False))
 
-        rows.append({
+        # translatable fields (orig)
+        soil_structure_orig = (r.get("SOIL_STRUCTURE_structure") or "").strip()
+        soil_texture_orig   = (r.get("SOIL_TEXTURE_texture") or "").strip()
+        observations_orig   = (r.get("SOIL_DIVER_observations") or "").strip()
+        metals_info_orig    = (r.get("METALS_info") or "").strip()
+
+        # collect for batch translation (only non-empty)
+        CC = country or ""
+        for t in (cont_other_orig, soil_structure_orig, soil_texture_orig, observations_orig, metals_info_orig):
+            if t:
+                translate_pairs.add((t, CC))
+
+        pre_rows.append({
             "sample_id": sample_id,
             "timestamp_utc": r.get("collectedAt") or r.get("fs_createdAt"),
-            "lat": lat_j,
-            "lon": lon_j,
-            "country_code": country,
-            "location_accuracy_m": MAX_JITTER_METERS,
+            "lat": lat_j, "lon": lon_j,
+            "country": country,
             "ph": r.get("PH_ph"),
-            "organic_carbon_pct": None,
-            "soil_structure": r.get("SOIL_STRUCTURE_structure"),
             "earthworms_count": r.get("SOIL_DIVER_earthworms"),
             "contamination_debris": cont_debris,
             "contamination_plastic": cont_plastic,
             "contamination_other_orig": cont_other_orig,
-            "contamination_other_en": cont_other_en,
-            "pollutants_count": pollutants_count,
-            "vegetation_cover_pct": None,
-            "forest_cover_pct": None,
+            "soil_structure_orig": soil_structure_orig,
+            "soil_texture_orig": soil_texture_orig,
+            "observations_orig": observations_orig,
+            "metals_info_orig": metals_info_orig,
             "collected_by": r.get("userId"),
-            "data_source": "mobile",
             "qa_status": r.get("QA_state") or "",
+        })
+
+        if not country:
+            debug_missing.append({
+                "row_index": idx, "sample_id": sample_id, "qr": qr_norm,
+                "orig_lat": orig_lat, "orig_lon": orig_lon,
+                "lat_f": lat_f, "lon_f": lon_f,
+                "jitter_lat": lat_j, "jitter_lon": lon_j,
+                "orig_country": orig_country, "jitter_country": jitter_country,
+                "planned_country": planned_country,
+            })
+
+    # batch translate once
+    en_map = translate_many_to_en(list(translate_pairs))
+
+    # build final rows
+    rows = []
+    for pr in pre_rows:
+        CC = pr["country"] or ""
+        get_en = lambda t: (en_map.get((t, CC)) if t else "")
+        rows.append({
+            "sample_id": pr["sample_id"],
+            "timestamp_utc": pr["timestamp_utc"],
+            "lat": pr["lat"],
+            "lon": pr["lon"],
+            "country_code": pr["country"],
+            "location_accuracy_m": MAX_JITTER_METERS,
+            "ph": pr["ph"],
+            "organic_carbon_pct": None,
+            "earthworms_count": pr["earthworms_count"],
+            "contamination_debris": pr["contamination_debris"],
+            "contamination_plastic": pr["contamination_plastic"],
+            "contamination_other_orig": pr["contamination_other_orig"],
+            "contamination_other_en": get_en(pr["contamination_other_orig"]),
+            "pollutants_count": sum(1 for v in (pr["contamination_debris"],
+                                                pr["contamination_plastic"],
+                                                pr["contamination_other_orig"]) if v not in (0, "", None, False)),
+            "soil_structure_orig": pr["soil_structure_orig"],
+            "soil_structure_en":   get_en(pr["soil_structure_orig"]),
+            "soil_texture_orig":   pr["soil_texture_orig"],
+            "soil_texture_en":     get_en(pr["soil_texture_orig"]),
+            "observations_orig":   pr["observations_orig"],
+            "observations_en":     get_en(pr["observations_orig"]),
+            "metals_info_orig":    pr["metals_info_orig"],
+            "metals_info_en":      get_en(pr["metals_info_orig"]),
+            "collected_by": pr["collected_by"],
+            "data_source": "mobile",
+            "qa_status": pr["qa_status"],
             "licence": DEFAULT_LICENCE,
         })
 
-    # --- write a tiny diag file so you can open it
     if debug_missing:
         diag_path = PROJECT_ROOT / "data" / "canonical" / "country_missing_diag.csv"
         os.makedirs(diag_path.parent, exist_ok=True)
@@ -853,13 +1106,22 @@ def build_samples_df(df_flat: pd.DataFrame, planned_map: dict[str, set[str]] | N
 
     return pd.DataFrame(rows)
 
+def _to_float_num(v):
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", ".")
+    try:
+        return float(s)
+    except Exception:
+        return None
+
 def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     img_rows = []
     photo_slots = list(range(1, 14))
     for _, r in df_flat.iterrows():
-        lat = r.get("GPS_lat")
-        lon = r.get("GPS_long")
-        country = r.get("country_code") or latlon_to_country_code(lat, lon)
+        lt = _to_float_num(r.get("GPS_lat"))
+        ln = _to_float_num(r.get("GPS_long"))
+        country = r.get("country_code") or latlon_to_country_code(lt, ln)
 
         qr = norm_qr_for_id(r.get("QR_qrCode"))
         sample_id = qr or r.get("sampleId")
@@ -870,8 +1132,9 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
             path = r.get(path_col)
             if not path or (isinstance(path, float) and math.isnan(path)) or str(path).strip().lower() == "nan":
                 continue
-            comment_orig = r.get(comment_col) or ""
-            comment_en = translate_to_en(comment_orig) if comment_orig else ""
+            comment_orig = (r.get(comment_col) or "").strip()
+            # keep as-is for now; see batch section below to translate images in bulk too
+            comment_en = translate_to_en(comment_orig, country_code=country) if comment_orig else ""
             img_rows.append({
                 "sample_id": sample_id,
                 "country_code": country,
@@ -983,9 +1246,12 @@ def upload_canonical_to_minio(mclient, local_path: Path, object_name: str):
 # ---------------------------------------------------------------------------
 # Postgres tables
 # ---------------------------------------------------------------------------
+from psycopg2 import sql
+
 def ensure_pg_tables():
     if psycopg2 is None:
         return
+
     conn = psycopg2.connect(
         host=os.getenv("DB_HOST_OUTSIDE", "echorepo-postgres"),
         port=int(os.getenv("DB_PORT_OUTSIDE", "5432")),
@@ -994,59 +1260,90 @@ def ensure_pg_tables():
         password=os.getenv("DB_PASSWORD", "echorepo-pass"),
     )
     cur = conn.cursor()
+
+    # Create minimal shells if they don't exist
+    cur.execute("CREATE TABLE IF NOT EXISTS samples (sample_id TEXT PRIMARY KEY)")
     cur.execute("""
-CREATE TABLE IF NOT EXISTS samples (
-  sample_id TEXT PRIMARY KEY,
-  timestamp_utc TIMESTAMPTZ,
-  lat DOUBLE PRECISION,
-  lon DOUBLE PRECISION,
-  country_code CHAR(2),
-  location_accuracy_m INTEGER,
-  ph DOUBLE PRECISION,
-  organic_carbon_pct DOUBLE PRECISION,
-  soil_structure TEXT,
-  earthworms_count INTEGER,
-  contamination_debris INTEGER,
-  contamination_plastic INTEGER,
-  contamination_other_orig TEXT,
-  contamination_other_en TEXT,
-  pollutants_count INTEGER,
-  vegetation_cover_pct DOUBLE PRECISION,
-  forest_cover_pct DOUBLE PRECISION,
-  collected_by TEXT,
-  data_source TEXT,
-  qa_status TEXT,
-  licence TEXT
-);
+        CREATE TABLE IF NOT EXISTS sample_images (
+          sample_id TEXT,
+          country_code CHAR(2),
+          image_id INTEGER,
+          image_url TEXT,
+          image_description_orig TEXT,
+          image_description_en   TEXT,
+          collected_by TEXT,
+          timestamp_utc TIMESTAMPTZ,
+          licence TEXT,
+          PRIMARY KEY (sample_id, image_id)
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS sample_parameters (
+          sample_id TEXT,
+          country_code CHAR(2),
+          parameter_code TEXT,
+          parameter_name TEXT,
+          value DOUBLE PRECISION,
+          uom TEXT,
+          analysis_method TEXT,
+          analysis_date TIMESTAMPTZ,
+          lab_id TEXT,
+          created_by TEXT,
+          licence TEXT,
+          parameter_uri TEXT,
+          PRIMARY KEY (sample_id, parameter_code)
+        )
+    """)
 
-CREATE TABLE IF NOT EXISTS sample_parameters (
-  sample_id TEXT REFERENCES samples(sample_id),
-  country_code CHAR(2),
-  parameter_code TEXT,
-  parameter_name TEXT,
-  value DOUBLE PRECISION,
-  uom TEXT,
-  analysis_method TEXT,
-  analysis_date TIMESTAMPTZ,
-  lab_id TEXT,
-  created_by TEXT,
-  licence TEXT,
-  parameter_uri TEXT,
-  PRIMARY KEY (sample_id, parameter_code)
-);
+    def ensure_col(table: str, col: str, typ: str):
+        cur.execute("""
+            SELECT 1 FROM information_schema.columns
+             WHERE table_name=%s AND column_name=%s
+        """, (table, col))
+        if cur.fetchone() is None:
+            cur.execute(sql.SQL("ALTER TABLE {} ADD COLUMN {} {}")
+                        .format(sql.Identifier(table),
+                                sql.Identifier(col),
+                                sql.SQL(typ)))
 
-CREATE TABLE IF NOT EXISTS sample_images (
-  sample_id TEXT REFERENCES samples(sample_id),
-  country_code CHAR(2),
-  image_id INTEGER,
-  image_url TEXT,
-  image_description_orig TEXT,
-  image_description_en TEXT,
-  collected_by TEXT,
-  timestamp_utc TIMESTAMPTZ,
-  licence TEXT,
-  PRIMARY KEY (sample_id, image_id)
-);""")
+    # Desired columns for the NEW samples schema
+    cols = {
+        "timestamp_utc": "TIMESTAMPTZ",
+        "lat": "DOUBLE PRECISION",
+        "lon": "DOUBLE PRECISION",
+        "country_code": "CHAR(2)",
+        "location_accuracy_m": "INTEGER",
+        "ph": "DOUBLE PRECISION",
+        "organic_carbon_pct": "DOUBLE PRECISION",
+        "earthworms_count": "INTEGER",
+
+        "contamination_debris": "INTEGER",
+        "contamination_plastic": "INTEGER",
+        "contamination_other_orig": "TEXT",
+        "contamination_other_en": "TEXT",
+        "pollutants_count": "INTEGER",
+
+        "soil_structure_orig": "TEXT",
+        "soil_structure_en":   "TEXT",
+        "soil_texture_orig":   "TEXT",
+        "soil_texture_en":     "TEXT",
+        "observations_orig":   "TEXT",
+        "observations_en":     "TEXT",
+        "metals_info_orig":    "TEXT",
+        "metals_info_en":      "TEXT",
+
+        "collected_by": "TEXT",
+        "data_source":  "TEXT",
+        "qa_status":    "TEXT",
+        "licence":      "TEXT",
+    }
+
+    # Make sure the base column exists (rare edge DBs might be missing it)
+    ensure_col("samples", "sample_id", "TEXT")
+    # Add any missing columns
+    for c, t in cols.items():
+        ensure_col("samples", c, t)
+
     conn.commit()
     cur.close()
     conn.close()
@@ -1059,6 +1356,12 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
     if psycopg2 is None:
         print("[PG] psycopg2 not installed, skipping PG load.")
         return
+
+    # Ensure schema matches the new CSV columns
+    try:
+        ensure_pg_tables()
+    except Exception as e:
+        print(f"[PG] ensure_pg_tables() failed (will try to continue): {e}")
 
     conn = psycopg2.connect(
         host=os.getenv("DB_HOST_OUTSIDE", "echorepo-postgres"),
@@ -1073,27 +1376,35 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
         cur.execute("DROP TABLE IF EXISTS samples_stage_raw;")
         cur.execute("""
             CREATE TABLE samples_stage_raw (
-              sample_id              TEXT,
-              timestamp_utc          TEXT,
-              lat                    TEXT,
-              lon                    TEXT,
-              country_code           TEXT,
-              location_accuracy_m    TEXT,
-              ph                     TEXT,
-              organic_carbon_pct     TEXT,
-              soil_structure         TEXT,
-              earthworms_count       TEXT,
-              contamination_debris   TEXT,
-              contamination_plastic  TEXT,
-              contamination_other_orig TEXT,
-              contamination_other_en   TEXT,
-              pollutants_count       TEXT,
-              vegetation_cover_pct   TEXT,
-              forest_cover_pct       TEXT,
-              collected_by           TEXT,
-              data_source            TEXT,
-              qa_status              TEXT,
-              licence                TEXT
+            sample_id TEXT,
+            timestamp_utc TEXT,
+            lat TEXT,
+            lon TEXT,
+            country_code TEXT,
+            location_accuracy_m TEXT,
+            ph TEXT,
+            organic_carbon_pct TEXT,
+            earthworms_count TEXT,
+
+            contamination_debris TEXT,
+            contamination_plastic TEXT,
+            contamination_other_orig TEXT,
+            contamination_other_en   TEXT,
+            pollutants_count TEXT,
+
+            soil_structure_orig TEXT,
+            soil_structure_en   TEXT,
+            soil_texture_orig   TEXT,
+            soil_texture_en     TEXT,
+            observations_orig   TEXT,
+            observations_en     TEXT,
+            metals_info_orig    TEXT,
+            metals_info_en      TEXT,
+
+            collected_by TEXT,
+            data_source  TEXT,
+            qa_status    TEXT,
+            licence      TEXT
             );
         """)
 
@@ -1169,52 +1480,45 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
 
         # samples
         cur.execute("""
-            INSERT INTO samples (
-              sample_id,
-              timestamp_utc,
-              lat,
-              lon,
-              country_code,
-              location_accuracy_m,
-              ph,
-              organic_carbon_pct,
-              soil_structure,
-              earthworms_count,
-              contamination_debris,
-              contamination_plastic,
-              contamination_other_orig,
-              contamination_other_en,
-              pollutants_count,
-              vegetation_cover_pct,
-              forest_cover_pct,
-              collected_by,
-              data_source,
-              qa_status,
-              licence
-            )
-            SELECT
-              TRIM(sample_id),
-              NULLIF(TRIM(timestamp_utc), '')::timestamptz,
-              NULLIF(TRIM(lat), '')::double precision,
-              NULLIF(TRIM(lon), '')::double precision,
-              NULLIF(TRIM(country_code), ''),
-              NULLIF(TRIM(location_accuracy_m), '')::integer,
-              NULLIF(TRIM(ph), '')::double precision,
-              NULLIF(TRIM(organic_carbon_pct), '')::double precision,
-              NULLIF(TRIM(soil_structure), ''),
-              NULLIF(TRIM(earthworms_count), '')::integer,
-              NULLIF(TRIM(contamination_debris), '')::integer,
-              NULLIF(TRIM(contamination_plastic), '')::integer,
-              NULLIF(TRIM(contamination_other_orig), ''),
-              NULLIF(TRIM(contamination_other_en), ''),
-              NULLIF(TRIM(pollutants_count), '')::integer,
-              NULLIF(TRIM(vegetation_cover_pct), '')::double precision,
-              NULLIF(TRIM(forest_cover_pct), '')::double precision,
-              NULLIF(TRIM(collected_by), ''),
-              NULLIF(TRIM(data_source), ''),
-              NULLIF(TRIM(qa_status), ''),
-              NULLIF(TRIM(licence), '')
-            FROM samples_stage_raw;
+        INSERT INTO samples (
+            sample_id, timestamp_utc, lat, lon, country_code, location_accuracy_m,
+            ph, organic_carbon_pct, earthworms_count,
+            contamination_debris, contamination_plastic, contamination_other_orig, contamination_other_en, pollutants_count,
+            soil_structure_orig, soil_structure_en, soil_texture_orig, soil_texture_en,
+            observations_orig, observations_en, metals_info_orig, metals_info_en,
+            collected_by, data_source, qa_status, licence
+        )
+        SELECT
+            TRIM(sample_id),
+            NULLIF(TRIM(timestamp_utc), '')::timestamptz,
+            NULLIF(TRIM(lat), '')::double precision,
+            NULLIF(TRIM(lon), '')::double precision,
+            NULLIF(TRIM(country_code), ''),
+            NULLIF(TRIM(location_accuracy_m), '')::integer,
+            NULLIF(TRIM(ph), '')::double precision,
+            NULLIF(TRIM(organic_carbon_pct), '')::double precision,
+            NULLIF(TRIM(earthworms_count), '')::integer,
+
+            NULLIF(TRIM(contamination_debris), '')::integer,
+            NULLIF(TRIM(contamination_plastic), '')::integer,
+            NULLIF(TRIM(contamination_other_orig), ''),
+            NULLIF(TRIM(contamination_other_en), ''),
+            NULLIF(TRIM(pollutants_count), '')::integer,
+
+            NULLIF(TRIM(soil_structure_orig), ''),
+            NULLIF(TRIM(soil_structure_en), ''),
+            NULLIF(TRIM(soil_texture_orig), ''),
+            NULLIF(TRIM(soil_texture_en), ''),
+            NULLIF(TRIM(observations_orig), ''),
+            NULLIF(TRIM(observations_en), ''),
+            NULLIF(TRIM(metals_info_orig), ''),
+            NULLIF(TRIM(metals_info_en), ''),
+
+            NULLIF(TRIM(collected_by), ''),
+            NULLIF(TRIM(data_source), ''),
+            NULLIF(TRIM(qa_status), ''),
+            NULLIF(TRIM(licence), '')
+        FROM samples_stage_raw;
         """)
 
         # sample_images
@@ -1388,8 +1692,6 @@ def main():
             float_cols = [
                 "ph",
                 "organic_carbon_pct",
-                "vegetation_cover_pct",
-                "forest_cover_pct",
             ]
 
             for col in int_cols:
