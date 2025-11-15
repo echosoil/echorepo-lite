@@ -91,7 +91,6 @@
 │   ├── static/fonts
 │   ├── static/img
 │   ├── static/js
-│   │   └──map.js
 │   └── static/privacy
 ├── storage
 │   └── .gitkeep
@@ -105,7 +104,8 @@
 │   ├── make_repo_overview.py
 │   ├── pull_and_enrich_samples.py
 │   ├── refresh_sqlite.py
-│   └── run_sql.py
+│   ├── run_sql.py
+│   └── translate_pg_en.py
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
