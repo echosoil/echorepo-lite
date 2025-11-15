@@ -247,7 +247,23 @@
     let html=`<div class="popup-card"><table class="table table-sm mb-2">${
       rows.map(([k,v])=>`<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")}</table>`;
     if(p.PHOTO_photos_1_path){ const url=String(p.PHOTO_photos_1_path);
-      html+=`<a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="Sample photo"></a>`; }
+        html += `
+        <div class="popup-photo mt-2">
+          <a href="${url}" target="_blank" rel="noopener">
+            <img
+              src="${url}"
+              alt="Sample photo"
+              style="
+                max-width: 100%;
+                height: auto;
+                max-height: 180px;
+                display: block;
+                object-fit: cover;
+              "
+            >
+          </a>
+        </div>`; 
+    }
     if(p.sampleId){
       html+=`<div class="mt-2"><a class="btn btn-sm btn-outline-primary"
               href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
