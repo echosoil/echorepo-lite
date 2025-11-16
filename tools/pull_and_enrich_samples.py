@@ -108,8 +108,58 @@ MINIO_BUCKET = os.getenv("MINIO_BUCKET", "echorepo-uploads")
 PUBLIC_STORAGE_BASE = os.getenv("PUBLIC_STORAGE_BASE", "/storage")
 MIRROR_VERBOSE = os.getenv("MIRROR_VERBOSE", "0") == "1"
 
+# image compression/orientation config
+MAX_IMAGE_BYTES = int(os.getenv("MAX_IMAGE_BYTES", str(3 * 1024 * 1024)))  # 3 MB
+MIRROR_OVERWRITE_EXISTING = os.getenv("MIRROR_OVERWRITE_EXISTING", "0") == "1"
+
+# Max image size (after compression) and persistent progress log
+MAX_IMAGE_BYTES = int(os.getenv("MAX_IMAGE_BYTES", str(3 * 1024 * 1024)))  # 3 MB
+MIRROR_OVERWRITE_EXISTING = os.getenv("MIRROR_OVERWRITE_EXISTING", "0") == "1"
+
+# File where we log successfully processed MinIO object names (one per line)
+MIRROR_PROGRESS_FILE = os.getenv(
+    "MIRROR_PROGRESS_FILE",
+    str(PROJECT_ROOT / "data" / "mirror_progress_images.txt"),
+)
+
 DEFAULT_LICENCE = os.getenv("DEFAULT_LICENCE", "CC-BY-4.0")
 DEFAULT_LAB_ID = os.getenv("DEFAULT_LAB_ID", "ECHO-LAB-1")
+
+
+def _load_mirror_done() -> set[str]:
+    """
+    Load set of MinIO object names that were already processed
+    (successfully mirrored + oriented + compressed).
+    """
+    path = Path(MIRROR_PROGRESS_FILE)
+    if not path.exists():
+        return set()
+    done = set()
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                done.add(line)
+    return done
+
+
+_MIRROR_DONE_OBJECTS: set[str] = _load_mirror_done()
+
+
+def _mark_mirror_done(object_name: str) -> None:
+    """
+    Append an object_name to the progress file and in-memory set.
+    Safe to call multiple times; duplicates in file are harmless.
+    """
+    if object_name in _MIRROR_DONE_OBJECTS:
+        return
+    _MIRROR_DONE_OBJECTS.add(object_name)
+    path = Path(MIRROR_PROGRESS_FILE)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(object_name + "\n")
+
+
 
 # ---------------------------------------------------------------------------
 # optional: Postgres (we only ensure tables here)
@@ -132,13 +182,25 @@ except ImportError:
         pass
 
 # ---------------------------------------------------------------------------
-# tolerate truncated images
+# Pillow (for orientation + compression) / tolerate truncated images
 # ---------------------------------------------------------------------------
 try:
-    from PIL import ImageFile
+    from PIL import Image, ImageOps, ImageFile, ExifTags
     ImageFile.LOAD_TRUNCATED_IMAGES = True
 except Exception:
-    pass
+    Image = None
+    ImageOps = None
+    ExifTags = None
+    ImageFile = None
+
+# EXIF orientation tag id (if Pillow available)
+if ExifTags is not None:
+    ORIENTATION_TAG = next(
+        (tid for tid, name in ExifTags.TAGS.items() if name == "Orientation"),
+        None,
+    )
+else:
+    ORIENTATION_TAG = None
 
 # ---------------------------------------------------------------------------
 # Firebase init
@@ -416,20 +478,118 @@ def _guess_ext_from_firebase_url(url: str) -> str:
         return "." + last.rsplit(".", 1)[-1]
     return ".bin"
 
+def _compress_and_fix_orientation(raw_bytes: bytes, max_bytes: int = MAX_IMAGE_BYTES) -> bytes:
+    """
+    Use Pillow to:
+      - respect EXIF orientation (rotate pixels, then set orientation=1)
+      - compress to JPEG under max_bytes if needed
+    If Pillow not available or anything fails, raw_bytes are returned.
+    """
+    if Image is None:
+        return raw_bytes
+
+    try:
+        img = Image.open(io.BytesIO(raw_bytes))
+    except Exception:
+        return raw_bytes
+
+    exif = None
+    orientation = None
+    if hasattr(img, "getexif"):
+        try:
+            exif = img.getexif()
+        except Exception:
+            exif = None
+
+    if exif is not None and len(exif) > 0:
+        if ORIENTATION_TAG is not None:
+            orientation = exif.get(ORIENTATION_TAG, None)
+        else:
+            orientation = exif.get(274, None)  # 274 is Orientation in many exif libs
+
+    needs_rotation = orientation not in (None, 1)
+
+    # If no rotation is needed and already small enough, keep original bytes
+    if not needs_rotation and len(raw_bytes) <= max_bytes:
+        return raw_bytes
+
+    # Apply EXIF rotation to pixels if needed
+    if needs_rotation and ImageOps is not None:
+        try:
+            img = ImageOps.exif_transpose(img)
+            if exif is not None and ORIENTATION_TAG is not None:
+                exif[ORIENTATION_TAG] = 1
+        except Exception:
+            # if transpose fails, just ignore and keep unrotated
+            pass
+
+    exif_bytes = exif.tobytes() if exif is not None and len(exif) > 0 else None
+
+    def _save_with_quality(im, quality: int) -> bytes:
+        buf = io.BytesIO()
+        im_to_save = im.convert("RGB") if im.mode not in ("RGB", "L") else im
+        kwargs = {
+            "format": "JPEG",
+            "quality": quality,
+            "optimize": True,
+        }
+        if exif_bytes is not None:
+            kwargs["exif"] = exif_bytes
+        im_to_save.save(buf, **kwargs)
+        return buf.getvalue()
+
+    # 1) try several qualities at original size
+    for quality in (90, 80, 70, 60, 50, 40):
+        out = _save_with_quality(img, quality)
+        if len(out) <= max_bytes:
+            return out
+
+    # 2) if still too big, downscale stepwise
+    width, height = img.size
+    current = img
+    last_out = _save_with_quality(current, 50)  # fallback
+
+    while width > 300 and height > 300:
+        width = int(width * 0.85)
+        height = int(height * 0.85)
+        current = current.resize((width, height), Image.LANCZOS)
+        for quality in (70, 60, 50):
+            out = _save_with_quality(current, quality)
+            if len(out) <= max_bytes:
+                return out
+            last_out = out
+
+    return last_out
+
 # ----- Minio helpers ---------------------------------------------------------------------------
 def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str, mclient) -> str:
     if not url or not url.startswith(FBS_PREFIX) or mclient is None:
         return url
+
     user_id = _safe_part(user_id)
     sample_id = _safe_part(sample_id)
     field = _safe_part(field)
     ext = _guess_ext_from_firebase_url(url)
     object_name = f"{user_id}/{sample_id}/{field}{ext}"
-    try:
-        mclient.stat_object(MINIO_BUCKET, object_name)
+
+    # --- NEW: skip if we've already processed this object in a previous run ---
+    if object_name in _MIRROR_DONE_OBJECTS:
+        if MIRROR_VERBOSE:
+            print(f"[SKIP] already processed {object_name}, skipping download")
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
-    except Exception:
-        pass
+
+    # If we are NOT overwriting, skip if object already exists in MinIO
+    if not MIRROR_OVERWRITE_EXISTING:
+        try:
+            mclient.stat_object(MINIO_BUCKET, object_name)
+            # Mark as done so it won't be checked again next time
+            _mark_mirror_done(object_name)
+            return f"{PUBLIC_STORAGE_BASE}/{object_name}"
+        except Exception:
+            # not found → proceed to download & upload
+            pass
+
+    # Download original from Firebase
     try:
         resp = requests.get(url, timeout=15)
         resp.raise_for_status()
@@ -438,14 +598,29 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
         if MIRROR_VERBOSE:
             print(f"[WARN] could not download {url}: {e}")
         return url
+
+    # Fix orientation + compress
     try:
+        data_fixed = _compress_and_fix_orientation(data, MAX_IMAGE_BYTES)
+    except Exception as e:
+        if MIRROR_VERBOSE:
+            print(f"[WARN] compression/orientation failed for {url}: {e}")
+        data_fixed = data
+
+    # Upload to MinIO (overwrite if necessary)
+    try:
+        bio = io.BytesIO(data_fixed)
         mclient.put_object(
             MINIO_BUCKET,
             object_name,
-            data=io.BytesIO(data),
-            length=len(data),
+            data=bio,
+            length=len(data_fixed),
             content_type="image/jpeg",
         )
+        _mark_mirror_done(object_name)
+        if MIRROR_VERBOSE:
+            action = "overwrote" if MIRROR_OVERWRITE_EXISTING else "uploaded"
+            print(f"[INFO] {action} {object_name} ({len(data_fixed)/1024/1024:.2f} MB)")
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
     except Exception as e:
         if MIRROR_VERBOSE:
@@ -455,11 +630,21 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
 # ---------------------------------------------------------------------------
 # 1. Firestore -> flattened rows
 # ---------------------------------------------------------------------------
-def fetch_samples_flat(mclient) -> pd.DataFrame:
+def fetch_samples_flat(mclient, max_stream_retries: int = 5) -> pd.DataFrame:
+    """
+    Fetch all 'samples' from Firestore, flatten, and mirror images to MinIO.
+
+    Robust against intermittent Firestore stream errors:
+      - Normal errors: retry up to max_stream_retries times.
+      - Specific Firestore bug: '_UnaryStreamMultiCallable' object has no attribute '_retry'
+        → retried indefinitely (does not count against max_stream_retries).
+    """
     db = firestore.client()
-    samples_ref = db.collection_group("samples")
     rows = []
-    for doc in samples_ref.stream():
+    seen_doc_ids: set[str] = set()
+    attempt = 0
+
+    def _process_doc(doc):
         data = doc.to_dict() or {}
         row = {
             "sampleId": doc.id,
@@ -472,10 +657,12 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
             "fs_createdAt": _ts_to_iso(getattr(doc, "create_time", None)),
             "fs_updatedAt": _ts_to_iso(getattr(doc, "update_time", None)),
         }
+
         steps = data.get("data", [])
         if not isinstance(steps, list):
             rows.append(row)
-            continue
+            return
+
         for step in steps:
             if not isinstance(step, dict):
                 continue
@@ -483,6 +670,7 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
             state = step.get("state")
             info = step.get("info", {})
             row[f"{step_type}_state"] = state
+
             if isinstance(info, dict):
                 for key, val in info.items():
                     base_col = f"{step_type}_{key}"
@@ -512,9 +700,56 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
                         row[base_col] = val
             else:
                 row[f"{step_type}_info"] = str(info)
+
         if "PH_ph" in row:
             row["PH_ph"] = parse_ph(row["PH_ph"])
+
         rows.append(row)
+
+    while True:
+        samples_ref = db.collection_group("samples")
+        try:
+            for doc in samples_ref.stream():
+                # Skip docs already processed in this run
+                if doc.id in seen_doc_ids:
+                    continue
+                seen_doc_ids.add(doc.id)
+                _process_doc(doc)
+
+            # Stream finished successfully → done
+            break
+
+        except Exception as e:
+            msg = str(e)
+
+            # --- Special handling for the weird Firestore bug you're seeing ---
+            if "_UnaryStreamMultiCallable" in msg and "has no attribute '_retry'" in msg:
+                # Don't count this towards max_stream_retries; just keep trying
+                sleep_s = 10
+                print(
+                    f"[WARN] Firestore stream hit known bug "
+                    f"('_UnaryStreamMultiCallable/_retry'); sleeping {sleep_s}s and retrying..."
+                )
+                time.sleep(sleep_s)
+                db = firestore.client()
+                continue
+
+            # --- Normal retry path for network/transient errors ---
+            attempt += 1
+            if attempt > max_stream_retries:
+                print(f"[ERROR] Firestore stream failed after {attempt} attempts: {e}")
+                raise
+
+            sleep_s = min(60, 5 * attempt)
+            print(
+                f"[WARN] Firestore stream failed "
+                f"(attempt {attempt}/{max_stream_retries}): {e} – "
+                f"retrying in {sleep_s}s"
+            )
+            time.sleep(sleep_s)
+            db = firestore.client()
+            continue
+
     df = pd.DataFrame(rows, dtype=object)
     if not df.empty:
         if "collectedAt" in df.columns:
@@ -526,15 +761,37 @@ def fetch_samples_flat(mclient) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # 2. Firebase Auth
 # ---------------------------------------------------------------------------
-def fetch_uid_to_email() -> dict:
-    mapping = {}
-    page = auth.list_users()
-    while page:
-        for user in page.users:
-            mapping[user.uid] = (user.email or "").strip()
-        page = page.get_next_page()
-    print(f"[INFO] Retrieved {len(mapping)} users from Firebase Auth.")
-    return mapping
+def fetch_uid_to_email(max_retries: int = 5) -> dict:
+    """
+    Fetch uid → email mapping from Firebase Auth with retries.
+
+    If listing users fails mid-way, the whole listing is retried from scratch
+    (mapping is rebuilt, but that's fine because it's small).
+    """
+    for attempt in range(1, max_retries + 1):
+        mapping = {}
+        try:
+            page = auth.list_users()
+            while page:
+                for user in page.users:
+                    mapping[user.uid] = (user.email or "").strip()
+                page = page.get_next_page()
+
+            print(f"[INFO] Retrieved {len(mapping)} users from Firebase Auth.")
+            return mapping
+
+        except Exception as e:
+            if attempt >= max_retries:
+                print(f"[ERROR] Firebase Auth list_users failed after {attempt} attempts: {e}")
+                raise
+
+            sleep_s = min(60, 5 * attempt)
+            print(
+                f"[WARN] Firebase Auth list_users failed "
+                f"(attempt {attempt}/{max_retries}): {e} – "
+                f"retrying in {sleep_s}s"
+            )
+            time.sleep(sleep_s)
 
 # ---------------------------------------------------------------------------
 # 3. refresh sqlite (merged)
