@@ -9,7 +9,72 @@ import requests           # pip install requests
 import jwt                # pip install PyJWT
 from flask import Blueprint, current_app, request, jsonify, Response, abort, g
 
+from psycopg2.extras import RealDictCursor          
+from echorepo.services.db import get_pg_conn        
+import zipfile 
+
 data_api = Blueprint("data_api", __name__)
+
+# -----------------------------------------------------------------------------  
+# Canonical table schemas (Postgres)  
+# -----------------------------------------------------------------------------  
+
+CANONICAL_SAMPLE_COLS = [
+    "sample_id",
+    "timestamp_utc",
+    "lat",
+    "lon",
+    "country_code",
+    "location_accuracy_m",
+    "ph",
+    "organic_carbon_pct",
+    "earthworms_count",
+    "contamination_debris",
+    "contamination_plastic",
+    "contamination_other_orig",
+    "contamination_other_en",
+    "pollutants_count",
+    "soil_structure_orig",
+    "soil_structure_en",
+    "soil_texture_orig",
+    "soil_texture_en",
+    "observations_orig",
+    "observations_en",
+    "metals_info_orig",
+    "metals_info_en",
+    "collected_by",
+    "data_source",
+    "qa_status",
+    "licence",
+]
+
+CANONICAL_IMAGE_COLS = [
+    "sample_id",
+    "country_code",
+    "image_id",
+    "image_url",
+    "image_description_orig",
+    "image_description_en",
+    "collected_by",
+    "timestamp_utc",
+    "licence",
+]
+
+CANONICAL_PARAM_COLS = [
+    "sample_id",
+    "country_code",
+    "parameter_code",
+    "parameter_name",
+    "value",
+    "uom",
+    "analysis_method",
+    "analysis_date",
+    "lab_id",
+    "created_by",
+    "licence",
+    "parameter_uri",
+]
+
 
 # -----------------------------------------------------------------------------
 # Config helpers
@@ -282,6 +347,87 @@ def stream_csv(rows_iter, fields: List[str]) -> Response:
     return Response(generate(), mimetype="text/csv")
 
 # -----------------------------------------------------------------------------
+# Canonical filters builder (Postgres) – reused by /canonical/* endpoints
+# -----------------------------------------------------------------------------
+
+def _canonical_where_from_request(alias: str = "") -> tuple[str, List[Any], Dict[str, Any]]:
+    """
+    Build a WHERE clause + params for canonical Postgres tables, based on
+    query params in the current request.
+
+    Supported filters:
+      - from, to           (compared to timestamp_utc)
+      - country, country_code
+      - bbox               (west,south,east,north) on lon/lat
+      - within             (lat,lon,r_km) using approximate degrees
+
+    `alias` (e.g. "s") is used as table alias prefix, so we generate
+    's.timestamp_utc' etc.  If alias == "", plain column names are used.
+    """
+    prefix = f"{alias}." if alias else ""
+
+    where: List[str] = []
+    params: List[Any] = []
+
+    # --- time window ---
+    raw_from = (request.args.get("from") or "").strip()
+    raw_to   = (request.args.get("to") or "").strip()
+    from_s   = parse_iso8601(raw_from) if raw_from else None
+    to_s     = parse_iso8601(raw_to) if raw_to else None
+
+    if from_s:
+        where.append(f"{prefix}timestamp_utc >= %s")
+        params.append(from_s)
+    if to_s:
+        where.append(f"{prefix}timestamp_utc <= %s")
+        params.append(to_s)
+
+    # --- country ---
+    raw_country = (request.args.get("country") or request.args.get("country_code") or "").strip()
+    country_norm = raw_country.upper() if raw_country else None
+    if country_norm:
+        where.append(f"{prefix}country_code = %s")
+        params.append(country_norm)
+
+    # --- bbox ---
+    raw_bbox = (request.args.get("bbox") or "").strip()
+    bbox = None
+    if raw_bbox:
+        bbox = parse_bbox(raw_bbox)
+        if not bbox:
+            abort(400, description=f"Invalid bbox='{raw_bbox}', expected west,south,east,north")
+
+    if bbox:
+        west, south, east, north = bbox
+        where.append(f"({prefix}lon BETWEEN %s AND %s AND {prefix}lat BETWEEN %s AND %s)")
+        params.extend([west, east, south, north])
+
+    # --- within (lat,lon,r_km) ---
+    raw_within = (request.args.get("within") or "").strip()
+    within = None
+    if raw_within:
+        within = parse_within(raw_within) if raw_within else None
+        if not within:
+            abort(400, description=f"Invalid within='{raw_within}', expected lat[e.g. 42],lon[e.g. 2],radius[e.g. 20]")
+
+    if within:
+        lat0, lon0, r_km = within
+        dlat = approx_deg_for_km_lat(r_km)
+        dlon = approx_deg_for_km_lon(r_km, lat0)
+        where.append(f"({prefix}lat BETWEEN %s AND %s AND {prefix}lon BETWEEN %s AND %s)")
+        params.extend([lat0 - dlat, lat0 + dlat, lon0 - dlon, lon0 + dlon])
+
+    where_sql = "WHERE " + " AND ".join(where) if where else ""
+    filter_meta = {
+        "from": from_s,
+        "to": to_s,
+        "country": country_norm,
+        "bbox": raw_bbox or None,
+        "within": raw_within or None,
+    }
+    return where_sql, params, filter_meta
+
+# -----------------------------------------------------------------------------
 # Endpoints
 # -----------------------------------------------------------------------------
 
@@ -534,6 +680,11 @@ def lab_enrichment_upload():
                 rows = payload["rows"]
             else:
                 rows = payload
+            
+            g._analytics_extra = {
+                "upload_type": "lab_enrichment_api",
+                "payload_keys": list(payload.keys())[:10],  # only keys, not full data
+            }
 
     if not isinstance(rows, list):
         abort(400, description="Parsed payload is not a list of rows")
@@ -616,3 +767,393 @@ def lab_enrichment_upload():
         "processed": inserted,
         "skipped": skipped,
     })
+
+@data_api.get("/canonical/samples")
+def canonical_samples():
+    """
+    Canonical API over Postgres "samples" table.
+
+    Query params:
+      - from, to        (ISO-ish; compared to timestamp_utc)
+      - country        (or country_code)
+      - bbox           (west,south,east,north) on lon/lat
+      - within         (lat,lon,r_km)
+      - fields         (comma list subset of canonical columns; default all)
+      - limit, offset
+      - order, dir     (whitelisted columns; default timestamp_utc desc)
+      - format         (json|csv|geojson; default json)
+      - api_key / Bearer / session as in require_api_auth()
+    """
+    require_api_auth()
+
+    fmt = (request.args.get("format") or "json").lower()
+    limit = max(1, min(int(request.args.get("limit", 100)), 1000))
+    offset = max(0, int(request.args.get("offset", 0)))
+
+    # ---------- fields ----------
+    fields_param = (request.args.get("fields") or "").strip()
+    if fields_param:
+        requested = [f.strip() for f in fields_param.split(",") if f.strip()]
+        fields = [f for f in requested if f in CANONICAL_SAMPLE_COLS]
+    else:
+        fields = CANONICAL_SAMPLE_COLS[:]
+
+    if not fields:
+        fields = CANONICAL_SAMPLE_COLS[:]
+
+    # ---------- order ----------
+    order = (request.args.get("order") or "timestamp_utc").strip()
+    allowed_order = set(CANONICAL_SAMPLE_COLS)
+    if order not in allowed_order:
+        order = "timestamp_utc"
+
+    direction = (request.args.get("dir") or "desc").lower()
+    direction = "desc" if direction not in ("asc", "desc") else direction
+
+    # ---------- WHERE (shared helper) ----------
+    where_sql, params, filter_meta = _canonical_where_from_request(alias="")
+
+    cols_sql = ", ".join(fields)
+
+    # ---------- Query ----------
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"""
+            SELECT {cols_sql}
+            FROM samples
+            {where_sql}
+            ORDER BY {order} {direction}
+            LIMIT %s OFFSET %s
+            """,
+            params + [limit, offset],
+        )
+        rows = cur.fetchall()
+
+        cur.execute(
+            f"SELECT COUNT(*) AS c FROM samples {where_sql}",
+            params,
+        )
+        total = cur.fetchone()["c"]
+
+    # ---------- Analytics extras ----------
+    meta = {
+        "api_name": "canonical_samples",
+        "format": fmt,
+    }
+    meta.update({k: v for k, v in filter_meta.items() if v is not None})
+    g._analytics_extra = meta
+
+    if fmt == "csv":
+        return stream_csv(iter(rows), fields=fields)
+
+    if fmt == "geojson":
+        # canonical uses lon/lat columns
+        return to_geojson(rows, "lon", "lat")
+
+    return jsonify(
+        {
+            "meta": {
+                "count": total,
+                "limit": limit,
+                "offset": offset,
+                "order": order,
+                "dir": direction,
+                "fields": fields,
+            },
+            "data": rows,
+        }
+    )
+
+@data_api.get("/canonical/samples/count")
+def canonical_samples_count():
+    """Count canonical samples in Postgres, with same filters as /canonical/samples."""
+    require_api_auth()
+
+    where_sql, params, filter_meta = _canonical_where_from_request(alias="")
+
+    with get_pg_conn() as conn, conn.cursor() as cur:
+        cur.execute(f"SELECT COUNT(*) FROM samples {where_sql}", params)
+        count = cur.fetchone()[0]
+
+    meta = {"api_name": "canonical_samples_count"}
+    meta.update({k: v for k, v in filter_meta.items() if v is not None})
+    g._analytics_extra = meta
+
+    return jsonify({"count": count})
+
+@data_api.get("/canonical/sample_images")
+def canonical_sample_images():
+    """
+    Canonical images from Postgres "sample_images" table.
+
+    Query params:
+      - sample_id
+      - country (or country_code)
+      - from, to        (timestamp_utc)
+      - fields          (subset of canonical image columns)
+      - limit, offset
+      - format          (json|csv; default json)
+    """
+    require_api_auth()
+
+    fmt = (request.args.get("format") or "json").lower()
+    limit = max(1, min(int(request.args.get("limit", 100)), 1000))
+    offset = max(0, int(request.args.get("offset", 0)))
+
+    fields_param = (request.args.get("fields") or "").strip()
+    if fields_param:
+        requested = [f.strip() for f in fields_param.split(",") if f.strip()]
+        fields = [f for f in requested if f in CANONICAL_IMAGE_COLS]
+    else:
+        fields = CANONICAL_IMAGE_COLS[:]
+
+    if not fields:
+        fields = CANONICAL_IMAGE_COLS[:]
+
+    where = []
+    params: List[Any] = []
+
+    sample_id = request.args.get("sample_id")
+    if sample_id:
+        where.append("sample_id = %s")
+        params.append(sample_id.strip())
+
+    country = request.args.get("country") or request.args.get("country_code")
+    if country:
+        where.append("country_code = %s")
+        params.append(country.upper())
+
+    from_s = parse_iso8601(request.args.get("from", ""))
+    to_s   = parse_iso8601(request.args.get("to", ""))
+    if from_s:
+        where.append("timestamp_utc >= %s")
+        params.append(from_s)
+    if to_s:
+        where.append("timestamp_utc <= %s")
+        params.append(to_s)
+
+    where_sql = "WHERE " + " AND ".join(where) if where else ""
+    cols_sql = ", ".join(fields)
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"""
+            SELECT {cols_sql}
+            FROM sample_images
+            {where_sql}
+            ORDER BY sample_id, image_id
+            LIMIT %s OFFSET %s
+            """,
+            params + [limit, offset],
+        )
+        rows = cur.fetchall()
+
+        cur.execute(
+            f"SELECT COUNT(*) AS c FROM sample_images {where_sql}",
+            params,
+        )
+        total = cur.fetchone()["c"]
+
+    g._analytics_extra = {
+        "api_name": "canonical_sample_images",
+        "format": fmt,
+    }
+
+    if fmt == "csv":
+        return stream_csv(iter(rows), fields=fields)
+
+    return jsonify(
+        {
+            "meta": {
+                "count": total,
+                "limit": limit,
+                "offset": offset,
+                "fields": fields,
+            },
+            "data": rows,
+        }
+    )
+
+@data_api.get("/canonical/sample_parameters")
+def canonical_sample_parameters():
+    """
+    Canonical parameters from Postgres "sample_parameters" table.
+
+    Query params:
+      - sample_id
+      - country (or country_code)
+      - parameter_code
+      - fields          (subset of canonical parameter columns)
+      - limit, offset
+      - format          (json|csv; default json)
+    """
+    require_api_auth()
+
+    fmt = (request.args.get("format") or "json").lower()
+    limit = max(1, min(int(request.args.get("limit", 100)), 1000))
+    offset = max(0, int(request.args.get("offset", 0)))
+
+    fields_param = (request.args.get("fields") or "").strip()
+    if fields_param:
+        requested = [f.strip() for f in fields_param.split(",") if f.strip()]
+        fields = [f for f in requested if f in CANONICAL_PARAM_COLS]
+    else:
+        fields = CANONICAL_PARAM_COLS[:]
+
+    if not fields:
+        fields = CANONICAL_PARAM_COLS[:]
+
+    where = []
+    params: List[Any] = []
+
+    sample_id = request.args.get("sample_id")
+    if sample_id:
+        where.append("sample_id = %s")
+        params.append(sample_id.strip())
+
+    country = request.args.get("country") or request.args.get("country_code")
+    if country:
+        where.append("country_code = %s")
+        params.append(country.upper())
+
+    param_code = request.args.get("parameter_code")
+    if param_code:
+        where.append("parameter_code = %s")
+        params.append(param_code.strip())
+
+    where_sql = "WHERE " + " AND ".join(where) if where else ""
+    cols_sql = ", ".join(fields)
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"""
+            SELECT {cols_sql}
+            FROM sample_parameters
+            {where_sql}
+            ORDER BY sample_id, parameter_code
+            LIMIT %s OFFSET %s
+            """,
+            params + [limit, offset],
+        )
+        rows = cur.fetchall()
+
+        cur.execute(
+            f"SELECT COUNT(*) AS c FROM sample_parameters {where_sql}",
+            params,
+        )
+        total = cur.fetchone()["c"]
+
+    g._analytics_extra = {
+        "api_name": "canonical_sample_parameters",
+        "format": fmt,
+    }
+
+    if fmt == "csv":
+        return stream_csv(iter(rows), fields=fields)
+
+    return jsonify(
+        {
+            "meta": {
+                "count": total,
+                "limit": limit,
+                "offset": offset,
+                "fields": fields,
+            },
+            "data": rows,
+        }
+    )
+
+@data_api.get("/canonical/all.zip")
+def canonical_all_zip():
+    """
+    GET /api/v1/canonical/all.zip
+
+    Returns a ZIP file with:
+      - samples.csv
+      - sample_images.csv
+      - sample_parameters.csv
+
+    Data is pulled from Postgres canonical tables and filtered with the same
+    query params as /canonical/samples:
+
+      - from, to           (timestamp_utc on samples)
+      - country/country_code
+      - bbox, within       (on samples.lon/lat)
+
+    Images and parameters are restricted to the matching samples via JOIN.
+    Auth: same as other /api/v1 endpoints (API key, bearer, or session).
+    """
+    require_api_auth()
+
+    # WHERE over samples aliased as "s"
+    where_sql, params, filter_meta = _canonical_where_from_request(alias="s")
+
+    mem = io.BytesIO()
+
+    def _write_query_to_zip(zip_name: str, cols: List[str], sql: str, sql_params: List[Any]):
+        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql, sql_params)
+            rows = cur.fetchall()
+
+        if cols:
+            fields = cols[:]  # canonical order
+        else:
+            fields = list(rows[0].keys()) if rows else []
+
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        for r in rows:
+            writer.writerow(r)
+        zf.writestr(zip_name, buf.getvalue())
+
+    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        # 1) samples.csv (from samples s)
+        sample_cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
+        sql_samples = f"""
+            SELECT {sample_cols_sql}
+            FROM samples s
+            {where_sql}
+            ORDER BY s.timestamp_utc DESC, s.sample_id
+        """
+        _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
+
+        # 2) sample_images.csv (images i joined to filtered samples s)
+        img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
+        sql_imgs = f"""
+            SELECT {img_cols_sql}
+            FROM sample_images i
+            JOIN samples s ON s.sample_id = i.sample_id
+            {where_sql}
+            ORDER BY i.sample_id, i.image_id
+        """
+        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
+
+        # 3) sample_parameters.csv (parameters p joined to filtered samples s)
+        param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
+        sql_params = f"""
+            SELECT {param_cols_sql}
+            FROM sample_parameters p
+            JOIN samples s ON s.sample_id = p.sample_id
+            {where_sql}
+            ORDER BY p.sample_id, p.parameter_code
+        """
+        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
+
+    mem.seek(0)
+
+    # Analytics: mark dataset + filters + api endpoint
+    meta = {
+        "dataset": "canonical_all",
+        "api_name": "canonical_all_zip",
+    }
+    meta.update({k: v for k, v in filter_meta.items() if v is not None})
+    g._analytics_extra = meta
+
+    return Response(
+        mem.getvalue(),
+        mimetype="application/zip",
+        headers={
+            "Content-Disposition": 'attachment; filename="canonical_all.zip"',
+        },
+    )
