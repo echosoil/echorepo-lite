@@ -8,11 +8,12 @@ from flask import (
     redirect,
     url_for,
     jsonify,
+    g,
 )
 import pandas as pd
 from io import BytesIO
 import pathlib
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import os
 import json
@@ -27,7 +28,7 @@ from flask_babel import gettext as _, get_locale
 
 from ..config import settings
 from ..auth.decorators import login_required
-from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment
+from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment, get_pg_conn
 from ..services.validation import find_default_coord_rows, select_country_mismatches
 from ..services.lab_permissions import can_upload_lab_data
 
@@ -40,19 +41,6 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 
 # blueprint
 web_bp = Blueprint("web", __name__)
-
-# --------------------------------------------------------------------------
-# --- Postgres helpers -----------------------------------------------------
-# --------------------------------------------------------------------------
-def _pg_conn():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST_INSIDE", "echorepo-postgres"),
-        port=int(os.getenv("DB_PORT_INSIDE", "5432")),
-        dbname=os.getenv("DB_NAME", "echorepo"),
-        user=os.getenv("DB_USER", "echorepo"),
-        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
-    )
-
 
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
@@ -265,19 +253,6 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
 
     return False
 
-
-# --------------------------------------------------------------------------
-# Postgres helpers
-# -------------------------------------------------------------------------
-def get_pg_conn():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST_INSIDE", "echorepo-postgres"),
-        port=int(os.getenv("DB_PORT_INSIDE", "5432")),
-        dbname=os.getenv("DB_NAME", "echorepo"),
-        user=os.getenv("DB_USER", "echorepo"),
-        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
-    )
-
 # --------------------------------------------------------------------------
 # MinIO helpers + canonical download routes (proxy through Flask)
 # --------------------------------------------------------------------------
@@ -372,6 +347,11 @@ from psycopg2.extras import RealDictCursor
 @web_bp.route("/download/canonical/samples.csv")
 @login_required
 def download_canonical_samples():
+    g._analytics_extra = {
+        "dataset": "canonical_samples",
+        "file_name": "samples.csv",
+        "kind": "canonical_export",
+    }
     sql = """
         SELECT
             sample_id,
@@ -425,6 +405,11 @@ def download_canonical_samples():
 @web_bp.route("/download/canonical/sample_images.csv")
 @login_required
 def download_canonical_sample_images():
+    g._analytics_extra = {
+        "dataset": "canonical_sample_images",
+        "file_name": "sample_images.csv",
+        "kind": "canonical_export",
+    }
     sql = """
         SELECT
             sample_id,
@@ -461,6 +446,11 @@ def download_canonical_sample_images():
 @web_bp.route("/download/canonical/sample_parameters.csv")
 @login_required
 def download_canonical_sample_parameters():
+    g._analytics_extra = {
+        "dataset": "canonical_sample_parameters",
+        "file_name": "sample_parameters.csv",
+        "kind": "canonical_export",
+    }
     sql = """
         SELECT
             sample_id,
@@ -499,6 +489,11 @@ def download_canonical_sample_parameters():
 @web_bp.route("/download/canonical/all.zip")
 @login_required
 def download_canonical_zip():
+    g._analytics_extra = {
+        "dataset": "canonical_all",
+        "file_name": "all_canonical.zip",
+        "kind": "canonical_export",
+    }
     mem = BytesIO()
     with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         # 1) samples.csv
@@ -664,6 +659,11 @@ def labels_json():
 @web_bp.post("/download/csv")
 @login_required
 def download_csv():
+    g._analytics_extra = {
+        "dataset": "user_data",
+        "file_name": "user_data.csv",
+        "kind": "user_export",
+    }
     user_key = (request.form.get("user_key") or "").strip()
     if not user_key:
         abort(400)
@@ -685,6 +685,11 @@ def download_csv():
 @web_bp.post("/download/xlsx")
 @login_required
 def download_xlsx():
+    g._analytics_extra = {
+        "dataset": "user_data",
+        "file_name": "user_data.xlsx",
+        "kind": "user_export",
+    }
     user_key = (request.form.get("user_key") or "").strip()
     if not user_key:
         abort(400)
@@ -707,6 +712,11 @@ def download_xlsx():
 @web_bp.get("/download/all_csv")
 @login_required
 def download_all_csv():
+    g._analytics_extra = {
+        "dataset": "all_data",
+        "file_name": "all_data.csv",
+        "kind": "user_export",
+    }
     p = pathlib.Path(settings.INPUT_CSV)
     if not p.exists() or not p.is_file():
         abort(404, description="Full CSV not found on server.")
@@ -769,6 +779,11 @@ def download_all_csv():
 @web_bp.get("/download/sample_csv")
 @login_required
 def download_sample_csv():
+    g._analytics_extra = {
+        "dataset": "user_data",
+        "file_name": "sample_data.csv",
+        "kind": "user_export",
+    }
     sample_id = (request.args.get("sampleId") or "").strip()
     if not sample_id:
         abort(400, description="sampleId is required")
@@ -931,12 +946,20 @@ def lab_upload_post():
     file = request.files.get("file")
     if not file:
         abort(400, "No file")
+    else:
+        g._analytics_extra = {
+            "upload_type": "lab_csv",
+            "filename": file.filename,
+            "content_length": request.content_length,
+        }
     return redirect(url_for("web.home"))
 
 
 @web_bp.route("/search", endpoint="search_samples", methods=["GET"])
 @login_required
 def search_samples():
+    q = request.args.get("q", "").strip()
+
     # ----- read filters from querystring -----
     criteria = {
         "sample_id": (request.args.get("sample_id") or "").strip(),
@@ -981,8 +1004,6 @@ def search_samples():
 
     # ---- special case: export as ZIP ----
     if fmt == "zip":
-        import csv, io, zipfile
-
         # we need *all* matching sample_ids (no limit)
         sql_all = f"""
             SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
@@ -1100,6 +1121,14 @@ def search_samples():
 
     total_pages = max((total_rows + per_page - 1) // per_page, 1)
 
+    # add analytics extras
+    g._analytics_extra = {
+        "search_query": q,
+        # maybe:
+        # "search_source": "web",
+        # "filters": list(request.args.keys()),
+    }
+
     return render_template(
         "search.html",
         criteria=criteria,
@@ -1107,4 +1136,113 @@ def search_samples():
         page=page,
         total_pages=total_pages,
         total_rows=total_rows,
+    )
+
+@web_bp.route("/admin/usage")
+@login_required  # TODO: restrict to admins if possible
+def usage_dashboard():
+    """
+    Simple usage statistics dashboard backed by Postgres usage_events table.
+    Shows:
+      - summary counts for the period
+      - per-day stats
+      - downloads per dataset
+      - events per type
+    """
+
+    # Period control via ?days=...
+    try:
+        days = int(request.args.get("days", 30))
+    except ValueError:
+        days = 30
+    days = max(1, min(days, 365))  # clamp to [1, 365]
+
+    end_ts = datetime.utcnow()
+    start_ts = end_ts - timedelta(days=days)
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        # 1) Summary for the period
+        cur.execute(
+            """
+            SELECT
+              COUNT(*) AS total_requests,
+              COUNT(DISTINCT user_id) AS unique_users,
+              COUNT(DISTINCT ip_hash) AS unique_visitors,
+              COUNT(*) FILTER (WHERE event_type = 'download') AS total_downloads
+            FROM usage_events
+            WHERE ts >= %s AND ts < %s
+            """,
+            (start_ts, end_ts),
+        )
+        summary = cur.fetchone() or {
+            "total_requests": 0,
+            "unique_users": 0,
+            "unique_visitors": 0,
+            "total_downloads": 0,
+        }
+
+        # 2) Per-day stats
+        cur.execute(
+            """
+            SELECT
+              date_trunc('day', ts)::date AS day,
+              COUNT(*) AS requests,
+              COUNT(DISTINCT user_id) AS unique_users,
+              COUNT(DISTINCT ip_hash) AS unique_visitors,
+              COUNT(*) FILTER (WHERE event_type = 'download') AS downloads
+            FROM usage_events
+            WHERE ts >= %s AND ts < %s
+            GROUP BY day
+            ORDER BY day;
+            """,
+            (start_ts, end_ts),
+        )
+        daily = cur.fetchall() or []
+
+        # 3) Downloads per dataset (for this period)
+        cur.execute(
+            """
+            SELECT
+              date_trunc('month', ts)::date AS month,
+              COALESCE(
+                extra->>'dataset',
+                extra->>'file',
+                path
+              ) AS dataset,
+              COUNT(*) AS downloads
+            FROM usage_events
+            WHERE event_type = 'download'
+              AND ts >= %s AND ts < %s
+            GROUP BY month, dataset
+            ORDER BY month DESC, downloads DESC
+            LIMIT 200;
+            """,
+            (start_ts, end_ts),
+        )
+        downloads_by_dataset = cur.fetchall() or []
+
+        # 4) Events by type
+        cur.execute(
+            """
+            SELECT
+              event_type,
+              COUNT(*) AS count
+            FROM usage_events
+            WHERE ts >= %s AND ts < %s
+            GROUP BY event_type
+            ORDER BY count DESC;
+            """,
+            (start_ts, end_ts),
+        )
+        by_type = cur.fetchall() or []
+
+    return render_template(
+        "admin/usage_stats.html",
+        days=days,
+        start_ts=start_ts,
+        end_ts=end_ts,
+        summary=summary,
+        daily=daily,
+        downloads_by_dataset=downloads_by_dataset,
+        by_type=by_type,
     )

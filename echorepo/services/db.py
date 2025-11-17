@@ -6,6 +6,42 @@ from ..config import settings
 
 from echorepo.utils.load_csv import deterministic_jitter, MAX_JITTER_METERS as LC_MAX_JITTER_METERS
 
+import psycopg2 
+
+def get_pg_conn():
+    """
+    Central Postgres connection helper.
+
+    Inside the container, you usually set:
+      DB_HOST_INSIDE=echorepo-postgres
+      DB_PORT_INSIDE=5432
+
+    From outside (tools on the host), you may use:
+      DB_HOST_OUTSIDE=localhost
+      DB_PORT_OUTSIDE=5434
+    """
+    host = (
+        os.getenv("DB_HOST_INSIDE")
+        or os.getenv("DB_HOST_OUTSIDE")
+        or os.getenv("DB_HOST")
+        or "echorepo-postgres"
+    )
+    port = int(
+        os.getenv("DB_PORT_INSIDE")
+        or os.getenv("DB_PORT_OUTSIDE")
+        or os.getenv("DB_PORT")
+        or "5432"
+    )
+
+    return psycopg2.connect(
+        host=host,
+        port=port,
+        dbname=os.getenv("DB_NAME", "echorepo"),
+        user=os.getenv("DB_USER", "echorepo"),
+        password=os.getenv("DB_PASSWORD", "echorepo-pass"),
+    )
+
+
 def _find_main_table(conn: sqlite3.Connection) -> str | None:
     cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
     for (tname,) in cur.fetchall():

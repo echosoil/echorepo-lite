@@ -1,0 +1,132 @@
+{# templates/admin/usage_stats.html #}
+{% extends "base.html" %}
+
+{% block title %}Usage statistics{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+  <h1 class="mb-3">Usage statistics</h1>
+  <p class="text-muted">
+    Period: {{ start_ts.strftime("%Y-%m-%d") }} – {{ end_ts.strftime("%Y-%m-%d") }}
+    (last {{ days }} days)
+  </p>
+
+  <!-- Period quick links -->
+  <div class="mb-3">
+    <a href="{{ url_for('web.usage_dashboard', days=7) }}" class="btn btn-sm btn-outline-primary">Last 7 days</a>
+    <a href="{{ url_for('web.usage_dashboard', days=30) }}" class="btn btn-sm btn-outline-primary">Last 30 days</a>
+    <a href="{{ url_for('web.usage_dashboard', days=90) }}" class="btn btn-sm btn-outline-primary">Last 90 days</a>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="row mb-4">
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Total requests</div>
+          <div class="h4 mb-0">{{ summary.total_requests or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Unique authenticated users</div>
+          <div class="h4 mb-0">{{ summary.unique_users or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Unique visitors (by IP hash)</div>
+          <div class="h4 mb-0">{{ summary.unique_visitors or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Total downloads</div>
+          <div class="h4 mb-0">{{ summary.total_downloads or 0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events by type -->
+  <h3 class="mt-4">Events by type</h3>
+  <table class="table table-sm table-striped">
+    <thead>
+      <tr>
+        <th>Event type</th>
+        <th class="text-end">Count</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in by_type %}
+        <tr>
+          <td>{{ row.event_type }}</td>
+          <td class="text-end">{{ row.count }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="2" class="text-muted">No events in this period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Per-day stats -->
+  <h3 class="mt-4">Per-day usage</h3>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped table-bordered align-middle">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th class="text-end">Requests</th>
+          <th class="text-end">Unique users</th>
+          <th class="text-end">Unique visitors</th>
+          <th class="text-end">Downloads</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in daily %}
+          <tr>
+            <td>{{ row.day.strftime("%Y-%m-%d") if row.day is not string else row.day }}</td>
+            <td class="text-end">{{ row.requests }}</td>
+            <td class="text-end">{{ row.unique_users }}</td>
+            <td class="text-end">{{ row.unique_visitors }}</td>
+            <td class="text-end">{{ row.downloads }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-muted">No data for this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Downloads per dataset -->
+  <h3 class="mt-4">Downloads per dataset</h3>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped table-bordered align-middle">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Dataset / File</th>
+          <th class="text-end">Downloads</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in downloads_by_dataset %}
+          <tr>
+            <td>{{ row.month.strftime("%Y-%m") if row.month is not string else row.month }}</td>
+            <td>{{ row.dataset }}</td>
+            <td class="text-end">{{ row.downloads }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3" class="text-muted">No downloads in this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
