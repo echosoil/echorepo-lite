@@ -12,7 +12,7 @@ from collections import defaultdict
 from typing import List, Iterable, Tuple, Set
 
 # ---------- Config ----------
-MAX_DEPTH = 3
+MAX_DEPTH = 4
 
 # Matches:
 #   @app.route("/x")              @bp.route('/x', methods=['GET'])

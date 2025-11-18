@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   echorepo-lite:
     build: .
@@ -8,11 +6,12 @@ services:
       - .env
     environment:
       APP_ENV: ${APP_ENV:-prod}
-      # If you run Flask dev server, set these in .env or here:
-      # FLASK_RUN_HOST: 0.0.0.0
-      # FLASK_RUN_PORT: 8000
-      # If you run gunicorn, either use GUNICORN_CMD_ARGS below or your own command
-      # GUNICORN_CMD_ARGS: "--bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 60"
+      # tell the app where Postgres is
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: echorepo
+      DB_USER: echorepo
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
     expose:
       - "8000"
     volumes:
@@ -20,9 +19,42 @@ services:
       - ./static:/app/static:ro
       - ./echorepo/templates:/app/echorepo/templates:ro
       - ./keys:/keys:ro
-      - ./echorepo/translations:/app/echorepo/translations:ro
+      - ./echorepo/translations:/app/echorepo/translations
       - ./translations:/app/translations:ro
+      - ./storage:/data/storage
+      - ./tools:/app/tools:ro
     restart: unless-stopped
+    networks:
+      - default
+      - echorepo-shared
+    depends_on:
+      - postgres   # <--- make sure postgres is up first
+
+  postgres:
+    image: postgres:16
+    # 👇 important: no container_name here
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: echorepo
+      POSTGRES_USER: echorepo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - default
+      - echorepo-shared
+    # 👇 make host port overridable
+  libretranslate:
+    profiles: ["devtools"]
+    image: libretranslate/libretranslate:latest
+    container_name: libretranslate
+    ports:
+      - "5001:5000"
+    environment:
+      LT_LOAD_ONLY: en,cs,de,el,es,fi,fr,it,nl,pl,pt,ro,sk
+    restart: unless-stopped
+    networks:
+      - default
 
   i18n:
     profiles: ["devtools"]
@@ -30,9 +62,21 @@ services:
       context: .
       dockerfile: Dockerfile.i18n
     working_dir: /work
+    command: ["tail", "-f", "/dev/null"]
     volumes:
       - .:/work
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      LT_URL: "http://host.docker.internal:5001"
+      LT_URL: "http://libretranslate:5000"
+    depends_on:
+      - libretranslate
+    networks:
+      - default
+
+volumes:
+  pgdata:   # <--- persistent Postgres data
+
+networks:
+  echorepo-shared:
+    external: true

@@ -1,34 +1,9 @@
 import math, re, pandas as pd
-from typing import Optional
+from typing import Optional, Any
 from ..config import settings
 
 LAT_CANDIDATES = ["lat","latitude","y","gps_lat","gps_latitude","geom_lat","geo_lat","gps_lat_deg","latitude_deg"]
 LON_CANDIDATES = ["lon","lng","longitude","x","gps_lon","gps_longitude","geom_lon","geo_lon","long","gps_long","longitude_deg"]
-
-def pick_lat_lon_cols(columns):
-    cols_lower = {c.lower(): c for c in columns}
-    if settings.LAT_COL.lower() in cols_lower and settings.LON_COL.lower() in cols_lower:
-        return cols_lower[settings.LAT_COL.lower()], cols_lower[settings.LON_COL.lower()]
-    lat = next((cols_lower[c] for c in cols_lower if c in LAT_CANDIDATES), None)
-    lon = next((cols_lower[c] for c in cols_lower if c in LON_CANDIDATES), None)
-    return lat, lon
-
-def _parse_coord(value, kind: str):
-    s = str(value).strip() if value is not None else ""
-    if not s: return None
-    s = s.replace("\u2212","-").replace(",", ".")
-    m = re.match(r'^\s*([+-]?\d+(?:\.\d+)?)\s*([NnSsEeWw])?\s*$', s)
-    if m:
-        num = float(m.group(1)); hemi = (m.group(2) or "").upper()
-        if hemi in ("S","W"): num = -abs(num)
-        if hemi in ("N","E"): num =  abs(num)
-        val = num
-    else:
-        try: val = float(s)
-        except Exception: return None
-    if kind == "lat" and not (-90 <= val <= 90): return None
-    if kind == "lon" and not (-180 <= val <= 180): return None
-    return val
 
 def _hash_to_unit_floats(key: str, n: int = 2):
     import hashlib
@@ -56,6 +31,31 @@ def deterministic_jitter(lat: float, lon: float, key: str, max_dist_m: Optional[
     j_lat = max(min(j_lat, 90), -90)
     return j_lat, j_lon
 
+def pick_lat_lon_cols(columns):
+    cols_lower = {c.lower(): c for c in columns}
+    if settings.LAT_COL.lower() in cols_lower and settings.LON_COL.lower() in cols_lower:
+        return cols_lower[settings.LAT_COL.lower()], cols_lower[settings.LON_COL.lower()]
+    lat = next((cols_lower[c] for c in cols_lower if c in LAT_CANDIDATES), None)
+    lon = next((cols_lower[c] for c in cols_lower if c in LON_CANDIDATES), None)
+    return lat, lon
+
+def _parse_coord(value, kind: str):
+    s = str(value).strip() if value is not None else ""
+    if not s: return None
+    s = s.replace("\u2212","-").replace(",", ".")
+    m = re.match(r'^\s*([+-]?\d+(?:\.\d+)?)\s*([NnSsEeWw])?\s*$', s)
+    if m:
+        num = float(m.group(1)); hemi = (m.group(2) or "").upper()
+        if hemi in ("S","W"): num = -abs(num)
+        if hemi in ("N","E"): num =  abs(num)
+        val = num
+    else:
+        try: val = float(s)
+        except Exception: return None
+    if kind == "lat" and not (-90 <= val <= 90): return None
+    if kind == "lon" and not (-180 <= val <= 180): return None
+    return val
+
 def df_to_geojson(df: pd.DataFrame):
     if df is None or df.empty:
         return {"type":"FeatureCollection","features":[]}
@@ -69,27 +69,58 @@ def df_to_geojson(df: pd.DataFrame):
         "SOIL_CONTAMINATION_plastic","SOIL_CONTAMINATION_debris","SOIL_CONTAMINATION_comments",
         "METALS_info",
     ]
-    photo_cols = [c for c in df.columns if c.startswith("PHOTO_")]
+    photo_cols = [c for c in df.columns if isinstance(c, str) and c.startswith("PHOTO_")]
+
     seen, fields = set(), []
     for c in KEY_FIELDS + photo_cols:
         if c not in seen:
             fields.append(c); seen.add(c)
+
+    def _to_jsonable(v: Any):
+        # pandas NA / NaN → None
+        if v is None:
+            return None
+        # floats that are NaN
+        if isinstance(v, float) and math.isnan(v):
+            return None
+        # pandas / numpy scalars
+        if hasattr(v, "item"):
+            try:
+                return v.item()
+            except Exception:
+                pass
+        # pandas Series (the thing that was breaking jsonify)
+        if isinstance(v, pd.Series):
+            # simplest: turn it into a plain dict
+            return v.to_dict()
+        return v
 
     feats = []
     for _, row in df.iterrows():
         try:
             lat = _parse_coord(row.get(lat_col), "lat")
             lon = _parse_coord(row.get(lon_col), "lon")
-            if lat is None or lon is None: continue
-            if not (math.isfinite(lat) and math.isfinite(lon)): continue
+            if lat is None or lon is None: 
+                continue
+            if not (math.isfinite(lat) and math.isfinite(lon)):
+                continue
         except Exception:
             continue
+
         props = {}
+        # copy desired fields
         for k in fields:
             if k in df.columns:
-                props[k] = row.get(k)
+                props[k] = _to_jsonable(row.get(k))
+        # copy PII-ish cols if present (api.py later can pop them)
         for k in ("email","userId"):
             if k in df.columns:
-                props[k] = row.get(k)
-        feats.append({"type":"Feature","geometry":{"type":"Point","coordinates":[lon,lat]},"properties":props})
+                props[k] = _to_jsonable(row.get(k))
+
+        feats.append({
+            "type":"Feature",
+            "geometry":{"type":"Point","coordinates":[lon,lat]},
+            "properties":props
+        })
+
     return {"type":"FeatureCollection","features":feats}

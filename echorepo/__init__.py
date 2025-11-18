@@ -1,8 +1,10 @@
 # echorepo/__init__.py
 import os
 import json
-from flask import Flask, jsonify, make_response, request, render_template_string
+from flask import Flask, jsonify, make_response, request, render_template_string, current_app, g, session
 from flask_babel import get_locale, gettext as _real_gettext, ngettext as _real_ngettext
+import time 
+import re 
 
 from .config import settings
 from .auth.routes import auth_bp, init_oauth
@@ -15,9 +17,60 @@ from .routes import data_api
 from .services.db import init_db_sanity
 from .services.i18n_overrides import get_overrides, get_overrides_msgid
 from .i18n import init_i18n, lang_bp, BASE_LABEL_MSGIDS
+from .analytics import hash_ip, log_usage_event
+import logging, time
 
+# ---------- Logging ----------
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# only add the file handler once
+if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
+    os.makedirs("/tmp", exist_ok=True)
+    fh = logging.FileHandler("/tmp/echorepo-slow.log")
+    fh.setLevel(logging.INFO)
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    fh.setFormatter(fmt)
+    logger.addHandler(fh)
 
 # ---------- helpers ----------
+from flask import session
+
+def _get_current_user_id():
+    """
+    Extract a stable user identifier from the session.
+
+    For your setup, `session["user"]` is already the email ("oleg.osychenko@gmail.com"),
+    so we use that first. As a fallback, we peek into `session["kc"]["profile"]`.
+    """
+    # 1) Primary source: session["user"] (string email)
+    u = session.get("user")
+    if isinstance(u, str) and u.strip():
+        return u.strip()
+
+    # 2) Fallback: look inside Keycloak info (session["kc"])
+    kc = session.get("kc")
+    if isinstance(kc, dict):
+        profile = kc.get("profile")
+
+        # If your auth stores it as a dict
+        if isinstance(profile, dict):
+            return (
+                profile.get("email")
+                or profile.get("preferred_username")
+                or profile.get("name")
+            )
+
+        # If it's a stringified dict (as it looks in the snapshot),
+        # try to regex out the email: "{'email': '...'}"
+        if isinstance(profile, str):
+            m = re.search(r"'email'\s*:\s*'([^']+)'", profile)
+            if m:
+                return m.group(1)
+
+    # If nothing found, treat as anonymous
+    return None
+
 def _canon_locale(lang: str) -> str:
     if not lang:
         return "en"
@@ -64,6 +117,41 @@ def create_app() -> Flask:
         static_url_path="/static",
     )
 
+    # ---- Analytics configuration ----
+    # Paths we consider "noise" (don't log them at all)
+    ANALYTICS_EXCLUDED_PREFIXES = (
+        "/static/",       # CSS, JS, images served as static files
+        "/i18n/",         # labels.js / labels.json etc.
+        "/debug/",        # debug helpers
+        "/favicon.ico",
+        "/robots.txt",
+    )
+
+    # Paths we consider *real* downloads (user-triggered data exports)
+    ESSENTIAL_DOWNLOAD_PATHS = (
+        "/download/canonical/all.zip",
+        "/download/canonical/samples.csv",
+        "/download/canonical/sample_images.csv",
+        "/download/canonical/sample_parameters.csv",
+        "/download/sample_csv",   # old alias
+        "/download/all_csv",      # old alias
+    )
+
+    # ---- Request timing logging, see /tmp/echorepo-slow.log ----
+    @app.before_request
+    def _start_timer():
+        request._t0 = time.time()
+
+    @app.after_request
+    def _log_time(response):
+        t0 = getattr(request, "_t0", None)
+        if t0 is not None:
+            dt = (time.time() - t0) * 1000
+            if dt > 100:  # only log slow ones
+                current_app.logger.info("SLOW %s %s %.1f ms", request.method, request.path, dt)
+                logger.warning("SLOW %s %s %.1f ms", request.method, request.path, dt)
+        return response
+
     # Base config
     app.secret_key = settings.SECRET_KEY
     app.config.from_mapping(SECRET_KEY=os.environ.get("SECRET_KEY", "dev-secret"))
@@ -89,6 +177,14 @@ def create_app() -> Flask:
 
         # Overrides storage path
         I18N_OVERRIDES_PATH=os.environ.get("I18N_OVERRIDES_PATH", "/data/i18n_overrides.json"),
+        LOCAL_STORAGE_DIR=os.environ.get("LOCAL_STORAGE_DIR", "/data/storage"),
+        
+        # Expose allowlist path to current_app.config
+        LAB_UPLOAD_ALLOWLIST_PATH=getattr(
+            settings,
+            "LAB_UPLOAD_ALLOWLIST_PATH",
+            "/data/config/lab_upload_lab_allowlist.csv",
+        ),
     )
 
     # ---- i18n ----
@@ -205,6 +301,8 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp)
     app.register_blueprint(errors_bp)
     app.register_blueprint(data_api.data_api, url_prefix="/api/v1")  # or url_prefix="/api"
+    from echorepo.routes.storage import storage_bp
+    app.register_blueprint(storage_bp)               # ← add this
 
     # ---- Back-compat endpoint aliases ----
     alias_map = [
@@ -281,7 +379,148 @@ def create_app() -> Flask:
         resp.headers["Cache-Control"] = "no-store"
         return resp
 
-    # ---- Debugging endpoints ----
+    # ---- No-cache for HTML ----
+    @app.after_request
+    def nocache_html(resp):
+        if resp.mimetype == "text/html":
+            resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    @app.before_request
+    def _start_timer():
+        g._start_time = time.time()
+
+    @app.after_request
+    def _log_usage(response):
+        try:
+            start = getattr(g, "_start_time", None)
+            duration_ms = int((time.time() - start) * 1000) if start is not None else None
+
+            path = request.path
+
+            # ---- 1) Skip noisy / internal endpoints completely ----
+            if any(path.startswith(p) for p in ANALYTICS_EXCLUDED_PREFIXES):
+                return response
+
+            # If you also want to skip *all* /storage/* (images proxied from MinIO),
+            # uncomment this:
+            if path.startswith("/storage/"):
+                return response
+            # --------------------------------------------------------
+
+            # ---- 2) Identify user ----
+            user_id = _get_current_user_id()
+
+            # ---- 3) Classify event type (only "essential" ones) ----
+            if path in ESSENTIAL_DOWNLOAD_PATHS:
+                event_type = "download"
+            elif path.startswith("/api/"):
+                event_type = "api_call"
+            else:
+                # Treat everything else as a "page view" (HTML pages)
+                event_type = "page_view"
+
+            # ---- 4) Collect other fields ----
+            ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+            ip_h = hash_ip(ip)
+
+            ua = request.headers.get("User-Agent", "")
+            method = request.method
+            status = response.status_code
+            bytes_sent = response.calculate_content_length() or 0
+
+            extra = getattr(g, "_analytics_extra", {}) or {}
+            # ---- 1) classify event_type ----
+            if path in ESSENTIAL_DOWNLOAD_PATHS:
+                event_type = "download"
+                extra.setdefault("file", path)
+
+            elif path == "/search":
+                event_type = "search"
+
+            elif path.startswith("/lab-upload") or path.startswith("/lab-enrichment"):
+                # web: /lab-upload
+                # api: /api/v1/lab-enrichment
+                event_type = "upload"
+
+            elif path.startswith("/api/"):
+                event_type = "api_call"
+
+            else:
+                event_type = "page_view"
+
+            # ---- 2) add generic extras per type ----
+
+            if event_type == "search":
+                # try to capture search query safely
+                q = request.args.get("q") or request.values.get("q")
+                if q:
+                    extra.setdefault("search_query", q[:200])  # avoid huge blobs
+
+            elif event_type == "upload":
+                # generic info; more detail can come from g._analytics_extra in the view
+                extra.setdefault("upload_path", path)
+                extra.setdefault("upload_method", method)
+
+            elif event_type == "api_call":
+                extra.setdefault("api_endpoint", path)
+                extra.setdefault("api_method", method)
+                # Optional: just log which query keys are used (not full values)
+                if request.args:
+                    extra.setdefault("api_query_keys", sorted(request.args.keys()))
+
+            log_usage_event(
+                user_id=user_id,
+                event_type=event_type,
+                path=path,
+                method=method,
+                status_code=status,
+                bytes_sent=bytes_sent,
+                duration_ms=duration_ms,
+                ip_hash=ip_h,
+                user_agent=ua,
+                extra=extra,
+            )
+        except Exception as e:
+            # never break the user request because analytics failed
+            app.logger.warning("usage logging failed: %s", e)
+
+        return response
+
+    # ----- Debug routes --------------------------------------------    
+    @app.get("/debug/whoami")
+    def debug_whoami():
+        # WARNING: remove or restrict this in production
+        from flask import jsonify
+
+        # snapshot of session (but shortened so we don't print full tokens)
+        sess_snapshot = {}
+        for k in list(session.keys()):
+            v = session.get(k)
+            if isinstance(v, (str, bytes)):
+                s = v.decode("utf-8", errors="ignore") if isinstance(v, bytes) else v
+                if len(s) > 120:
+                    sess_snapshot[k] = s[:60] + "... (len=" + str(len(s)) + ")"
+                else:
+                    sess_snapshot[k] = s
+            elif isinstance(v, dict):
+                # show only first few keys, with repr of values
+                small = {}
+                for kk, vv in list(v.items())[:10]:
+                    r = repr(vv)
+                    small[kk] = r[:80] + ("..." if len(r) > 80 else "")
+                sess_snapshot[k] = small
+            else:
+                # for lists/objects, just show repr
+                r = repr(v)
+                sess_snapshot[k] = r[:120] + ("..." if len(r) > 120 else "")
+
+        return jsonify({
+            "user_id_from_helper": _get_current_user_id(),
+            "session_keys": list(session.keys()),
+            "session_snapshot": sess_snapshot,
+        })
+
     @app.get("/i18n/debug")
     def i18n_debug():
         try:
@@ -307,12 +546,5 @@ def create_app() -> Flask:
             "by_key": get_overrides(loc),
             "by_msgid": get_overrides_msgid(loc),
         })
-
-    # ---- No-cache for HTML ----
-    @app.after_request
-    def nocache_html(resp):
-        if resp.mimetype == "text/html":
-            resp.headers["Cache-Control"] = "no-store"
-        return resp
 
     return app

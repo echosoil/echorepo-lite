@@ -1,24 +1,27 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('ECHOrepo — Your Data') }}{% endblock %}
 
+{# navbar-left items (still here) #}
 {% block nav_left %}
   <li class="nav-item">
     <a class="nav-link" href="{{ url_for('download_all_csv') }}">
       <i class="bi bi-download"></i> {{ _('Download all samples (CSV)') }}
     </a>
   </li>
+  <li class="nav-item">
+    <a class="nav-link" href="{{ url_for('web.search_samples') }}">
+      <i class="bi bi-search"></i> {{ _('Search samples') }}
+    </a>
+  </li>
 {% endblock %}
 
-{# IMPORTANT: nav_right has no "fix" button — only user + logout #}
+{# RIGHT NAV #}
 {% block nav_right %}
   <div class="text-white-50 small me-2">{{ _('Logged in as') }}</div>
   <div class="chip bg-white">
     <i class="bi bi-person-badge"></i>
     <strong id="userKeyCopy">{{ user_key }}</strong>
   </div>
-  <button class="btn btn-sm btn-outline-light" type="button" id="copyKeyBtn" title="{{ _('Copy user key') }}">
-    <i class="bi bi-clipboard"></i>
-  </button>
   <a class="btn btn-sm btn-warning" href="{{ url_for('logout') }}">
     <i class="bi bi-box-arrow-right"></i> {{ _('Logout') }}
   </a>
@@ -34,10 +37,17 @@
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-  <!-- Draw -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
 
   <style>
+    /* load your mono font */
+    @font-face {
+      font-family: 'Inconsolata';
+      src: url("{{ url_for('static', filename='fonts/Inconsolata-VariableFont_wdth,wght.ttf') }}") format('truetype');
+      font-weight: 100 900;
+      font-style: normal;
+    }
+
     #map {
       height: 75vh;
       min-height: 500px;
@@ -52,49 +62,36 @@
       box-shadow: none !important;
       outline: 0 !important;
     }
-    #map .leaflet-tile-pane img.leaflet-tile {
-      image-rendering: auto;
-      outline: none !important;
-      border: none !important;
-    }
-    .deg-rulers text { fill: rgba(0,0,0,0.65); }
 
-    .toolbar { gap: .5rem; }
-    .toolbar .btn { white-space: nowrap; }
-
-    .popup-card {
-      max-width: 340px;
+    /* user data table */
+    #tableWrap table {
+      border-collapse: separate;
+      border-spacing: 0;
+      /* 👇 apply mono here */
+      font-family: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 0.8rem;
-      line-height: 1.25;
-    }
-    .popup-card table {
-      width: 100%;
-      font-size: 0.8rem;
-      margin: 0;
-      border-collapse: collapse;
-    }
-    .popup-card th {
       white-space: nowrap;
-      width: 1%;
-      color: #444;
-      font-weight: 600;
-      padding: 2px 6px;
+    }
+    #tableWrap th,
+    #tableWrap td {
+      border-bottom: 1px solid #dee2e6;
       vertical-align: top;
     }
-    .popup-card td {
-      color: #222;
-      padding: 2px 6px;
+
+    /* privacy doc styling */
+    .privacy-doc {
+      font-size: 0.9rem;
     }
-    .popup-card img {
-      max-width: 120px;
-      height: auto;
-      border-radius: 6px;
-      margin-top: .3rem;
-      display: block;
+    .privacy-section {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #e5e5e5;
     }
-    .radius-legend {
-      background:#fff; border-radius:8px; padding:.4rem .6rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,.12); font-size:.85rem;
+    .privacy-section:last-child {
+      border-bottom: 0;
+    }
+    .privacy-doc h5 {
+      margin-bottom: .4rem;
+      font-size: 1rem;
     }
   </style>
 {% endblock %}
@@ -104,17 +101,71 @@
     <h2 class="h4 mb-1">{{ _('Your data') }}</h2>
     <p class="text-muted">{{ _('Explore your soil sample locations on the map, then export or browse the table.') }}</p>
 
-    {# 🔴 Only this red button remains #}
-    {% if (issue_count|default(0)) > 0 %}
-      <div class="mb-3">
+    {# header action row #}
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% if (issue_count|default(0)) > 0 %}
         <a href="{{ url_for('errors.issues') }}"
-           class="btn btn-danger btn-lg d-inline-flex align-items-center gap-2">
+           class="btn btn-danger d-inline-flex align-items-center gap-2">
           <i class="bi bi-exclamation-octagon-fill"></i>
           {% trans n=issue_count %}Fix data issues ({{ n }}){% endtrans %}
         </a>
-        <small class="text-muted ms-2">
-          {{ _('Some samples need attention to ensure correct maps and downloads.') }}
-        </small>
+      {% endif %}
+      {% if can_upload_lab_data %}
+        <a class="btn btn-outline-secondary" href="{{ url_for('web.lab_upload') }}">
+          <i class="bi bi-upload"></i> {{ _('Upload lab data') }}
+        </a>
+      {% endif %}
+      <a class="btn btn-outline-primary" href="{{ url_for('web.search_samples') }}">
+        <i class="bi bi-search"></i> {{ _('Search samples') }}
+      </a>
+    </div>
+
+    {# big final-survey block #}
+    {% if show_survey and survey_url %}
+      <div class="alert alert-primary border-primary mb-4" id="finalSurveyBox">
+        <h4 class="alert-heading mb-2">{{ _('Final survey') }}</h4>
+        <p class="mb-2">
+          {{ _('We sincerely thank you for your commitment to this project!') }}
+        </p>
+        <p class="mb-2">
+          {{ _('This is the third and final survey in the project, following the initial ones you completed before and after soil sampling. The majority of questions are consistent with the previous surveys so that we can accurately measure changes over time and understand the impact of project participation.') }}
+        </p>
+        <p class="mb-3 fw-semibold">
+          {{ _('Before you start: please only complete this survey if the lab results from your soil sample(s) have already been added to the repository. If the results are pending, please check back at a later time.') }}
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+          <a href="{{ survey_url }}" class="btn btn-success" target="_blank" rel="noopener">
+            {{ _('Go to final survey') }}
+          </a>
+          <button class="btn btn-link p-0"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#finalSurveyDataUse"
+                  aria-expanded="false"
+                  aria-controls="finalSurveyDataUse">
+            {{ _('Data use information') }}
+          </button>
+        </div>
+
+        <div class="collapse mt-2" id="finalSurveyDataUse">
+          <h5 class="mb-2">{{ _('Processing survey data in the ECHO project') }}</h5>
+          <p class="mb-2">
+            {{ _('The objective of this survey data is to examine the impact of project participation on participant attitudes and motivation towards soil.') }}
+          </p>
+          <p class="mb-2">
+            {{ _('Your information will only be used for scientific purposes. We do not collect names or addresses. Your details regarding age and gender are only used for statistical purposes and all details are collected and evaluated anonymously. It is not possible to draw conclusions about your person at any time.') }}
+          </p>
+          <p class="mb-2">
+            {{ _('Answering each question in the survey is most appreciated as it plays a crucial role in providing valuable insights that enhance the relevance and impact of the ECHO project. Your honest responses are essential for understanding how engagement with the project influences attitudes and motivations, ensuring the project’s outcomes are meaningful and well-informed.') }}
+          </p>
+          <p class="mb-2">
+            {{ _('The survey will take approximately 8–10 minutes to complete. Please find a quiet space where you won’t be interrupted. There are no right or wrong answers — answer spontaneously.') }}
+          </p>
+          <p class="mb-0 fw-semibold">
+            {{ _('Based on the information provided to you, please consent to participate in the survey below.') }}
+          </p>
+        </div>
       </div>
     {% endif %}
 
@@ -139,13 +190,17 @@
         <li>
           <form method="POST" action="{{ url_for('download_csv') }}" class="px-3 py-1">
             <input type="hidden" name="user_key" value="{{ user_key }}">
-            <button class="btn btn-link p-0" type="submit"><i class="bi bi-filetype-csv me-1"></i> {{ _('CSV (per-user)') }}</button>
+            <button class="btn btn-link p-0" type="submit">
+              <i class="bi bi-filetype-csv me-1"></i> {{ _('CSV (per-user)') }}
+            </button>
           </form>
         </li>
         <li>
           <form method="POST" action="{{ url_for('download_xlsx') }}" class="px-3 py-1">
             <input type="hidden" name="user_key" value="{{ user_key }}">
-            <button class="btn btn-link p-0" type="submit"><i class="bi bi-filetype-xls me-1"></i> {{ _('XLSX (per-user)') }}</button>
+            <button class="btn btn-link p-0" type="submit">
+              <i class="bi bi-filetype-xls me-1"></i> {{ _('XLSX (per-user)') }}
+            </button>
           </form>
         </li>
         <li><hr class="dropdown-divider"></li>
@@ -159,10 +214,31 @@
             <i class="bi bi-braces-asterisk me-1"></i> {{ _('GeoJSON (per-user)') }}
           </a>
         </li>
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">{{ _('Canonical exports') }}</li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_samples') }}">
+            <i class="bi bi-filetype-csv me-1"></i> {{ _('samples.csv') }}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_sample_images') }}">
+            <i class="bi bi-filetype-csv me-1"></i> {{ _('sample_images.csv') }}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_sample_parameters') }}">
+            <i class="bi bi-filetype-csv me-1"></i> {{ _('sample_parameters.csv') }}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_zip') }}">
+            <i class="bi bi-file-zip me-1"></i> {{ _('All canonical (zip)') }}
+          </a>
+        </li>
       </ul>
     </div>
 
-    <!-- RIGHT: compact pH filter + export -->
     <div class="ms-auto d-flex align-items-center gap-2">
       <span class="text-muted small">{{ _('pH') }}</span>
       <input type="number" step="0.1" min="0" max="14" id="phMin" class="form-control form-control-sm"
@@ -183,40 +259,74 @@
   <div id="tableWrap" class="table-wrap bg-white rounded-3 p-2 card-elevated">
     {{ table_html | safe }}
   </div>
+
+  {% if needs_privacy %}
+    <div class="modal-backdrop fade show" style="opacity:.45;"></div>
+    <div class="modal show" id="privacyModal"
+         tabindex="-1"
+         style="display:block; position:fixed; inset:0; z-index:1080;">
+      <div class="modal-dialog modal-lg"
+           style="height:100%; max-height:100vh; margin:2.5rem auto;">
+        <div class="modal-content d-flex flex-column"
+             style="height:100%; max-height:calc(100vh - 5rem);">
+          <form method="post"
+                action="{{ url_for('web.privacy_accept') }}"
+                id="privacyForm"
+                class="d-flex flex-column"
+                style="height:100%;">
+            <input type="hidden" name="version" value="{{ privacy_version }}">
+
+            <div class="modal-header flex-shrink-0">
+              <h5 class="modal-title">{{ _('Privacy information') }}</h5>
+            </div>
+
+            <div class="modal-body" style="flex:1 1 auto; overflow-y:auto; min-height:0;">
+              {% include 'privacy/2025-11.html' %}
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" value="1" id="privacyAgree" name="agree" required>
+                <label class="form-check-label" for="privacyAgree">
+                  {{ _('I have read the privacy information above and I consent to the processing of my personal data for this project.') }}
+                </label>
+              </div>
+            </div>
+
+            <div class="modal-footer flex-shrink-0">
+              <button type="submit" class="btn btn-primary" id="privacySubmit" disabled>
+                {{ _('Accept and continue') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
 
 {% block extra_js %}
-  <!-- Leaflet + MarkerCluster + Draw -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
-  <!-- Tiny helper: copy user key -->
-  <script>
-    (function(){
-      const btn = document.getElementById('copyKeyBtn');
-      if (!btn) return;
-      btn.addEventListener('click', () => {
-        const text = document.getElementById('userKeyCopy')?.textContent?.trim() || '';
-        if(!text) return;
-        navigator.clipboard.writeText(text).then(() => {
-          btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
-          setTimeout(()=> btn.innerHTML = '<i class="bi bi-clipboard"></i>', 1400);
-        });
-      });
-    })();
-  </script>
-
-  {# JSON-safe config for map.js #}
   {% set cfg = {
       'jitter_m': jitter_m|default(1000)|int,
       'lat_col': lat_col|default('GPS_lat'),
       'lon_col': lon_col|default('GPS_long')
   } %}
   <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
-
-  <!-- IMPORTANT: Do NOT redefine window.I18N here. labels.js (from base.html) already did it. -->
-
-  <!-- Your map logic (consumes window.I18N.labels) -->
   <script src="{{ url_for('static', filename='js/map.js') }}?v=8"></script>
+
+  {% if needs_privacy %}
+  <script>
+    (function () {
+      var cb = document.getElementById('privacyAgree');
+      var btn = document.getElementById('privacySubmit');
+      if (cb && btn) {
+        cb.addEventListener('change', function () {
+          btn.disabled = !this.checked;
+        });
+      }
+      document.body.style.overflow = 'hidden';
+    })();
+  </script>
+  {% endif %}
 {% endblock %}

@@ -1,0 +1,19 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: echorepo-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./minio-data:/data
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # console (you can firewall this)
+    networks:
+      - echorepo-shared
+
+networks:
+  echorepo-shared:
+    external: true

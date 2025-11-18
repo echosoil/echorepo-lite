@@ -14,7 +14,7 @@ def _split_planned(s: str) -> set[str]:
 
 @lru_cache(maxsize=1)
 def load_qr_to_planned() -> dict[str, set[str]]:
-    path = settings.PLANNED_PATH  # e.g. /data/planned.xlsx or /data/planned.csv
+    path = settings.PLANNED_XLSX  # e.g. /data/planned.xlsx or /data/planned.csv
     if not path or not os.path.exists(path):
         return {}
     if path.lower().endswith((".xlsx",".xls")):
