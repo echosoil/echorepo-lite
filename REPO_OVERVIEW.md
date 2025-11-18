@@ -24,31 +24,49 @@
 - `/others_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson_debug`  _(in echorepo/routes/api.py)_
+- `/lab-enrichment`  _(in echorepo/routes/data_api.py)_
+- `/ping`  _(in echorepo/routes/data_api.py)_
+- `/samples`  _(in echorepo/routes/data_api.py)_
+- `/samples/count`  _(in echorepo/routes/data_api.py)_
 - `/issues`  _(in echorepo/routes/errors.py)_
 - `/issues/fix-coords`  _(in echorepo/routes/errors.py)_
+- `/issues/why`  _(in echorepo/routes/errors.py)_
 - `/admin`  _(in echorepo/routes/i18n_admin.py)_
 - `/admin/set`  _(in echorepo/routes/i18n_admin.py)_
 - `/labels.js`  _(in echorepo/routes/i18n_admin.py)_
 - `/set-lang/<lang_code>`  _(in echorepo/routes/lang.py)_
+- `/storage/<path:relpath>`  _(in echorepo/routes/storage.py)_
 - `/`  _(in echorepo/routes/web.py)_
 - `/download/all_csv`  _(in echorepo/routes/web.py)_
+- `/download/canonical/all.zip`  _(in echorepo/routes/web.py)_
+- `/download/canonical/sample_images.csv`  _(in echorepo/routes/web.py)_
+- `/download/canonical/sample_parameters.csv`  _(in echorepo/routes/web.py)_
+- `/download/canonical/samples.csv`  _(in echorepo/routes/web.py)_
 - `/download/csv`  _(in echorepo/routes/web.py)_
 - `/download/sample_csv`  _(in echorepo/routes/web.py)_
 - `/download/xlsx`  _(in echorepo/routes/web.py)_
 - `/i18n/labels`  _(in echorepo/routes/web.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
-- `/x`  _(in tools/make_repo_overview.py)_
+- `/lab-import`  _(in echorepo/routes/web.py)_
+- `/lab-upload`  _(in echorepo/routes/web.py)_
+- `/lab-upload`  _(in echorepo/routes/web.py)_
+- `/labels`  _(in echorepo/routes/web.py)_
+- `/privacy/accept`  _(in echorepo/routes/web.py)_
+- `/search`  _(in echorepo/routes/web.py)_
 
-## Directory tree (depth ≤ 3)
+## Directory tree (depth ≤ 4)
 
 ```
 ├── .github
 │   └── .github/workflows
 ├── data
 │   └── .gitkeep
+├── docs
+│   ├── ECHOREPO_Data_API_Guide-2.html
+│   ├── ECHOREPO_Data_API_Guide-2.md
+│   ├── ECHOREPO_Data_API_Guide.html
+│   ├── ECHOREPO_Data_API_Guide.md
+│   ├── translate_all.html
+│   └── translate_all.md
 ├── echorepo
 │   ├── echorepo/auth
 │   ├── echorepo/routes
@@ -64,23 +82,30 @@
 ├── keys
 │   └── .gitkeep
 ├── scripts
-│   └── find_default_coords.py
+│   ├── .gitkeep
+│   ├── feature.sh
+│   ├── make_release.sh
+│   └── translate_all.sh
 ├── static
 │   ├── static/css
 │   ├── static/fonts
 │   ├── static/img
-│   └── static/js
+│   ├── static/js
+│   └── static/privacy
+├── storage
+│   └── .gitkeep
 ├── tools
 │   ├── auto_translate.py
-│   ├── feature.sh
+│   ├── create_indexes.py
+│   ├── create_lab_enrichment.sql
+│   ├── find_default_coords.py
+│   ├── firebase_kc_sync.py
 │   ├── i18n_override.py
-│   ├── make_release.sh
 │   ├── make_repo_overview.py
 │   ├── pull_and_enrich_samples.py
-│   ├── pull_and_enrich_samples_dev.py
-│   ├── rebuild_babel_catalog.sh
 │   ├── refresh_sqlite.py
-│   └── refresh_sqlite_dev.py
+│   ├── run_sql.py
+│   └── translate_pg_en.py
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
@@ -88,9 +113,10 @@
 ├── REPO_OVERVIEW.md
 ├── babel.cfg
 ├── docker-compose.dev.yml
-├── docker-compose.nosplit.yml
 ├── docker-compose.prod.yml
+├── docker-compose.storage.yml
 ├── docker-compose.yml
+├── project_paths.py
 ├── requirements.txt
 ├── run.py
 ├── start_dev.sh

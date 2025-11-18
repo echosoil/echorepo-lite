@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ECHOREPO Data API – Canonical & Lab Enrichment (v3)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    pre { background: #111; color: #eee; padding: 0.75rem 1rem; overflow-x: auto; }
+    code { font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #f0f0f0; }
+    h1, h2, h3 { line-height: 1.3; }
+  </style>
+</head>
+<body>
+<pre># ECHOREPO Data API – Canonical &amp; Lab Enrichment (v3)
+
+This document describes the public-facing **ECHOREPO Data API** intended for
+external services (e.g. SoilWise / EUSO) and trusted partners.
+
+The focus is on **canonical data in Postgres** and **lab enrichment uploads**.
+
+Base URL examples (adjust to your deployment):
+
+- `https://echorepo.quanta-labs.com/api/v1`
+- `https://&lt;your-host&gt;/api/v1`
+
+All endpoints below are relative to `/api/v1`.
+
+---
+
+## 1. Authentication
+
+Every endpoint **requires auth**. Three mechanisms are supported:
+
+1. **API key header** (recommended for system-to-system use)
+2. **Bearer token (OIDC / Keycloak)** – `Authorization: Bearer &lt;JWT&gt;`
+3. **Logged-in browser session** (for human users using the web UI)
+
+### 1.1. API key
+
+Configured via environment/config as `API_KEY`.
+
+Send one of:
+
+- `X-API-Key: &lt;API_KEY&gt;`
+- `x-api-key: &lt;API_KEY&gt;`
+- `Authorization: ApiKey &lt;API_KEY&gt;`
+- `?api_key=&lt;API_KEY&gt;` query parameter
+
+Example:
+
+```bash
+export YOUR_API_KEY=&quot;my-api-key&quot;
+
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/ping&quot;
+```
+
+### 1.2. Bearer token (Keycloak)
+
+If you have a valid **access token** issued by Keycloak for this API, send:
+
+```http
+Authorization: Bearer &lt;access_token&gt;
+```
+
+The token is validated against the configured **OIDC issuer**, audience / client,
+and signing keys (JWKS).
+
+### 1.3. Browser session
+
+If you call the API via a browser that is already logged in via the
+ECHOREPO UI, the API may accept the existing Flask / Keycloak session cookie.
+
+This is mainly useful for interactive debugging, **not** for automated systems.
+
+---
+
+## 2. Quick health check
+
+### GET `/api/v1/ping`
+
+Simple status endpoint.
+
+- **Auth:** required (API key / bearer / session)
+- **Response:**
+
+```json
+{
+  &quot;ok&quot;: true
+}
+```
+
+Example:
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/ping&quot;
+```
+
+---
+
+## 3. Canonical data model (Postgres)
+
+Canonical tables (Postgres):
+
+- `samples`
+- `sample_images`
+- `sample_parameters`
+
+Column sets (simplified):
+
+### 3.1. `samples`
+
+```text
+sample_id, timestamp_utc, lat, lon, country_code, location_accuracy_m,
+ph, organic_carbon_pct, earthworms_count,
+contamination_debris, contamination_plastic,
+contamination_other_orig, contamination_other_en,
+pollutants_count,
+soil_structure_orig, soil_structure_en,
+soil_texture_orig, soil_texture_en,
+observations_orig, observations_en,
+metals_info_orig, metals_info_en,
+collected_by, data_source, qa_status, licence
+```
+
+### 3.2. `sample_images`
+
+```text
+sample_id, country_code, image_id, image_url,
+image_description_orig, image_description_en,
+collected_by, timestamp_utc, licence
+```
+
+### 3.3. `sample_parameters`
+
+```text
+sample_id, country_code,
+parameter_code, parameter_name,
+value, uom, analysis_method, analysis_date,
+lab_id, created_by, licence, parameter_uri
+```
+
+The API exposes **read-only** endpoints over these tables plus one
+**write** endpoint for lab enrichment uploads.
+
+---
+
+## 4. Shared filtering options
+
+Several canonical endpoints share a common filter model.
+
+### 4.1. Time window
+
+- `from`: ISO-ish timestamp, compared to `timestamp_utc`
+- `to`: same as above
+
+Accepted formats include:
+
+- `YYYY-MM-DD`
+- `YYYY-MM-DDTHH:MM`
+- `YYYY-MM-DDTHH:MM:SS`
+- `YYYY-MM-DDTHH:MM:SS.ssssss`
+
+Examples:
+
+- `from=2025-01-01`
+- `from=2025-01-01T00:00`
+- `to=2025-12-31`
+
+### 4.2. Country
+
+- `country` or `country_code` – case-insensitive 2-letter code (e.g. `ES`, `PT`)
+
+Example: `country=ES`
+
+### 4.3. Bounding box (samples only)
+
+Used for endpoints that know `lat` / `lon` (currently **canonical samples** and
+**canonical ZIP**).
+
+- `bbox=west,south,east,north`
+
+Where:
+
+- `west` / `east` = longitude (x)
+- `south` / `north` = latitude (y)
+- All in WGS84 degrees
+
+Example (roughly NE Spain / S France):
+
+```text
+bbox=-2,35,5,45
+```
+
+If `bbox` is supplied but cannot be parsed, the API responds with **400 Bad Request**.
+
+### 4.4. Radius filter (samples only)
+
+- `within=lat,lon,r_km`
+
+Where:
+
+- `lat`, `lon` – center point (degrees)
+- `r_km` – radius in kilometers
+
+This is implemented via a **bounding box approximation** using degrees; it is
+good for rough filtering, not for exact geodesic calculations.
+
+Example:
+
+```text
+within=41.39,2.17,50
+```
+
+(≈ 50 km radius around Barcelona)
+
+### 4.5. Pagination
+
+- `limit` – default 100, max 1000
+- `offset` – default 0
+
+### 4.6. Format
+
+Depending on endpoint:
+
+- `format=json` (default)
+- `format=csv`
+- `format=geojson` (only where lat/lon is known)
+
+For **ZIP** endpoint, the format is always **ZIP of CSV files**.
+
+---
+
+## 5. Canonical samples
+
+### 5.1. GET `/api/v1/canonical/samples`
+
+Query canonical samples from Postgres.
+
+**Auth:** required
+
+**Query parameters:**
+
+- `from`, `to` – time window on `timestamp_utc`
+- `country` or `country_code`
+- `bbox` – `west,south,east,north` on `lon`/`lat`
+- `within` – `lat,lon,r_km` (approximate radius)
+- `fields` – comma list subset of canonical sample columns, or omit to get all
+- `limit`, `offset`
+- `order` – one of canonical sample columns (default `timestamp_utc`)
+- `dir` – `asc` or `desc` (default `desc`)
+- `format` – `json` (default), `csv`, or `geojson`
+
+**Response (JSON):**
+
+```json
+{
+  &quot;meta&quot;: {
+    &quot;count&quot;: 1234,
+    &quot;limit&quot;: 100,
+    &quot;offset&quot;: 0,
+    &quot;order&quot;: &quot;timestamp_utc&quot;,
+    &quot;dir&quot;: &quot;desc&quot;,
+    &quot;fields&quot;: [&quot;sample_id&quot;, &quot;timestamp_utc&quot;, &quot;...&quot;]
+  },
+  &quot;data&quot;: [
+    {
+      &quot;sample_id&quot;: &quot;ABCD-1234&quot;,
+      &quot;timestamp_utc&quot;: &quot;2025-11-17T18:00:29.607270+00:00&quot;,
+      &quot;lat&quot;: 41.38,
+      &quot;lon&quot;: 2.18,
+      &quot;country_code&quot;: &quot;ES&quot;,
+      &quot;...&quot;: &quot;...&quot;
+    }
+  ]
+}
+```
+
+**Example: all ES samples in 2025, CSV:**
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/canonical/samples?country=ES&amp;from=2025-01-01&amp;to=2025-12-31&amp;format=csv&quot;   -o canonical_samples_ES_2025.csv
+```
+
+**Example: samples inside a bbox, GeoJSON:**
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/canonical/samples?bbox=-2,35,5,45&amp;format=geojson&quot;   -o canonical_samples_bbox.geojson
+```
+
+### 5.2. GET `/api/v1/canonical/samples/count`
+
+Same filters as `/canonical/samples`, but returns only the total count:
+
+```json
+{ &quot;count&quot;: 1234 }
+```
+
+Example:
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/canonical/samples/count?country=ES&amp;from=2025-01-01&amp;to=2025-12-31&quot;
+```
+
+---
+
+## 6. Canonical sample images
+
+### GET `/api/v1/canonical/sample_images`
+
+Query canonical sample images.
+
+**Auth:** required
+
+**Query parameters:**
+
+- `sample_id` – filter by sample
+- `country` or `country_code`
+- `from`, `to` – on `timestamp_utc`
+- `fields` – subset of image columns (or omit for all)
+- `limit`, `offset`
+- `format` – `json` (default) or `csv`
+
+&gt; **Note:** there is **no bbox/within filter** here, since the image table
+&gt; does not carry lat/lon.
+
+Example: all images for a single sample, CSV:
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/canonical/sample_images?sample_id=LFWK-1927&amp;format=csv&quot;   -o canonical_sample_images_LFWK-1927.csv
+```
+
+---
+
+## 7. Canonical sample parameters
+
+### GET `/api/v1/canonical/sample_parameters`
+
+Query canonical parameters (lab results, etc.).
+
+**Auth:** required
+
+**Query parameters:**
+
+- `sample_id`
+- `country` or `country_code`
+- `parameter_code`
+- `fields` – subset of parameter columns (or omit for all)
+- `limit`, `offset`
+- `format` – `json` (default) or `csv`
+
+Example: all parameters for a sample:
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/canonical/sample_parameters?sample_id=LFWK-1927&amp;format=csv&quot;   -o canonical_sample_parameters_LFWK-1927.csv
+```
+
+---
+
+## 8. Canonical ZIP export with filters
+
+### GET `/api/v1/canonical/all.zip`
+
+Returns a **ZIP** file with three CSV files:
+
+- `samples.csv`
+- `sample_images.csv`
+- `sample_parameters.csv`
+
+The endpoint applies the **same filters** as `/canonical/samples`
+to **all three tables**, where the fields exist:
+
+- `from`, `to` – time window on `timestamp_utc`
+- `country` / `country_code`
+- `bbox` – `west,south,east,north` on `lon`/`lat` (samples only)
+- `within` – `lat,lon,r_km` (samples only)
+
+For `sample_images` and `sample_parameters`, the time/country filters are
+applied where appropriate; `bbox`/`within` only affect the **sample-level**
+subset (i.e. which `sample_id`s are included).
+
+&gt; The endpoint always returns a ZIP; there is **no `format` parameter**.
+
+**Auth:** required
+
+**Query parameters:**
+
+- `from`, `to`, `country` / `country_code`, `bbox`, `within` (as above)
+
+All other paging / field selection is fixed: the ZIP always contains the full
+set of canonical columns for the filtered subset.
+
+**Example: all ES samples in 2025 + related images &amp; parameters, as ZIP:**
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/canonical/all.zip?country=ES&amp;from=2025-01-01&amp;to=2025-12-31&quot;   -o canonical_ES_2025.zip
+```
+
+**Example: subset in a geographic bbox:**
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/canonical/all.zip?bbox=-2,35,5,45&quot;   -o canonical_bbox_subset.zip
+```
+
+**Example: subset within 50 km of a point:**
+
+```bash
+curl -L   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/canonical/all.zip?within=41.39,2.17,50&quot;   -o canonical_barcelona_50km.zip
+```
+
+---
+
+## 9. Lab enrichment uploads
+
+### POST `/api/v1/lab-enrichment`
+
+Used by labs or automated pipelines to upload **extra lab results** that are
+later joined to field samples.
+
+Auth: same as other API endpoints (API key, bearer, or session).
+
+The endpoint accepts **three kinds of payloads**:
+
+1. **JSON** body
+2. **CSV/XLSX file** via `multipart/form-data`
+3. **Raw CSV/XLSX body** (by content type)
+
+#### 9.1. JSON payloads
+
+Either an **array of row objects**:
+
+```json
+[
+  {
+    &quot;qr_code&quot;: &quot;ECHO-ABCD1234&quot;,
+    &quot;Cd&quot;: 0.12,
+    &quot;Cd_unit&quot;: &quot;mg/kg&quot;,
+    &quot;Pb&quot;: 4.5,
+    &quot;Pb_unit&quot;: &quot;mg/kg&quot;
+  },
+  {
+    &quot;qr_code&quot;: &quot;ECHO-EFGH5678&quot;,
+    &quot;Cd&quot;: 0.22,
+    &quot;Cd_unit&quot;: &quot;mg/kg&quot;
+  }
+]
+```
+
+or a wrapper object with `&quot;rows&quot;`:
+
+```json
+{
+  &quot;rows&quot;: [
+    { &quot;qr_code&quot;: &quot;ECHO-ABCD1234&quot;, &quot;Cd&quot;: 0.12, &quot;Cd_unit&quot;: &quot;mg/kg&quot; },
+    { &quot;qr_code&quot;: &quot;ECHO-EFGH5678&quot;, &quot;Cd&quot;: 0.22, &quot;Cd_unit&quot;: &quot;mg/kg&quot; }
+  ]
+}
+```
+
+Each row is exploded into many `lab_enrichment` records:
+
+- `qr_code` – normalized like in the web UI:
+  - remove leading `ECHO-` if present
+  - inject dash after 4 chars if missing
+- each non-empty column becomes `(qr_code, param, value, unit)`
+
+Columns named like `Cd_unit` are interpreted as units for the corresponding
+parameter.
+
+**Example (JSON):**
+
+```bash
+curl -L -X POST   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   -H &quot;Content-Type: application/json&quot;   -d &#x27;{
+        &quot;rows&quot;: [
+          { &quot;qr_code&quot;: &quot;ECHO-ABCD1234&quot;, &quot;Cd&quot;: 0.12, &quot;Cd_unit&quot;: &quot;mg/kg&quot; },
+          { &quot;qr_code&quot;: &quot;ECHO-EFGH5678&quot;, &quot;Pb&quot;: 4.5, &quot;Pb_unit&quot;: &quot;mg/kg&quot; }
+        ]
+      }&#x27;   &quot;https://echorepo.quanta-labs.com/api/v1/lab-enrichment&quot;
+```
+
+**Response:**
+
+```json
+{
+  &quot;ok&quot;: true,
+  &quot;processed&quot;: 10,
+  &quot;skipped&quot;: 0
+}
+```
+
+#### 9.2. CSV / XLSX via multipart/form-data
+
+Form field: `file`
+
+```bash
+curl -L -X POST   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   -F &quot;file=@lab_results.xlsx&quot;   &quot;https://echorepo.quanta-labs.com/api/v1/lab-enrichment&quot;
+```
+
+The server will detect `.xlsx` or `.csv` and parse accordingly.
+
+#### 9.3. Raw CSV / XLSX body
+
+Set an appropriate `Content-Type`:
+
+- `text/csv` or `application/csv` or `text/plain` – raw CSV body
+- `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` – raw XLSX body
+
+Example (raw CSV):
+
+```bash
+curl -L -X POST   -H &quot;X-API-Key: $YOUR_API_KEY&quot;   -H &quot;Content-Type: text/csv&quot;   --data-binary @lab_results.csv   &quot;https://echorepo.quanta-labs.com/api/v1/lab-enrichment&quot;
+```
+
+---
+
+## 10. Legacy / internal endpoints
+
+There are additional endpoints under `/api/v1` and the main web routes
+(such as `/api/v1/samples` backed by SQLite, map GeoJSON endpoints, etc.).
+
+For **external integrations** you should normally use **only**:
+
+- `/api/v1/canonical/samples`
+- `/api/v1/canonical/samples/count`
+- `/api/v1/canonical/sample_images`
+- `/api/v1/canonical/sample_parameters`
+- `/api/v1/canonical/all.zip`
+- `/api/v1/lab-enrichment`
+- `/api/v1/ping`
+
+Other endpoints may change without notice.
+
+---
+
+## 11. Summary of filters by endpoint
+
+| Endpoint                             | Time (`from`,`to`) | Country | `bbox` | `within` | Fields | Format options         |
+|-------------------------------------|---------------------|---------|--------|----------|--------|------------------------|
+| `/canonical/samples`                | ✅                  | ✅      | ✅     | ✅       | ✅     | json, csv, geojson     |
+| `/canonical/samples/count`          | ✅                  | ✅      | ✅     | ✅       | ❌     | json                   |
+| `/canonical/sample_images`          | ✅                  | ✅      | ❌     | ❌       | ✅     | json, csv              |
+| `/canonical/sample_parameters`      | ❌ (no timestamp)   | ✅      | ❌     | ❌       | ✅     | json, csv              |
+| `/canonical/all.zip`                | ✅                  | ✅      | ✅*    | ✅*      | ❌     | zip (3× CSV)           |
+| `/lab-enrichment` (POST)            | n/a                 | n/a     | n/a    | n/a      | n/a    | json / csv / xlsx in   |
+
+\* `bbox` / `within` are applied on the **samples** table; the other
+files in the ZIP are restricted to the corresponding filtered `sample_id`s.
+
+---
+
+If you need another subset or a new endpoint shape, it is usually best to
+build it on top of `/canonical/samples` and the ZIP endpoint so that we keep
+the **canonical model** stable.
+</pre>
+</body>
+</html>

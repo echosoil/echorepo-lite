@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-29 13:21+0000\n"
+"POT-Creation-Date: 2025-11-12 14:12+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -19,325 +19,366 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: echorepo/routes/web.py:19
+#: /work/echorepo/routes/web.py:192
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Promień prywatności (~ ±{km}km)"
 
-#: echorepo/routes/web.py:20 echorepo/templates/results.html:243
+#: /work/echorepo/routes/web.py:193
 msgid "Soil pH"
 msgstr "PH gleby"
 
-#: echorepo/routes/web.py:21 echorepo/templates/results.html:244
+#: /work/echorepo/routes/web.py:194
 msgid "Acidic (≤5.5)"
 msgstr "Acydyczna (≤ 5, 5)"
 
-#: echorepo/routes/web.py:22 echorepo/templates/results.html:245
+#: /work/echorepo/routes/web.py:195
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Nieco kwaśne (5,5-6,5)"
 
-#: echorepo/routes/web.py:23 echorepo/templates/results.html:246
+#: /work/echorepo/routes/web.py:196
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutralny (6,5-7,5)"
 
-#: echorepo/routes/web.py:24 echorepo/templates/results.html:247
+#: /work/echorepo/routes/web.py:197
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Nieco alkaliczne (7, 5- 8, 5)"
 
-#: echorepo/routes/web.py:25 echorepo/templates/results.html:248
+#: /work/echorepo/routes/web.py:198
 msgid "Alkaline (≥8.5)"
 msgstr "Alkalina (≥ 8, 5)"
 
-#: echorepo/routes/web.py:26 echorepo/templates/results.html:225
+#: /work/echorepo/routes/web.py:199
 msgid "Your samples"
 msgstr "Twoje próbki"
 
-#: echorepo/routes/web.py:27 echorepo/templates/results.html:226
+#: /work/echorepo/routes/web.py:200
 msgid "Other samples"
 msgstr "Pozostałe próbki"
 
-#: echorepo/routes/web.py:28 echorepo/templates/results.html:227
+#: /work/echorepo/routes/web.py:201
 msgid "Export"
 msgstr "Eksport"
 
-#: echorepo/routes/web.py:29 echorepo/templates/results.html:228
+#: /work/echorepo/routes/web.py:202
 msgid "Clear"
 msgstr "Czysto"
 
-#: echorepo/routes/web.py:30
+#: /work/echorepo/routes/web.py:203
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Eksport filtrowany ({n})"
 
-#: echorepo/routes/web.py:31 echorepo/templates/results.html:231
+#: /work/echorepo/routes/web.py:204
 msgid "Date"
 msgstr "Data"
 
-#: echorepo/routes/web.py:32 echorepo/templates/results.html:232
+#: /work/echorepo/routes/web.py:205
 msgid "QR code"
 msgstr "Kod QR"
 
-#: echorepo/routes/web.py:33 echorepo/templates/results.html:167
-#: echorepo/templates/results.html:233
+#: /work/echorepo/routes/web.py:206 /work/echorepo/templates/results.html:243
+#: /work/echorepo/templates/search.html:84
 msgid "pH"
 msgstr "p H"
 
-#: echorepo/routes/web.py:34 echorepo/templates/results.html:234
+#: /work/echorepo/routes/web.py:207
 msgid "Colour"
 msgstr "Kolor"
 
-#: echorepo/routes/web.py:35 echorepo/templates/results.html:235
+#: /work/echorepo/routes/web.py:208
 msgid "Texture"
 msgstr "Tekst"
 
-#: echorepo/routes/web.py:36 echorepo/templates/results.html:236
+#: /work/echorepo/routes/web.py:209
 msgid "Structure"
 msgstr "Struktura"
 
-#: echorepo/routes/web.py:37 echorepo/templates/results.html:237
+#: /work/echorepo/routes/web.py:210
 msgid "Earthworms"
 msgstr "Robaki ziemne"
 
-#: echorepo/routes/web.py:38 echorepo/templates/results.html:238
+#: /work/echorepo/routes/web.py:211
 msgid "Plastic"
 msgstr "Plastikowe"
 
-#: echorepo/routes/web.py:39 echorepo/templates/results.html:239
+#: /work/echorepo/routes/web.py:212
 msgid "Debris"
 msgstr "Odpady"
 
-#: echorepo/routes/web.py:40 echorepo/templates/results.html:240
+#: /work/echorepo/routes/web.py:213
 msgid "Contamination"
 msgstr "Zanieczyszczenie"
 
-#: echorepo/routes/web.py:41 echorepo/templates/results.html:241
+#: /work/echorepo/routes/web.py:214
 msgid "Metals"
 msgstr "Metale"
 
-#: echorepo/templates/base.html:6 echorepo/templates/base.html:10
+#: /work/echorepo/routes/web.py:215
+msgid "Draw a rectangle"
+msgstr "Narysuj prostokąt"
+
+#: /work/echorepo/routes/web.py:216
+msgid "Cancel drawing"
+msgstr "Anuluj rysowanie"
+
+#: /work/echorepo/routes/web.py:217
+msgid "Cancel"
+msgstr "Anuluj"
+
+#: /work/echorepo/routes/web.py:218
+msgid "Delete last point"
+msgstr "Usuń ostatni punkt"
+
+#: /work/echorepo/routes/web.py:219
+msgid "Click and drag to draw a rectangle."
+msgstr "Kliknij i przeciągnij, aby narysować prostokąt."
+
+#: /work/echorepo/routes/web.py:220
+msgid "Release mouse to finish drawing."
+msgstr "Zwolnij mysz, aby zakończyć rysunek."
+
+#: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
 msgstr "ECHOREPO - UE Dane dotyczące gleby"
 
-#: echorepo/templates/base.html:9
+#: /work/echorepo/templates/base.html:9
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr "ECHOREpo - próbki gleby naukowej w ramach projektu ECHO finansowanego przez UE"
 
-#: echorepo/templates/base.html:12
+#: /work/echorepo/templates/base.html:12
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr "Dostęp i pobieranie próbek gleby. Część projektu ECHO finansowanego przez UE."
 
-#: echorepo/templates/base.html:79
+#: /work/echorepo/templates/base.html:79
 msgid "Skip to content"
 msgstr "Przejdź do treści"
 
-#: echorepo/templates/base.html:85
+#: /work/echorepo/templates/base.html:85
 msgid "Primary"
 msgstr "Pierwotne"
 
-#: echorepo/templates/base.html:88
+#: /work/echorepo/templates/base.html:88
 msgid "ECHOrepo logo"
 msgstr "Logo ECHOREPO"
 
-#: echorepo/templates/base.html:93
+#: /work/echorepo/templates/base.html:93
 msgid "Toggle navigation"
 msgstr "Włączenie / wyłączenie nawigacji"
 
-#: echorepo/templates/base.html:99
+#: /work/echorepo/templates/base.html:99
 msgid "About"
 msgstr "O"
 
-#: echorepo/templates/base.html:100
+#: /work/echorepo/templates/base.html:100
 msgid "For Participants"
 msgstr "Dla uczestników"
 
-#: echorepo/templates/base.html:101
+#: /work/echorepo/templates/base.html:101
 msgid "Partners"
 msgstr "Partnerzy"
 
-#: echorepo/templates/base.html:102
+#: /work/echorepo/templates/base.html:102
 msgid "News & Events"
 msgstr "Wiadomości i wydarzenia"
 
-#: echorepo/templates/base.html:104
+#: /work/echorepo/templates/base.html:104
 msgid "Resources"
 msgstr "Zasoby"
 
-#: echorepo/templates/base.html:106
+#: /work/echorepo/templates/base.html:106
 msgid "Media Kit"
 msgstr "Zestaw multimedialny"
 
-#: echorepo/templates/base.html:107
+#: /work/echorepo/templates/base.html:107
 msgid "Publications"
 msgstr "Publikacje"
 
-#: echorepo/templates/base.html:108
+#: /work/echorepo/templates/base.html:108
 msgid "Newsletter Archive"
 msgstr "Archiwum biuletynu"
 
-#: echorepo/templates/base.html:120
+#: /work/echorepo/templates/base.html:120
 msgid "Change language"
 msgstr "Zmień język"
 
-#: echorepo/templates/base.html:152
+#: /work/echorepo/templates/base.html:152
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOREPO jest częścią UE - i UKRI-"
 
-#: echorepo/templates/base.html:152
+#: /work/echorepo/templates/base.html:152
 msgid "project"
 msgstr "projekt"
 
-#: echorepo/templates/base.html:154
+#: /work/echorepo/templates/base.html:154
 msgid "Need help?"
 msgstr "Potrzebujesz pomocy?"
 
-#: echorepo/templates/base.html:158
+#: /work/echorepo/templates/base.html:158
 msgid "EU-funded"
 msgstr "Finansowane przez UE"
 
-#: echorepo/templates/base.html:159
+#: /work/echorepo/templates/base.html:159
 msgid "EU-funded initiative"
 msgstr "Inicjatywa finansowana przez UE"
 
-#: echorepo/templates/issues.html:3
+#: /work/echorepo/templates/issues.html:3
 msgid "Data quality issues — ECHOrepo"
 msgstr "Kwestie dotyczące jakości danych - ECHOREpo"
 
-#: echorepo/templates/issues.html:7 echorepo/templates/issues.html:15
+#: /work/echorepo/templates/issues.html:7 /work/echorepo/templates/issues.html:15
 msgid "Back to My Data"
 msgstr "Powrót do moich danych"
 
-#: echorepo/templates/issues.html:13
+#: /work/echorepo/templates/issues.html:13
 msgid "Data quality issues"
 msgstr "Kwestie jakości danych"
 
-#: echorepo/templates/issues.html:20
+#: /work/echorepo/templates/issues.html:20
 msgid "Data issues"
 msgstr "Kwestie danych"
 
-#: echorepo/templates/issues.html:22
+#: /work/echorepo/templates/issues.html:22
 #, python-format
 msgid "Default coordinates (%(lat)s, %(lon)s)"
 msgstr "Współrzędne domyślne (%(lat)s,%(lon)s)"
 
-#: echorepo/templates/issues.html:24
+#: /work/echorepo/templates/issues.html:24
 msgid "No entries with default coordinates"
 msgstr "Brak wpisów o domyślnych współrzędnych"
 
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:68
+#: /work/echorepo/templates/issues.html:29 /work/echorepo/templates/issues.html:68
 msgid "Sample"
 msgstr "Próbka"
 
-#: echorepo/templates/issues.html:30 echorepo/templates/issues.html:69
+#: /work/echorepo/templates/issues.html:30 /work/echorepo/templates/issues.html:69
 msgid "User"
 msgstr "Użytkownik"
 
-#: echorepo/templates/issues.html:31 echorepo/templates/issues.html:70
+#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:70
 msgid "QR"
 msgstr "QR"
 
-#: echorepo/templates/issues.html:32 echorepo/templates/issues.html:71
+#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:71
+#: /work/echorepo/templates/search.html:85
 msgid "Lat"
 msgstr "Sztab"
 
-#: echorepo/templates/issues.html:33 echorepo/templates/issues.html:72
+#: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:72
+#: /work/echorepo/templates/search.html:86
 msgid "Lon"
 msgstr "Lon"
 
-#: echorepo/templates/issues.html:34 echorepo/templates/issues.html:73
+#: /work/echorepo/templates/issues.html:34 /work/echorepo/templates/issues.html:73
 msgid "Fix"
 msgstr "Napraw"
 
-#: echorepo/templates/issues.html:49 echorepo/templates/issues.html:88
+#: /work/echorepo/templates/issues.html:49 /work/echorepo/templates/issues.html:88
 msgid "Lat (dec or DMS)"
 msgstr "Sztab (zamykany lub zamykany)"
 
-#: echorepo/templates/issues.html:50 echorepo/templates/issues.html:89
+#: /work/echorepo/templates/issues.html:50 /work/echorepo/templates/issues.html:89
 msgid "Lon (dec or DMS)"
 msgstr "Lon (dec lub DMS)"
 
-#: echorepo/templates/issues.html:51 echorepo/templates/issues.html:90
+#: /work/echorepo/templates/issues.html:51 /work/echorepo/templates/issues.html:90
 msgid "Save"
 msgstr "Zapisz"
 
-#: echorepo/templates/issues.html:60
+#: /work/echorepo/templates/issues.html:60
 msgid "Country mismatches"
 msgstr "Niedopasowanie krajów"
 
-#: echorepo/templates/issues.html:61
+#: /work/echorepo/templates/issues.html:61
 msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr ""
 "Rzeczywisty kraj (od koordów) nie znajduje się na planowanej liście dla "
 "niniejszego QR."
 
-#: echorepo/templates/issues.html:63
+#: /work/echorepo/templates/issues.html:63
 msgid "No country mismatches"
 msgstr "Brak niedopasowań w poszczególnych krajach"
 
-#: echorepo/templates/login.html:2
+#: /work/echorepo/templates/lab_upload.html:3
+#: /work/echorepo/templates/results.html:115
+msgid "Upload lab data"
+msgstr "Wysyłanie danych laboratoryjnych"
+
+#: /work/echorepo/templates/lab_upload.html:5
+msgid "Expected columns:"
+msgstr "Przewidywane kolumny:"
+
+#: /work/echorepo/templates/lab_upload.html:12
+msgid "Upload"
+msgstr "Wyślij"
+
+#: /work/echorepo/templates/login.html:2
 msgid "ECHOrepo — Access"
 msgstr "ECHOREPO - Dostęp"
 
-#: echorepo/templates/login.html:10
+#: /work/echorepo/templates/login.html:10
 msgid "Access your data"
 msgstr "Dostęp do danych"
 
-#: echorepo/templates/login.html:11
+#: /work/echorepo/templates/login.html:11
 msgid "Sign in with your Keycloak credentials."
 msgstr "Zaloguj się za pomocą swoich dokumentów."
 
-#: echorepo/templates/login.html:21
+#: /work/echorepo/templates/login.html:21
 msgid "Email or username"
 msgstr "Email lub nazwa użytkownika"
 
-#: echorepo/templates/login.html:25
+#: /work/echorepo/templates/login.html:25
 msgid "you@example.org"
 msgstr "you @ example.org"
 
-#: echorepo/templates/login.html:30
+#: /work/echorepo/templates/login.html:30
 msgid "Password"
 msgstr "Hasło"
 
-#: echorepo/templates/login.html:40
+#: /work/echorepo/templates/login.html:40
 msgid "Continue"
 msgstr "Kontynuuj"
 
-#: echorepo/templates/login.html:46
+#: /work/echorepo/templates/login.html:46
 msgid "Issues signing in? Contact the organisers."
 msgstr "Zapisy? Skontaktuj się z organizatorami."
 
-#: echorepo/templates/login.html:62
+#: /work/echorepo/templates/login.html:62
 msgid "GDPR-friendly access"
 msgstr "Przyjazny dostęp"
 
-#: echorepo/templates/login.html:65
+#: /work/echorepo/templates/login.html:65
 msgid "Download your data anytime"
 msgstr "Pobieranie danych w każdej chwili"
 
-#: echorepo/templates/results.html:2
+#: /work/echorepo/templates/results.html:2
 msgid "ECHOrepo — Your Data"
 msgstr "ECHOREPO - Twoje dane"
 
-#: echorepo/templates/results.html:7
+#: /work/echorepo/templates/results.html:8
 msgid "Download all samples (CSV)"
 msgstr "Pobieranie wszystkich próbek (CSV)"
 
-#: echorepo/templates/results.html:14
+#: /work/echorepo/templates/results.html:13
+#: /work/echorepo/templates/results.html:119 /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/search.html:5
+msgid "Search samples"
+msgstr "Próbki poszukiwawcze"
+
+#: /work/echorepo/templates/results.html:20
 msgid "Logged in as"
 msgstr "Zalogowane jako"
 
-#: echorepo/templates/results.html:19
-msgid "Copy user key"
-msgstr "Kopiuj klucz użytkownika"
-
-#: echorepo/templates/results.html:23
+#: /work/echorepo/templates/results.html:26
 msgid "Logout"
 msgstr "Wyloguj"
 
-#: echorepo/templates/results.html:104
+#: /work/echorepo/templates/results.html:101
 msgid "Your data"
 msgstr "Twoje dane"
 
-#: echorepo/templates/results.html:105
+#: /work/echorepo/templates/results.html:102
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
@@ -345,74 +386,323 @@ msgstr ""
 "Zbadaj lokalizacje próbek gleby na mapie, a następnie eksportuj lub "
 "przeglądaj tabelę."
 
-#: echorepo/templates/results.html:113
+#: /work/echorepo/templates/results.html:110
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Popraw problemy z danymi (%(n)s)"
 
-#: echorepo/templates/results.html:116
-msgid "Some samples need attention to ensure correct maps and downloads."
-msgstr "Niektóre próbki wymagają uwagi, aby zapewnić prawidłowe mapy i pobieranie."
+#: /work/echorepo/templates/results.html:126
+msgid "Final survey"
+msgstr "Badanie końcowe"
 
-#: echorepo/templates/results.html:123
+#: /work/echorepo/templates/results.html:128
+msgid "We sincerely thank you for your commitment to this project!"
+msgstr "Serdecznie dziękujemy za zaangażowanie w ten projekt!"
+
+#: /work/echorepo/templates/results.html:131
+msgid ""
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after soil sampling. The majority of questions are "
+"consistent with the previous surveys so that we can accurately measure "
+"changes over time and understand the impact of project participation."
+msgstr ""
+"Jest to trzecia i ostatnia ankieta w projekcie, po tych wstępnych ukończonych"
+" przed i po pobraniu próbek gleby. Większość pytań jest spójna z poprzednimi "
+"badaniami, dzięki czemu możemy dokładnie mierzyć zmiany w czasie i rozumieć "
+"wpływ uczestnictwa w projekcie."
+
+#: /work/echorepo/templates/results.html:134
+msgid ""
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already been added to the repository. If the results"
+" are pending, please check back at a later time."
+msgstr ""
+"Przed rozpoczęciem badania: proszę wypełnić badanie tylko wtedy, gdy wyniki "
+"badań z próbek gleby zostały już dodane do repozytorium. Jeśli wyniki są w "
+"toku, należy sprawdzić ponownie w późniejszym czasie."
+
+#: /work/echorepo/templates/results.html:139
+msgid "Go to final survey"
+msgstr "Przejdź do ostatniego badania"
+
+#: /work/echorepo/templates/results.html:147
+msgid "Data use information"
+msgstr "Informacje dotyczące wykorzystywania danych"
+
+#: /work/echorepo/templates/results.html:152
+msgid "Processing survey data in the ECHO project"
+msgstr "Dane z badania przetwarzania w projekcie ECHO"
+
+#: /work/echorepo/templates/results.html:154
+msgid ""
+"The objective of this survey data is to examine the impact of project "
+"participation on participant attitudes and motivation towards soil."
+msgstr ""
+"Celem niniejszego badania jest zbadanie wpływu uczestnictwa w projekcie na "
+"postawy uczestników i motywację do gleby."
+
+#: /work/echorepo/templates/results.html:157
+msgid ""
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your details regarding age and gender are only used for "
+"statistical purposes and all details are collected and evaluated anonymously."
+" It is not possible to draw conclusions about your person at any time."
+msgstr ""
+"Twoje informacje będą wykorzystywane tylko do celów naukowych. Nie zbieramy "
+"nazwisk ani adresów. Twoje dane dotyczące wieku i płci są wykorzystywane "
+"wyłącznie do celów statystycznych, a wszystkie dane są gromadzone i oceniane "
+"anonimowo. Nie jest możliwe wyciągnięcie wniosków na temat osoby w dowolnym "
+"momencie."
+
+#: /work/echorepo/templates/results.html:160
+msgid ""
+"Answering each question in the survey is most appreciated as it plays a "
+"crucial role in providing valuable insights that enhance the relevance and "
+"impact of the ECHO project. Your honest responses are essential for "
+"understanding how engagement with the project influences attitudes and "
+"motivations, ensuring the project’s outcomes are meaningful and well-"
+"informed."
+msgstr ""
+"Najbardziej docenione są odpowiedzi na każde pytanie zawarte w badaniu, "
+"ponieważ odgrywa on kluczową rolę w dostarczaniu cennych spostrzeżeń, które "
+"zwiększają znaczenie i wpływ projektu ECHO. Twoje uczciwe odpowiedzi są "
+"niezbędne do zrozumienia, jak zaangażowanie w projekt wpływa na postawy i "
+"motywacje, zapewniając, że wyniki projektu są znaczące i dobrze "
+"poinformowane."
+
+#: /work/echorepo/templates/results.html:163
+msgid ""
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be interrupted. There are no right or wrong "
+"answers — answer spontaneously."
+msgstr ""
+"Badanie potrwa około 8- 10 minut. Proszę znaleźć ciche miejsce, gdzie nikt "
+"nie będzie ci przeszkadzał. Nie ma dobrych czy złych odpowiedzi - odpowiedz "
+"spontanicznie."
+
+#: /work/echorepo/templates/results.html:166
+msgid ""
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
+msgstr ""
+"Na podstawie dostarczonych informacji proszę wyrazić zgodę na udział w "
+"badaniu poniżej."
+
+#: /work/echorepo/templates/results.html:174
 msgid "No data found for"
 msgstr "Brak danych dotyczących"
 
-#: echorepo/templates/results.html:123
+#: /work/echorepo/templates/results.html:174
 msgid "If you recently submitted samples, try again later."
 msgstr "W przypadku niedawno pobranych próbek należy ponownie spróbować później."
 
-#: echorepo/templates/results.html:136
+#: /work/echorepo/templates/results.html:187
 msgid "Download"
 msgstr "Pobierz"
 
-#: echorepo/templates/results.html:142
+#: /work/echorepo/templates/results.html:194
 msgid "CSV (per-user)"
 msgstr "CSV (per- user)"
 
-#: echorepo/templates/results.html:148
+#: /work/echorepo/templates/results.html:202
 msgid "XLSX (per-user)"
 msgstr "XLSX (per- user)"
 
-#: echorepo/templates/results.html:154
+#: /work/echorepo/templates/results.html:209
 msgid "All samples (CSV, anonymised)"
 msgstr "Wszystkie próbki (CSV, anonimowe)"
 
-#: echorepo/templates/results.html:159
+#: /work/echorepo/templates/results.html:214
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (per- user)"
 
-#: echorepo/templates/results.html:169
+#: /work/echorepo/templates/results.html:218
+msgid "Canonical exports"
+msgstr "Eksport kanoniczny"
+
+#: /work/echorepo/templates/results.html:221
+msgid "samples.csv"
+msgstr "samples.csv"
+
+#: /work/echorepo/templates/results.html:226
+msgid "sample_images.csv"
+msgstr "sample _ images.csv"
+
+#: /work/echorepo/templates/results.html:231
+msgid "sample_parameters.csv"
+msgstr "sample _ parameters.csv"
+
+#: /work/echorepo/templates/results.html:236
+msgid "All canonical (zip)"
+msgstr "Wszystkie kanoniczne (zip)"
+
+#: /work/echorepo/templates/results.html:245
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/results.html:172
+#: /work/echorepo/templates/results.html:248
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/results.html:174
+#: /work/echorepo/templates/results.html:250
 msgid "Apply pH filter"
 msgstr "Zastosuj filtr pH"
 
-#: echorepo/templates/results.html:174 echorepo/templates/results.html:230
+#: /work/echorepo/templates/results.html:250
 msgid "Apply"
 msgstr "Zastosuj"
 
-#: echorepo/templates/results.html:176
+#: /work/echorepo/templates/results.html:252
 msgid "Export rows matching current pH filter"
 msgstr "Eksportuj wiersze pasujące do bieżącego filtra pH"
 
-#: echorepo/templates/results.html:177
+#: /work/echorepo/templates/results.html:253
 msgid "Export filtered (0)"
 msgstr "Eksport filtrowany (0)"
 
-#: echorepo/templates/results.html:229
-#, python-format
-msgid "Export filtered (%(n)s)"
-msgstr "Eksport filtrowany (%(n)s)"
+#: /work/echorepo/templates/results.html:280
+msgid "Privacy information"
+msgstr "Informacje o prywatności"
 
-#: echorepo/templates/results.html:242
-#, python-format
-msgid "Privacy radius (~±%(km)s km)"
-msgstr "Promień prywatności (~ ±%(km)skm)"
+#: /work/echorepo/templates/results.html:288
+msgid ""
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for this project."
+msgstr ""
+"Przeczytałem powyższe informacje o prywatności i wyrażam zgodę na "
+"przetwarzanie moich danych osobowych do tego projektu."
+
+#: /work/echorepo/templates/results.html:295
+msgid "Accept and continue"
+msgstr "Zaakceptuj i kontynuuj"
+
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:81
+msgid "Sample / QR"
+msgstr "Próbka / QR"
+
+#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:83
+msgid "Country"
+msgstr "Kraj"
+
+#: /work/echorepo/templates/search.html:17
+msgid "Any country"
+msgstr "Każdy kraj"
+
+#: /work/echorepo/templates/search.html:18
+msgid "Czechia"
+msgstr "Czechia"
+
+#: /work/echorepo/templates/search.html:19
+msgid "Germany"
+msgstr "Niemcy"
+
+#: /work/echorepo/templates/search.html:20
+msgid "Spain"
+msgstr "Hiszpania"
+
+#: /work/echorepo/templates/search.html:21
+msgid "Finland"
+msgstr "Finlandia"
+
+#: /work/echorepo/templates/search.html:22
+msgid "France"
+msgstr "Francja"
+
+#: /work/echorepo/templates/search.html:23
+msgid "United Kingdom"
+msgstr "Zjednoczone Królestwo"
+
+#: /work/echorepo/templates/search.html:24
+msgid "Greece"
+msgstr "Grecja"
+
+#: /work/echorepo/templates/search.html:25
+msgid "Italy"
+msgstr "Włochy"
+
+#: /work/echorepo/templates/search.html:26
+msgid "Netherlands"
+msgstr "Niderlandy"
+
+#: /work/echorepo/templates/search.html:27
+msgid "Poland"
+msgstr "Polska"
+
+#: /work/echorepo/templates/search.html:28
+msgid "Portugal"
+msgstr "Portugalia"
+
+#: /work/echorepo/templates/search.html:29
+msgid "Romania"
+msgstr "Rumunia"
+
+#: /work/echorepo/templates/search.html:30
+msgid "Slovakia"
+msgstr "Słowacja"
+
+#: /work/echorepo/templates/search.html:35
+msgid "pH min"
+msgstr "p H min"
+
+#: /work/echorepo/templates/search.html:39
+msgid "pH max"
+msgstr "p H max"
+
+#: /work/echorepo/templates/search.html:44
+msgid "Search"
+msgstr "Szukaj"
+
+#: /work/echorepo/templates/search.html:51
+msgid "Date from"
+msgstr "Data"
+
+#: /work/echorepo/templates/search.html:55
+msgid "Date to"
+msgstr "Data"
+
+#: /work/echorepo/templates/search.html:69
+msgid "Export current search"
+msgstr "Eksportuj bieżące wyszukiwanie"
+
+#: /work/echorepo/templates/search.html:82
+msgid "Timestamp"
+msgstr "Znacznik czasu"
+
+#: /work/echorepo/templates/search.html:87
+msgid "Collected by"
+msgstr "Kolekcjonowane"
+
+#: /work/echorepo/templates/search.html:106
+msgid "No results for these filters."
+msgstr "Brak wyników dla tych filtrów."
+
+#: /work/echorepo/templates/search.html:118
+msgid "Showing page"
+msgstr "Wyświetlanie strony"
+
+#: /work/echorepo/templates/search.html:118
+msgid "of"
+msgstr "z"
+
+#: /work/echorepo/templates/search.html:118
+msgid "results"
+msgstr "wyniki"
+
+#~ msgid "Export filtered (%(n)s)"
+#~ msgstr "Eksport filtrowany (%(n)s)"
+
+#~ msgid "Privacy radius (~±%(km)s km)"
+#~ msgstr "Promień prywatności (~ ±%(km)skm)"
+
+#~ msgid "It helps us improve EchoSoil."
+#~ msgstr "Pomaga nam poprawić EchoSoil."
+
+#~ msgid "Some samples need attention to ensure correct maps and downloads."
+#~ msgstr "Niektóre próbki wymagają uwagi, aby zapewnić prawidłowe mapy i pobieranie."
+
+#~ msgid "Any country"
+#~ msgstr "Każdy kraj"
+
+#~ msgid "Copy user key"
+#~ msgstr "Kopiuj klucz użytkownika"
 

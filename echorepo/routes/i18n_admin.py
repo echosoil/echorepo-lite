@@ -13,6 +13,9 @@ from flask import Blueprint, render_template, request, jsonify, abort, current_a
 
 bp = Blueprint("i18n_admin", __name__, url_prefix="/i18n")
 
+# NEW: the set of JS msgids — we’ll hide these from the "page" tab
+JS_MSGIDS = set(BASE_LABEL_MSGIDS.values())
+
 def _canon_locale(lang: str) -> str:
     if not lang:
         return "en"
@@ -95,22 +98,26 @@ def admin_page():
 
     if scope == "page":
         entries = _load_pot_entries()
-        # also fold in JS msgids so you can fix them here too
-        for key, msgid in BASE_LABEL_MSGIDS.items():
-            entries.append({"msgid": msgid, "refs": ["static/js/map.js"]})
-
+        seen = set()
         msg_over = get_overrides_msgid(loc)
 
         for e in entries:
             msgid = e["msgid"]
-            refs = e.get("refs", [])
 
+            # NEW: don't show strings that belong to the JS keys set
+            if msgid in JS_MSGIDS:
+                continue
+
+            if msgid in seen:
+                continue
+            seen.add(msgid)
+
+            refs = e.get("refs", [])
             if file_filter and not any(file_filter in r for r in refs):
                 continue
             if q and q not in msgid.lower():
                 continue
 
-            # IMPORTANT: translate using the SELECTED locale, not the request locale
             catalog_txt = _catalog_gettext(loc, msgid)
             current_txt = msg_over.get(msgid, catalog_txt)
 
@@ -129,7 +136,7 @@ def admin_page():
             files_hint=file_filter,
             js_keys=False,
         )
-
+        
     # scope == 'js' (key-based)
     key_over = get_overrides(loc) or {}
 

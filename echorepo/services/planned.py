@@ -10,18 +10,27 @@ from ..config import settings
 #   pycountry, openpyxl  (add to requirements.txt)
 import pycountry
 
-# Common alias fixes -> pycountry canonical names
+# Common alias fixes.
+# For stuff like "Scotland" we go straight to ISO2 "GB" so we don't depend
+# on pycountry recognising the wording.
 ALIASES = {
-    "uk": "United Kingdom",
-    "great britain": "United Kingdom",
-    "gb": "United Kingdom",
-    "england": "United Kingdom",
-    "scotland": "United Kingdom",
-    "wales": "United Kingdom",
+    # UK variants → GB
+    "uk": "GB",
+    "u.k.": "GB",
+    "great britain": "GB",
+    "gb": "GB",
+    "england": "GB",
+    "scotland": "GB",
+    "wales": "GB",
+    "northern ireland": "GB",
+
+    # US variants
     "us": "United States",
     "u.s.": "United States",
     "usa": "United States",
     "u.s.a.": "United States",
+
+    # other common ones
     "russia": "Russian Federation",
     "czech republic": "Czechia",
     "ivory coast": "Côte d’Ivoire",
@@ -41,17 +50,29 @@ ALIASES = {
     "venezuela": "Venezuela, Bolivarian Republic of",
 }
 
+
 def _country_to_iso2(name: str | None) -> str | None:
     if not name or not str(name).strip():
         return None
+
     s = str(name).strip()
     s_l = s.lower()
+
+    # 1) our alias table first
     if s_l in ALIASES:
-        s = ALIASES[s_l]
+        ali = ALIASES[s_l]
+        # if alias is already an ISO2 code, return it immediately
+        if len(ali) == 2 and ali.isalpha():
+            return ali.upper()
+        # otherwise keep going with the aliased full name
+        s = ali
+
+    # 2) try pycountry directly
     try:
         c = pycountry.countries.lookup(s)
         return c.alpha_2
     except LookupError:
+        # 3) tiny normalisation for curly apostrophes
         s2 = re.sub(r"[’`]", "'", s).strip()
         try:
             c = pycountry.countries.lookup(s2)
@@ -59,8 +80,9 @@ def _country_to_iso2(name: str | None) -> str | None:
         except LookupError:
             return None
 
+
 def _split_planned(s: str | None) -> Set[str]:
-    """Split 'Denmark, Sweden; Estonia' -> {'DK','SE','EE'} (ISO2)."""
+    """Split 'Denmark, Sweden; Scotland' -> {'DK','SE','GB'} (ISO2)."""
     if s is None or str(s).strip() == "":
         return set()
     parts = re.split(r"[;,]", str(s))
@@ -70,6 +92,7 @@ def _split_planned(s: str | None) -> Set[str]:
         if iso2:
             out.add(iso2)
     return out
+
 
 def _guess_columns(df: pd.DataFrame) -> tuple[str, str]:
     """
@@ -89,20 +112,24 @@ def _guess_columns(df: pd.DataFrame) -> tuple[str, str]:
         raise ValueError("Planned XLSX must have columns 'QR code' and 'Country Planned' (case-insensitive).")
     return qr_col, planned_col
 
+
 def load_qr_to_planned(xlsx_path: str | None = None) -> Dict[str, Set[str]]:
     """
     Load planned countries per QR from an Excel file and return:
       { qr_code (str): {ISO2, ISO2, ...}, ... }
 
-    - File path defaults to settings.PLANNED_XLSX (env KEY: PLANNED_XLSX).
+    - File path defaults to settings.PLANNED_XLSX (or PLANNED_XLSX env).
     - Duplicate QRs union their country sets.
-    - Returns {} if path not set or file doesn’t exist (graceful).
+    - Returns {} if path not set or file doesn’t exist.
     """
-    path = xlsx_path or getattr(settings, "PLANNED_XLSX", None) or os.getenv("PLANNED_XLSX")
+    path = (
+        xlsx_path
+        or getattr(settings, "PLANNED_XLSX", None)
+        or os.getenv("PLANNED_XLSX")
+    )
     if not path or not os.path.exists(path):
-        # Graceful no-op: validation can skip planned checks
+        print(f"[WARN][planned] planned countries XLSX not found at {path}, skipping")
         return {}
-
     df = pd.read_excel(path, engine="openpyxl")
     qr_col, planned_col = _guess_columns(df)
     df = df[[qr_col, planned_col]].dropna(how="all")

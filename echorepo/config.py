@@ -26,8 +26,16 @@ class Settings:
     JITTER_SALT: str         = os.getenv("JITTER_SALT", "change-this-salt")
 
     # -------- Column names (preferred) --------
-    LAT_COL: str = os.getenv("LAT_COL", "GPS_lat")
-    LON_COL: str = os.getenv("LON_COL", "GPS_long")
+    LAT_COL = os.getenv("LAT_COL", "lat")
+    LON_COL = os.getenv("LON_COL", "lon")
+    ORIG_LAT_COL = os.getenv("ORIG_LAT_COL", "GPS_lat")
+    ORIG_LON_COL = os.getenv("ORIG_LON_COL", "GPS_long")
+
+    # Your sentinel defaults (already present)
+    DEFAULT_COORD_LAT = float(os.getenv("DEFAULT_LAT", "46.5"))
+    DEFAULT_COORD_LON = float(os.getenv("DEFAULT_LON", "11.35"))
+    #LAT_COL: str = os.getenv("LAT_COL", "GPS_lat")
+    #LON_COL: str = os.getenv("LON_COL", "GPS_long")
 
     # Sentinel default coordinates to flag as invalid (your app’s defaults)
     DEFAULT_COORD_LAT: float = float(os.getenv("DEFAULT_COORD_LAT", "46.5"))
@@ -45,7 +53,7 @@ class Settings:
     # -------- Keycloak / OIDC --------
     KC_BASE: str   = os.getenv("KEYCLOAK_BASE_URL", "https://keycloak-dev.quanta-labs.com").rstrip("/")
     KC_REALM: str  = os.getenv("KEYCLOAK_REALM", "echo_realm")
-    KC_USE_AUTH_PREFIX: bool = os.getenv("KEYCLOAK_USE_AUTH_PREFIX", "true").lower() in ("1", "true", "yes")
+    KC_USE_AUTH_PREFIX: bool = os.getenv("KC_USE_AUTH_PREFIX", "false").lower() in ("1", "true", "yes")
 
     KC_CLIENT_ID: str     = os.getenv("KEYCLOAK_CLIENT_ID", "echo_client")
     KC_CLIENT_SECRET: str = os.getenv("KEYCLOAK_CLIENT_SECRET", "")
@@ -53,11 +61,13 @@ class Settings:
     # -------- Firebase --------
     FIREBASE_PROJECT_ID: Optional[str] = os.getenv("FIREBASE_PROJECT_ID") or None
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or None
+
     # -------- i18n / Babel --------
     BABEL_TRANSLATION_DIRECTORIES = "/app/translations" # compiled .mo files location
 
     # -------- Misc --------
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
-
+    SURVEY_BASE_URL: str = os.getenv("SURVEY_BASE_URL", "https://www.soscisurvey.de/default?r=")
+    LAB_UPLOAD_ALLOWLIST_PATH = os.getenv("LAB_UPLOAD_ALLOWLIST_PATH", "/data/config/lab_upload_allowlist.csv")  
 
 settings = Settings()

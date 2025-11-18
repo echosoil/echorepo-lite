@@ -53,6 +53,7 @@ Thumbs.db
 # ── Logs ──────────────────────────────────────────────────────────────────────
 logs/
 *.log
+!logs/.gitkeep
 gunicorn-*.log
 
 # ── Flask instance & local DBs ────────────────────────────────────────────────
@@ -68,6 +69,7 @@ instance/
 !.env.example
 keys/*
 !keys/.gitkeep
+scripts/LOCAL_*
 
 # ── Docker-compose local overrides (optional) ─────────────────────────────────
 docker-compose.override.yml
@@ -86,10 +88,20 @@ data/*
 instance/*
 !instance/.gitkeep
 work/*
+minio-data*/*
+!minio-data*/.gitkeep
+
+storage/*
+!storage/.gitkeep
+pgdata/*
+!pgdata/.gitkeep
 
 # ── Misc temp files ───────────────────────────────────────────────────────────
 *.swp
 *.swo
+
+# ── Compiled translations ──────────────────────────────────────────────────────
+*.mo
 
 # Ignore the sandbox test package(s)
 # (anchored to repo root)

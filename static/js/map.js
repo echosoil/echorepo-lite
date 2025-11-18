@@ -12,7 +12,12 @@
   const SHOULD_DROP = (k) => /_orig$/i.test(k);
   const JITTER_M = Number(cfg.jitter_m) || 1000;
 
-  const map = L.map('map', { boxZoom: true });
+  const map = L.map('map', {
+    minZoom: 3,
+    maxZoom: 18
+  }).setView([40, 0], 4);
+  window.__echomap = map;
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
@@ -106,7 +111,10 @@
         txt.setAttribute('x', String(tick + 2));
         txt.setAttribute('y', String(y + 3));
         txt.setAttribute('font-size', String(font));
-        txt.setAttribute('font-family', 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif');
+        txt.setAttribute(
+          'font-family',
+          'Satoshi, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif'
+        );
         txt.setAttribute('fill', 'rgba(0,0,0,0.65)');
         txt.setAttribute('paint-order', 'stroke');
         txt.setAttribute('stroke', 'white');
@@ -137,7 +145,10 @@
         txt.setAttribute('x', String(x));
         txt.setAttribute('y', String(size.y - tick - pad));
         txt.setAttribute('font-size', String(font));
-        txt.setAttribute('font-family', 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif');
+        txt.setAttribute(
+          'font-family',
+          'Satoshi, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif'
+        );
         txt.setAttribute('fill', 'rgba(0,0,0,0.65)');
         txt.setAttribute('paint-order', 'stroke');
         txt.setAttribute('stroke', 'white');
@@ -187,6 +198,37 @@
     if(isNaN(d)) return iso;
     return d.toLocaleDateString(UI_LANG,{year:'numeric',month:'short',day:'2-digit'});
   }
+
+  // ---- i18n: T() with msgid override fallback ----
+  function T(key, vars = {}, defaultText) {
+    const dict    = (window.I18N && window.I18N.labels)   || {};
+    const byMsgid = (window.I18N && window.I18N.by_msgid) || {};
+
+    // 1) key-based label (catalog+overrides already merged server-side)
+    // 2) else msgid-override when defaultText is a msgid
+    // 3) else fallback to defaultText → key
+    let raw =
+      (key != null && Object.prototype.hasOwnProperty.call(dict, key))
+        ? dict[key]
+        : (defaultText != null && Object.prototype.hasOwnProperty.call(byMsgid, defaultText))
+            ? byMsgid[defaultText]
+            : (defaultText != null ? defaultText : key);
+
+    let out = String(raw);
+
+    // {name}
+    out = out.replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
+      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
+    );
+    // %(name)s
+    out = out.replace(/%\(([A-Za-z0-9_]+)\)s/g, (_, k) =>
+      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `%(${k})s`
+    );
+
+    return out;
+  }
+  window.T = T;
+
   function formatPopup(f, isOwnerLayer){
     const p=f.properties||{}; const fmt=(v)=>(v==null||(typeof v==="string"&&v.trim()===""))?"—":v;
     const rows=[
@@ -205,7 +247,23 @@
     let html=`<div class="popup-card"><table class="table table-sm mb-2">${
       rows.map(([k,v])=>`<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")}</table>`;
     if(p.PHOTO_photos_1_path){ const url=String(p.PHOTO_photos_1_path);
-      html+=`<a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="Sample photo"></a>`; }
+        html += `
+        <div class="popup-photo mt-2">
+          <a href="${url}" target="_blank" rel="noopener">
+            <img
+              src="${url}"
+              alt="Sample photo"
+              style="
+                max-width: 100%;
+                height: auto;
+                max-height: 180px;
+                display: block;
+                object-fit: cover;
+              "
+            >
+          </a>
+        </div>`; 
+    }
     if(p.sampleId){
       html+=`<div class="mt-2"><a class="btn btn-sm btn-outline-primary"
               href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
@@ -252,28 +310,6 @@
     const ph = getPhFromProps(props || {});
     return inRangeGiven(ph, activePhMin, activePhMax);
   }
-  
-  function T(key, vars = {}, defaultText) {
-    const dict = (window.I18N && (window.I18N.labels || window.I18N)) || {};
-    const s = (dict && Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : undefined)
-          ?? defaultText
-          ?? key;
-
-    let out = String(s);
-
-    // {name}
-    out = out.replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
-      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
-    );
-
-    // %(name)s
-    out = out.replace(/%\(([A-Za-z0-9_]+)\)s/g, (_, k) =>
-      Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `%(${k})s`
-    );
-
-    return out;
-  }
-  window.T = T; // expose for DevTools only
 
   function computeAllHeaders(){
     const preferred=[
@@ -431,6 +467,42 @@
     ctl.addTo(map); sync();
   }
 
+  // ---- Localize Leaflet.Draw built-in strings ----
+  function applyLeafletDrawTranslations() {
+    if (!L.drawLocal) return;
+
+    if (L.drawLocal.draw && L.drawLocal.draw.toolbar) {
+      const tb = L.drawLocal.draw.toolbar;
+      if (tb.buttons) {
+        tb.buttons.rectangle = T('drawRectangle', {}, 'Draw a rectangle');
+      }
+      if (tb.actions) {
+        tb.actions.title = T('cancelDrawing', {}, 'Cancel drawing');
+        tb.actions.text  = T('cancel', {}, 'Cancel');
+      }
+      if (tb.undo) {
+        tb.undo.title = T('deleteLastPoint', {}, 'Delete last point drawn');
+        tb.undo.text  = T('deleteLastPoint', {}, 'Delete last point');
+      }
+    }
+
+    if (L.drawLocal.draw && L.drawLocal.draw.handlers) {
+      const h = L.drawLocal.draw.handlers;
+
+      const startText = T('drawRectangleHint', {}, 'Click and drag to draw a rectangle.');
+      const endText   = T('releaseToFinish',  {}, 'Release mouse to finish drawing.');
+
+      if (h.rectangle && h.rectangle.tooltip) {
+        h.rectangle.tooltip.start = startText;
+        h.rectangle.tooltip.end   = endText;
+      }
+      if (h.simpleshape && h.simpleshape.tooltip) {
+        h.simpleshape.tooltip.start = startText;
+        h.simpleshape.tooltip.end   = endText;
+      }
+    }
+  }
+
   // ---- Selection (rectangle multi-select) ----
   function addSelectionControl(){
     const ctl=L.control({position:'topright'});
@@ -459,12 +531,19 @@
     };
     ctl.addTo(map);
 
+    applyLeafletDrawTranslations();
+
     const RECT_STYLE = { color:'#0d6efd', weight:2, opacity:1, fill:true, fillOpacity:0.18 };
     const drawControl = new L.Control.Draw({
       draw: { polygon:false, polyline:false, circle:false, marker:false, circlemarker:false, rectangle:{ shapeOptions: RECT_STYLE } },
       edit: false
     });
     map.addControl(drawControl);
+    window.__echodraw = drawControl;
+
+    const rectHandler = drawControl._toolbars.draw._modes.rectangle.handler;
+    const endText   = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
+    rectHandler._endLabelText = endText;
 
     map.on(L.Draw.Event.CREATED, (e) => {
       const layer = e.layer;
@@ -610,13 +689,25 @@
 
   // ---- Boot ----
   Promise.all([
+    fetch('/i18n/labels?ts=' + Date.now(), { credentials:'same-origin' }).then(r => r.json()),
     fetch('/api/user_geojson',   { credentials:'same-origin' }).then(r=>r.json()),
     fetch('/api/others_geojson', { credentials:'same-origin' }).then(r=>r.json())
-  ]).then(([u,o])=>{
-    userGJ=u; othersGJ=o;
-    computeAllHeaders(); buildLayers();
+  ]).then(([i18n, u, o])=>{
+    // Normalize whether server returns {labels, by_msgid} or a flat {key:text} map
+    const payload = (i18n && (i18n.labels || i18n.by_msgid)) ? i18n : { labels: i18n, by_msgid: {} };
+    window.I18N = {
+      labels:  payload.labels  || {},
+      by_msgid: payload.by_msgid || {}
+    };
+
+    userGJ = u;
+    othersGJ = o;
+
+    computeAllHeaders();
+    buildLayers();
   }).catch(err=>{
-    console.warn('GeoJSON fetch failed:', err);
+    console.warn('Init failed:', err);
     mapDiv.style.display='none';
   });
+
 })();
