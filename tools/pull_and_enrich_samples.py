@@ -51,8 +51,17 @@ env_path = Path.cwd() / ".env"
 load_dotenv(dotenv_path=env_path)
 print(f"[INFO] Loaded environment from {env_path}")
 
-PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-lite"))
-sys.path.insert(0, str(PROJECT_ROOT))
+# ---------------------------------------------------------------------------
+# Make sure 'echorepo' can be imported (project root on sys.path)
+# ---------------------------------------------------------------------------
+THIS_DIR = Path(__file__).resolve().parent           # .../echorepo-lite-dev/tools
+DEFAULT_ROOT = THIS_DIR.parent                       # .../echorepo-lite-dev
+
+PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", str(DEFAULT_ROOT)))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+print(f"[INFO] Using PROJECT_ROOT={PROJECT_ROOT}")
+
 
 # helper: QR to country code
 try:
