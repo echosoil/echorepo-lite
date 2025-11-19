@@ -122,6 +122,7 @@
 
     {# big final-survey block #}
     {% if show_survey and survey_url %}
+      {# Expanded version #}
       <div class="alert alert-primary border-primary mb-4" id="finalSurveyBox">
         <h4 class="alert-heading mb-2">{{ _('Final survey') }}</h4>
         <p class="mb-2">
@@ -138,6 +139,7 @@
           <a href="{{ survey_url }}" class="btn btn-success" target="_blank" rel="noopener">
             {{ _('Go to final survey') }}
           </a>
+
           <button class="btn btn-link p-0"
                   type="button"
                   data-bs-toggle="collapse"
@@ -145,6 +147,13 @@
                   aria-expanded="false"
                   aria-controls="finalSurveyDataUse">
             {{ _('Data use information') }}
+          </button>
+
+          {# NEW: "I have already completed it" button #}
+          <button class="btn btn-outline-secondary btn-sm ms-auto"
+                  type="button"
+                  id="finalSurveyHideBtn">
+            {{ _('I have already completed it') }}
           </button>
         </div>
 
@@ -165,6 +174,25 @@
           <p class="mb-0 fw-semibold">
             {{ _('Based on the information provided to you, please consent to participate in the survey below.') }}
           </p>
+        </div>
+      </div>
+
+      {# NEW: collapsed / minimal version, hidden by default #}
+      <div class="alert alert-primary border-primary mb-4 d-none py-2" id="finalSurveyCollapsed">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="small fw-semibold">
+            {{ _('Final survey') }} — {{ _('thank you for your participation!') }}
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{{ survey_url }}" class="btn btn-outline-success btn-sm" target="_blank" rel="noopener">
+              {{ _('Open survey') }}
+            </a>
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    id="finalSurveyShowBtn">
+              {{ _('Show details') }}
+            </button>
+          </div>
         </div>
       </div>
     {% endif %}
@@ -329,4 +357,50 @@
     })();
   </script>
   {% endif %}
+    <script>
+    (function () {
+      var expanded = document.getElementById('finalSurveyBox');
+      var collapsed = document.getElementById('finalSurveyCollapsed');
+      if (!expanded || !collapsed) return;
+
+      var hideBtn = document.getElementById('finalSurveyHideBtn');
+      var showBtn = document.getElementById('finalSurveyShowBtn');
+
+      // Per-user key so each participant controls their own survey banner
+      var userKey = "{{ user_key|e }}";
+      var storageKey = "echo_final_survey_collapsed_" + userKey;
+
+      function setCollapsed(isCollapsed) {
+        if (isCollapsed) {
+          expanded.classList.add('d-none');
+          collapsed.classList.remove('d-none');
+          try { localStorage.setItem(storageKey, '1'); } catch (e) {}
+        } else {
+          expanded.classList.remove('d-none');
+          collapsed.classList.add('d-none');
+          try { localStorage.removeItem(storageKey); } catch (e) {}
+        }
+      }
+
+      // Initial state from localStorage
+      try {
+        if (localStorage.getItem(storageKey) === '1') {
+          setCollapsed(true);
+        }
+      } catch (e) {
+        // ignore storage errors (private mode etc.)
+      }
+
+      if (hideBtn) {
+        hideBtn.addEventListener('click', function () {
+          setCollapsed(true);
+        });
+      }
+      if (showBtn) {
+        showBtn.addEventListener('click', function () {
+          setCollapsed(false);
+        });
+      }
+    })();
+  </script>
 {% endblock %}
