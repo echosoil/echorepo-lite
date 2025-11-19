@@ -177,20 +177,26 @@
         </div>
       </div>
 
-      {# NEW: collapsed / minimal version, hidden by default #}
-      <div class="alert alert-primary border-primary mb-4 d-none py-2" id="finalSurveyCollapsed">
+      {# Collapsed / minimal version (subtle) #}
+      <div class="alert alert-secondary border-0 bg-light mb-4 d-none py-2 px-3 small"
+          id="finalSurveyCollapsed">
         <div class="d-flex justify-content-between align-items-center">
-          <div class="small fw-semibold">
-            {{ _('Final survey') }} — {{ _('thank you for your participation!') }}
+          <div class="me-2">
+            <span class="fw-semibold">{{ _('Final survey') }}</span>
+            <span class="text-muted">— {{ _('thank you for your participation!') }}</span>
           </div>
-          <div class="d-flex gap-2">
-            <a href="{{ survey_url }}" class="btn btn-outline-success btn-sm" target="_blank" rel="noopener">
-              {{ _('Open survey') }}
-            </a>
+          <div class="d-flex align-items-center gap-2">
             <button type="button"
                     class="btn btn-outline-secondary btn-sm"
                     id="finalSurveyShowBtn">
               {{ _('Show details') }}
+            </button>
+            {# Tiny dismiss icon #}
+            <button type="button"
+                    class="btn btn-link btn-sm p-0 text-muted"
+                    id="finalSurveyDismissBtn"
+                    title="{{ _('Dismiss') }}">
+              <i class="bi bi-x-lg"></i>
             </button>
           </div>
         </div>
@@ -357,48 +363,73 @@
     })();
   </script>
   {% endif %}
-    <script>
+  <script>
     (function () {
-      var expanded = document.getElementById('finalSurveyBox');
-      var collapsed = document.getElementById('finalSurveyCollapsed');
+      var expanded   = document.getElementById('finalSurveyBox');
+      var collapsed  = document.getElementById('finalSurveyCollapsed');
       if (!expanded || !collapsed) return;
 
-      var hideBtn = document.getElementById('finalSurveyHideBtn');
-      var showBtn = document.getElementById('finalSurveyShowBtn');
+      var hideBtn    = document.getElementById('finalSurveyHideBtn');     // "I have already completed it"
+      var showBtn    = document.getElementById('finalSurveyShowBtn');     // "Show details"
+      var dismissBtn = document.getElementById('finalSurveyDismissBtn');  // tiny X in collapsed bar
 
-      // Per-user key so each participant controls their own survey banner
-      var userKey = "{{ user_key|e }}";
-      var storageKey = "echo_final_survey_collapsed_" + userKey;
+      // Per-user key so each participant controls their own banner
+      var userKey    = "{{ user_key|e }}";
+      var storageKey = "echo_final_survey_state_" + userKey;
+      // state: null (expanded), 'collapsed', 'dismissed'
 
-      function setCollapsed(isCollapsed) {
-        if (isCollapsed) {
+      function applyState(state) {
+        if (state === 'collapsed') {
           expanded.classList.add('d-none');
           collapsed.classList.remove('d-none');
-          try { localStorage.setItem(storageKey, '1'); } catch (e) {}
+        } else if (state === 'dismissed') {
+          expanded.classList.add('d-none');
+          collapsed.classList.add('d-none');
         } else {
+          // default: expanded
           expanded.classList.remove('d-none');
           collapsed.classList.add('d-none');
-          try { localStorage.removeItem(storageKey); } catch (e) {}
         }
+      }
+
+      function setState(state) {
+        try {
+          if (state) {
+            localStorage.setItem(storageKey, state);
+          } else {
+            localStorage.removeItem(storageKey);
+          }
+        } catch (e) {
+          // ignore storage failures
+        }
+        applyState(state);
       }
 
       // Initial state from localStorage
+      var initialState = null;
       try {
-        if (localStorage.getItem(storageKey) === '1') {
-          setCollapsed(true);
-        }
-      } catch (e) {
-        // ignore storage errors (private mode etc.)
-      }
+        initialState = localStorage.getItem(storageKey);
+      } catch (e) {}
+      applyState(initialState);
 
       if (hideBtn) {
         hideBtn.addEventListener('click', function () {
-          setCollapsed(true);
+          // User says "I already completed it" → collapse, but still visible as a small bar
+          setState('collapsed');
         });
       }
+
       if (showBtn) {
         showBtn.addEventListener('click', function () {
-          setCollapsed(false);
+          // From collapsed to expanded again
+          setState(null);
+        });
+      }
+
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', function () {
+          // Fully hide both versions for this user/browser
+          setState('dismissed');
         });
       }
     })();
