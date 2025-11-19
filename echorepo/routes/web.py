@@ -593,8 +593,9 @@ def home():
             # privacy
             needs_privacy=needs_privacy,
             privacy_version=PRIVACY_VERSION,
-            # NEW: pass flag to template
+            # pass flag to template
             can_upload_lab_data=can_upload,
+            current_locale=str(get_locale() or "en"),
         )
 
     # NON-EMPTY: data issues ------------------------------------------------
