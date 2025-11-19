@@ -35,6 +35,13 @@ from ..services.lab_permissions import can_upload_lab_data
 from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 
+try:
+    from echorepo.routes.data_api import _oxide_to_metal
+except Exception:
+    # fallback – if import fails, just no conversion
+    def _oxide_to_metal(param, value):
+        return None
+
 # constants for privacy acceptance
 PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
 PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv")
@@ -907,6 +914,7 @@ def lab_import():
                     if not pd.isna(uval):
                         unit = str(uval).strip()
 
+            # 1) store the raw value (oxide or otherwise)
             cur.execute(
                 """
                 INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
@@ -920,6 +928,24 @@ def lab_import():
                 """,
                 (qr, param, str(val), unit, uploader_id, raw_json),
             )
+
+            # 2) if this is an oxide like 'K2O', also store elemental 'K'
+            conv = _oxide_to_metal(param, val)
+            if conv is not None:
+                metal_param, metal_val = conv
+                cur.execute(
+                    """
+                    INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+                    ON CONFLICT(qr_code, param) DO UPDATE SET
+                      value=excluded.value,
+                      unit=excluded.unit,
+                      user_id=excluded.user_id,
+                      raw_row=excluded.raw_row,
+                      updated_at=datetime('now')
+                    """,
+                    (qr, metal_param, str(metal_val), unit, uploader_id, raw_json),
+                )
 
     conn.commit()
     conn.close()
