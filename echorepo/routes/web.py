@@ -586,6 +586,13 @@ def home():
     has_metals = _user_has_metals(df)
     show_survey = bool(survey_url) and has_metals
 
+    # --- survey override via URL (?survey=on/off), for testing ---
+    survey_override = (request.args.get("survey") or "").strip().lower()
+    if survey_override in {"on", "1", "true", "yes", "y"} and survey_url:
+        show_survey = True
+    elif survey_override in {"off", "0", "false", "no", "n"}:
+        show_survey = False
+
     # EMPTY CASE ------------------------------------------------------------
     if df.empty:
         return render_template(
@@ -600,7 +607,7 @@ def home():
             lon_col=settings.LON_COL,
             I18N=i18n,
             survey_url=survey_url,
-            show_survey=False,
+            show_survey=show_survey,
             # privacy
             needs_privacy=needs_privacy,
             privacy_version=PRIVACY_VERSION,
