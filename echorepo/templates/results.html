@@ -318,6 +318,20 @@
               {% set loc = current_locale %}
               {% if loc.startswith('it') %}
                 {% include 'privacy/2025-11_it.html' %}
+              {% elif loc.startswith('es') %}
+                {% include 'privacy/2025-11_es.html' %}
+              {% elif loc.startswith('pt') %}
+                {% include 'privacy/2025-11_pt.html' %}
+              {% elif loc.startswith('pl') %}
+                {% include 'privacy/2025-11_pl.html' %}
+              {% elif loc.startswith('fi') %}
+                {% include 'privacy/2025-11_fi.html' %}
+              {% elif loc.startswith('el') %}
+                {% include 'privacy/2025-11_el.html' %}
+              {% elif loc.startswith('de') %}
+                {% include 'privacy/2025-11_de.html' %}
+              {% elif loc.startswith('fr') %}
+                {% include 'privacy/2025-11_fr.html' %}
               {% else %}
                 {% include 'privacy/2025-11_en.html' %}
               {% endif %}
