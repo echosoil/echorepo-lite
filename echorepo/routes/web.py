@@ -332,7 +332,7 @@ def _stream_minio_canonical(obj_name: str):
 @web_bp.post("/privacy/accept")
 @login_required
 def privacy_accept():
-    if not _env_true("PRIVACY_GATE", True):  # short-circuit the accept route when off
+    if not _env_true("PRIVACY_GATE", False):  # short-circuit the accept route when off
         return redirect(url_for("web.home"))
     repo_user_id = _get_repo_user_id_from_db()
     if not repo_user_id:
@@ -552,7 +552,18 @@ def home():
 
     # privacy gate
     privacy_user_id = _get_repo_user_id_from_db()
-    privacy_gate_on = _env_true("PRIVACY_GATE", True)  # default ON unless overridden
+    # 1) default from env (now default is OFF)
+    privacy_gate_default = _env_true("PRIVACY_GATE", False)
+
+    # 2) optional per-request override: ?privacy=on / ?privacy=off
+    override = (request.args.get("privacy") or "").strip().lower()
+    if override in {"on", "1", "true", "yes", "y"}:
+        privacy_gate_on = True
+    elif override in {"off", "0", "false", "no", "n"}:
+        privacy_gate_on = False
+    else:
+        privacy_gate_on = privacy_gate_default
+
     needs_privacy = privacy_gate_on and not _has_accepted_privacy(privacy_user_id or "")
 
     # user data
