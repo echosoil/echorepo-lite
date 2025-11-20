@@ -122,6 +122,7 @@
 
     {# big final-survey block #}
     {% if show_survey and survey_url %}
+      {# Expanded version #}
       <div class="alert alert-primary border-primary mb-4" id="finalSurveyBox">
         <h4 class="alert-heading mb-2">{{ _('Final survey') }}</h4>
         <p class="mb-2">
@@ -138,6 +139,7 @@
           <a href="{{ survey_url }}" class="btn btn-success" target="_blank" rel="noopener">
             {{ _('Go to final survey') }}
           </a>
+
           <button class="btn btn-link p-0"
                   type="button"
                   data-bs-toggle="collapse"
@@ -145,6 +147,13 @@
                   aria-expanded="false"
                   aria-controls="finalSurveyDataUse">
             {{ _('Data use information') }}
+          </button>
+
+          {# NEW: "I have already completed it" button #}
+          <button class="btn btn-outline-secondary btn-sm ms-auto"
+                  type="button"
+                  id="finalSurveyHideBtn">
+            {{ _('I have already completed it') }}
           </button>
         </div>
 
@@ -165,6 +174,31 @@
           <p class="mb-0 fw-semibold">
             {{ _('Based on the information provided to you, please consent to participate in the survey below.') }}
           </p>
+        </div>
+      </div>
+
+      {# Collapsed / minimal version (subtle) #}
+      <div class="alert alert-secondary border-0 bg-light mb-4 d-none py-2 px-3 small"
+          id="finalSurveyCollapsed">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="me-2">
+            <span class="fw-semibold">{{ _('Final survey') }}</span>
+            <span class="text-muted">— {{ _('thank you for your participation!') }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    id="finalSurveyShowBtn">
+              {{ _('Show details') }}
+            </button>
+            {# Tiny dismiss icon #}
+            <button type="button"
+                    class="btn btn-link btn-sm p-0 text-muted"
+                    id="finalSurveyDismissBtn"
+                    title="{{ _('Dismiss') }}">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
         </div>
       </div>
     {% endif %}
@@ -281,7 +315,26 @@
             </div>
 
             <div class="modal-body" style="flex:1 1 auto; overflow-y:auto; min-height:0;">
-              {% include 'privacy/2025-11.html' %}
+              {% set loc = current_locale %}
+              {% if loc.startswith('it') %}
+                {% include 'privacy/2025-11_it.html' %}
+              {% elif loc.startswith('es') %}
+                {% include 'privacy/2025-11_es.html' %}
+              {% elif loc.startswith('pt') %}
+                {% include 'privacy/2025-11_pt.html' %}
+              {% elif loc.startswith('pl') %}
+                {% include 'privacy/2025-11_pl.html' %}
+              {% elif loc.startswith('fi') %}
+                {% include 'privacy/2025-11_fi.html' %}
+              {% elif loc.startswith('el') %}
+                {% include 'privacy/2025-11_el.html' %}
+              {% elif loc.startswith('de') %}
+                {% include 'privacy/2025-11_de.html' %}
+              {% elif loc.startswith('fr') %}
+                {% include 'privacy/2025-11_fr.html' %}
+              {% else %}
+                {% include 'privacy/2025-11_en.html' %}
+              {% endif %}
               <div class="form-check mt-3">
                 <input class="form-check-input" type="checkbox" value="1" id="privacyAgree" name="agree" required>
                 <label class="form-check-label" for="privacyAgree">
@@ -329,4 +382,75 @@
     })();
   </script>
   {% endif %}
+  <script>
+    (function () {
+      var expanded   = document.getElementById('finalSurveyBox');
+      var collapsed  = document.getElementById('finalSurveyCollapsed');
+      if (!expanded || !collapsed) return;
+
+      var hideBtn    = document.getElementById('finalSurveyHideBtn');     // "I have already completed it"
+      var showBtn    = document.getElementById('finalSurveyShowBtn');     // "Show details"
+      var dismissBtn = document.getElementById('finalSurveyDismissBtn');  // tiny X in collapsed bar
+
+      // Per-user key so each participant controls their own banner
+      var userKey    = "{{ user_key|e }}";
+      var storageKey = "echo_final_survey_state_" + userKey;
+      // state: null (expanded), 'collapsed', 'dismissed'
+
+      function applyState(state) {
+        if (state === 'collapsed') {
+          expanded.classList.add('d-none');
+          collapsed.classList.remove('d-none');
+        } else if (state === 'dismissed') {
+          expanded.classList.add('d-none');
+          collapsed.classList.add('d-none');
+        } else {
+          // default: expanded
+          expanded.classList.remove('d-none');
+          collapsed.classList.add('d-none');
+        }
+      }
+
+      function setState(state) {
+        try {
+          if (state) {
+            localStorage.setItem(storageKey, state);
+          } else {
+            localStorage.removeItem(storageKey);
+          }
+        } catch (e) {
+          // ignore storage failures
+        }
+        applyState(state);
+      }
+
+      // Initial state from localStorage
+      var initialState = null;
+      try {
+        initialState = localStorage.getItem(storageKey);
+      } catch (e) {}
+      applyState(initialState);
+
+      if (hideBtn) {
+        hideBtn.addEventListener('click', function () {
+          // User says "I already completed it" → collapse, but still visible as a small bar
+          setState('collapsed');
+        });
+      }
+
+      if (showBtn) {
+        showBtn.addEventListener('click', function () {
+          // From collapsed to expanded again
+          setState(null);
+        });
+      }
+
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', function () {
+          // Fully hide both versions for this user/browser
+          setState('dismissed');
+        });
+      }
+    })();
+  </script>
 {% endblock %}

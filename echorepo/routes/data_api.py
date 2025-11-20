@@ -559,7 +559,47 @@ def samples_count():
     cnt = conn.execute(f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}", params).fetchone()[0]
     return jsonify({"count": cnt})
 
+# -------------------------------------------
 # ---------- lab enrichment upload ----------
+# -------------------------------------------
+
+# ---------- Metal oxide → metal conversion ----------
+OXIDE_TO_METAL: dict[str, tuple[str, float]] = {
+    "MN2O3": ("Mn", 0.696),
+    "AL2O3": ("Al", 0.529),
+    "CAO":   ("Ca", 0.715),
+    "FE2O3": ("Fe", 0.699),
+    "MGO":   ("Mg", 0.603),
+    "SIO2":  ("Si", 0.467),
+    "P2O5":  ("P", 0.436),
+    "TIO2":  ("Ti", 0.599),
+    "K2O":   ("K", 0.83),
+}
+
+
+def _oxide_to_metal(param: str, value: Any) -> Optional[tuple[str, float]]:
+    """
+    If param is an oxide (e.g. 'K2O') and value is numeric,
+    return (metal_param, converted_value). Otherwise None.
+    """
+    if value is None or value == "":
+        return None
+
+    norm = param.strip().upper().replace(" ", "")
+    meta = OXIDE_TO_METAL.get(norm)
+    if not meta:
+        return None
+
+    metal_param, factor = meta
+
+    # try to parse numeric value, allow "12,3" etc.
+    try:
+        v = float(str(value).replace(",", "."))
+    except (TypeError, ValueError):
+        return None
+
+    return metal_param, v * factor
+
 
 def _normalize_qr(raw: str) -> str:
     """
@@ -736,7 +776,7 @@ def lab_enrichment_upload():
 
             param = str(key).strip()
 
-            # find a unit
+            # find a unit (reuse for both oxide and metal)
             unit = ""
             unit_key = f"{key}_unit"
             if unit_key in raw_row and raw_row[unit_key]:
@@ -744,6 +784,7 @@ def lab_enrichment_upload():
             elif "unit" in raw_row and raw_row["unit"]:
                 unit = str(raw_row["unit"]).strip()
 
+            # 1) Store the raw value exactly as provided (e.g. 'K2O')
             cur.execute(
                 """
                 INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
@@ -757,8 +798,26 @@ def lab_enrichment_upload():
                 """,
                 (qr, param, str(val), unit, uploader_id, raw_json),
             )
-            # we don't 100% know if it was insert or update; just count as processed
             inserted += 1
+
+            # 2) If this is an oxide, also store the derived metal
+            conv = _oxide_to_metal(param, val)
+            if conv is not None:
+                metal_param, metal_val = conv
+                cur.execute(
+                    """
+                    INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+                    ON CONFLICT(qr_code, param) DO UPDATE SET
+                        value=excluded.value,
+                        unit=excluded.unit,
+                        user_id=excluded.user_id,
+                        raw_row=excluded.raw_row,
+                        updated_at=datetime('now')
+                    """,
+                    (qr, metal_param, str(metal_val), unit, uploader_id, raw_json),
+                )
+                inserted += 1
 
     conn.commit()
 
