@@ -7,8 +7,105 @@ import re
 import time
 from collections import defaultdict
 from typing import Dict, List, Tuple
-
+import json 
+from pathlib import Path
 import requests
+
+Pair = Tuple[str, str]  # (text, country_code)
+
+# Path to JSON with manual overrides
+_PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", Path(__file__).resolve().parents[1]))
+_MANUAL_OVERRIDES_PATH = Path(os.getenv("MANUAL_OVERRIDES_PATH", _PROJECT_ROOT / "data" / "manual_overrides.json"))
+
+# cache: norm_text -> en
+_MANUAL_OVERRIDES_CACHE: Dict[str, str] | None = None
+
+
+def _load_manual_overrides() -> Dict[str, str]:
+    """
+    Internal: load and flatten manual_overrides.json into
+    { normalized_source_text: english_text }.
+    """
+    if not _MANUAL_OVERRIDES_PATH.exists():
+        print(f"[TRANSLATE] MANUAL_OVERRIDES_PATH not found, no manual override applied.")
+        return {}
+
+    try:
+        with _MANUAL_OVERRIDES_PATH.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+            print(f"[TRANSLATE] manual overrides loaded OK.")
+    except Exception:
+        print(f"[TRANSLATE] MANUAL_OVERRIDES_PATH found but not readable, no manual override applied.")
+        return {}
+
+    text_to_en = data.get("text_to_en", {})
+    if not isinstance(text_to_en, dict):
+        return {}
+
+    out: Dict[str, str] = {}
+    for src, en in text_to_en.items():
+        if not isinstance(src, str) or not isinstance(en, str):
+            continue
+        norm = _norm_text(src)
+        if norm:  # skip empty
+            out[norm] = en
+    return out
+
+
+def _get_manual_overrides() -> Dict[str, str]:
+    """
+    Returns cached overrides; loads from disk on first use.
+    """
+    global _MANUAL_OVERRIDES_CACHE
+    if _MANUAL_OVERRIDES_CACHE is None:
+        _MANUAL_OVERRIDES_CACHE = _load_manual_overrides()
+    return _MANUAL_OVERRIDES_CACHE
+
+
+def reload_manual_overrides() -> None:
+    """
+    Public helper: force reload from disk, used by admin endpoint after save.
+    """
+    global _MANUAL_OVERRIDES_CACHE
+    _MANUAL_OVERRIDES_CACHE = _load_manual_overrides()
+
+
+def _norm_text(text: str) -> str:
+    """
+    Normalise for lookup:
+      - strip
+      - lower-case
+      - collapse internal whitespace
+    """
+    return " ".join((text or "").strip().lower().split())
+
+# ---------------------------------------------------------------------------
+# Hard-coded overrides:
+#   key = normalised source text (see _norm_text)
+#   value = desired English text for *_en columns
+#
+# You can freely extend / tweak this list.
+# ---------------------------------------------------------------------------
+CUSTOM_TRANSLATIONS_BY_TEXT: Dict[str, str] = {
+    # --- Soil texture / structure examples (ES / IT style labels) ---
+    "limoso": "Silty",
+    "franco": "Loam",
+    "franco limoso": "Loam, silty",
+    "franco sabbioso": "Loam, sandy",
+    "franco arenoso": "Loam, sandy",
+    "franco arcilloso": "Loam, clayey",
+    "arenoso": "Sandy",
+    "sabbioso": "Sandy",
+    "arcilloso": "Clayey",
+    "argilloso": "Clayey",
+    "siltoso": "Silty",
+
+    # If you want to keep some terms *exactly as-is* in English,
+    # just map them to themselves:
+    # "limoso": "Limoso",
+    # "franco": "Franco",
+    # etc.
+}
 
 # ---------------------------------------------------------------------------
 # Config / globals
@@ -72,6 +169,7 @@ def _ensure_lt_ready(timeout_sec: int | None = None) -> bool:
                 _lt_ready = True
                 return True
         except Exception:
+            print("[ensure LT ready] failed, new try...")
             pass
         time.sleep(2)
 
@@ -159,7 +257,7 @@ def _lt_detect_batch(texts: list[str]) -> list[tuple[str | None, float]]:
 # Translation (batch + single)
 # ---------------------------------------------------------------------------
 
-def translate_many_to_en(
+def _translate_many_to_en_core(
     pairs: list[tuple[str, str | None]]
 ) -> dict[tuple[str, str], str]:
     """
@@ -217,7 +315,6 @@ def translate_many_to_en(
             continue
 
         outs: list[str] | None = None
-
         try:
             payload = []
             for (t, _CC) in items:
@@ -227,7 +324,6 @@ def translate_many_to_en(
             rr = requests.post(f"{LT}/translate", data=payload, timeout=25)
             rr.raise_for_status()
             resp = rr.json()
-
             if isinstance(resp, list):
                 outs = [
                     (x.get("translatedText") if isinstance(x, dict) else "")
@@ -238,7 +334,8 @@ def translate_many_to_en(
             elif isinstance(resp, dict) and "translatedText" in resp:
                 # server only supports single-q
                 outs = None
-        except Exception:
+        except Exception as e:
+            print(f"[_translate_many_to_en_core] failed with error: {e}")
             outs = None
 
         # Fallback per-item if needed
@@ -269,6 +366,82 @@ def translate_many_to_en(
 
     return result
 
+def translate_many_to_en(pairs: List[Pair]) -> Dict[Pair, str]:
+    """
+    Wrapper that:
+      1) Applies manual overrides from JSON by replacing the first occurrence
+         of any override key (phrase) found in the *source* text.
+         - Override keys are checked in descending length to avoid overlaps.
+         - On first match, the phrase is replaced with the override's English
+           value, and LibreTranslate is NOT called for that pair.
+      2) Delegates the remaining texts to LibreTranslate.
+    """
+    overrides = _get_manual_overrides()  # {norm_source: en_value}
+    prefilled: Dict[Pair, str] = {}
+    to_translate: List[Pair] = []
+
+    # Sort override keys by length (descending) to prefer longer phrases
+    # e.g. "franco argilloso" before "franco"
+    patterns: List[str] = sorted(overrides.keys(), key=len, reverse=True)
+
+    for text, cc in pairs:
+        raw = (text or "").strip()
+        if not raw:
+            prefilled[(text, cc)] = ""
+            continue
+
+        replaced = False
+
+        for pat in patterns:
+            if not pat:
+                continue
+
+            # pat is already normalized (lowercase, single spaces)
+            tokens = pat.split()
+            # Build a regex that:
+            #  - matches tokens with flexible whitespace between them
+            #  - is case-insensitive
+            #  - respects word boundaries on both ends
+            pat_re = re.compile(
+                r"\b" + r"\s+".join(re.escape(t) for t in tokens) + r"\b",
+                flags=re.IGNORECASE,
+            )
+
+            m = pat_re.search(raw)
+            if not m:
+                continue
+
+            # Found the first override phrase in the *original* text.
+            # Replace only the first occurrence with the English override.
+            en = overrides[pat]
+            new_raw = pat_re.sub(en, raw, count=1)
+
+            prefilled[(text, cc)] = new_raw
+            replaced = True
+            break  # stop after the first matching override
+
+        if not replaced:
+            # No manual override applied → send to LibreTranslate later
+            to_translate.append((text, cc))
+
+    # If everything was handled by overrides, we're done
+    if not to_translate:
+        return prefilled
+
+    # De-duplicate for the LT call
+    unique: List[Pair] = []
+    seen: set[Pair] = set()
+    for p in to_translate:
+        if p not in seen:
+            seen.add(p)
+            unique.append(p)
+
+    core_map = _translate_many_to_en_core(unique)
+
+    result: Dict[Pair, str] = {}
+    result.update(core_map)   # LT results
+    result.update(prefilled)  # manual overrides win for their pairs
+    return result
 
 def translate_to_en(text: str, country_code: str | None = None) -> str:
     """

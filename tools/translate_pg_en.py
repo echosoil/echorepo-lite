@@ -7,13 +7,18 @@ Translate missing *_en fields in Postgres canonical tables using LibreTranslate.
       observations_en / metals_info_en
     - sample_images.image_description_en
 
+Default behaviour:
 - Only translates rows where:
     *_orig is non-empty AND *_en IS NULL/empty.
-- Uses the same LT logic as echorepo.services.translate_en.
+
+With --anew:
+- First clears ALL *_en columns listed above (sets them to NULL),
+  then re-runs the translation from the *_orig fields.
 """
 
 import os
 import sys
+import argparse
 from pathlib import Path
 from typing import Dict, Tuple
 
@@ -74,6 +79,47 @@ def _get_pg_conn():
 
 def _norm_cc(cc: str | None) -> str:
     return (cc or "").strip().upper()
+
+
+# ---------------------------------------------------------------------------
+# Reset translations (for --anew)
+# ---------------------------------------------------------------------------
+def reset_translations(conn) -> None:
+    """
+    Clear all existing English translation columns so they can be
+    re-filled from *_orig fields.
+
+    This ONLY touches the *_en columns in the canonical tables:
+      - samples: contamination_other_en, soil_structure_en,
+                 soil_texture_en, observations_en, metals_info_en
+      - sample_images: image_description_en
+    """
+    cur = conn.cursor()
+    print("[TR] RESET: clearing *_en columns in samples and sample_images ...")
+
+    cur.execute(
+        """
+        UPDATE samples
+           SET contamination_other_en = NULL,
+               soil_structure_en      = NULL,
+               soil_texture_en        = NULL,
+               observations_en        = NULL,
+               metals_info_en         = NULL
+        ;
+        """
+    )
+
+    cur.execute(
+        """
+        UPDATE sample_images
+           SET image_description_en = NULL
+        ;
+        """
+    )
+
+    conn.commit()
+    cur.close()
+    print("[TR] RESET: done.")
 
 
 # ---------------------------------------------------------------------------
@@ -300,9 +346,23 @@ def translate_sample_images(conn) -> None:
 
 
 # ---------------------------------------------------------------------------
-# main
+# CLI / main
 # ---------------------------------------------------------------------------
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description="Translate *_en columns in Postgres canonical tables using LibreTranslate."
+    )
+    ap.add_argument(
+        "--anew",
+        action="store_true",
+        help="First clear existing *_en translations, then re-translate everything from *_orig.",
+    )
+    return ap.parse_args()
+
+
 def main():
+    args = parse_args()
+
     env_path = PROJECT_ROOT / ".env"
     if env_path.exists():
         # we already loaded once above, but this keeps behaviour if PROJECT_ROOT differs
@@ -313,6 +373,9 @@ def main():
 
     conn = _get_pg_conn()
     try:
+        if args.anew:
+            reset_translations(conn)
+
         translate_samples(conn)
         translate_sample_images(conn)
     finally:
