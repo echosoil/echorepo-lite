@@ -23,6 +23,7 @@ import logging
 import csv
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import re  
 
 from flask_babel import gettext as _, get_locale
 
@@ -48,6 +49,34 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 
 # blueprint
 web_bp = Blueprint("web", __name__)
+
+# --- Remove oxides helpers ------------------------------------------------
+
+def _looks_like_oxide(label: str) -> bool:
+    """
+    True for formulas like SiO2, Al2O3, FeO, K2O, P2O5, CaO, etc.
+    (Any multi-token formula that contains an O-token.)
+    """
+    if not label:
+        return False
+    s = str(label).strip()
+    s = re.sub(r"\(.*?\)", "", s)  # strip units like "(ppm)"
+    # tokenize into element(+optional digits) chunks
+    tokens = re.findall(r"[A-Z][a-z]?\d*", s)
+    if len(tokens) < 2:
+        return False
+    # oxide if one of the tokens is 'O', 'O2', 'O3', ...
+    return any(t.startswith("O") for t in tokens)
+
+def _drop_oxide_rows(df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name") -> pd.DataFrame:
+    if df is None or df.empty:
+        return df
+    mask = pd.Series(False, index=df.index)
+    if code_col in df.columns:
+        mask |= df[code_col].fillna("").map(_looks_like_oxide)
+    if name_col in df.columns:
+        mask |= df[name_col].fillna("").map(_looks_like_oxide)
+    return df.loc[~mask].copy()
 
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
@@ -483,6 +512,7 @@ def download_canonical_sample_parameters():
         abort(404, description="No canonical sample_parameters found in database")
 
     df = pd.DataFrame(rows)
+    df = _drop_oxide_rows(df)  
     buf = BytesIO()
     df.to_csv(buf, index=False)
     buf.seek(0)
@@ -523,6 +553,7 @@ def download_canonical_zip():
         with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM sample_parameters ORDER BY sample_id, parameter_code")
             df_params = pd.DataFrame(cur.fetchall())
+            df_params = _drop_oxide_rows(df_params)
         buf3 = io.StringIO()
         df_params.to_csv(buf3, index=False)
         zf.writestr("sample_parameters.csv", buf3.getvalue())
@@ -1103,6 +1134,14 @@ def search_samples():
             cur.execute(sql_params, (sample_ids,))
             params_rows = cur.fetchall()
 
+        # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
+        # def _row_is_oxide(t):
+        #    code = (t[2] or "").strip()
+        #    name = (t[3] or "").strip()
+        #    return _looks_like_oxide(code) or _looks_like_oxide(name)
+
+        # params_rows = [r for r in params_rows if not _row_is_oxide(r)]
+        
         # build zip in-memory
         mem = io.BytesIO()
         with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
