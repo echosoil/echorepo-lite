@@ -55,6 +55,7 @@ services:
     restart: unless-stopped
     networks:
       - default
+      - echorepo-shared
 
   i18n:
     profiles: ["devtools"]
@@ -73,7 +74,7 @@ services:
       - libretranslate
     networks:
       - default
-
+      - echorepo-shared
 volumes:
   pgdata:   # <--- persistent Postgres data
 
