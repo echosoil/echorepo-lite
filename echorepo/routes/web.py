@@ -1135,12 +1135,12 @@ def search_samples():
             params_rows = cur.fetchall()
 
         # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
-        # def _row_is_oxide(t):
-        #    code = (t[2] or "").strip()
-        #    name = (t[3] or "").strip()
-        #    return _looks_like_oxide(code) or _looks_like_oxide(name)
+        def _row_is_oxide(t):
+           code = (t[2] or "").strip()
+           name = (t[3] or "").strip()
+           return _looks_like_oxide(code) or _looks_like_oxide(name)
 
-        # params_rows = [r for r in params_rows if not _row_is_oxide(r)]
+        params_rows = [r for r in params_rows if not _row_is_oxide(r)]
         
         # build zip in-memory
         mem = io.BytesIO()
