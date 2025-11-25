@@ -58,7 +58,7 @@ def make_table_html(df: pd.DataFrame) -> str:
         "QR_qrCode":("QR code", True),
         "SOIL_STRUCTURE_structure":("Structure", False),
         "SOIL_TEXTURE_texture":("Texture", False),
-        "SOIL_COLOR_color":("Colour", False),
+        "SOIL_COLOR_color":("Soil organic matter", False),
         "PH_ph":("pH", True),
         "SOIL_DIVER_earthworms":("Earthworms", False),
         "SOIL_CONTAMINATION_plastic":("Plastic", False),

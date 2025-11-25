@@ -25,7 +25,7 @@ BASE_LABEL_MSGIDS = {
     "qr": "QR code",
     "ph": "pH",
     "colour": "Colour",
-    "texture": "Texture",
+    "soilOrganicMatter": "Soil organic matter",
     "structure": "Structure",
     "earthworms": "Earthworms",
     "plastic": "Plastic",
