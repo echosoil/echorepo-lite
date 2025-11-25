@@ -94,6 +94,23 @@
       font-size: 1rem;
     }
   </style>
+  <style>
+    /* Scrollable Leaflet popup content */
+    .leaflet-popup-content-wrapper { padding: 0; }           /* tighter chrome */
+    .leaflet-popup-content { margin: 0; }                    /* remove extra margins */
+
+    /* Our popup skin + scroll area */
+    .sample-popup .popup-scroll {
+      max-height: min(55vh, 420px);  /* fits on desktop & mobile */
+      overflow-y: auto;
+      padding: 0.75rem 1rem;
+    }
+
+    /* Nice defaults inside popup */
+    .sample-popup img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+    .sample-popup h5, .sample-popup h6 { margin: .4rem 0; }
+    .sample-popup ul { margin: 0 0 .5rem 1rem; padding: 0; }
+  </style>
 {% endblock %}
 
 {% block content %}

@@ -78,6 +78,43 @@ def _drop_oxide_rows(df: pd.DataFrame, code_col="parameter_code", name_col="para
         mask |= df[name_col].fillna("").map(_looks_like_oxide)
     return df.loc[~mask].copy()
 
+def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove columns whose names look like oxides (directly or as a suffix).
+    Works for things like 'SiO2', 'lab_SiO2', 'value_Fe2O3_(%)', etc.
+    """
+    if df is None or df.empty:
+        return df
+    to_drop = []
+    for col in df.columns:
+        name = str(col)
+        # check whole name
+        if _looks_like_oxide(name):
+            to_drop.append(col)
+            continue
+        # also check the last token after separators
+        last = re.split(r"[_\s/\-]+", name)[-1]
+        if _looks_like_oxide(last):
+            to_drop.append(col)
+    if to_drop:
+        df = df.drop(columns=to_drop, errors="ignore")
+    return df
+
+OXIDE_NAMES = {"MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"}
+
+def _strip_oxides_from_info_str(s: str) -> str:
+    if not isinstance(s, str) or not s.strip():
+        return ""
+    parts = [p.strip() for p in s.split(";") if p.strip()]
+    keep = []
+    for token in parts:
+        left = token.split("=", 1)[0]
+        norm = re.sub(r"\s+", "", left).upper()
+        if norm in OXIDE_NAMES:
+            continue
+        keep.append(token)
+    return "; ".join(keep)
+
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
 # --------------------------------------------------------------------------
@@ -513,6 +550,7 @@ def download_canonical_sample_parameters():
 
     df = pd.DataFrame(rows)
     df = _drop_oxide_rows(df)  
+
     buf = BytesIO()
     df.to_csv(buf, index=False)
     buf.seek(0)
@@ -599,6 +637,8 @@ def home():
 
     # user data
     df = query_user_df(user_key)
+    df = _drop_oxide_columns_from_df(df)
+
     i18n = {"labels": build_i18n_labels(_js_base_labels())}
 
     # try to get "real" internal user id from data
@@ -728,6 +768,8 @@ def download_csv():
     if df.empty:
         abort(404)
     df = strip_orig_cols(df)
+    df = _drop_oxide_columns_from_df(df)
+
     buf = BytesIO()
     df.to_csv(buf, index=False)
     buf.seek(0)
@@ -754,6 +796,8 @@ def download_xlsx():
     if df.empty:
         abort(404)
     df = strip_orig_cols(df)
+    df = _drop_oxide_columns_from_df(df)
+
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine="xlsxwriter") as w:
         df.to_excel(w, index=False, sheet_name="data")
@@ -789,6 +833,8 @@ def download_all_csv():
     try:
         df_all = pd.read_csv(p, dtype=str, keep_default_na=False, low_memory=False)
         df_all = strip_orig_cols(df_all)
+        df_all = _drop_oxide_columns_from_df(df_all)
+
         drop_these = [col for col in df_all.columns if col.lower() in pii_cols]
         if drop_these:
             df_all = df_all.drop(columns=drop_these, errors="ignore")
@@ -816,6 +862,8 @@ def download_all_csv():
             keep_idx = []
             for i, name in enumerate(header):
                 if name.lower() in pii_cols:
+                    continue
+                if _looks_like_oxide(name) or _looks_like_oxide(re.split(r"[_\s/\-]+", name)[-1]):
                     continue
                 keep_idx.append(i)
 
@@ -981,6 +1029,7 @@ def lab_import():
 
             # 2) if this is an oxide like 'K2O', also store elemental 'K'
             conv = _oxide_to_metal(param, val)
+
             if conv is not None:
                 metal_param, metal_val = conv
                 cur.execute(
