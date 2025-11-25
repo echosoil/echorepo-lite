@@ -87,6 +87,8 @@ def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
         return df
     to_drop = []
     for col in df.columns:
+        if col.lower().startswith("photo"):
+            continue
         name = str(col)
         # check whole name
         if _looks_like_oxide(name):
@@ -281,6 +283,7 @@ def _js_base_labels() -> dict:
         "debris": _("Debris"),
         "contamination": _("Contamination"),
         "metals": _("Metals"),
+        "elementalConcentrations": _("El. concentrations"),
         "drawRectangle": _("Draw a rectangle"),
         "cancelDrawing": _("Cancel drawing"),
         "cancel": _("Cancel"),

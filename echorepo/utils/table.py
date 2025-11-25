@@ -12,7 +12,9 @@ def strip_orig_cols(df: pd.DataFrame) -> pd.DataFrame:
 def make_table_html(df: pd.DataFrame) -> str:
     if df.empty:
         return "<p>No data available.</p>"
-
+    from pprint import pprint
+    pprint(df.head())
+    print(df.columns)
     lat_col, lon_col = pick_lat_lon_cols(df.columns)
     df = df.copy()
     if lat_col and lon_col:
@@ -62,7 +64,7 @@ def make_table_html(df: pd.DataFrame) -> str:
         "SOIL_CONTAMINATION_plastic":("Plastic", False),
         "SOIL_CONTAMINATION_debris":("Debris", False),
         "SOIL_CONTAMINATION_comments":("Contamination", False),
-        "METALS_info":("Metals", False),
+        "METALS_info":("Elemental concentrations", False),
         "PHOTO_photos_1_path":("Photo 1", False),
         "PHOTO_photos_2_path":("Photo 2", False),
         "PHOTO_photos_3_path":("Photo 3", False),

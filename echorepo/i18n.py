@@ -32,6 +32,7 @@ BASE_LABEL_MSGIDS = {
     "debris": "Debris",
     "contamination": "Contamination",
     "metals": "Metals",
+    "elementalConcentrations": "Elemental concentrations",
     "drawRectangle": "Draw a rectangle",
     "drawRectangleHint": "Click and drag to draw a rectangle.",
     "cancelDrawing": "Cancel drawing",

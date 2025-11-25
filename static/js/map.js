@@ -306,7 +306,7 @@
       ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'),        fmtInt(p.SOIL_CONTAMINATION_plastic)],
       ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'),       fmtInt(p.SOIL_CONTAMINATION_debris)],
       ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), p.SOIL_CONTAMINATION_comments],
-      ['<i class="bi bi-nut"></i> ' + T('metals',{},'Metals'),          metals], // <-- use cleaned metals
+      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'),          metals], // <-- use cleaned metals
     ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
 
     const tableHtml = `<table class="table table-sm popup-table mb-2">${
