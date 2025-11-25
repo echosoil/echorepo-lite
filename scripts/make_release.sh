@@ -85,8 +85,8 @@ if [[ -f "$TMPDIR/.env" ]]; then
   echo "[INFO] restored .env into prod"
 fi
 
-rsync -a "$TMPDIR/echorepo/translations/" echorepo/translations/
-echo "[INFO] restored .mo files into prod"
+# rsync -a "$TMPDIR/echorepo/translations/" echorepo/translations/
+# echo "[INFO] restored .mo files into prod"
 
 # ---------------------------------------------------------------------------
 # 4) tag + push
