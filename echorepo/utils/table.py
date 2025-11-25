@@ -1,6 +1,65 @@
 import html, pandas as pd
 from ..config import settings
 from .geo import pick_lat_lon_cols
+import re
+
+# ---- Format "METALS_info" into aligned monospace block ----
+def _format_metals_block(s: str) -> str:
+    if s is None or (isinstance(s, float) and pd.isna(s)):
+        return ""
+    # --- normalize separators to real newlines first
+    txt = str(s)
+    txt = (txt
+           .replace("\r\n", "\n")
+           .replace("\r", "\n")
+           .replace("<br/>", "\n")
+           .replace("<br />", "\n")
+           .replace("<br>", "\n")
+           .replace("\\n", "\n")
+           .replace(";", "\n"))
+
+    import re
+    lines_raw = [ln.strip() for ln in txt.split("\n") if ln.strip()]
+    if not lines_raw:
+        return ""
+
+    rows = []
+    for ln in lines_raw:
+        if "=" in ln or ":" in ln:
+            name, rhs = re.split(r"[:=]", ln, maxsplit=1)
+            name, rhs = name.strip(), rhs.strip()
+        else:
+            parts = ln.split(None, 1)
+            if len(parts) == 2:
+                name, rhs = parts[0].strip(), parts[1].strip()
+            else:
+                rows.append((ln.strip(), "", "", 0))
+                continue
+
+        m = re.match(r"\s*([+-]?\d+(?:[.,]\d+)?)(.*)$", rhs)
+        if m:
+            val_disp = m.group(1).strip()
+            val_len_key = val_disp.replace(",", ".")
+            unit = m.group(2).strip()
+        else:
+            val_disp = rhs
+            val_len_key = val_disp
+            unit = ""
+
+        rows.append((name, val_disp, unit, len(val_len_key)))
+
+    name_w = max((len(r[0]) for r in rows), default=0)
+    val_w  = max((r[3] for r in rows), default=0)
+
+    out_lines = []
+    for name, val_disp, unit, _ in rows:
+        name_pad = name.ljust(name_w)
+        val_pad  = val_disp.rjust(val_w) if val_w else val_disp
+        out_lines.append(f"{name_pad}  = {val_pad}" + (f" {unit}" if unit else ""))
+
+    # Escape HTML, then replace newlines with <br> so pandas can't turn them into "\n"
+    safe = html.escape("\n".join(out_lines)).replace("\n", "<br>")
+    return f'<div class="metals-block">{safe}</div>'
 
 def strip_orig_cols(df: pd.DataFrame) -> pd.DataFrame:
     if not settings.HIDE_ORIG_COLS:
@@ -49,7 +108,7 @@ def make_table_html(df: pd.DataFrame) -> str:
         # Parse to UTC first, then strip tz → naive
         ts = pd.to_datetime(df["fs_createdAt"], errors="coerce", utc=True)
         df["fs_createdAt"] = ts.dt.tz_convert(None).dt.strftime("%Y-%m-%d %H:%M")
-        
+
     for c in ["SOIL_DIVER_earthworms", "SOIL_CONTAMINATION_plastic", "SOIL_CONTAMINATION_debris"]:
         if c in df.columns:
             df[c] = (
@@ -91,6 +150,11 @@ def make_table_html(df: pd.DataFrame) -> str:
                 df[path_col] = df.apply(lambda row: fmt_img_with_cap(row[path_col], caps.loc[row.name]), axis=1)
             else:
                 df[path_col] = df[path_col].apply(lambda url: fmt_img_with_cap(url, None))
+    
+    # Alignment in Metals column
+    if "METALS_info" in df.columns:
+        df["METALS_info"] = df["METALS_info"].apply(_format_metals_block)
+    print("[DEBUG]2", df[["METALS_info"]])
 
     # ---- Pretty headers and no-breaks where useful ----
     pretty = {
@@ -119,10 +183,14 @@ def make_table_html(df: pd.DataFrame) -> str:
 
     df.rename(columns={k: v[0] for k, v in pretty.items()}, inplace=True)
 
-    # Bootstrap table, HTML already escaped where needed
+    fmt = {}
+    if "Elemental concentrations" in df.columns:
+        fmt["Elemental concentrations"] = lambda x: x
+
     return df.to_html(
         classes="table table-sm table-striped align-middle",
         index=False,
         escape=False,
         justify="left",
+        formatters=fmt,
     )
