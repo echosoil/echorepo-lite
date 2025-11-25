@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-25 02:08+0000\n"
+"POT-Creation-Date: 2025-11-25 08:37+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt\n"
@@ -86,58 +86,62 @@ msgid "Colour"
 msgstr "Cor"
 
 #: /work/echorepo/routes/web.py:279
+msgid "Soil organic matter"
+msgstr "Matéria orgânica do solo"
+
+#: /work/echorepo/routes/web.py:280
 msgid "Texture"
 msgstr "Textura"
 
-#: /work/echorepo/routes/web.py:280
+#: /work/echorepo/routes/web.py:281
 msgid "Structure"
 msgstr "Estrutura"
 
-#: /work/echorepo/routes/web.py:281
+#: /work/echorepo/routes/web.py:282
 msgid "Earthworms"
 msgstr "Vermes"
 
-#: /work/echorepo/routes/web.py:282
+#: /work/echorepo/routes/web.py:283
 msgid "Plastic"
 msgstr "Plástico"
 
-#: /work/echorepo/routes/web.py:283
+#: /work/echorepo/routes/web.py:284
 msgid "Debris"
 msgstr "Detritos"
 
-#: /work/echorepo/routes/web.py:284
+#: /work/echorepo/routes/web.py:285
 msgid "Contamination"
 msgstr "Contaminação"
 
-#: /work/echorepo/routes/web.py:285
+#: /work/echorepo/routes/web.py:286
 msgid "Metals"
 msgstr "Metais"
 
-#: /work/echorepo/routes/web.py:286
+#: /work/echorepo/routes/web.py:287
 msgid "Elemental concentrations"
 msgstr "Concentrações elementares"
 
-#: /work/echorepo/routes/web.py:287
+#: /work/echorepo/routes/web.py:288
 msgid "Draw a rectangle"
 msgstr "Desenhar um retângulo"
 
-#: /work/echorepo/routes/web.py:288
+#: /work/echorepo/routes/web.py:289
 msgid "Cancel drawing"
 msgstr "Cancelar desenho"
 
-#: /work/echorepo/routes/web.py:289
+#: /work/echorepo/routes/web.py:290
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: /work/echorepo/routes/web.py:290
+#: /work/echorepo/routes/web.py:291
 msgid "Delete last point"
 msgstr "Apagar o último ponto"
 
-#: /work/echorepo/routes/web.py:291
+#: /work/echorepo/routes/web.py:292
 msgid "Click and drag to draw a rectangle."
 msgstr "Clique e arraste para desenhar um retângulo."
 
-#: /work/echorepo/routes/web.py:292
+#: /work/echorepo/routes/web.py:293
 msgid "Release mouse to finish drawing."
 msgstr "Solte o mouse para terminar o desenho."
 

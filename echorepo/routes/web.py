@@ -276,6 +276,7 @@ def _js_base_labels() -> dict:
         "qr": _("QR code"),
         "ph": _("pH"),
         "colour": _("Colour"),
+        "soilOrganicMatter": _("Soil organic matter"),
         "texture": _("Texture"),
         "structure": _("Structure"),
         "earthworms": _("Earthworms"),
