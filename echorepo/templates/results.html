@@ -669,5 +669,49 @@
     if (dismissBtn) dismissBtn.addEventListener('click', function(){ setState('dismissed'); });
   })();
   </script>
+  <script>
+  (function addShowOnMapButtons(){
+    const table = document.querySelector('#tableWrap table');
+    if (!table || !table.tBodies.length) return;
+
+    // find the "Sample" column index (by header text)
+    let sampleIdx = -1;
+    const headerRow = (table.tHead && table.tHead.rows.length)
+      ? table.tHead.rows[table.tHead.rows.length - 1]
+      : table.querySelector('tbody tr');
+    if (!headerRow) return;
+
+    const headerCells = Array.from(headerRow.querySelectorAll('th,td'));
+    headerCells.forEach((th, i) => {
+      const t = (th.textContent || '').trim().toLowerCase();
+      if (t === 'sample') sampleIdx = i;
+    });
+    if (sampleIdx < 0) return;
+
+    // decorate each row
+    Array.from(table.tBodies[0].rows).forEach(tr => {
+      const cells = tr.cells;
+      if (!cells || !cells[sampleIdx]) return;
+
+      const cell = cells[sampleIdx];
+      const sampleId = (cell.textContent || '').trim();
+      if (!sampleId || cell.querySelector('.btn-show-on-map')) return;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm btn-outline-secondary ms-2 btn-show-on-map';
+      btn.title = '{{ _("Show on map") }}';
+      btn.innerHTML = '<i class="bi bi-geo-alt"></i>'; // or use text: 'Locate'
+      btn.addEventListener('click', () => {
+        const ok = window.__echomapShow && window.__echomapShow(sampleId);
+        if (!ok) alert('{{ _("Could not locate this sample on the map.") }}');
+        // optional: scroll to map
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      cell.appendChild(btn);
+    });
+  })();
+  </script>
 
 {% endblock %}
