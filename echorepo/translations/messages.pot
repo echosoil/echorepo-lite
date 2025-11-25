@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-25 02:08+0000\n"
+"POT-Creation-Date: 2025-11-25 08:37+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -85,58 +85,62 @@ msgid "Colour"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:279
-msgid "Texture"
+msgid "Soil organic matter"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:280
-msgid "Structure"
+msgid "Texture"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:281
-msgid "Earthworms"
+msgid "Structure"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:282
-msgid "Plastic"
+msgid "Earthworms"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:283
-msgid "Debris"
+msgid "Plastic"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:284
-msgid "Contamination"
+msgid "Debris"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:285
-msgid "Metals"
+msgid "Contamination"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:286
-msgid "Elemental concentrations"
+msgid "Metals"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:287
-msgid "Draw a rectangle"
+msgid "Elemental concentrations"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:288
-msgid "Cancel drawing"
+msgid "Draw a rectangle"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:289
-msgid "Cancel"
+msgid "Cancel drawing"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:290
-msgid "Delete last point"
+msgid "Cancel"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:291
-msgid "Click and drag to draw a rectangle."
+msgid "Delete last point"
 msgstr ""
 
 #: /work/echorepo/routes/web.py:292
+msgid "Click and drag to draw a rectangle."
+msgstr ""
+
+#: /work/echorepo/routes/web.py:293
 msgid "Release mouse to finish drawing."
 msgstr ""
 
