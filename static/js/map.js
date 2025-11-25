@@ -13,10 +13,9 @@
   const JITTER_M = Number(cfg.jitter_m) || 1000;
 
   const map = L.map('map', {
-    minZoom: 3,
-    maxZoom: 18
-  }).setView([40, 0], 4);
-  window.__echomap = map;
+    minZoom: 4,
+    maxZoom: 15
+  }).setView([50, 10], 5);  // try 6, 7, 8, etc.
 
   // Inject CSS once for scrollable popups
   (function ensurePopupCSS(){
@@ -34,7 +33,7 @@
   })();
 
   // --- Metals cleaner: drop oxides + round to 2 sig figs ---
-  const OXIDES = new Set(["MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O"]);
+  const OXIDES = new Set(["MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"]);
 
   function roundSigStr(n, sig=2){
     const v = Number(n);
@@ -476,12 +475,22 @@
     map.addLayer(othersCluster);
 
     // Fit once
-    let b=null;
-    const hasUser = Array.isArray(userGJ?.features) && userGJ.features.length>0;
-    const hasOthers = Array.isArray(othersGJ?.features) && othersGJ.features.length>0;
-    if(hasUser) b=userCluster.getBounds();
-    if(hasOthers) b=b?b.extend(othersCluster.getBounds()):othersCluster.getBounds();
-    if(b&&b.isValid()) map.fitBounds(b,{padding:[20,20]}); else map.setView([50,10],4);
+    // let b=null;
+    // const hasUser = Array.isArray(userGJ?.features) && userGJ.features.length>0;
+    // const hasOthers = Array.isArray(othersGJ?.features) && othersGJ.features.length>0;
+    // if(hasUser) b=userCluster.getBounds();
+    // if(hasOthers) b=b?b.extend(othersCluster.getBounds()):othersCluster.getBounds();
+    // if (b && b.isValid()) {
+    //   map.fitBounds(b, { padding: [20, 20] });
+    // 
+    //   // don’t zoom out beyond level 4
+    //   const MIN_ZOOM = 6;
+    //   if (map.getZoom() < MIN_ZOOM) {
+    //     map.setZoom(MIN_ZOOM);
+    //   }
+    // } else {
+    //   map.setView([50, 10], 5); // also bump this from 4 → 6 if you want
+    // }
 
     addTwoToggleControl();
     addSelectionControl();
