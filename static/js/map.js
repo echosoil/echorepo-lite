@@ -288,6 +288,37 @@
   }
   window.T = T;
 
+  function pickPhotoFromProps(props){
+    const items = [];
+    for (const [k, v] of Object.entries(props || {})) {
+      const m = /^PHOTO_photos_(\d+)_path$/.exec(k);
+      if (!m || !v) continue;
+      const idx = Number(m[1]);
+      const url = String(v).trim();
+      if (!url) continue;
+
+      const opt  = String(props[`PHOTO_photos_${idx}_option`] || "").toLowerCase();
+      const desc = String(props[`PHOTO_photos_${idx}_description`] || "").trim();
+      items.push({ idx, url, opt, desc });
+    }
+    if (!items.length) return null;
+
+    // stable order by index as tie-breaker
+    items.sort((a,b) => a.idx - b.idx);
+
+    // preference rules
+    const prefer = [
+      (x) => /landscape/.test(x.opt),
+      (x) => /cover|banner/.test(x.opt),
+      (x) => /default|main|principal/.test(x.opt),
+    ];
+    for (const rule of prefer) {
+      const hit = items.find(rule);
+      if (hit) return hit;
+    }
+    return items[0]; // fallback: first available
+  }
+
   function formatPopup(f, isOwnerLayer){
     const p = f.properties || {};
     const fmt = (v) => (v == null || (typeof v === "string" && v.trim() === "")) ? "—" : v;
@@ -313,15 +344,19 @@
       rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")
     }</table>`;
 
+    const bestPhoto = pickPhotoFromProps(p);
     let photoHtml = "";
-    if (p.PHOTO_photos_1_path) {
-      const url = String(p.PHOTO_photos_1_path);
+    if (bestPhoto) {
+      const caption = bestPhoto.desc || (bestPhoto.opt ? (bestPhoto.opt[0].toUpperCase() + bestPhoto.opt.slice(1)) : "");
       photoHtml = `
         <div class="popup-photo mt-2">
-          <a href="${url}" target="_blank" rel="noopener">
-            <img src="${url}" alt="Sample photo"
-                style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:cover;">
+          <a href="${bestPhoto.url}" target="_blank" rel="noopener">
+            <img
+              src="${bestPhoto.url}"
+              alt="${caption || 'Sample photo'}"
+              style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:cover;">
           </a>
+          ${caption ? `<div class="small text-muted mt-1">${caption}</div>` : ""}
         </div>`;
     }
 
