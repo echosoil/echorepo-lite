@@ -18,6 +18,65 @@
   }).setView([40, 0], 4);
   window.__echomap = map;
 
+  // Inject CSS once for scrollable popups
+  (function ensurePopupCSS(){
+    if (document.getElementById('echoPopupCSS')) return;
+    const style = document.createElement('style');
+    style.id = 'echoPopupCSS';
+    style.textContent = `
+      .leaflet-popup.echo-popup { max-width: 420px; }
+      .leaflet-popup-content { margin: 8px 12px; }
+      .leaflet-popup-content .popup-scroll { max-height: 260px; overflow: auto; }
+      .leaflet-popup-content .popup-table th { white-space: nowrap; vertical-align: top; padding-right: .5rem; }
+      .leaflet-popup-content .popup-table td { word-break: break-word; }
+    `;
+    document.head.appendChild(style);
+  })();
+
+  // --- Metals cleaner: drop oxides + round to 2 sig figs ---
+  const OXIDES = new Set(["MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O"]);
+
+  function roundSigStr(n, sig=2){
+    const v = Number(n);
+    if (!Number.isFinite(v) || v === 0) return "0";
+    const exp = Math.floor(Math.log10(Math.abs(v)));
+    const dec = sig - 1 - exp;
+    if (dec >= 0) {
+      return v.toFixed(dec).replace(/\.?0+$/,'');
+    } else {
+      const f = Math.pow(10, -dec);
+      return String(Math.round(v / f) * f);
+    }
+  }
+
+  /** Accepts "PARAM=VAL [UNIT]" separated by ";" or "<br>" */
+  function cleanMetalsInfo(raw){
+    if (raw == null) return "";
+    const pieces = String(raw).split(/(?:<br\s*\/?>|;)/i)
+      .map(s => s.trim()).filter(Boolean);
+    const out = [];
+    for (const tok of pieces){
+      const [left, ...rest] = tok.split("=");
+      const name = (left || "").replace(/\s+/g, "").toUpperCase();
+      if (!left) continue;
+      if (OXIDES.has(name)) continue;               // drop oxides
+
+      if (rest.length === 0) {                      // no "=" → keep as-is
+        out.push(tok);
+        continue;
+      }
+
+      const right = rest.join("=").trim();
+      const [valPart, ...unitParts] = right.split(/\s+/);
+      const unit = unitParts.join(" ");
+      const num = Number(String(valPart).replace(",", "."));
+      const valFmt = Number.isFinite(num) ? roundSigStr(num, 2) : valPart;
+
+      out.push(`${left.trim()}=${valFmt}${unit ? " " + unit : ""}`);
+    }
+    return out.join("<br>");
+  }
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
@@ -230,8 +289,13 @@
   window.T = T;
 
   function formatPopup(f, isOwnerLayer){
-    const p=f.properties||{}; const fmt=(v)=>(v==null||(typeof v==="string"&&v.trim()===""))?"—":v;
-    const rows=[
+    const p = f.properties || {};
+    const fmt = (v) => (v == null || (typeof v === "string" && v.trim() === "")) ? "—" : v;
+
+    // Clean & format metals (oxide-free, 2 sig figs, <br> separators)
+    const metals = cleanMetalsInfo(p.METALS_info);
+
+    const rows = [
       ['<i class="bi bi-calendar"></i> ' + T('date',{},'Date'),         formatDate(p.collectedAt)],
       ['<i class="bi bi-qr-code-scan"></i> ' + T('qr',{},'QR code'),    p.QR_qrCode],
       ['<i class="bi bi-droplet-half"></i> ' + T('ph',{},'pH'),         p.PH_ph],
@@ -242,34 +306,44 @@
       ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'),        fmtInt(p.SOIL_CONTAMINATION_plastic)],
       ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'),       fmtInt(p.SOIL_CONTAMINATION_debris)],
       ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), p.SOIL_CONTAMINATION_comments],
-      ['<i class="bi bi-nut"></i> ' + T('metals',{},'Metals'),          p.METALS_info],
-    ].filter(([_,v])=>!(v==null||(typeof v==="string"&&v.trim()==="")||v==="—"));
-    let html=`<div class="popup-card"><table class="table table-sm mb-2">${
-      rows.map(([k,v])=>`<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")}</table>`;
-    if(p.PHOTO_photos_1_path){ const url=String(p.PHOTO_photos_1_path);
-        html += `
+      ['<i class="bi bi-nut"></i> ' + T('metals',{},'Metals'),          metals], // <-- use cleaned metals
+    ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
+
+    const tableHtml = `<table class="table table-sm popup-table mb-2">${
+      rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")
+    }</table>`;
+
+    let photoHtml = "";
+    if (p.PHOTO_photos_1_path) {
+      const url = String(p.PHOTO_photos_1_path);
+      photoHtml = `
         <div class="popup-photo mt-2">
           <a href="${url}" target="_blank" rel="noopener">
-            <img
-              src="${url}"
-              alt="Sample photo"
-              style="
-                max-width: 100%;
-                height: auto;
-                max-height: 180px;
-                display: block;
-                object-fit: cover;
-              "
-            >
+            <img src="${url}" alt="Sample photo"
+                style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:cover;">
           </a>
-        </div>`; 
+        </div>`;
     }
-    if(p.sampleId){
-      html+=`<div class="mt-2"><a class="btn btn-sm btn-outline-primary"
-              href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
-              target="_blank" rel="noopener"><i class="bi bi-filetype-csv"></i> ${T('export',{},'Export')}</a></div>`;
+
+    let exportHtml = "";
+    if (p.sampleId) {
+      exportHtml = `<div class="mt-2">
+        <a class="btn btn-sm btn-outline-primary"
+          href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
+          target="_blank" rel="noopener">
+          <i class="bi bi-filetype-csv"></i> ${T('export',{},'Export')}
+        </a>
+      </div>`;
     }
-    html+=`</div>`; return html;
+
+    // Scrollable body
+    return `<div class="popup-card">
+              <div class="popup-scroll">
+                ${tableHtml}
+                ${photoHtml}
+              </div>
+              ${exportHtml}
+            </div>`;
   }
 
   // ---- State ----
@@ -347,7 +421,10 @@
             fillColor:clr, fillOpacity:0.35
           });
           ring.__props = props;
-          ring.bindPopup(formatPopup(f,isOwner));
+          ring.bindPopup(
+            formatPopup(f, isOwner),
+            { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
+          );
           ring.addTo(map);
           bucket.push(ring);
         }
