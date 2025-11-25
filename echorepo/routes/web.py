@@ -87,7 +87,7 @@ def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
         return df
     to_drop = []
     for col in df.columns:
-        if col.lower().startswith("photo"):
+        if "photo" in col.lower():
             continue
         name = str(col)
         # check whole name
