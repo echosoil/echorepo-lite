@@ -461,7 +461,7 @@
       }
 
       // Initial state from localStorage
-      var initialState = null;
+      var initialState = FORCE_SURVEY ? null : (localStorage.getItem(storageKey) || null);
       try {
         initialState = localStorage.getItem(storageKey);
       } catch (e) {}
@@ -610,6 +610,55 @@
         decorateCell(tds[pIdx], url, caption);
       });
     });
+  })();
+  </script>
+  <script>
+  (function () {
+    var expanded   = document.getElementById('finalSurveyBox');
+    var collapsed  = document.getElementById('finalSurveyCollapsed');
+    if (!expanded || !collapsed) return;
+
+    var hideBtn    = document.getElementById('finalSurveyHideBtn');
+    var showBtn    = document.getElementById('finalSurveyShowBtn');
+    var dismissBtn = document.getElementById('finalSurveyDismissBtn');
+
+    var userKey    = "{{ user_key|e }}";
+    var storageKey = "echo_final_survey_state_" + userKey;
+
+    // NEW: force override if ?survey=on
+    var FORCE_SURVEY = {{ (request.args.get('survey','').strip().lower() in ['on','1','true','yes','y']) | tojson }};
+    if (FORCE_SURVEY) {
+      try { localStorage.removeItem(storageKey); } catch (e) {}
+    }
+
+    function applyState(state) {
+      if (state === 'collapsed') {
+        expanded.classList.add('d-none');
+        collapsed.classList.remove('d-none');
+      } else if (state === 'dismissed') {
+        expanded.classList.add('d-none');
+        collapsed.classList.add('d-none');
+      } else {
+        expanded.classList.remove('d-none');
+        collapsed.classList.add('d-none');
+      }
+    }
+
+    function setState(state) {
+      try {
+        if (state) localStorage.setItem(storageKey, state);
+        else localStorage.removeItem(storageKey);
+      } catch (e) {}
+      applyState(state);
+    }
+
+    var initialState = null;
+    try { initialState = localStorage.getItem(storageKey); } catch (e) {}
+    applyState(initialState);
+
+    if (hideBtn) hideBtn.addEventListener('click', function(){ setState('collapsed'); });
+    if (showBtn) showBtn.addEventListener('click', function(){ setState(null); });
+    if (dismissBtn) dismissBtn.addEventListener('click', function(){ setState('dismissed'); });
   })();
   </script>
 
