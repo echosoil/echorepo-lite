@@ -17,6 +17,28 @@
     maxZoom: 15
   }).setView([50, 10], 5);  // try 6, 7, 8, etc.
 
+  // 👇 Expose map + global index + "show" helper
+  window.__echomap = map;
+  window.__echomapIndex = new Map();
+  window.__echomapShow = function(sampleId, opts) {
+    const id = String(sampleId || '');
+    const ring = window.__echomapIndex.get(id);
+    if (!ring) return false;
+
+    // make sure it's visible
+    if (!map.hasLayer(ring) && ring.addTo) {
+      try { ring.addTo(map); } catch (_) {}
+    }
+
+    const ll = ring.getLatLng ? ring.getLatLng() : null;
+    if (!ll) return false;
+
+    const targetZoom = (opts && opts.zoom) || Math.max(map.getZoom(), 14);
+    map.setView(ll, targetZoom, { animate: true });
+    if (ring.openPopup) ring.openPopup();
+    return true;
+  };
+
   // Inject CSS once for scrollable popups
   (function ensurePopupCSS(){
     if (document.getElementById('echoPopupCSS')) return;
@@ -262,9 +284,6 @@
     const dict    = (window.I18N && window.I18N.labels)   || {};
     const byMsgid = (window.I18N && window.I18N.by_msgid) || {};
 
-    // 1) key-based label (catalog+overrides already merged server-side)
-    // 2) else msgid-override when defaultText is a msgid
-    // 3) else fallback to defaultText → key
     let raw =
       (key != null && Object.prototype.hasOwnProperty.call(dict, key))
         ? dict[key]
@@ -336,7 +355,7 @@
       ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'),        fmtInt(p.SOIL_CONTAMINATION_plastic)],
       ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'),       fmtInt(p.SOIL_CONTAMINATION_debris)],
       ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), p.SOIL_CONTAMINATION_comments],
-      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'),          metals], // <-- use cleaned metals
+      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'),          metals],
     ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
 
     const tableHtml = `<table class="table table-sm popup-table mb-2">${
@@ -455,12 +474,25 @@
             fillColor:clr, fillOpacity:0.35
           });
           ring.__props = props;
+          ring.__owner = !!isOwner;
+
+          // Bind popup
           ring.bindPopup(
             formatPopup(f, isOwner),
             { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
           );
           ring.addTo(map);
           bucket.push(ring);
+
+          // 👇 Index by sample id (with fallbacks)
+          const sid =
+            props.sampleId ||
+            props.sample_id ||
+            props.Sample ||
+            props.QR_qrCode || null;
+          if (sid) {
+            window.__echomapIndex.set(String(sid), ring);
+          }
         }
       });
     }
@@ -473,24 +505,6 @@
     othersCluster.addLayer(othersLayer);
     map.addLayer(userCluster);
     map.addLayer(othersCluster);
-
-    // Fit once
-    // let b=null;
-    // const hasUser = Array.isArray(userGJ?.features) && userGJ.features.length>0;
-    // const hasOthers = Array.isArray(othersGJ?.features) && othersGJ.features.length>0;
-    // if(hasUser) b=userCluster.getBounds();
-    // if(hasOthers) b=b?b.extend(othersCluster.getBounds()):othersCluster.getBounds();
-    // if (b && b.isValid()) {
-    //   map.fitBounds(b, { padding: [20, 20] });
-    // 
-    //   // don’t zoom out beyond level 4
-    //   const MIN_ZOOM = 6;
-    //   if (map.getZoom() < MIN_ZOOM) {
-    //     map.setZoom(MIN_ZOOM);
-    //   }
-    // } else {
-    //   map.setView([50, 10], 5); // also bump this from 4 → 6 if you want
-    // }
 
     addTwoToggleControl();
     addSelectionControl();
@@ -575,7 +589,7 @@
           <input class="form-check-input" type="checkbox" id="togUser" checked>
           <label class="form-check-label" for="togUser">${T('yourSamples', {}, 'Your samples')}</label>
         </div>
-        <div class="form-check" style="margin:.1rem 0;">
+        <div class="form-check" style="margin:.1rem 0%;">
           <input class="form-check-input" type="checkbox" id="togOther" checked>
           <label class="form-check-label" for="togOther">${T('otherSamples', {}, 'Other samples')}</label>
         </div>`;
