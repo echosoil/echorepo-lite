@@ -283,7 +283,7 @@ def _js_base_labels() -> dict:
         "debris": _("Debris"),
         "contamination": _("Contamination"),
         "metals": _("Metals"),
-        "elementalConcentrations": _("El. concentrations"),
+        "elementalConcentrations": _("Elemental concentrations"),
         "drawRectangle": _("Draw a rectangle"),
         "cancelDrawing": _("Cancel drawing"),
         "cancel": _("Cancel"),
