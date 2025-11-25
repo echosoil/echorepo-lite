@@ -41,15 +41,15 @@ else
 fi
 
 # compiled translations
-mkdir -p "$TMPDIR/echorepo/translations"
-rsync -a \
-  --prune-empty-dirs \
-  --include '*/' \
-  --include 'messages.mo' \
-  --exclude '*' \
-  "$DEV_REPO_DIR/echorepo/translations/" \
-  "$TMPDIR/echorepo/translations/"
-echo "[INFO] copied .mo files from dev into tmp"
+# mkdir -p "$TMPDIR/echorepo/translations"
+# rsync -a \
+#   --prune-empty-dirs \
+#   --include '*/' \
+#   --include 'messages.mo' \
+#   --exclude '*' \
+#   "$DEV_REPO_DIR/echorepo/translations/" \
+#   "$TMPDIR/echorepo/translations/"
+# echo "[INFO] copied .mo files from dev into tmp"
 
 # ---------------------------------------------------------------------------
 # 2) go to PROD and do git stuff
