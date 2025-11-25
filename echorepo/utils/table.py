@@ -46,11 +46,10 @@ def make_table_html(df: pd.DataFrame) -> str:
     if "collectedAt" in df.columns:
         df["collectedAt"] = pd.to_datetime(df["collectedAt"], errors="coerce").dt.strftime("%Y-%m-%d")
     if "fs_createdAt" in df.columns:
-        df["fs_createdAt"] = (
-            pd.to_datetime(df["fs_createdAt"], errors="coerce")
-            .dt.tz_localize(None, nonexistent="NaT", ambiguous="NaT")
-            .dt.strftime("%Y-%m-%d %H:%M")
-        )
+        # Parse to UTC first, then strip tz → naive
+        ts = pd.to_datetime(df["fs_createdAt"], errors="coerce", utc=True)
+        df["fs_createdAt"] = ts.dt.tz_convert(None).dt.strftime("%Y-%m-%d %H:%M")
+        
     for c in ["SOIL_DIVER_earthworms", "SOIL_CONTAMINATION_plastic", "SOIL_CONTAMINATION_debris"]:
         if c in df.columns:
             df[c] = (
