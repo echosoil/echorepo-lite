@@ -260,10 +260,43 @@ def approx_deg_for_km_lon(km: float, at_lat: float) -> float:
 PII_FIELDS = {"email", "userId"}         # always excluded
 EXCLUDED_SUFFIXES = ("_state",)          # exclude any column ending with these
 
+# oxide detectors (legacy endpoints only)
+OXIDE_TOKEN_RE = re.compile(r"[A-Z][a-z]?\d*")
+
+
+def _looks_like_oxide(label: str) -> bool:
+    """
+    Heuristic: a label like 'SiO2', 'Fe2O3', 'K2O', 'CaO'.
+    We parse element tokens and require >=2 tokens with one being Oxygen.
+    Also ignores anything in parentheses, like units.
+    """
+    if not label:
+        return False
+    s = re.sub(r"\(.*?\)", "", str(label))        # strip "(%)", "(mg/kg)", etc.
+    tokens = OXIDE_TOKEN_RE.findall(s)            # e.g. ['Si', 'O2'] or ['Fe2', 'O3']
+    if len(tokens) < 2:
+        return False
+    return any(t.startswith("O") for t in tokens) # one token is Oxygen
+
+def _is_oxide_field(name: str) -> bool:
+    """
+    Consider the whole name and the last token after separators.
+    This catches 'SiO2', 'lab_SiO2', 'value_Fe2O3_(%)', etc.
+    """
+    if not name:
+        return False
+    if _looks_like_oxide(name):
+        return True
+    last = re.split(r"[_\s/\-]+", str(name))[-1]
+    return _looks_like_oxide(last)
+
+
 def is_excluded_field(name: str) -> bool:
     if name in PII_FIELDS:
         return True
-    return any(name.endswith(suf) for suf in EXCLUDED_SUFFIXES)
+    if any(name.endswith(suf) for suf in EXCLUDED_SUFFIXES):
+        return True
+    return _is_oxide_field(name)
 
 DEFAULT_FIELDS = [
     "sampleId", "collectedAt",
@@ -574,6 +607,7 @@ OXIDE_TO_METAL: dict[str, tuple[str, float]] = {
     "P2O5":  ("P", 0.436),
     "TIO2":  ("Ti", 0.599),
     "K2O":   ("K", 0.83),
+    "SO3":   ("S", 0.40),
 }
 
 
