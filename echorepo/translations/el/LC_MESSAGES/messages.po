@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-25 02:08+0000\n"
+"POT-Creation-Date: 2025-11-25 08:37+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -86,58 +86,62 @@ msgid "Colour"
 msgstr "Χρώμα"
 
 #: /work/echorepo/routes/web.py:279
+msgid "Soil organic matter"
+msgstr "Οργανική ύλη εδάφους"
+
+#: /work/echorepo/routes/web.py:280
 msgid "Texture"
 msgstr "Υφή"
 
-#: /work/echorepo/routes/web.py:280
+#: /work/echorepo/routes/web.py:281
 msgid "Structure"
 msgstr "Δομή"
 
-#: /work/echorepo/routes/web.py:281
+#: /work/echorepo/routes/web.py:282
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: /work/echorepo/routes/web.py:282
+#: /work/echorepo/routes/web.py:283
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: /work/echorepo/routes/web.py:283
+#: /work/echorepo/routes/web.py:284
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: /work/echorepo/routes/web.py:284
+#: /work/echorepo/routes/web.py:285
 msgid "Contamination"
 msgstr "Μόλυνση"
 
-#: /work/echorepo/routes/web.py:285
+#: /work/echorepo/routes/web.py:286
 msgid "Metals"
 msgstr "Μέταλλα"
 
-#: /work/echorepo/routes/web.py:286
+#: /work/echorepo/routes/web.py:287
 msgid "Elemental concentrations"
 msgstr "Στοιχειώδεις συγκεντρώσεις"
 
-#: /work/echorepo/routes/web.py:287
+#: /work/echorepo/routes/web.py:288
 msgid "Draw a rectangle"
 msgstr "Σχεδίαση ορθογωνίου"
 
-#: /work/echorepo/routes/web.py:288
+#: /work/echorepo/routes/web.py:289
 msgid "Cancel drawing"
 msgstr "Ακύρωση σχεδίου"
 
-#: /work/echorepo/routes/web.py:289
+#: /work/echorepo/routes/web.py:290
 msgid "Cancel"
 msgstr "Ακύρωση"
 
-#: /work/echorepo/routes/web.py:290
+#: /work/echorepo/routes/web.py:291
 msgid "Delete last point"
 msgstr "Διαγραφή τελευταίου σημείου"
 
-#: /work/echorepo/routes/web.py:291
+#: /work/echorepo/routes/web.py:292
 msgid "Click and drag to draw a rectangle."
 msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο."
 
-#: /work/echorepo/routes/web.py:292
+#: /work/echorepo/routes/web.py:293
 msgid "Release mouse to finish drawing."
 msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
 
