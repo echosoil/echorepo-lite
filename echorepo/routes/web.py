@@ -217,6 +217,67 @@ def _append_privacy_acceptance(user_id: str):
 # --------------------------------------------------------------------------
 # SoSci survey helper
 # --------------------------------------------------------------------------
+def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
+    """
+    Return True if any of this user's samples have rows in sample_parameters.
+    Works even if the samples DF doesn't contain any metals summary columns.
+    """
+    try:
+        if df_samples is None or df_samples.empty:
+            return False
+
+        # Find a column that looks like the canonical sample id
+        sid_col = None
+        for cand in ("sampleId", "sample_id", "Sample", "sampleid"):
+            if cand in df_samples.columns:
+                sid_col = cand
+                break
+        if not sid_col:
+            return False
+
+        sample_ids = (
+            df_samples[sid_col]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
+        if not sample_ids:
+            return False
+
+        # Fast existence check in Postgres
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM sample_parameters WHERE sample_id = ANY(%s) LIMIT 1",
+                (sample_ids,),
+            )
+            return cur.fetchone() is not None
+    except Exception as e:
+        logging.getLogger(__name__).warning("lab presence check failed: %s", e)
+        return False
+
+def _user_has_metals_legacy(df: pd.DataFrame) -> bool:
+    if df is None or df.empty:
+        return False
+    candidates = [
+        "METALS_info","lab_METALS_info","METALS","metals",
+        "metals_info","metals_info_en","metals_info_orig",
+        "elemental_concentrations","elemental_concentrations_en","elemental_concentrations_orig",
+    ]
+    for c in df.columns:
+        cl = str(c).lower()
+        if c in candidates or "metals" in cl or ("elemental" in cl and "concentration" in cl):
+            s = (
+                df[c].fillna("")
+                    .astype(str)
+                    .str.replace("<br>", ";", regex=False)
+                    .str.strip()
+                    .replace({"nan":"","None":"","NaN":"","0":"","0.0":""})
+            )
+            if s.str.contains("=", regex=False).any():
+                return True
+    return False
+
 def _build_sosci_url(user_id: str | None) -> str | None:
     if not user_id:
         return None
@@ -312,22 +373,36 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
     if df is None or df.empty:
         return False
 
-    candidate_cols = ("METALS_info", "lab_METALS_info", "METALS", "metals")
-    for col in candidate_cols:
-        if col not in df.columns:
-            continue
+    cols = list(df.columns)
+    # Common exact names across old/new pipelines
+    exact = {
+        "METALS_info", "lab_METALS_info", "METALS", "metals",
+        "metals_info", "metals_info_en", "metals_info_orig",
+        "elemental_concentrations", "elemental_concentrations_en", "elemental_concentrations_orig",
+    }
 
-        series = (
-            df[col]
-            .fillna("")
-            .astype(str)
-            .str.replace("<br>", ";", regex=False)
-            .str.strip()
+    def _series_has_assignments(series: pd.Series) -> bool:
+        s = (
+            series.fillna("")
+                  .astype(str)
+                  .str.replace("<br>", ";", regex=False)
+                  .str.strip()
+                  .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
         )
-        series = series.replace({"nan": "", "None": "", "0": "", "0.0": "", "NaN": ""})
-        if series.str.contains("=", regex=False).any():
+        # our metals blob looks like "Cu=12; Zn=5" etc.
+        return s.str.contains("=", regex=False).any()
+
+    # 1) Fast path: exact column name matches
+    for c in cols:
+        if c in exact and _series_has_assignments(df[c]):
             return True
 
+    # 2) Fallback: any column whose name suggests metals/elemental info
+    for c in cols:
+        name = str(c).lower()
+        if ("metals" in name) or ("elemental" in name and "concentration" in name):
+            if _series_has_assignments(df[c]):
+                return True
     return False
 
 # --------------------------------------------------------------------------
@@ -639,8 +714,13 @@ def home():
 
     needs_privacy = privacy_gate_on and not _has_accepted_privacy(privacy_user_id or "")
 
-    # user data
+    # user data (samples)
     df = query_user_df(user_key)
+
+    # decide survey visibility from canonical lab rows, not from samples DF
+    has_lab_results = _user_has_lab_results(df) or _user_has_metals_legacy(df)
+
+    # only for display, now drop oxide-like columns (harmless on samples DF)
     df = _drop_oxide_columns_from_df(df)
 
     i18n = {"labels": build_i18n_labels(_js_base_labels())}
@@ -658,15 +738,22 @@ def home():
     survey_url = _build_sosci_url(survey_user_id)
 
     # only show survey if user actually has metals-like data
-    has_metals = _user_has_metals(df)
+    has_metals = has_lab_results
     show_survey = bool(survey_url) and has_metals
 
     # --- survey override via URL (?survey=on/off), for testing ---
     survey_override = (request.args.get("survey") or "").strip().lower()
-    if survey_override in {"on", "1", "true", "yes", "y"} and survey_url:
-        show_survey = True
-    elif survey_override in {"off", "0", "false", "no", "n"}:
+    if survey_override in {"on","1","true","yes","y"}:
+        show_survey = bool(survey_url)   # ignore has_metals here
+    elif survey_override in {"off","0","false","no","n"}:
         show_survey = False
+
+    # helpful one-liner to see what the server decided
+    logging.getLogger(__name__).info(
+        "survey dbg user=%s url=%s has_lab=%s override=%s show=%s",
+        user_key, bool(survey_url), has_lab_results, survey_override, show_survey
+    )
+
 
     # EMPTY CASE ------------------------------------------------------------
     if df.empty:
@@ -736,6 +823,7 @@ def home():
         privacy_version=PRIVACY_VERSION,
         # NEW: pass flag to template
         can_upload_lab_data=can_upload,
+        current_locale=str(get_locale() or "en"),
     )
 
 # --------------------------------------------------------------------------
