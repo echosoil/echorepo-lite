@@ -703,13 +703,20 @@ def home():
     # 1) default from env (now default is OFF)
     privacy_gate_default = _env_true("PRIVACY_GATE", False)
 
-    # 2) optional per-request override: ?privacy=on / ?privacy=off
-    override = (request.args.get("privacy") or "").strip().lower()
-    if override in {"on", "1", "true", "yes", "y"}:
-        privacy_gate_on = True
-    elif override in {"off", "0", "false", "no", "n"}:
-        privacy_gate_on = False
+    # 2) enable/disable URL override via .env
+    privacy_override_enabled = _env_true("PRIVACY_DEBUG_OVERRIDE", False)
+
+    if privacy_override_enabled:
+        # optional per-request override: ?privacy=on / ?privacy=off
+        override = (request.args.get("privacy") or "").strip().lower()
+        if override in {"on", "1", "true", "yes", "y"}:
+            privacy_gate_on = True
+        elif override in {"off", "0", "false", "no", "n"}:
+            privacy_gate_on = False
+        else:
+            privacy_gate_on = privacy_gate_default
     else:
+        # ignore ?privacy=... when override is disabled
         privacy_gate_on = privacy_gate_default
 
     needs_privacy = privacy_gate_on and not _has_accepted_privacy(privacy_user_id or "")
@@ -742,18 +749,15 @@ def home():
     show_survey = bool(survey_url) and has_metals
 
     # --- survey override via URL (?survey=on/off), for testing ---
-    survey_override = (request.args.get("survey") or "").strip().lower()
-    if survey_override in {"on","1","true","yes","y"}:
-        show_survey = bool(survey_url)   # ignore has_metals here
-    elif survey_override in {"off","0","false","no","n"}:
-        show_survey = False
+    survey_override_enabled = _env_true("SURVEY_DEBUG_OVERRIDE", False)
 
-    # helpful one-liner to see what the server decided
-    logging.getLogger(__name__).info(
-        "survey dbg user=%s url=%s has_lab=%s override=%s show=%s",
-        user_key, bool(survey_url), has_lab_results, survey_override, show_survey
-    )
-
+    if survey_override_enabled:
+        survey_override = (request.args.get("survey") or "").strip().lower()
+        if survey_override in {"on","1","true","yes","y"}:
+            show_survey = bool(survey_url)   # ignore has_metals here
+        elif survey_override in {"off","0","false","no","n"}:
+            show_survey = False
+    # else: ignore any ?survey=... and keep show_survey as computed
 
     # EMPTY CASE ------------------------------------------------------------
     if df.empty:
