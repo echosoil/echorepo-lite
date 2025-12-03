@@ -474,6 +474,51 @@ def _stream_minio_canonical(obj_name: str):
         download_name=obj_name,
     )
 
+def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str):
+    """
+    Upload canonical CSVs (given as text) to MinIO, under:
+      canonical/<version_date>/samples.csv
+      canonical/<version_date>/sample_images.csv
+      canonical/<version_date>/sample_parameters.csv
+      canonical/latest/<same>
+
+    csv_dict keys should be exactly "samples.csv", "sample_images.csv",
+    "sample_parameters.csv".
+    """
+    client = _get_minio_client()
+    if client is None:
+        # MinIO not configured, silently skip
+        return
+
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+
+    try:
+        if not client.bucket_exists(bucket):
+            client.make_bucket(bucket)
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error ensuring MinIO bucket {bucket}: {e}")
+        return
+
+    from io import BytesIO
+
+    for filename, csv_text in csv_dict.items():
+        if not csv_text:
+            continue
+
+        data = csv_text.encode("utf-8")
+        for prefix in (f"canonical/{version_date}/", "canonical/latest/"):
+            obj_name = prefix + filename
+            try:
+                client.put_object(
+                    bucket,
+                    obj_name,
+                    BytesIO(data),
+                    length=len(data),
+                    content_type="text/csv",
+                )
+            except Exception as e:
+                logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
+
 @web_bp.post("/privacy/accept")
 @login_required
 def privacy_accept():
@@ -543,15 +588,34 @@ def download_canonical_samples():
         abort(404, description="No canonical samples found in database")
 
     df = pd.DataFrame(rows)
-    buf = BytesIO()
-    df.to_csv(buf, index=False)
-    buf.seek(0)
+
+    # build CSV body into text
+    buf_txt = io.StringIO()
+    df.to_csv(buf_txt, index=False)
+    body = buf_txt.getvalue()
+
+    # simple "live export" header
+    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    base_url = request.url_root.rstrip("/")
+    header = [
+        "# ECHOrepo Canonical Dataset",
+        "# File: samples.csv",
+        f"# Generated at: {generated_at}",
+        f"# Downloaded from: {base_url}/download/canonical/samples.csv",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "",
+    ]
+    csv_text = "\n".join(header) + body
+
+    data = csv_text.encode("utf-8")
+    buf = BytesIO(data)
     return send_file(
         buf,
         as_attachment=True,
         download_name="samples.csv",
         mimetype="text/csv",
     )
+
 
 
 @web_bp.route("/download/canonical/sample_images.csv")
@@ -584,9 +648,27 @@ def download_canonical_sample_images():
         abort(404, description="No canonical sample_images found in database")
 
     df = pd.DataFrame(rows)
-    buf = BytesIO()
-    df.to_csv(buf, index=False)
-    buf.seek(0)
+    
+    # build CSV body into text
+    buf_txt = io.StringIO()
+    df.to_csv(buf_txt, index=False)
+    body = buf_txt.getvalue()
+
+    # simple "live export" header
+    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    base_url = request.url_root.rstrip("/")
+    header = [
+        "# ECHOrepo Canonical Dataset",
+        "# File: sample_images.csv",
+        f"# Generated at: {generated_at}",
+        f"# Downloaded from: {base_url}/download/canonical/sample_images.csv",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "",
+    ]
+    csv_text = "\n".join(header) + body
+
+    data = csv_text.encode("utf-8")
+    buf = BytesIO(data)
     return send_file(
         buf,
         as_attachment=True,
@@ -630,9 +712,26 @@ def download_canonical_sample_parameters():
     df = pd.DataFrame(rows)
     df = _drop_oxide_rows(df)  
 
-    buf = BytesIO()
-    df.to_csv(buf, index=False)
-    buf.seek(0)
+    # build CSV body into text
+    buf_txt = io.StringIO()
+    df.to_csv(buf_txt, index=False)
+    body = buf_txt.getvalue()
+
+    # simple "live export" header
+    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    base_url = request.url_root.rstrip("/")
+    header = [
+        "# ECHOrepo Canonical Dataset",
+        "# File: sample_parameters.csv",
+        f"# Generated at: {generated_at}",
+        f"# Downloaded from: {base_url}/download/canonical/sample_parameters.csv",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "",
+    ]
+    csv_text = "\n".join(header) + body
+
+    data = csv_text.encode("utf-8")
+    buf = BytesIO(data)
     return send_file(
         buf,
         as_attachment=True,
@@ -648,32 +747,88 @@ def download_canonical_zip():
         "file_name": "all_canonical.zip",
         "kind": "canonical_export",
     }
+    
+    # Version date for this canonical snapshot
+    version_date = datetime.utcnow().date().isoformat()
+    # Base URL for building reference links in headers
+    base_url = request.url_root.rstrip("/")
+
+    # We'll collect the final CSV text for MinIO upload
+    csv_contents: dict[str, str] = {}
+
     mem = BytesIO()
     with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         # 1) samples.csv
         with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM samples ORDER BY timestamp_utc DESC, sample_id")
             df_samples = pd.DataFrame(cur.fetchall())
+
         buf1 = io.StringIO()
         df_samples.to_csv(buf1, index=False)
-        zf.writestr("samples.csv", buf1.getvalue())
+        body_samples = buf1.getvalue()
+
+        header_samples = [
+            "# ECHOrepo Canonical Dataset",
+            "# File: samples.csv",
+            f"# Version date: {version_date}",
+            f"# Version URL: {base_url}/download/canonical/{version_date}/samples.csv",
+            f"# Latest canonical: {base_url}/download/canonical/samples.csv",
+            "# Description: Canonical sample-level data (locations, pH, texture, structure, etc.).",
+            "",
+        ]
+        csv_samples = "\n".join(header_samples) + body_samples
+
+        csv_contents["samples.csv"] = csv_samples
+        zf.writestr("samples.csv", csv_samples)
 
         # 2) sample_images.csv
         with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM sample_images ORDER BY sample_id, image_id")
             df_imgs = pd.DataFrame(cur.fetchall())
+
         buf2 = io.StringIO()
         df_imgs.to_csv(buf2, index=False)
-        zf.writestr("sample_images.csv", buf2.getvalue())
+        body_imgs = buf2.getvalue()
+
+        header_imgs = [
+            "# ECHOrepo Canonical Dataset",
+            "# File: sample_images.csv",
+            f"# Version date: {version_date}",
+            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_images.csv",
+            f"# Latest canonical: {base_url}/download/canonical/sample_images.csv",
+            "# Description: Canonical image metadata linked to samples (IDs, URLs, descriptions).",
+            "",
+        ]
+        csv_imgs = "\n".join(header_imgs) + body_imgs
+
+        csv_contents["sample_images.csv"] = csv_imgs
+        zf.writestr("sample_images.csv", csv_imgs)
 
         # 3) sample_parameters.csv
         with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM sample_parameters ORDER BY sample_id, parameter_code")
             df_params = pd.DataFrame(cur.fetchall())
             df_params = _drop_oxide_rows(df_params)
+
         buf3 = io.StringIO()
         df_params.to_csv(buf3, index=False)
-        zf.writestr("sample_parameters.csv", buf3.getvalue())
+        body_params = buf3.getvalue()
+
+        header_params = [
+            "# ECHOrepo Canonical Dataset",
+            "# File: sample_parameters.csv",
+            f"# Version date: {version_date}",
+            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_parameters.csv",
+            f"# Latest canonical: {base_url}/download/canonical/sample_parameters.csv",
+            "# Description: Canonical laboratory parameters (metals, nutrients, etc.) per sample.",
+            "",
+        ]
+        csv_params = "\n".join(header_params) + body_params
+
+        csv_contents["sample_parameters.csv"] = csv_params
+        zf.writestr("sample_parameters.csv", csv_params)
+
+    _upload_canonical_csvs_to_minio(csv_contents, version_date)
 
     mem.seek(0)
     return send_file(
@@ -1475,3 +1630,14 @@ def usage_dashboard():
         downloads_by_dataset=downloads_by_dataset,
         by_type=by_type,
     )
+
+@web_bp.get("/download/canonical/<date>/<filename>")
+@login_required
+def download_canonical_version(date, filename):
+    """
+    Serve a specific dated canonical CSV from MinIO, e.g.
+    /download/canonical/2025-12-02/samples.csv
+    which maps to MinIO object canonical/2025-12-02/samples.csv
+    """
+    obj_name = f"{date}/{filename}"
+    return _stream_minio_canonical(obj_name)
