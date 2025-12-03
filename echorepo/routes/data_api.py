@@ -4,6 +4,8 @@ from __future__ import annotations
 import csv, io, os, re, sqlite3, math, time, json
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
+import os 
+from echorepo.routes.storage import _get_minio_client 
 
 import requests           # pip install requests
 import jwt                # pip install PyJWT
@@ -459,6 +461,50 @@ def _canonical_where_from_request(alias: str = "") -> tuple[str, List[Any], Dict
         "within": raw_within or None,
     }
     return where_sql, params, filter_meta
+
+def _upload_canonical_to_minio(samples_path, params_path, images_path):
+    """
+    Upload canonical CSVs to MinIO under:
+      canonical/<YYYY-MM-DD>/{file}
+      canonical/latest/{file}
+    """
+    mclient = _get_minio_client()
+    if mclient is None:
+        current_app.logger.warning("No MinIO client, skipping canonical upload")
+        return
+
+    bucket = (
+        current_app.config.get("MINIO_BUCKET")
+        or os.getenv("MINIO_BUCKET")
+        or "echorepo-uploads"
+    )
+
+    today = datetime.utcnow().date().isoformat()
+    version_prefix = f"canonical/{today}/"
+    latest_prefix = "canonical/latest/"
+
+    files = {
+        "samples.csv": samples_path,
+        "sample_parameters.csv": params_path,
+        "sample_images.csv": images_path,
+    }
+
+    # Make sure bucket exists
+    try:
+        if not mclient.bucket_exists(bucket):
+            mclient.make_bucket(bucket)
+    except Exception as e:
+        current_app.logger.error(f"Error ensuring MinIO bucket {bucket}: {e}")
+        return
+
+    for name, path in files.items():
+        try:
+            # versioned copy
+            mclient.fput_object(bucket, version_prefix + name, path)
+            # latest copy
+            mclient.fput_object(bucket, latest_prefix + name, path)
+        except Exception as e:
+            current_app.logger.error(f"Error uploading {name} to MinIO: {e}")
 
 # -----------------------------------------------------------------------------
 # Endpoints
