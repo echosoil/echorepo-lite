@@ -154,7 +154,6 @@ def make_table_html(df: pd.DataFrame) -> str:
     # Alignment in Metals column
     if "METALS_info" in df.columns:
         df["METALS_info"] = df["METALS_info"].apply(_format_metals_block)
-    print("[DEBUG]2", df[["METALS_info"]])
 
     # ---- Pretty headers and no-breaks where useful ----
     pretty = {
