@@ -289,7 +289,7 @@ def _build_sosci_url(user_id: str | None) -> str | None:
         "es": "spa",
         "fi": "fin",
         "it": "ita",
-        "po": "pol",
+        "pl": "pol",
         "pt": "por",
         "ro": "rum",
     }
