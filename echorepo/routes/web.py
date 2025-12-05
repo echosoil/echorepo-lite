@@ -37,12 +37,42 @@ from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 
 try:
-    from echorepo.routes.data_api import _oxide_to_metal
+    from echorepo.routes.data_api import _oxide_to_metal, CANONICAL_SAMPLE_COLS
 except Exception:
     # fallback – if import fails, just no conversion
     def _oxide_to_metal(param, value):
         return None
 
+    # fallback canonical columns (same as in data_api.py)
+    CANONICAL_SAMPLE_COLS = [
+        "sample_id",
+        "timestamp_utc",
+        "lat",
+        "lon",
+        "country_code",
+        "location_accuracy_m",
+        "ph",
+        "organic_carbon_pct",
+        "earthworms_count",
+        "contamination_debris",
+        "contamination_plastic",
+        "contamination_other_orig",
+        "contamination_other_en",
+        "pollutants_count",
+        "soil_structure_orig",
+        "soil_structure_en",
+        "soil_texture_orig",
+        "soil_texture_en",
+        "observations_orig",
+        "observations_en",
+        "metals_info_orig",
+        "metals_info_en",
+        "collected_by",
+        "data_source",
+        "qa_status",
+        "licence",
+    ]
+    
 # constants for privacy acceptance
 PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
 PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv")
@@ -1380,9 +1410,10 @@ def search_samples():
 
     # ---- special case: export as ZIP ----
     if fmt == "zip":
-        # we need *all* matching sample_ids (no limit)
+        # Use the full canonical column set from data_api.py
+        cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
         sql_all = f"""
-            SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
+            SELECT {cols_sql}
             FROM samples
             WHERE {where_sql}
             ORDER BY timestamp_utc DESC
@@ -1392,8 +1423,9 @@ def search_samples():
             # 1) get all matching samples
             cur.execute(sql_all, params)
             samples = cur.fetchall()
-            sample_ids = [row[0] for row in samples if row[0]]
 
+            # sample_id is the first canonical column
+            sample_ids = [row[CANONICAL_SAMPLE_COLS.index("sample_id")] for row in samples if row[CANONICAL_SAMPLE_COLS.index("sample_id")]]
             # to avoid "IN ()" when no results
             if not sample_ids:
                 # return empty zip
@@ -1448,10 +1480,16 @@ def search_samples():
             # samples_filtered.csv
             out1 = io.StringIO()
             w1 = csv.writer(out1)
-            w1.writerow(["sample_id", "timestamp_utc", "country_code", "ph", "lat", "lon", "collected_by"])
+
+            # header: all canonical sample columns
+            w1.writerow(CANONICAL_SAMPLE_COLS)
+
+            # rows come from SELECT {cols_sql} in the same order
             for r in samples:
                 w1.writerow(r)
+
             zf.writestr("samples_filtered.csv", out1.getvalue())
+
 
             # sample_images_filtered.csv
             out2 = io.StringIO()
