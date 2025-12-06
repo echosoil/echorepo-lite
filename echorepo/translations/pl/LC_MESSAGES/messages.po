@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-25 14:53+0000\n"
+"POT-Creation-Date: 2025-12-06 23:23+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -19,132 +19,152 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: /work/echorepo/routes/web.py:324
+#: /work/echorepo/routes/web.py:354
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Promień prywatności (~ ±{km}km)"
 
-#: /work/echorepo/routes/web.py:325
+#: /work/echorepo/routes/web.py:355
 msgid "Soil pH"
 msgstr "PH gleby"
 
-#: /work/echorepo/routes/web.py:326
+#: /work/echorepo/routes/web.py:356
 msgid "Acidic (≤5.5)"
 msgstr "Acydyczna (≤ 5, 5)"
 
-#: /work/echorepo/routes/web.py:327
+#: /work/echorepo/routes/web.py:357
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Nieco kwaśne (5,5-6,5)"
 
-#: /work/echorepo/routes/web.py:328
+#: /work/echorepo/routes/web.py:358
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutralny (6,5-7,5)"
 
-#: /work/echorepo/routes/web.py:329
+#: /work/echorepo/routes/web.py:359
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Nieco alkaliczne (7, 5- 8, 5)"
 
-#: /work/echorepo/routes/web.py:330
+#: /work/echorepo/routes/web.py:360
 msgid "Alkaline (≥8.5)"
 msgstr "Alkalina (≥ 8, 5)"
 
-#: /work/echorepo/routes/web.py:331
+#: /work/echorepo/routes/web.py:361
 msgid "Your samples"
 msgstr "Twoje próbki"
 
-#: /work/echorepo/routes/web.py:332
+#: /work/echorepo/routes/web.py:362
 msgid "Other samples"
 msgstr "Pozostałe próbki"
 
-#: /work/echorepo/routes/web.py:333
+#: /work/echorepo/routes/web.py:363
 msgid "Export"
 msgstr "Eksport"
 
-#: /work/echorepo/routes/web.py:334
+#: /work/echorepo/routes/web.py:364
 msgid "Clear"
 msgstr "Czysto"
 
-#: /work/echorepo/routes/web.py:335
+#: /work/echorepo/routes/web.py:365
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Eksport filtrowany ({n})"
 
-#: /work/echorepo/routes/web.py:336
+#: /work/echorepo/routes/web.py:366
 msgid "Date"
 msgstr "Data"
 
-#: /work/echorepo/routes/web.py:337
+#: /work/echorepo/routes/web.py:367
 msgid "QR code"
 msgstr "Kod QR"
 
-#: /work/echorepo/routes/web.py:338 /work/echorepo/templates/results.html:321
+#: /work/echorepo/routes/web.py:368 /work/echorepo/templates/results.html:321
 #: /work/echorepo/templates/search.html:84
 msgid "pH"
 msgstr "p H"
 
-#: /work/echorepo/routes/web.py:339
+#: /work/echorepo/routes/web.py:369
 msgid "Colour"
 msgstr "Kolor"
 
-#: /work/echorepo/routes/web.py:340
+#: /work/echorepo/routes/web.py:370
 msgid "Soil organic matter"
 msgstr "Substancja organiczna gleby"
 
-#: /work/echorepo/routes/web.py:341
+#: /work/echorepo/routes/web.py:371
 msgid "Texture"
 msgstr "Tekst"
 
-#: /work/echorepo/routes/web.py:342
+#: /work/echorepo/routes/web.py:372
 msgid "Structure"
 msgstr "Struktura"
 
-#: /work/echorepo/routes/web.py:343
+#: /work/echorepo/routes/web.py:373
 msgid "Earthworms"
 msgstr "Robaki ziemne"
 
-#: /work/echorepo/routes/web.py:344
+#: /work/echorepo/routes/web.py:374
 msgid "Plastic"
 msgstr "Plastikowe"
 
-#: /work/echorepo/routes/web.py:345
+#: /work/echorepo/routes/web.py:375
 msgid "Debris"
 msgstr "Odpady"
 
-#: /work/echorepo/routes/web.py:346
+#: /work/echorepo/routes/web.py:376
 msgid "Contamination"
 msgstr "Zanieczyszczenie"
 
-#: /work/echorepo/routes/web.py:347
+#: /work/echorepo/routes/web.py:377
 msgid "Metals"
 msgstr "Metale"
 
-#: /work/echorepo/routes/web.py:348
+#: /work/echorepo/routes/web.py:378
 msgid "Elemental concentrations"
 msgstr "Stężenia elementarne"
 
-#: /work/echorepo/routes/web.py:349
+#: /work/echorepo/routes/web.py:379
 msgid "Draw a rectangle"
 msgstr "Narysuj prostokąt"
 
-#: /work/echorepo/routes/web.py:350
+#: /work/echorepo/routes/web.py:380
 msgid "Cancel drawing"
 msgstr "Anuluj rysowanie"
 
-#: /work/echorepo/routes/web.py:351
+#: /work/echorepo/routes/web.py:381
 msgid "Cancel"
 msgstr "Anuluj"
 
-#: /work/echorepo/routes/web.py:352
+#: /work/echorepo/routes/web.py:382
 msgid "Delete last point"
 msgstr "Usuń ostatni punkt"
 
-#: /work/echorepo/routes/web.py:353
+#: /work/echorepo/routes/web.py:383
 msgid "Click and drag to draw a rectangle."
 msgstr "Kliknij i przeciągnij, aby narysować prostokąt."
 
-#: /work/echorepo/routes/web.py:354
+#: /work/echorepo/routes/web.py:384
 msgid "Release mouse to finish drawing."
 msgstr "Zwolnij mysz, aby zakończyć rysunek."
+
+#: /work/echorepo/services/firebase.py:51
+msgid "Password recovery is not configured for this site."
+msgstr "Odzyskiwanie haseł nie jest skonfigurowane dla tej strony."
+
+#: /work/echorepo/services/firebase.py:60
+msgid "Could not contact the password recovery service."
+msgstr "Nie można skontaktować się z usługą odzyskiwania hasła."
+
+#: /work/echorepo/services/firebase.py:65
+msgid "If this address is registered, a reset link has been sent."
+msgstr "Jeśli adres jest zarejestrowany, wysłano link do resetu."
+
+#: /work/echorepo/services/firebase.py:65
+msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+msgstr "Nowe hasło może trwać do 30 minut."
+
+#: /work/echorepo/services/firebase.py:68
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
+msgstr "Odzysk hasła jest tymczasowo niedostępny. Prosimy o kontakt z organizatorami."
 
 #: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
@@ -328,35 +348,39 @@ msgstr "ECHOREPO - Dostęp"
 msgid "Access your data"
 msgstr "Dostęp do danych"
 
-#: /work/echorepo/templates/login.html:11
+#: /work/echorepo/templates/login.html:12
 msgid "Sign in with your Keycloak credentials."
 msgstr "Zaloguj się za pomocą swoich dokumentów."
 
-#: /work/echorepo/templates/login.html:21
+#: /work/echorepo/templates/login.html:29
 msgid "Email or username"
 msgstr "Email lub nazwa użytkownika"
 
-#: /work/echorepo/templates/login.html:25
+#: /work/echorepo/templates/login.html:36
 msgid "you@example.org"
 msgstr "you @ example.org"
 
-#: /work/echorepo/templates/login.html:30
+#: /work/echorepo/templates/login.html:43
 msgid "Password"
 msgstr "Hasło"
 
-#: /work/echorepo/templates/login.html:40
+#: /work/echorepo/templates/login.html:60
+msgid "Forgot your password?"
+msgstr "Zapomniałeś hasła?"
+
+#: /work/echorepo/templates/login.html:66
 msgid "Continue"
 msgstr "Kontynuuj"
 
-#: /work/echorepo/templates/login.html:46
+#: /work/echorepo/templates/login.html:73
 msgid "Issues signing in? Contact the organisers."
 msgstr "Zapisy? Skontaktuj się z organizatorami."
 
-#: /work/echorepo/templates/login.html:62
+#: /work/echorepo/templates/login.html:81
 msgid "GDPR-friendly access"
 msgstr "Przyjazny dostęp"
 
-#: /work/echorepo/templates/login.html:65
+#: /work/echorepo/templates/login.html:84
 msgid "Download your data anytime"
 msgstr "Pobieranie danych w każdej chwili"
 
