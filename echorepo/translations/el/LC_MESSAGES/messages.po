@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-25 14:53+0000\n"
+"POT-Creation-Date: 2025-12-06 23:23+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -18,132 +18,158 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: /work/echorepo/routes/web.py:324
+#: /work/echorepo/routes/web.py:354
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Ακτίνα απορρήτου (~±__{km}_ km)"
 
-#: /work/echorepo/routes/web.py:325
+#: /work/echorepo/routes/web.py:355
 msgid "Soil pH"
 msgstr "PH εδάφους"
 
-#: /work/echorepo/routes/web.py:326
+#: /work/echorepo/routes/web.py:356
 msgid "Acidic (≤5.5)"
 msgstr "Οξύ (≤5.5)"
 
-#: /work/echorepo/routes/web.py:327
+#: /work/echorepo/routes/web.py:357
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Ελαφρώς όξινα (5.5–6.5)"
 
-#: /work/echorepo/routes/web.py:328
+#: /work/echorepo/routes/web.py:358
 msgid "Neutral (6.5–7.5)"
 msgstr "Ουδέτερο (6.5–7.5)"
 
-#: /work/echorepo/routes/web.py:329
+#: /work/echorepo/routes/web.py:359
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Ελαφρώς αλκαλικό (7.5–8.5)"
 
-#: /work/echorepo/routes/web.py:330
+#: /work/echorepo/routes/web.py:360
 msgid "Alkaline (≥8.5)"
 msgstr "Αλκαλίνη (≥8. 5)"
 
-#: /work/echorepo/routes/web.py:331
+#: /work/echorepo/routes/web.py:361
 msgid "Your samples"
 msgstr "Τα δείγματα σας"
 
-#: /work/echorepo/routes/web.py:332
+#: /work/echorepo/routes/web.py:362
 msgid "Other samples"
 msgstr "Άλλα δείγματα"
 
-#: /work/echorepo/routes/web.py:333
+#: /work/echorepo/routes/web.py:363
 msgid "Export"
 msgstr "Εξαγωγή"
 
-#: /work/echorepo/routes/web.py:334
+#: /work/echorepo/routes/web.py:364
 msgid "Clear"
 msgstr "Καθαρισμός"
 
-#: /work/echorepo/routes/web.py:335
+#: /work/echorepo/routes/web.py:365
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Φίλτρα εξαγωγής ({n})"
 
-#: /work/echorepo/routes/web.py:336
+#: /work/echorepo/routes/web.py:366
 msgid "Date"
 msgstr "Ημερομηνία"
 
-#: /work/echorepo/routes/web.py:337
+#: /work/echorepo/routes/web.py:367
 msgid "QR code"
 msgstr "Κωδικός QR"
 
-#: /work/echorepo/routes/web.py:338 /work/echorepo/templates/results.html:321
+#: /work/echorepo/routes/web.py:368 /work/echorepo/templates/results.html:321
 #: /work/echorepo/templates/search.html:84
 msgid "pH"
 msgstr "p Η"
 
-#: /work/echorepo/routes/web.py:339
+#: /work/echorepo/routes/web.py:369
 msgid "Colour"
 msgstr "Χρώμα"
 
-#: /work/echorepo/routes/web.py:340
+#: /work/echorepo/routes/web.py:370
 msgid "Soil organic matter"
 msgstr "Οργανική ύλη εδάφους"
 
-#: /work/echorepo/routes/web.py:341
+#: /work/echorepo/routes/web.py:371
 msgid "Texture"
 msgstr "Υφή"
 
-#: /work/echorepo/routes/web.py:342
+#: /work/echorepo/routes/web.py:372
 msgid "Structure"
 msgstr "Δομή"
 
-#: /work/echorepo/routes/web.py:343
+#: /work/echorepo/routes/web.py:373
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: /work/echorepo/routes/web.py:344
+#: /work/echorepo/routes/web.py:374
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: /work/echorepo/routes/web.py:345
+#: /work/echorepo/routes/web.py:375
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: /work/echorepo/routes/web.py:346
+#: /work/echorepo/routes/web.py:376
 msgid "Contamination"
 msgstr "Μόλυνση"
 
-#: /work/echorepo/routes/web.py:347
+#: /work/echorepo/routes/web.py:377
 msgid "Metals"
 msgstr "Μέταλλα"
 
-#: /work/echorepo/routes/web.py:348
+#: /work/echorepo/routes/web.py:378
 msgid "Elemental concentrations"
 msgstr "Στοιχειώδεις συγκεντρώσεις"
 
-#: /work/echorepo/routes/web.py:349
+#: /work/echorepo/routes/web.py:379
 msgid "Draw a rectangle"
 msgstr "Σχεδίαση ορθογωνίου"
 
-#: /work/echorepo/routes/web.py:350
+#: /work/echorepo/routes/web.py:380
 msgid "Cancel drawing"
 msgstr "Ακύρωση σχεδίου"
 
-#: /work/echorepo/routes/web.py:351
+#: /work/echorepo/routes/web.py:381
 msgid "Cancel"
 msgstr "Ακύρωση"
 
-#: /work/echorepo/routes/web.py:352
+#: /work/echorepo/routes/web.py:382
 msgid "Delete last point"
 msgstr "Διαγραφή τελευταίου σημείου"
 
-#: /work/echorepo/routes/web.py:353
+#: /work/echorepo/routes/web.py:383
 msgid "Click and drag to draw a rectangle."
 msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο."
 
-#: /work/echorepo/routes/web.py:354
+#: /work/echorepo/routes/web.py:384
 msgid "Release mouse to finish drawing."
 msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
+
+#: /work/echorepo/services/firebase.py:51
+msgid "Password recovery is not configured for this site."
+msgstr "Η ανάκτηση κωδικού πρόσβασης δεν έχει ρυθμιστεί για αυτόν τον ιστότοπο."
+
+#: /work/echorepo/services/firebase.py:60
+msgid "Could not contact the password recovery service."
+msgstr "Αδυναμία επικοινωνίας με την υπηρεσία ανάκτησης κωδικού πρόσβασης."
+
+#: /work/echorepo/services/firebase.py:65
+msgid "If this address is registered, a reset link has been sent."
+msgstr ""
+"Εάν αυτή η διεύθυνση είναι καταχωρημένη, έχει αποσταλεί ένας σύνδεσμος "
+"επαναφοράς."
+
+#: /work/echorepo/services/firebase.py:65
+msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+msgstr ""
+"Νέος κωδικός πρόσβασης μπορεί να διαρκέσει έως και 30 λεπτά για να "
+"ενεργοποιηθεί στο ECHOREPO."
+
+#: /work/echorepo/services/firebase.py:68
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
+msgstr ""
+"Η ανάκτηση κωδικού πρόσβασης δεν είναι προσωρινά διαθέσιμη. Παρακαλώ "
+"επικοινωνήστε με τους διοργανωτές."
 
 #: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
 msgid "ECHOrepo — EU Soil Data"
@@ -331,35 +357,39 @@ msgstr "ECHOrepo — Πρόσβαση"
 msgid "Access your data"
 msgstr "Πρόσβαση στα δεδομένα σας"
 
-#: /work/echorepo/templates/login.html:11
+#: /work/echorepo/templates/login.html:12
 msgid "Sign in with your Keycloak credentials."
 msgstr "Υπογράψτε με τα διαπιστευτήριά σας."
 
-#: /work/echorepo/templates/login.html:21
+#: /work/echorepo/templates/login.html:29
 msgid "Email or username"
 msgstr "Ηλεκτρονικό ταχυδρομείο ή όνομα χρήστη"
 
-#: /work/echorepo/templates/login.html:25
+#: /work/echorepo/templates/login.html:36
 msgid "you@example.org"
 msgstr "you@example.org"
 
-#: /work/echorepo/templates/login.html:30
+#: /work/echorepo/templates/login.html:43
 msgid "Password"
 msgstr "Κωδικός πρόσβασης"
 
-#: /work/echorepo/templates/login.html:40
+#: /work/echorepo/templates/login.html:60
+msgid "Forgot your password?"
+msgstr "Ξέχασες τον κωδικό σου?"
+
+#: /work/echorepo/templates/login.html:66
 msgid "Continue"
 msgstr "Συνέχεια"
 
-#: /work/echorepo/templates/login.html:46
+#: /work/echorepo/templates/login.html:73
 msgid "Issues signing in? Contact the organisers."
 msgstr "Θέματα που υπογράφουν; Επικοινωνήστε με τους διοργανωτές."
 
-#: /work/echorepo/templates/login.html:62
+#: /work/echorepo/templates/login.html:81
 msgid "GDPR-friendly access"
 msgstr "Φιλική πρόσβαση GDPR"
 
-#: /work/echorepo/templates/login.html:65
+#: /work/echorepo/templates/login.html:84
 msgid "Download your data anytime"
 msgstr "Κατεβάστε τα δεδομένα σας οποτεδήποτε"
 

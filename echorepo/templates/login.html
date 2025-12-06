@@ -3,56 +3,75 @@
 
 {% block content %}
   <section class="row justify-content-center">
-    <div class="col-12 col-md-10 col-lg-8">
+    {# narrower card on large screens #}
+    <div class="col-12 col-md-8 col-lg-5 col-xl-4">
       <div class="card card-elevated border-0 overflow-hidden">
-        <div class="row g-0">
-          <div class="col-md-6 p-4 p-lg-5 order-2 order-md-1">
-            <h1 class="h4 mb-2">{{ _('Access your data') }}</h1>
-            <p class="text-muted mb-4">{{ _('Sign in with your Keycloak credentials.') }}</p>
+        <div class="p-4 p-lg-5">
+          <h1 class="h4 mb-2">{{ _('Access your data') }}</h1>
+          <p class="text-muted mb-4">
+            {{ _('Sign in with your Keycloak credentials.') }}
+          </p>
 
-            {% if error %}
-              <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle me-1"></i>{{ error }}
-              </div>
-            {% endif %}
-
-            <form method="POST" action="{{ url_for('sso_password_login') }}" novalidate>
-              <div class="mb-3">
-                <label for="username" class="form-label">{{ _('Email or username') }}</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-person"></i></span>
-                  <input type="text" class="form-control" id="username" name="username"
-                         placeholder="{{ _('you@example.org') }}" required autofocus>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="password" class="form-label">{{ _('Password') }}</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-                  <input type="password" class="form-control" id="password" name="password"
-                         placeholder="••••••••" required>
-                </div>
-              </div>
-
-              <div class="d-grid gap-2">
-                <button class="btn btn-eu" type="submit">
-                  <span class="me-1 bi bi-box-arrow-in-right"></span> {{ _('Continue') }}
-                </button>
-              </div>
-            </form>
-
-            <div class="mt-3">
-              <small class="text-muted">{{ _('Issues signing in? Contact the organisers.') }}</small>
+          {% if error %}
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle me-1"></i>{{ error }}
             </div>
-          </div>
+          {% endif %}
 
-          <!-- Visual side -->
-          <div class="col-md-6 order-1 order-md-2" aria-hidden="true">
-            <div class="h-100 w-100" style="min-height:260px; background:
-                linear-gradient(0deg, rgba(0,0,0,.15), rgba(0,0,0,.15)),
-                url('{{ url_for('static', filename='img/soil_hero.jpg') }}') center/cover no-repeat;">
+          {% if info %}
+            <div class="alert alert-success">
+              <i class="bi bi-envelope-check me-1"></i>{{ info|safe }}
             </div>
+          {% endif %}
+
+          <form method="POST" action="{{ url_for('sso_password_login') }}" novalidate>
+            <div class="mb-3">
+              <label for="username" class="form-label">{{ _('Email or username') }}</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                <input type="text"
+                       class="form-control"
+                       id="username"
+                       name="username"
+                       placeholder="{{ _('you@example.org') }}"
+                       required
+                       autofocus>
+              </div>
+            </div>
+
+            <div class="mb-1">
+              <label for="password" class="form-label">{{ _('Password') }}</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                <input type="password"
+                       class="form-control"
+                       id="password"
+                       name="password"
+                       placeholder="••••••••"
+                       required>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mb-3">
+              <button class="btn btn-link btn-sm p-0"
+                      type="submit"
+                      formaction="{{ url_for('auth.password_reset') }}"
+                      formmethod="post">
+                {{ _('Forgot your password?') }}
+              </button>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button class="btn btn-eu" type="submit">
+                <span class="me-1 bi bi-box-arrow-in-right"></span> {{ _('Continue') }}
+              </button>
+            </div>
+          </form>
+
+          <div class="mt-3">
+            <small class="text-muted">
+              {{ _('Issues signing in? Contact the organisers.') }}
+            </small>
           </div>
         </div>
       </div>
