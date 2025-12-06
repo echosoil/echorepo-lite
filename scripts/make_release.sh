@@ -33,6 +33,7 @@ if [[ -f "$DEV_REPO_DIR/.env" ]]; then
   # 4) normalize .env for prod
   sed -i 's|localhost:18080|echorepo.quanta-labs.com|g' "$TMPDIR/.env"
   sed -i 's|echorepo_dev|echorepo_prod|g' "$TMPDIR/.env"
+  sed -i 's|5433|5432|g' "$TMPDIR/.env"
 
   echo "[INFO] copied and sanitized .env from dev"
 else
@@ -40,15 +41,15 @@ else
 fi
 
 # compiled translations
-mkdir -p "$TMPDIR/echorepo/translations"
-rsync -a \
-  --prune-empty-dirs \
-  --include '*/' \
-  --include 'messages.mo' \
-  --exclude '*' \
-  "$DEV_REPO_DIR/echorepo/translations/" \
-  "$TMPDIR/echorepo/translations/"
-echo "[INFO] copied .mo files from dev into tmp"
+# mkdir -p "$TMPDIR/echorepo/translations"
+# rsync -a \
+#   --prune-empty-dirs \
+#   --include '*/' \
+#   --include 'messages.mo' \
+#   --exclude '*' \
+#   "$DEV_REPO_DIR/echorepo/translations/" \
+#   "$TMPDIR/echorepo/translations/"
+# echo "[INFO] copied .mo files from dev into tmp"
 
 # ---------------------------------------------------------------------------
 # 2) go to PROD and do git stuff
@@ -84,8 +85,8 @@ if [[ -f "$TMPDIR/.env" ]]; then
   echo "[INFO] restored .env into prod"
 fi
 
-rsync -a "$TMPDIR/echorepo/translations/" echorepo/translations/
-echo "[INFO] restored .mo files into prod"
+# rsync -a "$TMPDIR/echorepo/translations/" echorepo/translations/
+# echo "[INFO] restored .mo files into prod"
 
 # ---------------------------------------------------------------------------
 # 4) tag + push

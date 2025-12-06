@@ -7,6 +7,72 @@ from ..config import settings
 from echorepo.utils.load_csv import deterministic_jitter, MAX_JITTER_METERS as LC_MAX_JITTER_METERS
 
 import psycopg2 
+import math
+
+OXIDE_NAMES = {"MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O"}
+
+def _round_sig_str(v: float, sig: int = 2) -> str:
+    """Round to `sig` significant figures, never using scientific notation."""
+    if v == 0 or not math.isfinite(v):
+        return "0"
+    exp = int(math.floor(math.log10(abs(v))))
+    dec = sig - 1 - exp                  # decimals to keep
+    rounded = round(v, dec)
+    if dec > 0:
+        s = f"{rounded:.{dec}f}"
+    else:
+        s = f"{int(rounded)}"
+    return s.rstrip("0").rstrip(".")
+
+def _clean_metals_info(s: str) -> str:
+    """
+    - Drop oxides (left side == oxide code)
+    - Keep only 2 sig figs on numeric values
+    - Preserve units and original parameter names
+    Input format tokens: "PARAM=VALUE [UNIT]" separated by ';'
+    """
+    if not isinstance(s, str) or not s.strip():
+        return ""
+    out = []
+    for tok in (t.strip() for t in s.split(";") if t.strip()):
+        left, sep, right = tok.partition("=")
+        norm_left = re.sub(r"\s+", "", left).upper()
+        if norm_left in OXIDE_NAMES:
+            continue
+        if not sep:  # no '=' — keep as is
+            out.append(tok)
+            continue
+
+        right = right.strip()
+        if not right:
+            continue
+
+        # split value and unit (first whitespace separates them)
+        val_str, *unit_parts = right.split()
+        unit = " ".join(unit_parts)
+
+        # try numeric → 2 sig figs
+        try:
+            val = float(val_str.replace(",", "."))
+            val_fmt = _round_sig_str(val, 2)
+        except Exception:
+            val_fmt = val_str  # non-numeric, keep as is
+
+        out.append(f"{left.strip()}={val_fmt}{(' ' + unit) if unit else ''}")
+    return "; ".join(out)
+
+def _strip_oxides_from_info_str(s: str) -> str:
+    if not isinstance(s, str) or not s.strip():
+        return ""
+    parts = [p.strip() for p in s.split(";") if p.strip()]
+    keep = []
+    for token in parts:
+        left = token.split("=", 1)[0]           # param part before '='
+        norm = re.sub(r"\s+", "", left).upper() # drop spaces, upper
+        if norm in OXIDE_NAMES:
+            continue
+        keep.append(token)
+    return "; ".join(keep)
 
 def get_pg_conn():
     """
@@ -167,11 +233,16 @@ def _merge_metals_cols(df: pd.DataFrame, html: bool = False) -> pd.DataFrame:
 
     # 3) final cleanup + optional HTML formatting
     if "METALS_info" in df.columns:
-        df["METALS_info"] = df["METALS_info"].fillna("")
+        # 3a) drop oxides
+        df["METALS_info"] = (
+            df["METALS_info"]
+            .fillna("")
+            .astype(str)
+            .map(_clean_metals_info)
+        )
+        # 3b) pretty HTML (only after filtering)
         if html:
-            df["METALS_info"] = df["METALS_info"].apply(
-                lambda s: re.sub(r";\s*", "<br>", s) if isinstance(s, str) else ""
-            )
+            df["METALS_info"] = df["METALS_info"].str.replace(r";\s*", "<br>", regex=True)
 
     return df
 
@@ -194,6 +265,8 @@ def query_user_df(user_key: str) -> pd.DataFrame:
                     '; '
                 ) AS METALS_info
             FROM lab_enrichment
+            WHERE UPPER(REPLACE(param, ' ', '')) NOT IN
+                ('MN2O3','AL2O3','CAO','FE2O3','MGO','SIO2','P2O5','TIO2','K2O', 'SO3')
             GROUP BY qr_code
         )
         SELECT
@@ -242,6 +315,8 @@ def query_others_df(user_key: str) -> pd.DataFrame:
                     '; '
                 ) AS METALS_info
             FROM lab_enrichment
+            WHERE UPPER(REPLACE(param, ' ', '')) NOT IN
+                ('MN2O3','AL2O3','CAO','FE2O3','MGO','SIO2','P2O5','TIO2','K2O', 'SO3')
             GROUP BY qr_code
         )
         SELECT s.*,
@@ -275,6 +350,8 @@ def query_sample(sample_id: str) -> pd.DataFrame:
                     '; '
                 ) AS METALS_info
             FROM lab_enrichment
+            WHERE UPPER(REPLACE(param, ' ', '')) NOT IN
+                ('MN2O3','AL2O3','CAO','FE2O3','MGO','SIO2','P2O5','TIO2','K2O', 'SO3')
             GROUP BY qr_code
         )
         SELECT s.*,

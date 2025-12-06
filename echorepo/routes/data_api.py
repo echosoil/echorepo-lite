@@ -4,6 +4,8 @@ from __future__ import annotations
 import csv, io, os, re, sqlite3, math, time, json
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
+import os 
+from echorepo.routes.storage import _get_minio_client 
 
 import requests           # pip install requests
 import jwt                # pip install PyJWT
@@ -260,10 +262,43 @@ def approx_deg_for_km_lon(km: float, at_lat: float) -> float:
 PII_FIELDS = {"email", "userId"}         # always excluded
 EXCLUDED_SUFFIXES = ("_state",)          # exclude any column ending with these
 
+# oxide detectors (legacy endpoints only)
+OXIDE_TOKEN_RE = re.compile(r"[A-Z][a-z]?\d*")
+
+
+def _looks_like_oxide(label: str) -> bool:
+    """
+    Heuristic: a label like 'SiO2', 'Fe2O3', 'K2O', 'CaO'.
+    We parse element tokens and require >=2 tokens with one being Oxygen.
+    Also ignores anything in parentheses, like units.
+    """
+    if not label:
+        return False
+    s = re.sub(r"\(.*?\)", "", str(label))        # strip "(%)", "(mg/kg)", etc.
+    tokens = OXIDE_TOKEN_RE.findall(s)            # e.g. ['Si', 'O2'] or ['Fe2', 'O3']
+    if len(tokens) < 2:
+        return False
+    return any(t.startswith("O") for t in tokens) # one token is Oxygen
+
+def _is_oxide_field(name: str) -> bool:
+    """
+    Consider the whole name and the last token after separators.
+    This catches 'SiO2', 'lab_SiO2', 'value_Fe2O3_(%)', etc.
+    """
+    if not name:
+        return False
+    if _looks_like_oxide(name):
+        return True
+    last = re.split(r"[_\s/\-]+", str(name))[-1]
+    return _looks_like_oxide(last)
+
+
 def is_excluded_field(name: str) -> bool:
     if name in PII_FIELDS:
         return True
-    return any(name.endswith(suf) for suf in EXCLUDED_SUFFIXES)
+    if any(name.endswith(suf) for suf in EXCLUDED_SUFFIXES):
+        return True
+    return _is_oxide_field(name)
 
 DEFAULT_FIELDS = [
     "sampleId", "collectedAt",
@@ -427,6 +462,50 @@ def _canonical_where_from_request(alias: str = "") -> tuple[str, List[Any], Dict
     }
     return where_sql, params, filter_meta
 
+def _upload_canonical_to_minio(samples_path, params_path, images_path):
+    """
+    Upload canonical CSVs to MinIO under:
+      canonical/<YYYY-MM-DD>/{file}
+      canonical/latest/{file}
+    """
+    mclient = _get_minio_client()
+    if mclient is None:
+        current_app.logger.warning("No MinIO client, skipping canonical upload")
+        return
+
+    bucket = (
+        current_app.config.get("MINIO_BUCKET")
+        or os.getenv("MINIO_BUCKET")
+        or "echorepo-uploads"
+    )
+
+    today = datetime.utcnow().date().isoformat()
+    version_prefix = f"canonical/{today}/"
+    latest_prefix = "canonical/latest/"
+
+    files = {
+        "samples.csv": samples_path,
+        "sample_parameters.csv": params_path,
+        "sample_images.csv": images_path,
+    }
+
+    # Make sure bucket exists
+    try:
+        if not mclient.bucket_exists(bucket):
+            mclient.make_bucket(bucket)
+    except Exception as e:
+        current_app.logger.error(f"Error ensuring MinIO bucket {bucket}: {e}")
+        return
+
+    for name, path in files.items():
+        try:
+            # versioned copy
+            mclient.fput_object(bucket, version_prefix + name, path)
+            # latest copy
+            mclient.fput_object(bucket, latest_prefix + name, path)
+        except Exception as e:
+            current_app.logger.error(f"Error uploading {name} to MinIO: {e}")
+
 # -----------------------------------------------------------------------------
 # Endpoints
 # -----------------------------------------------------------------------------
@@ -574,6 +653,7 @@ OXIDE_TO_METAL: dict[str, tuple[str, float]] = {
     "P2O5":  ("P", 0.436),
     "TIO2":  ("Ti", 0.599),
     "K2O":   ("K", 0.83),
+    "SO3":   ("S", 0.40),
 }
 
 

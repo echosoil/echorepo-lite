@@ -23,6 +23,7 @@ import logging
 import csv
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import re  
 
 from flask_babel import gettext as _, get_locale
 
@@ -36,18 +37,115 @@ from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
 
 try:
-    from echorepo.routes.data_api import _oxide_to_metal
+    from echorepo.routes.data_api import _oxide_to_metal, CANONICAL_SAMPLE_COLS
 except Exception:
     # fallback – if import fails, just no conversion
     def _oxide_to_metal(param, value):
         return None
 
+    # fallback canonical columns (same as in data_api.py)
+    CANONICAL_SAMPLE_COLS = [
+        "sample_id",
+        "timestamp_utc",
+        "lat",
+        "lon",
+        "country_code",
+        "location_accuracy_m",
+        "ph",
+        "organic_carbon_pct",
+        "earthworms_count",
+        "contamination_debris",
+        "contamination_plastic",
+        "contamination_other_orig",
+        "contamination_other_en",
+        "pollutants_count",
+        "soil_structure_orig",
+        "soil_structure_en",
+        "soil_texture_orig",
+        "soil_texture_en",
+        "observations_orig",
+        "observations_en",
+        "metals_info_orig",
+        "metals_info_en",
+        "collected_by",
+        "data_source",
+        "qa_status",
+        "licence",
+    ]
+    
 # constants for privacy acceptance
 PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
 PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv")
 
 # blueprint
 web_bp = Blueprint("web", __name__)
+
+# --- Remove oxides helpers ------------------------------------------------
+
+def _looks_like_oxide(label: str) -> bool:
+    """
+    True for formulas like SiO2, Al2O3, FeO, K2O, P2O5, CaO, etc.
+    (Any multi-token formula that contains an O-token.)
+    """
+    if not label:
+        return False
+    s = str(label).strip()
+    s = re.sub(r"\(.*?\)", "", s)  # strip units like "(ppm)"
+    # tokenize into element(+optional digits) chunks
+    tokens = re.findall(r"[A-Z][a-z]?\d*", s)
+    if len(tokens) < 2:
+        return False
+    # oxide if one of the tokens is 'O', 'O2', 'O3', ...
+    return any(t.startswith("O") for t in tokens)
+
+def _drop_oxide_rows(df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name") -> pd.DataFrame:
+    if df is None or df.empty:
+        return df
+    mask = pd.Series(False, index=df.index)
+    if code_col in df.columns:
+        mask |= df[code_col].fillna("").map(_looks_like_oxide)
+    if name_col in df.columns:
+        mask |= df[name_col].fillna("").map(_looks_like_oxide)
+    return df.loc[~mask].copy()
+
+def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove columns whose names look like oxides (directly or as a suffix).
+    Works for things like 'SiO2', 'lab_SiO2', 'value_Fe2O3_(%)', etc.
+    """
+    if df is None or df.empty:
+        return df
+    to_drop = []
+    for col in df.columns:
+        if "photo" in col.lower():
+            continue
+        name = str(col)
+        # check whole name
+        if _looks_like_oxide(name):
+            to_drop.append(col)
+            continue
+        # also check the last token after separators
+        last = re.split(r"[_\s/\-]+", name)[-1]
+        if _looks_like_oxide(last):
+            to_drop.append(col)
+    if to_drop:
+        df = df.drop(columns=to_drop, errors="ignore")
+    return df
+
+OXIDE_NAMES = {"MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"}
+
+def _strip_oxides_from_info_str(s: str) -> str:
+    if not isinstance(s, str) or not s.strip():
+        return ""
+    parts = [p.strip() for p in s.split(";") if p.strip()]
+    keep = []
+    for token in parts:
+        left = token.split("=", 1)[0]
+        norm = re.sub(r"\s+", "", left).upper()
+        if norm in OXIDE_NAMES:
+            continue
+        keep.append(token)
+    return "; ".join(keep)
 
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
@@ -149,6 +247,67 @@ def _append_privacy_acceptance(user_id: str):
 # --------------------------------------------------------------------------
 # SoSci survey helper
 # --------------------------------------------------------------------------
+def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
+    """
+    Return True if any of this user's samples have rows in sample_parameters.
+    Works even if the samples DF doesn't contain any metals summary columns.
+    """
+    try:
+        if df_samples is None or df_samples.empty:
+            return False
+
+        # Find a column that looks like the canonical sample id
+        sid_col = None
+        for cand in ("sampleId", "sample_id", "Sample", "sampleid"):
+            if cand in df_samples.columns:
+                sid_col = cand
+                break
+        if not sid_col:
+            return False
+
+        sample_ids = (
+            df_samples[sid_col]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
+        if not sample_ids:
+            return False
+
+        # Fast existence check in Postgres
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM sample_parameters WHERE sample_id = ANY(%s) LIMIT 1",
+                (sample_ids,),
+            )
+            return cur.fetchone() is not None
+    except Exception as e:
+        logging.getLogger(__name__).warning("lab presence check failed: %s", e)
+        return False
+
+def _user_has_metals_legacy(df: pd.DataFrame) -> bool:
+    if df is None or df.empty:
+        return False
+    candidates = [
+        "METALS_info","lab_METALS_info","METALS","metals",
+        "metals_info","metals_info_en","metals_info_orig",
+        "elemental_concentrations","elemental_concentrations_en","elemental_concentrations_orig",
+    ]
+    for c in df.columns:
+        cl = str(c).lower()
+        if c in candidates or "metals" in cl or ("elemental" in cl and "concentration" in cl):
+            s = (
+                df[c].fillna("")
+                    .astype(str)
+                    .str.replace("<br>", ";", regex=False)
+                    .str.strip()
+                    .replace({"nan":"","None":"","NaN":"","0":"","0.0":""})
+            )
+            if s.str.contains("=", regex=False).any():
+                return True
+    return False
+
 def _build_sosci_url(user_id: str | None) -> str | None:
     if not user_id:
         return None
@@ -160,7 +319,7 @@ def _build_sosci_url(user_id: str | None) -> str | None:
         "es": "spa",
         "fi": "fin",
         "it": "ita",
-        "po": "pol",
+        "pl": "pol",
         "pt": "por",
         "ro": "rum",
     }
@@ -208,6 +367,7 @@ def _js_base_labels() -> dict:
         "qr": _("QR code"),
         "ph": _("pH"),
         "colour": _("Colour"),
+        "soilOrganicMatter": _("Soil organic matter"),
         "texture": _("Texture"),
         "structure": _("Structure"),
         "earthworms": _("Earthworms"),
@@ -215,6 +375,7 @@ def _js_base_labels() -> dict:
         "debris": _("Debris"),
         "contamination": _("Contamination"),
         "metals": _("Metals"),
+        "elementalConcentrations": _("Elemental concentrations"),
         "drawRectangle": _("Draw a rectangle"),
         "cancelDrawing": _("Cancel drawing"),
         "cancel": _("Cancel"),
@@ -242,22 +403,36 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
     if df is None or df.empty:
         return False
 
-    candidate_cols = ("METALS_info", "lab_METALS_info", "METALS", "metals")
-    for col in candidate_cols:
-        if col not in df.columns:
-            continue
+    cols = list(df.columns)
+    # Common exact names across old/new pipelines
+    exact = {
+        "METALS_info", "lab_METALS_info", "METALS", "metals",
+        "metals_info", "metals_info_en", "metals_info_orig",
+        "elemental_concentrations", "elemental_concentrations_en", "elemental_concentrations_orig",
+    }
 
-        series = (
-            df[col]
-            .fillna("")
-            .astype(str)
-            .str.replace("<br>", ";", regex=False)
-            .str.strip()
+    def _series_has_assignments(series: pd.Series) -> bool:
+        s = (
+            series.fillna("")
+                  .astype(str)
+                  .str.replace("<br>", ";", regex=False)
+                  .str.strip()
+                  .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
         )
-        series = series.replace({"nan": "", "None": "", "0": "", "0.0": "", "NaN": ""})
-        if series.str.contains("=", regex=False).any():
+        # our metals blob looks like "Cu=12; Zn=5" etc.
+        return s.str.contains("=", regex=False).any()
+
+    # 1) Fast path: exact column name matches
+    for c in cols:
+        if c in exact and _series_has_assignments(df[c]):
             return True
 
+    # 2) Fallback: any column whose name suggests metals/elemental info
+    for c in cols:
+        name = str(c).lower()
+        if ("metals" in name) or ("elemental" in name and "concentration" in name):
+            if _series_has_assignments(df[c]):
+                return True
     return False
 
 # --------------------------------------------------------------------------
@@ -329,6 +504,51 @@ def _stream_minio_canonical(obj_name: str):
         download_name=obj_name,
     )
 
+def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str):
+    """
+    Upload canonical CSVs (given as text) to MinIO, under:
+      canonical/<version_date>/samples.csv
+      canonical/<version_date>/sample_images.csv
+      canonical/<version_date>/sample_parameters.csv
+      canonical/latest/<same>
+
+    csv_dict keys should be exactly "samples.csv", "sample_images.csv",
+    "sample_parameters.csv".
+    """
+    client = _get_minio_client()
+    if client is None:
+        # MinIO not configured, silently skip
+        return
+
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+
+    try:
+        if not client.bucket_exists(bucket):
+            client.make_bucket(bucket)
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error ensuring MinIO bucket {bucket}: {e}")
+        return
+
+    from io import BytesIO
+
+    for filename, csv_text in csv_dict.items():
+        if not csv_text:
+            continue
+
+        data = csv_text.encode("utf-8")
+        for prefix in (f"canonical/{version_date}/", "canonical/latest/"):
+            obj_name = prefix + filename
+            try:
+                client.put_object(
+                    bucket,
+                    obj_name,
+                    BytesIO(data),
+                    length=len(data),
+                    content_type="text/csv",
+                )
+            except Exception as e:
+                logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
+
 @web_bp.post("/privacy/accept")
 @login_required
 def privacy_accept():
@@ -398,15 +618,34 @@ def download_canonical_samples():
         abort(404, description="No canonical samples found in database")
 
     df = pd.DataFrame(rows)
-    buf = BytesIO()
-    df.to_csv(buf, index=False)
-    buf.seek(0)
+
+    # build CSV body into text
+    buf_txt = io.StringIO()
+    df.to_csv(buf_txt, index=False)
+    body = buf_txt.getvalue()
+
+    # simple "live export" header
+    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    base_url = request.url_root.rstrip("/")
+    header = [
+        "# ECHOrepo Canonical Dataset",
+        "# File: samples.csv",
+        f"# Generated at: {generated_at}",
+        f"# Downloaded from: {base_url}/download/canonical/samples.csv",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "",
+    ]
+    csv_text = "\n".join(header) + body
+
+    data = csv_text.encode("utf-8")
+    buf = BytesIO(data)
     return send_file(
         buf,
         as_attachment=True,
         download_name="samples.csv",
         mimetype="text/csv",
     )
+
 
 
 @web_bp.route("/download/canonical/sample_images.csv")
@@ -439,9 +678,27 @@ def download_canonical_sample_images():
         abort(404, description="No canonical sample_images found in database")
 
     df = pd.DataFrame(rows)
-    buf = BytesIO()
-    df.to_csv(buf, index=False)
-    buf.seek(0)
+    
+    # build CSV body into text
+    buf_txt = io.StringIO()
+    df.to_csv(buf_txt, index=False)
+    body = buf_txt.getvalue()
+
+    # simple "live export" header
+    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    base_url = request.url_root.rstrip("/")
+    header = [
+        "# ECHOrepo Canonical Dataset",
+        "# File: sample_images.csv",
+        f"# Generated at: {generated_at}",
+        f"# Downloaded from: {base_url}/download/canonical/sample_images.csv",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "",
+    ]
+    csv_text = "\n".join(header) + body
+
+    data = csv_text.encode("utf-8")
+    buf = BytesIO(data)
     return send_file(
         buf,
         as_attachment=True,
@@ -483,9 +740,28 @@ def download_canonical_sample_parameters():
         abort(404, description="No canonical sample_parameters found in database")
 
     df = pd.DataFrame(rows)
-    buf = BytesIO()
-    df.to_csv(buf, index=False)
-    buf.seek(0)
+    df = _drop_oxide_rows(df)  
+
+    # build CSV body into text
+    buf_txt = io.StringIO()
+    df.to_csv(buf_txt, index=False)
+    body = buf_txt.getvalue()
+
+    # simple "live export" header
+    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    base_url = request.url_root.rstrip("/")
+    header = [
+        "# ECHOrepo Canonical Dataset",
+        "# File: sample_parameters.csv",
+        f"# Generated at: {generated_at}",
+        f"# Downloaded from: {base_url}/download/canonical/sample_parameters.csv",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "",
+    ]
+    csv_text = "\n".join(header) + body
+
+    data = csv_text.encode("utf-8")
+    buf = BytesIO(data)
     return send_file(
         buf,
         as_attachment=True,
@@ -501,31 +777,88 @@ def download_canonical_zip():
         "file_name": "all_canonical.zip",
         "kind": "canonical_export",
     }
+    
+    # Version date for this canonical snapshot
+    version_date = datetime.utcnow().date().isoformat()
+    # Base URL for building reference links in headers
+    base_url = request.url_root.rstrip("/")
+
+    # We'll collect the final CSV text for MinIO upload
+    csv_contents: dict[str, str] = {}
+
     mem = BytesIO()
     with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         # 1) samples.csv
         with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM samples ORDER BY timestamp_utc DESC, sample_id")
             df_samples = pd.DataFrame(cur.fetchall())
+
         buf1 = io.StringIO()
         df_samples.to_csv(buf1, index=False)
-        zf.writestr("samples.csv", buf1.getvalue())
+        body_samples = buf1.getvalue()
+
+        header_samples = [
+            "# ECHOrepo Canonical Dataset",
+            "# File: samples.csv",
+            f"# Version date: {version_date}",
+            f"# Version URL: {base_url}/download/canonical/{version_date}/samples.csv",
+            f"# Latest canonical: {base_url}/download/canonical/samples.csv",
+            "# Description: Canonical sample-level data (locations, pH, texture, structure, etc.).",
+            "",
+        ]
+        csv_samples = "\n".join(header_samples) + body_samples
+
+        csv_contents["samples.csv"] = csv_samples
+        zf.writestr("samples.csv", csv_samples)
 
         # 2) sample_images.csv
         with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM sample_images ORDER BY sample_id, image_id")
             df_imgs = pd.DataFrame(cur.fetchall())
+
         buf2 = io.StringIO()
         df_imgs.to_csv(buf2, index=False)
-        zf.writestr("sample_images.csv", buf2.getvalue())
+        body_imgs = buf2.getvalue()
+
+        header_imgs = [
+            "# ECHOrepo Canonical Dataset",
+            "# File: sample_images.csv",
+            f"# Version date: {version_date}",
+            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_images.csv",
+            f"# Latest canonical: {base_url}/download/canonical/sample_images.csv",
+            "# Description: Canonical image metadata linked to samples (IDs, URLs, descriptions).",
+            "",
+        ]
+        csv_imgs = "\n".join(header_imgs) + body_imgs
+
+        csv_contents["sample_images.csv"] = csv_imgs
+        zf.writestr("sample_images.csv", csv_imgs)
 
         # 3) sample_parameters.csv
         with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM sample_parameters ORDER BY sample_id, parameter_code")
             df_params = pd.DataFrame(cur.fetchall())
+            df_params = _drop_oxide_rows(df_params)
+
         buf3 = io.StringIO()
         df_params.to_csv(buf3, index=False)
-        zf.writestr("sample_parameters.csv", buf3.getvalue())
+        body_params = buf3.getvalue()
+
+        header_params = [
+            "# ECHOrepo Canonical Dataset",
+            "# File: sample_parameters.csv",
+            f"# Version date: {version_date}",
+            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_parameters.csv",
+            f"# Latest canonical: {base_url}/download/canonical/sample_parameters.csv",
+            "# Description: Canonical laboratory parameters (metals, nutrients, etc.) per sample.",
+            "",
+        ]
+        csv_params = "\n".join(header_params) + body_params
+
+        csv_contents["sample_parameters.csv"] = csv_params
+        zf.writestr("sample_parameters.csv", csv_params)
+
+    _upload_canonical_csvs_to_minio(csv_contents, version_date)
 
     mem.seek(0)
     return send_file(
@@ -555,19 +888,33 @@ def home():
     # 1) default from env (now default is OFF)
     privacy_gate_default = _env_true("PRIVACY_GATE", False)
 
-    # 2) optional per-request override: ?privacy=on / ?privacy=off
-    override = (request.args.get("privacy") or "").strip().lower()
-    if override in {"on", "1", "true", "yes", "y"}:
-        privacy_gate_on = True
-    elif override in {"off", "0", "false", "no", "n"}:
-        privacy_gate_on = False
+    # 2) enable/disable URL override via .env
+    privacy_override_enabled = _env_true("PRIVACY_DEBUG_OVERRIDE", False)
+
+    if privacy_override_enabled:
+        # optional per-request override: ?privacy=on / ?privacy=off
+        override = (request.args.get("privacy") or "").strip().lower()
+        if override in {"on", "1", "true", "yes", "y"}:
+            privacy_gate_on = True
+        elif override in {"off", "0", "false", "no", "n"}:
+            privacy_gate_on = False
+        else:
+            privacy_gate_on = privacy_gate_default
     else:
+        # ignore ?privacy=... when override is disabled
         privacy_gate_on = privacy_gate_default
 
     needs_privacy = privacy_gate_on and not _has_accepted_privacy(privacy_user_id or "")
 
-    # user data
+    # user data (samples)
     df = query_user_df(user_key)
+
+    # decide survey visibility from canonical lab rows, not from samples DF
+    has_lab_results = _user_has_lab_results(df) or _user_has_metals_legacy(df)
+
+    # only for display, now drop oxide-like columns (harmless on samples DF)
+    df = _drop_oxide_columns_from_df(df)
+
     i18n = {"labels": build_i18n_labels(_js_base_labels())}
 
     # try to get "real" internal user id from data
@@ -583,15 +930,19 @@ def home():
     survey_url = _build_sosci_url(survey_user_id)
 
     # only show survey if user actually has metals-like data
-    has_metals = _user_has_metals(df)
+    has_metals = has_lab_results
     show_survey = bool(survey_url) and has_metals
 
     # --- survey override via URL (?survey=on/off), for testing ---
-    survey_override = (request.args.get("survey") or "").strip().lower()
-    if survey_override in {"on", "1", "true", "yes", "y"} and survey_url:
-        show_survey = True
-    elif survey_override in {"off", "0", "false", "no", "n"}:
-        show_survey = False
+    survey_override_enabled = _env_true("SURVEY_DEBUG_OVERRIDE", False)
+
+    if survey_override_enabled:
+        survey_override = (request.args.get("survey") or "").strip().lower()
+        if survey_override in {"on","1","true","yes","y"}:
+            show_survey = bool(survey_url)   # ignore has_metals here
+        elif survey_override in {"off","0","false","no","n"}:
+            show_survey = False
+    # else: ignore any ?survey=... and keep show_survey as computed
 
     # EMPTY CASE ------------------------------------------------------------
     if df.empty:
@@ -661,6 +1012,7 @@ def home():
         privacy_version=PRIVACY_VERSION,
         # NEW: pass flag to template
         can_upload_lab_data=can_upload,
+        current_locale=str(get_locale() or "en"),
     )
 
 # --------------------------------------------------------------------------
@@ -697,6 +1049,8 @@ def download_csv():
     if df.empty:
         abort(404)
     df = strip_orig_cols(df)
+    df = _drop_oxide_columns_from_df(df)
+
     buf = BytesIO()
     df.to_csv(buf, index=False)
     buf.seek(0)
@@ -723,6 +1077,8 @@ def download_xlsx():
     if df.empty:
         abort(404)
     df = strip_orig_cols(df)
+    df = _drop_oxide_columns_from_df(df)
+
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine="xlsxwriter") as w:
         df.to_excel(w, index=False, sheet_name="data")
@@ -758,6 +1114,8 @@ def download_all_csv():
     try:
         df_all = pd.read_csv(p, dtype=str, keep_default_na=False, low_memory=False)
         df_all = strip_orig_cols(df_all)
+        df_all = _drop_oxide_columns_from_df(df_all)
+
         drop_these = [col for col in df_all.columns if col.lower() in pii_cols]
         if drop_these:
             df_all = df_all.drop(columns=drop_these, errors="ignore")
@@ -785,6 +1143,8 @@ def download_all_csv():
             keep_idx = []
             for i, name in enumerate(header):
                 if name.lower() in pii_cols:
+                    continue
+                if _looks_like_oxide(name) or _looks_like_oxide(re.split(r"[_\s/\-]+", name)[-1]):
                     continue
                 keep_idx.append(i)
 
@@ -950,6 +1310,7 @@ def lab_import():
 
             # 2) if this is an oxide like 'K2O', also store elemental 'K'
             conv = _oxide_to_metal(param, val)
+
             if conv is not None:
                 metal_param, metal_val = conv
                 cur.execute(
@@ -1049,9 +1410,14 @@ def search_samples():
 
     # ---- special case: export as ZIP ----
     if fmt == "zip":
-        # we need *all* matching sample_ids (no limit)
+        query_string = request.query_string.decode("utf-8")
+        generated = datetime.utcnow().isoformat() + "Z"
+        canonical_base = "https://echorepo.quanta-labs.com/download/canonical"
+
+        # Use the full canonical column set from data_api.py
+        cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
         sql_all = f"""
-            SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
+            SELECT {cols_sql}
             FROM samples
             WHERE {where_sql}
             ORDER BY timestamp_utc DESC
@@ -1061,8 +1427,9 @@ def search_samples():
             # 1) get all matching samples
             cur.execute(sql_all, params)
             samples = cur.fetchall()
-            sample_ids = [row[0] for row in samples if row[0]]
 
+            # sample_id is the first canonical column
+            sample_ids = [row[CANONICAL_SAMPLE_COLS.index("sample_id")] for row in samples if row[CANONICAL_SAMPLE_COLS.index("sample_id")]]
             # to avoid "IN ()" when no results
             if not sample_ids:
                 # return empty zip
@@ -1103,19 +1470,53 @@ def search_samples():
             cur.execute(sql_params, (sample_ids,))
             params_rows = cur.fetchall()
 
+        # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
+        def _row_is_oxide(t):
+           code = (t[2] or "").strip()
+           name = (t[3] or "").strip()
+           return _looks_like_oxide(code) or _looks_like_oxide(name)
+
+        params_rows = [r for r in params_rows if not _row_is_oxide(r)]
+        
         # build zip in-memory
         mem = io.BytesIO()
         with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
             # samples_filtered.csv
             out1 = io.StringIO()
+
+            # ----- METADATA HEADER -----
+            out1.write("# ECHOrepo Filtered Dataset\n")
+            out1.write("# Source table: samples (filtered subset)\n")
+            out1.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out1.write(f"# Generated at: {generated}\n")
+            out1.write(f"# Query: {query_string}\n")
+            out1.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
+            out1.write("\n")
+
             w1 = csv.writer(out1)
-            w1.writerow(["sample_id", "timestamp_utc", "country_code", "ph", "lat", "lon", "collected_by"])
+
+            # header: all canonical sample columns
+            w1.writerow(CANONICAL_SAMPLE_COLS)
+
+            # rows come from SELECT {cols_sql} in the same order
             for r in samples:
                 w1.writerow(r)
+
             zf.writestr("samples_filtered.csv", out1.getvalue())
+
 
             # sample_images_filtered.csv
             out2 = io.StringIO()
+
+            # ----- METADATA HEADER -----
+            out2.write("# ECHOrepo Filtered Dataset\n")
+            out2.write("# Source table: sample_images (joined subset)\n")
+            out2.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out2.write(f"# Generated at: {generated}\n")
+            out2.write(f"# Query: {query_string}\n")
+            out2.write("# Note: Filtering is applied by sample_id match. Not a stable or citable dataset.\n")
+            out2.write("\n")
+
             w2 = csv.writer(out2)
             w2.writerow(["sample_id", "country_code", "image_id", "image_url",
                          "image_description_orig", "image_description_en",
@@ -1126,6 +1527,16 @@ def search_samples():
 
             # sample_parameters_filtered.csv
             out3 = io.StringIO()
+
+            # ----- METADATA HEADER -----
+            out3.write("# ECHOrepo Filtered Dataset\n")
+            out3.write("# Source table: sample_parameters (joined subset)\n")
+            out3.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out3.write(f"# Generated at: {generated}\n")
+            out3.write(f"# Query: {query_string}\n")
+            out3.write("# Note: Oxides may be removed depending on platform settings. Not a stable or citable dataset.\n")
+            out3.write("\n")
+
             w3 = csv.writer(out3)
             w3.writerow(["sample_id", "country_code", "parameter_code", "parameter_name",
                          "value", "uom", "analysis_method", "analysis_date",
@@ -1291,3 +1702,14 @@ def usage_dashboard():
         downloads_by_dataset=downloads_by_dataset,
         by_type=by_type,
     )
+
+@web_bp.get("/download/canonical/<date>/<filename>")
+@login_required
+def download_canonical_version(date, filename):
+    """
+    Serve a specific dated canonical CSV from MinIO, e.g.
+    /download/canonical/2025-12-02/samples.csv
+    which maps to MinIO object canonical/2025-12-02/samples.csv
+    """
+    obj_name = f"{date}/{filename}"
+    return _stream_minio_canonical(obj_name)
