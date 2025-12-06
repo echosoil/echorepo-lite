@@ -94,6 +94,50 @@
       font-size: 1rem;
     }
   </style>
+  <style>
+    /* Scrollable Leaflet popup content */
+    .leaflet-popup-content-wrapper { padding: 0; }           /* tighter chrome */
+    .leaflet-popup-content { margin: 0; }                    /* remove extra margins */
+
+    /* Our popup skin + scroll area */
+    .sample-popup .popup-scroll {
+      max-height: min(55vh, 420px);  /* fits on desktop & mobile */
+      overflow-y: auto;
+      padding: 0.75rem 1rem;
+    }
+
+    /* Nice defaults inside popup */
+    .sample-popup img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+    .sample-popup h5, .sample-popup h6 { margin: .4rem 0; }
+    .sample-popup ul { margin: 0 0 .5rem 1rem; padding: 0; }
+  </style>
+  <style>
+    /* Thumbnail figure inside table cells */
+    #tableWrap td figure.thumb { 
+      margin: 0; 
+    }
+    #tableWrap td figure.thumb img {
+      max-width: 140px;
+      max-height: 100px;
+      display: block;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+    #tableWrap td figure.thumb figcaption {
+      margin-top: .25rem;
+      font-size: 0.72rem;
+      color: #6c757d; /* muted */
+      white-space: normal; /* allow wrapping */
+    }
+  </style>
+  <style>
+    .metals-block {
+      white-space: pre;   /* keep spaces/tabs exactly */
+      line-height: 1.15;
+      font: inherit;      /* use the table’s monospace */
+      margin: 0;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -425,7 +469,7 @@
       }
 
       // Initial state from localStorage
-      var initialState = null;
+      var initialState = FORCE_SURVEY ? null : (localStorage.getItem(storageKey) || null);
       try {
         initialState = localStorage.getItem(storageKey);
       } catch (e) {}
@@ -453,4 +497,221 @@
       }
     })();
   </script>
+  <script>
+  (function enhancePhotoCells(){
+    const wrap = document.querySelector('#tableWrap');
+    if (!wrap) return;
+    const table = wrap.querySelector('table');
+    if (!table) return;
+
+    // --- Find header cells robustly ---
+    let headerCells = [];
+    if (table.tHead && table.tHead.rows.length) {
+      // use the last thead row that actually has cells
+      for (let i = table.tHead.rows.length - 1; i >= 0 && !headerCells.length; i--) {
+        const cells = Array.from(table.tHead.rows[i].cells || []);
+        if (cells.length) headerCells = cells;
+      }
+    }
+    if (!headerCells.length) {
+      // fallback: first row in tbody
+      const firstRow = table.querySelector('tbody tr');
+      if (firstRow) headerCells = Array.from(firstRow.querySelectorAll('th,td'));
+    }
+    if (!headerCells.length) return;
+
+    const norm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
+
+    const headers = headerCells.map(th =>
+      th.getAttribute('data-colname') || (th.textContent || '')
+    );
+    const nameToIndex = {};
+    headers.forEach((h, i) => { nameToIndex[norm(h)] = i; });
+
+    // --- Build map of photo columns: {key -> {path:index, opt:index}} ---
+    const colMap = {};
+    headers.forEach((h, i) => {
+      const n = norm(h);
+      // match "PHOTO_photos_<n>_path" in a forgiving way
+      let m = /^photo.*photos.*(\d+).*path$/.exec(n);
+      if (m) {
+        const k = m[1];
+        colMap[k] = colMap[k] || {};
+        colMap[k].path = i;
+        // try to find matching option
+        const optIdx = nameToIndex[n.replace(/path$/, 'option')];
+        if (optIdx != null) colMap[k].opt = optIdx;
+        return;
+      }
+      // generic *_path + sibling *_option case
+      if (n.endsWith('_path')) {
+        const base = n.slice(0, -5);
+        const optIdx = nameToIndex[base + '_option'];
+        if (optIdx != null) {
+          const key = (base.match(/^photo.*photos.*(\d+)$/) || [,''])[1] || base;
+          colMap[key] = colMap[key] || {};
+          colMap[key].path = i;
+          colMap[key].opt = optIdx;
+        }
+      }
+    });
+
+    if (!Object.keys(colMap).length) {
+      console.debug('[photos] no photo columns detected:', headers);
+      return;
+    }
+
+    // --- Helpers ---
+    const getUrlFromCell = (td) => {
+      if (!td) return '';
+      const a = td.querySelector('a[href]');
+      if (a && a.getAttribute('href')) return a.getAttribute('href').trim();
+      return (td.textContent || '').trim();
+    };
+
+    function decorateCell(td, url, caption) {
+      if (!td || td.dataset.photoDecorated === '1') return;
+      const cleanUrl = String(url || '').trim();
+      if (!cleanUrl) return;
+      if (!/^https?:\/\//i.test(cleanUrl) && !cleanUrl.startsWith('/')) return;
+
+      const fig = document.createElement('figure');
+      fig.className = 'thumb';
+
+      const a = document.createElement('a');
+      a.href = cleanUrl;
+      a.target = '_blank';
+      a.rel = 'noopener';
+
+      const img = document.createElement('img');
+      img.src = cleanUrl;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.alt = caption || 'Sample photo';
+      img.title = caption || 'Sample photo';
+
+      a.appendChild(img);
+      fig.appendChild(a);
+
+      if (caption) {
+        const fc = document.createElement('figcaption');
+        fc.textContent = caption;
+        fig.appendChild(fc);
+      }
+
+      td.textContent = '';
+      td.appendChild(fig);
+      td.dataset.photoDecorated = '1';
+    }
+
+    // --- Process all body rows ---
+    const body = table.tBodies && table.tBodies[0];
+    if (!body) return;
+    const rows = Array.from(body.rows);
+
+    rows.forEach(tr => {
+      const tds = Array.from(tr.cells);
+      Object.values(colMap).forEach(({ path: pIdx, opt: oIdx }) => {
+        if (pIdx == null || !tds[pIdx]) return;
+        const url = getUrlFromCell(tds[pIdx]);
+        const caption = (oIdx != null && tds[oIdx]) ? (tds[oIdx].textContent || '').trim() : '';
+        decorateCell(tds[pIdx], url, caption);
+      });
+    });
+  })();
+  </script>
+  <script>
+  (function () {
+    var expanded   = document.getElementById('finalSurveyBox');
+    var collapsed  = document.getElementById('finalSurveyCollapsed');
+    if (!expanded || !collapsed) return;
+
+    var hideBtn    = document.getElementById('finalSurveyHideBtn');
+    var showBtn    = document.getElementById('finalSurveyShowBtn');
+    var dismissBtn = document.getElementById('finalSurveyDismissBtn');
+
+    var userKey    = "{{ user_key|e }}";
+    var storageKey = "echo_final_survey_state_" + userKey;
+
+    // NEW: force override if ?survey=on
+    var FORCE_SURVEY = {{ (request.args.get('survey','').strip().lower() in ['on','1','true','yes','y']) | tojson }};
+    if (FORCE_SURVEY) {
+      try { localStorage.removeItem(storageKey); } catch (e) {}
+    }
+
+    function applyState(state) {
+      if (state === 'collapsed') {
+        expanded.classList.add('d-none');
+        collapsed.classList.remove('d-none');
+      } else if (state === 'dismissed') {
+        expanded.classList.add('d-none');
+        collapsed.classList.add('d-none');
+      } else {
+        expanded.classList.remove('d-none');
+        collapsed.classList.add('d-none');
+      }
+    }
+
+    function setState(state) {
+      try {
+        if (state) localStorage.setItem(storageKey, state);
+        else localStorage.removeItem(storageKey);
+      } catch (e) {}
+      applyState(state);
+    }
+
+    var initialState = null;
+    try { initialState = localStorage.getItem(storageKey); } catch (e) {}
+    applyState(initialState);
+
+    if (hideBtn) hideBtn.addEventListener('click', function(){ setState('collapsed'); });
+    if (showBtn) showBtn.addEventListener('click', function(){ setState(null); });
+    if (dismissBtn) dismissBtn.addEventListener('click', function(){ setState('dismissed'); });
+  })();
+  </script>
+  <script>
+  (function addShowOnMapButtons(){
+    const table = document.querySelector('#tableWrap table');
+    if (!table || !table.tBodies.length) return;
+
+    // find the "Sample" column index (by header text)
+    let sampleIdx = -1;
+    const headerRow = (table.tHead && table.tHead.rows.length)
+      ? table.tHead.rows[table.tHead.rows.length - 1]
+      : table.querySelector('tbody tr');
+    if (!headerRow) return;
+
+    const headerCells = Array.from(headerRow.querySelectorAll('th,td'));
+    headerCells.forEach((th, i) => {
+      const t = (th.textContent || '').trim().toLowerCase();
+      if (t === 'sample') sampleIdx = i;
+    });
+    if (sampleIdx < 0) return;
+
+    // decorate each row
+    Array.from(table.tBodies[0].rows).forEach(tr => {
+      const cells = tr.cells;
+      if (!cells || !cells[sampleIdx]) return;
+
+      const cell = cells[sampleIdx];
+      const sampleId = (cell.textContent || '').trim();
+      if (!sampleId || cell.querySelector('.btn-show-on-map')) return;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm btn-outline-secondary ms-2 btn-show-on-map';
+      btn.title = '{{ _("Show on map") }}';
+      btn.innerHTML = '<i class="bi bi-geo-alt"></i>'; // or use text: 'Locate'
+      btn.addEventListener('click', () => {
+        const ok = window.__echomapShow && window.__echomapShow(sampleId);
+        if (!ok) alert('{{ _("Could not locate this sample on the map.") }}');
+        // optional: scroll to map
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      cell.appendChild(btn);
+    });
+  })();
+  </script>
+
 {% endblock %}

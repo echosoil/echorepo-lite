@@ -13,10 +13,90 @@
   const JITTER_M = Number(cfg.jitter_m) || 1000;
 
   const map = L.map('map', {
-    minZoom: 3,
-    maxZoom: 18
-  }).setView([40, 0], 4);
+    minZoom: 4,
+    maxZoom: 15
+  }).setView([50, 10], 5);  // try 6, 7, 8, etc.
+
+  // 👇 Expose map + global index + "show" helper
   window.__echomap = map;
+  window.__echomapIndex = new Map();
+  window.__echomapShow = function(sampleId, opts) {
+    const id = String(sampleId || '');
+    const ring = window.__echomapIndex.get(id);
+    if (!ring) return false;
+
+    // make sure it's visible
+    if (!map.hasLayer(ring) && ring.addTo) {
+      try { ring.addTo(map); } catch (_) {}
+    }
+
+    const ll = ring.getLatLng ? ring.getLatLng() : null;
+    if (!ll) return false;
+
+    const targetZoom = (opts && opts.zoom) || Math.max(map.getZoom(), 14);
+    map.setView(ll, targetZoom, { animate: true });
+    if (ring.openPopup) ring.openPopup();
+    return true;
+  };
+
+  // Inject CSS once for scrollable popups
+  (function ensurePopupCSS(){
+    if (document.getElementById('echoPopupCSS')) return;
+    const style = document.createElement('style');
+    style.id = 'echoPopupCSS';
+    style.textContent = `
+      .leaflet-popup.echo-popup { max-width: 420px; }
+      .leaflet-popup-content { margin: 8px 12px; }
+      .leaflet-popup-content .popup-scroll { max-height: 260px; overflow: auto; }
+      .leaflet-popup-content .popup-table th { white-space: nowrap; vertical-align: top; padding-right: .5rem; }
+      .leaflet-popup-content .popup-table td { word-break: break-word; }
+    `;
+    document.head.appendChild(style);
+  })();
+
+  // --- Metals cleaner: drop oxides + round to 2 sig figs ---
+  const OXIDES = new Set(["MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"]);
+
+  function roundSigStr(n, sig=2){
+    const v = Number(n);
+    if (!Number.isFinite(v) || v === 0) return "0";
+    const exp = Math.floor(Math.log10(Math.abs(v)));
+    const dec = sig - 1 - exp;
+    if (dec >= 0) {
+      return v.toFixed(dec).replace(/\.?0+$/,'');
+    } else {
+      const f = Math.pow(10, -dec);
+      return String(Math.round(v / f) * f);
+    }
+  }
+
+  /** Accepts "PARAM=VAL [UNIT]" separated by ";" or "<br>" */
+  function cleanMetalsInfo(raw){
+    if (raw == null) return "";
+    const pieces = String(raw).split(/(?:<br\s*\/?>|;)/i)
+      .map(s => s.trim()).filter(Boolean);
+    const out = [];
+    for (const tok of pieces){
+      const [left, ...rest] = tok.split("=");
+      const name = (left || "").replace(/\s+/g, "").toUpperCase();
+      if (!left) continue;
+      if (OXIDES.has(name)) continue;               // drop oxides
+
+      if (rest.length === 0) {                      // no "=" → keep as-is
+        out.push(tok);
+        continue;
+      }
+
+      const right = rest.join("=").trim();
+      const [valPart, ...unitParts] = right.split(/\s+/);
+      const unit = unitParts.join(" ");
+      const num = Number(String(valPart).replace(",", "."));
+      const valFmt = Number.isFinite(num) ? roundSigStr(num, 2) : valPart;
+
+      out.push(`${left.trim()}=${valFmt}${unit ? " " + unit : ""}`);
+    }
+    return out.join("<br>");
+  }
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -204,9 +284,6 @@
     const dict    = (window.I18N && window.I18N.labels)   || {};
     const byMsgid = (window.I18N && window.I18N.by_msgid) || {};
 
-    // 1) key-based label (catalog+overrides already merged server-side)
-    // 2) else msgid-override when defaultText is a msgid
-    // 3) else fallback to defaultText → key
     let raw =
       (key != null && Object.prototype.hasOwnProperty.call(dict, key))
         ? dict[key]
@@ -229,47 +306,97 @@
   }
   window.T = T;
 
+  function pickPhotoFromProps(props){
+    const items = [];
+    for (const [k, v] of Object.entries(props || {})) {
+      const m = /^PHOTO_photos_(\d+)_path$/.exec(k);
+      if (!m || !v) continue;
+      const idx = Number(m[1]);
+      const url = String(v).trim();
+      if (!url) continue;
+
+      const opt  = String(props[`PHOTO_photos_${idx}_option`] || "").toLowerCase();
+      const desc = String(props[`PHOTO_photos_${idx}_description`] || "").trim();
+      items.push({ idx, url, opt, desc });
+    }
+    if (!items.length) return null;
+
+    // stable order by index as tie-breaker
+    items.sort((a,b) => a.idx - b.idx);
+
+    // preference rules
+    const prefer = [
+      (x) => /landscape/.test(x.opt),
+      (x) => /cover|banner/.test(x.opt),
+      (x) => /default|main|principal/.test(x.opt),
+    ];
+    for (const rule of prefer) {
+      const hit = items.find(rule);
+      if (hit) return hit;
+    }
+    return items[0]; // fallback: first available
+  }
+
   function formatPopup(f, isOwnerLayer){
-    const p=f.properties||{}; const fmt=(v)=>(v==null||(typeof v==="string"&&v.trim()===""))?"—":v;
-    const rows=[
+    const p = f.properties || {};
+    const fmt = (v) => (v == null || (typeof v === "string" && v.trim() === "")) ? "—" : v;
+
+    // Clean & format metals (oxide-free, 2 sig figs, <br> separators)
+    const metals = cleanMetalsInfo(p.METALS_info);
+
+    const rows = [
       ['<i class="bi bi-calendar"></i> ' + T('date',{},'Date'),         formatDate(p.collectedAt)],
       ['<i class="bi bi-qr-code-scan"></i> ' + T('qr',{},'QR code'),    p.QR_qrCode],
       ['<i class="bi bi-droplet-half"></i> ' + T('ph',{},'pH'),         p.PH_ph],
-      ['<i class="bi bi-palette"></i> ' + T('colour',{},'Colour'),      p.SOIL_COLOR_color],
+      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter',{},'Soil organic matter'),      p.SOIL_COLOR_color],
       ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture',{},'Texture'), p.SOIL_TEXTURE_texture],
       ['<i class="bi bi-diagram-3"></i> ' + T('structure',{},'Structure'), p.SOIL_STRUCTURE_structure],
       ['<i class="bi bi-bug"></i> ' + T('earthworms',{},'Earthworms'),  fmtInt(p.SOIL_DIVER_earthworms)],
       ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'),        fmtInt(p.SOIL_CONTAMINATION_plastic)],
       ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'),       fmtInt(p.SOIL_CONTAMINATION_debris)],
       ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), p.SOIL_CONTAMINATION_comments],
-      ['<i class="bi bi-nut"></i> ' + T('metals',{},'Metals'),          p.METALS_info],
-    ].filter(([_,v])=>!(v==null||(typeof v==="string"&&v.trim()==="")||v==="—"));
-    let html=`<div class="popup-card"><table class="table table-sm mb-2">${
-      rows.map(([k,v])=>`<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")}</table>`;
-    if(p.PHOTO_photos_1_path){ const url=String(p.PHOTO_photos_1_path);
-        html += `
+      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'),          metals],
+    ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
+
+    const tableHtml = `<table class="table table-sm popup-table mb-2">${
+      rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")
+    }</table>`;
+
+    const bestPhoto = pickPhotoFromProps(p);
+    let photoHtml = "";
+    if (bestPhoto) {
+      const caption = bestPhoto.desc || (bestPhoto.opt ? (bestPhoto.opt[0].toUpperCase() + bestPhoto.opt.slice(1)) : "");
+      photoHtml = `
         <div class="popup-photo mt-2">
-          <a href="${url}" target="_blank" rel="noopener">
+          <a href="${bestPhoto.url}" target="_blank" rel="noopener">
             <img
-              src="${url}"
-              alt="Sample photo"
-              style="
-                max-width: 100%;
-                height: auto;
-                max-height: 180px;
-                display: block;
-                object-fit: cover;
-              "
-            >
+              src="${bestPhoto.url}"
+              alt="${caption || 'Sample photo'}"
+              style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:cover;">
           </a>
-        </div>`; 
+          ${caption ? `<div class="small text-muted mt-1">${caption}</div>` : ""}
+        </div>`;
     }
-    if(p.sampleId){
-      html+=`<div class="mt-2"><a class="btn btn-sm btn-outline-primary"
-              href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
-              target="_blank" rel="noopener"><i class="bi bi-filetype-csv"></i> ${T('export',{},'Export')}</a></div>`;
+
+    let exportHtml = "";
+    if (p.sampleId) {
+      exportHtml = `<div class="mt-2">
+        <a class="btn btn-sm btn-outline-primary"
+          href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
+          target="_blank" rel="noopener">
+          <i class="bi bi-filetype-csv"></i> ${T('export',{},'Export')}
+        </a>
+      </div>`;
     }
-    html+=`</div>`; return html;
+
+    // Scrollable body
+    return `<div class="popup-card">
+              <div class="popup-scroll">
+                ${tableHtml}
+                ${photoHtml}
+              </div>
+              ${exportHtml}
+            </div>`;
   }
 
   // ---- State ----
@@ -347,9 +474,25 @@
             fillColor:clr, fillOpacity:0.35
           });
           ring.__props = props;
-          ring.bindPopup(formatPopup(f,isOwner));
+          ring.__owner = !!isOwner;
+
+          // Bind popup
+          ring.bindPopup(
+            formatPopup(f, isOwner),
+            { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
+          );
           ring.addTo(map);
           bucket.push(ring);
+
+          // 👇 Index by sample id (with fallbacks)
+          const sid =
+            props.sampleId ||
+            props.sample_id ||
+            props.Sample ||
+            props.QR_qrCode || null;
+          if (sid) {
+            window.__echomapIndex.set(String(sid), ring);
+          }
         }
       });
     }
@@ -362,14 +505,6 @@
     othersCluster.addLayer(othersLayer);
     map.addLayer(userCluster);
     map.addLayer(othersCluster);
-
-    // Fit once
-    let b=null;
-    const hasUser = Array.isArray(userGJ?.features) && userGJ.features.length>0;
-    const hasOthers = Array.isArray(othersGJ?.features) && othersGJ.features.length>0;
-    if(hasUser) b=userCluster.getBounds();
-    if(hasOthers) b=b?b.extend(othersCluster.getBounds()):othersCluster.getBounds();
-    if(b&&b.isValid()) map.fitBounds(b,{padding:[20,20]}); else map.setView([50,10],4);
 
     addTwoToggleControl();
     addSelectionControl();
@@ -454,7 +589,7 @@
           <input class="form-check-input" type="checkbox" id="togUser" checked>
           <label class="form-check-label" for="togUser">${T('yourSamples', {}, 'Your samples')}</label>
         </div>
-        <div class="form-check" style="margin:.1rem 0;">
+        <div class="form-check" style="margin:.1rem 0%;">
           <input class="form-check-input" type="checkbox" id="togOther" checked>
           <label class="form-check-label" for="togOther">${T('otherSamples', {}, 'Other samples')}</label>
         </div>`;

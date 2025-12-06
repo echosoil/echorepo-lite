@@ -94,3 +94,95 @@ def serve_storage(relpath):
     if not os.path.isfile(full):
         abort(404)
     return send_file(full)
+
+@storage_bp.get("/exports/canonical/<date>/<filename>")
+def serve_canonical_version(date, filename):
+    """
+    Serve a specific dated canonical export, e.g.
+    /exports/canonical/2025-12-02/samples.csv
+    """
+    bucket = (
+        current_app.config.get("MINIO_BUCKET")
+        or os.getenv("MINIO_BUCKET")
+        or "echorepo-uploads"
+    )
+
+    relpath = f"canonical/{date}/{filename}"
+    mclient = _get_minio_client()
+
+    if mclient is not None:
+        try:
+            resp = mclient.get_object(bucket, relpath)
+            data = resp.read()
+            resp.close()
+            resp.release_conn()
+
+            name = filename.lower()
+            if name.endswith(".csv"):
+                mimetype = "text/csv"
+            else:
+                mimetype = "application/octet-stream"
+
+            return send_file(
+                BytesIO(data),
+                mimetype=mimetype,
+                download_name=filename,
+            )
+        except S3Error as e:
+            current_app.logger.warning(f"MinIO S3Error for {bucket}/{relpath}: {e}")
+        except Exception as e:
+            current_app.logger.error(f"MinIO error for {bucket}/{relpath}: {e}")
+
+    # optional local fallback
+    base = current_app.config.get("LOCAL_EXPORT_DIR", "/data/exports")
+    full = os.path.join(base, "canonical", date, filename)
+    if not os.path.isfile(full):
+        abort(404)
+    return send_file(full, mimetype="text/csv", download_name=filename)
+
+
+@storage_bp.get("/exports/canonical/<filename>")
+def serve_canonical_latest(filename):
+    """
+    Serve the latest canonical export, e.g.
+    /exports/canonical/samples.csv
+    which internally maps to canonical/latest/samples.csv
+    """
+    bucket = (
+        current_app.config.get("MINIO_BUCKET")
+        or os.getenv("MINIO_BUCKET")
+        or "echorepo-uploads"
+    )
+
+    relpath = f"canonical/latest/{filename}"
+    mclient = _get_minio_client()
+
+    if mclient is not None:
+        try:
+            resp = mclient.get_object(bucket, relpath)
+            data = resp.read()
+            resp.close()
+            resp.release_conn()
+
+            name = filename.lower()
+            if name.endswith(".csv"):
+                mimetype = "text/csv"
+            else:
+                mimetype = "application/octet-stream"
+
+            return send_file(
+                BytesIO(data),
+                mimetype=mimetype,
+                download_name=filename,
+            )
+        except S3Error as e:
+            current_app.logger.warning(f"MinIO S3Error for {bucket}/{relpath}: {e}")
+        except Exception as e:
+            current_app.logger.error(f"MinIO error for {bucket}/{relpath}: {e}")
+
+    # optional local fallback
+    base = current_app.config.get("LOCAL_EXPORT_DIR", "/data/exports")
+    full = os.path.join(base, "canonical", "latest", filename)
+    if not os.path.isfile(full):
+        abort(404)
+    return send_file(full, mimetype="text/csv", download_name=filename)

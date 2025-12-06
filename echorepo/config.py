@@ -61,6 +61,7 @@ class Settings:
     # -------- Firebase --------
     FIREBASE_PROJECT_ID: Optional[str] = os.getenv("FIREBASE_PROJECT_ID") or None
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or None
+    FIREBASE_WEB_API_KEY: Optional[str] = os.getenv("FIREBASE_WEB_API_KEY") or None
 
     # -------- i18n / Babel --------
     BABEL_TRANSLATION_DIRECTORIES = "/app/translations" # compiled .mo files location
