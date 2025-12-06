@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, jsonif
 import requests
 from ..config import settings
 from ..extensions import oauth
+from ..services.firebase import send_password_reset_email
 from .keycloak import KC_WELLKNOWN, KC_TOKEN, KC_LOGOUT, KC_ISSUER, KC_USERINFO
 from .tokens import create_session_from_tokens, before_request_refresh
 
@@ -103,3 +104,23 @@ def logout():
             pass
     session.clear()
     return redirect(url_for("auth.login"))
+
+@auth_bp.post("/password-reset")
+def password_reset():
+    # Reuse the same field the login form uses
+    email = request.form.get("username", "").strip()
+
+    if not email:
+        return render_template(
+            "login.html",
+            error="Please enter your email address to reset your password."
+        )
+
+    ok, message = send_password_reset_email(email)
+
+    if ok:
+        # Show a friendly success message on the same page
+        return render_template("login.html", info=message)
+    else:
+        # Something is misconfigured or Firebase is down
+        return render_template("login.html", error=message)

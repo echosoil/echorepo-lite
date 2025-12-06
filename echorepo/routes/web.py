@@ -1410,6 +1410,10 @@ def search_samples():
 
     # ---- special case: export as ZIP ----
     if fmt == "zip":
+        query_string = request.query_string.decode("utf-8")
+        generated = datetime.utcnow().isoformat() + "Z"
+        canonical_base = "https://echorepo.quanta-labs.com/download/canonical"
+
         # Use the full canonical column set from data_api.py
         cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
         sql_all = f"""
@@ -1479,6 +1483,16 @@ def search_samples():
         with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
             # samples_filtered.csv
             out1 = io.StringIO()
+
+            # ----- METADATA HEADER -----
+            out1.write("# ECHOrepo Filtered Dataset\n")
+            out1.write("# Source table: samples (filtered subset)\n")
+            out1.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out1.write(f"# Generated at: {generated}\n")
+            out1.write(f"# Query: {query_string}\n")
+            out1.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
+            out1.write("\n")
+
             w1 = csv.writer(out1)
 
             # header: all canonical sample columns
@@ -1493,6 +1507,16 @@ def search_samples():
 
             # sample_images_filtered.csv
             out2 = io.StringIO()
+
+            # ----- METADATA HEADER -----
+            out2.write("# ECHOrepo Filtered Dataset\n")
+            out2.write("# Source table: sample_images (joined subset)\n")
+            out2.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out2.write(f"# Generated at: {generated}\n")
+            out2.write(f"# Query: {query_string}\n")
+            out2.write("# Note: Filtering is applied by sample_id match. Not a stable or citable dataset.\n")
+            out2.write("\n")
+
             w2 = csv.writer(out2)
             w2.writerow(["sample_id", "country_code", "image_id", "image_url",
                          "image_description_orig", "image_description_en",
@@ -1503,6 +1527,16 @@ def search_samples():
 
             # sample_parameters_filtered.csv
             out3 = io.StringIO()
+
+            # ----- METADATA HEADER -----
+            out3.write("# ECHOrepo Filtered Dataset\n")
+            out3.write("# Source table: sample_parameters (joined subset)\n")
+            out3.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out3.write(f"# Generated at: {generated}\n")
+            out3.write(f"# Query: {query_string}\n")
+            out3.write("# Note: Oxides may be removed depending on platform settings. Not a stable or citable dataset.\n")
+            out3.write("\n")
+
             w3 = csv.writer(out3)
             w3.writerow(["sample_id", "country_code", "parameter_code", "parameter_name",
                          "value", "uom", "analysis_method", "analysis_date",
