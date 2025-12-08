@@ -822,29 +822,6 @@ def build_canonical_all_zip_bytes(
         """
         _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
 
-
-        # sample_images
-        img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
-        sql_imgs = f"""
-            SELECT {img_cols_sql}
-            FROM sample_images i
-            JOIN samples s ON s.sample_id = i.sample_id
-            {where_sql}
-            ORDER BY i.sample_id, i.image_id
-        """
-        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
-
-        # sample_parameters
-        param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
-        sql_params = f"""
-            SELECT {param_cols_sql}
-            FROM sample_parameters p
-            JOIN samples s ON s.sample_id = p.sample_id
-            {where_sql}
-            ORDER BY p.sample_id, p.parameter_code
-        """
-        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
-
     return mem.getvalue()
 
 @data_api.post("/lab-enrichment")
