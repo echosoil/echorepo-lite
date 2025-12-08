@@ -25,30 +25,41 @@ def _load_manual_overrides() -> Dict[str, str]:
     """
     Internal: load and flatten manual_overrides.json into
     { normalized_source_text: english_text }.
+
+    Also always includes hard-coded CUSTOM_TRANSLATIONS_BY_TEXT.
     """
+    out: Dict[str, str] = {}
+
+    # 1) Seed with hard-coded soil mappings
+    for src, en in CUSTOM_TRANSLATIONS_BY_TEXT.items():
+        if not isinstance(src, str) or not isinstance(en, str):
+            continue
+        norm = _norm_text(src)
+        if norm:
+            out[norm] = en
+
+    # 2) Then overlay JSON file, if present
     if not _MANUAL_OVERRIDES_PATH.exists():
-        print(f"[TRANSLATE] MANUAL_OVERRIDES_PATH not found, no manual override applied.")
-        return {}
+        print(f"[TRANSLATE] MANUAL_OVERRIDES_PATH not found, only built-in overrides applied.")
+        return out
 
     try:
         with _MANUAL_OVERRIDES_PATH.open("r", encoding="utf-8") as f:
             data = json.load(f)
-            print(f"[TRANSLATE] manual overrides loaded OK.")
+            print(f"[TRANSLATE] manual overrides loaded OK from {_MANUAL_OVERRIDES_PATH}.")
     except Exception:
-        print(f"[TRANSLATE] MANUAL_OVERRIDES_PATH found but not readable, no manual override applied.")
-        return {}
+        print(f"[TRANSLATE] MANUAL_OVERRIDES_PATH found but not readable, only built-in overrides applied.")
+        return out
 
     text_to_en = data.get("text_to_en", {})
-    if not isinstance(text_to_en, dict):
-        return {}
+    if isinstance(text_to_en, dict):
+        for src, en in text_to_en.items():
+            if not isinstance(src, str) or not isinstance(en, str):
+                continue
+            norm = _norm_text(src)
+            if norm:
+                out[norm] = en
 
-    out: Dict[str, str] = {}
-    for src, en in text_to_en.items():
-        if not isinstance(src, str) or not isinstance(en, str):
-            continue
-        norm = _norm_text(src)
-        if norm:  # skip empty
-            out[norm] = en
     return out
 
 
@@ -99,6 +110,7 @@ CUSTOM_TRANSLATIONS_BY_TEXT: Dict[str, str] = {
     "arcilloso": "Clayey",
     "argilloso": "Clayey",
     "siltoso": "Silty",
+    "argilloso sabbioso": "Sandy clayey",
 
     # If you want to keep some terms *exactly as-is* in English,
     # just map them to themselves:
@@ -256,6 +268,22 @@ def _lt_detect_batch(texts: list[str]) -> list[tuple[str | None, float]]:
 # ---------------------------------------------------------------------------
 # Translation (batch + single)
 # ---------------------------------------------------------------------------
+def _safe_translated(src: str, candidate: str) -> str:
+    """
+    Heuristic: if the translated text is absurdly longer than the source,
+    treat it as broken and fall back to the original.
+    """
+    src = src or ""
+    candidate = candidate or ""
+
+    if not candidate:
+        return src
+
+    # If LT returns something >10x longer and >200 chars, assume it's garbage.
+    if len(candidate) > max(200, 10 * len(src or "x")):
+        return src
+
+    return candidate
 
 def _translate_many_to_en_core(
     pairs: list[tuple[str, str | None]]
@@ -350,7 +378,8 @@ def _translate_many_to_en_core(
                     )
                     r1.raise_for_status()
                     jt = r1.json()
-                    out = (jt.get("translatedText") if isinstance(jt, dict) else "") or t
+                    raw_out = jt.get("translatedText") if isinstance(jt, dict) else ""
+                    out = _safe_translated(t, raw_out or t)
                 except Exception:
                     out = t
                 _translate_cache[(t, CC)] = out
@@ -359,10 +388,11 @@ def _translate_many_to_en_core(
 
         # Store results from batch branch
         if outs is not None:
-            for (t, CC), out in zip(items, outs):
-                out = out or t
+            for (t, CC), raw_out in zip(items, outs):
+                out = _safe_translated(t, raw_out or t)
                 _translate_cache[(t, CC)] = out
                 result[(t, CC)] = out
+
 
     return result
 
