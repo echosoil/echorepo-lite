@@ -697,12 +697,28 @@ def download_canonical_samples():
     # simple "live export" header
     generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
     base_url = request.url_root.rstrip("/")
+
+    # latest citable snapshot date (may be None if not yet created)
+    snapshot_date = _get_latest_canonical_snapshot_date()
+    if snapshot_date:
+        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
+        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/samples.csv"
+        snapshot_lines = [
+            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
+            f"# Latest citable snapshot (samples.csv): {snapshot_csv_url}",
+        ]
+    else:
+        snapshot_lines = [
+            "# Latest citable snapshot: (not available yet on this instance)",
+        ]
+
     header = [
         "# ECHOrepo Canonical Dataset",
         "# File: samples.csv",
         f"# Generated at: {generated_at}",
         f"# Downloaded from: {base_url}/download/canonical/samples.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
+        *snapshot_lines,
         "",
     ]
     csv_text = "\n".join(header) + body
@@ -757,12 +773,27 @@ def download_canonical_sample_images():
     # simple "live export" header
     generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
     base_url = request.url_root.rstrip("/")
+
+    snapshot_date = _get_latest_canonical_snapshot_date()
+    if snapshot_date:
+        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
+        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_images.csv"
+        snapshot_lines = [
+            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
+            f"# Latest citable snapshot (sample_images.csv): {snapshot_csv_url}",
+        ]
+    else:
+        snapshot_lines = [
+            "# Latest citable snapshot: (not available yet on this instance)",
+        ]
+
     header = [
         "# ECHOrepo Canonical Dataset",
         "# File: sample_images.csv",
         f"# Generated at: {generated_at}",
         f"# Downloaded from: {base_url}/download/canonical/sample_images.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
+        *snapshot_lines,
         "",
     ]
     csv_text = "\n".join(header) + body
@@ -820,12 +851,27 @@ def download_canonical_sample_parameters():
     # simple "live export" header
     generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
     base_url = request.url_root.rstrip("/")
+
+    snapshot_date = _get_latest_canonical_snapshot_date()
+    if snapshot_date:
+        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
+        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_parameters.csv"
+        snapshot_lines = [
+            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
+            f"# Latest citable snapshot (sample_parameters.csv): {snapshot_csv_url}",
+        ]
+    else:
+        snapshot_lines = [
+            "# Latest citable snapshot: (not available yet on this instance)",
+        ]
+
     header = [
         "# ECHOrepo Canonical Dataset",
         "# File: sample_parameters.csv",
         f"# Generated at: {generated_at}",
         f"# Downloaded from: {base_url}/download/canonical/sample_parameters.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
+        *snapshot_lines,
         "",
     ]
     csv_text = "\n".join(header) + body
