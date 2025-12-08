@@ -13,7 +13,7 @@ from flask import (
 import pandas as pd
 from io import BytesIO
 import pathlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import sqlite3
 import os
 import json
@@ -529,8 +529,6 @@ def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str)
         logging.getLogger(__name__).error(f"Error ensuring MinIO bucket {bucket}: {e}")
         return
 
-    from io import BytesIO
-
     for filename, csv_text in csv_dict.items():
         if not csv_text:
             continue
@@ -548,6 +546,78 @@ def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str)
                 )
             except Exception as e:
                 logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
+
+def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
+    """
+    Upload all.zip snapshot to MinIO under:
+      canonical/<version_date>/all.zip
+      canonical/latest/all.zip
+    """
+    client = _get_minio_client()
+    if client is None:
+        logging.getLogger(__name__).warning(
+            "MinIO not configured; skipping all.zip upload"
+        )
+        return
+
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+
+    try:
+        if not client.bucket_exists(bucket):
+            client.make_bucket(bucket)
+    except Exception as e:
+        logging.getLogger(__name__).error(
+            f"Error ensuring MinIO bucket {bucket}: {e}"
+        )
+        return
+
+    from io import BytesIO
+
+    for prefix in (f"canonical/{version_date}/", "canonical/latest/"):
+        obj_name = prefix + "all.zip"
+        try:
+            client.put_object(
+                bucket,
+                obj_name,
+                BytesIO(zip_bytes),
+                length=len(zip_bytes),
+                content_type="application/zip",
+            )
+        except Exception as e:
+            logging.getLogger(__name__).error(
+                f"Error uploading {obj_name} to MinIO: {e}"
+            )
+
+def _get_latest_canonical_snapshot_date() -> str | None:
+    """
+    Return the latest YYYY-MM-DD for which canonical/<date>/all.zip exists
+    in MinIO. Used by search export headers.
+    """
+    client = _get_minio_client()
+    if client is None:
+        return None
+
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+
+    try:
+        dates: set[str] = set()
+        # Expect keys like: canonical/2025-12-08/all.zip
+        for obj in client.list_objects(bucket, prefix="canonical/", recursive=True):
+            parts = obj.object_name.split("/")
+            if len(parts) == 3 and parts[0] == "canonical" and parts[2] == "all.zip":
+                dates.add(parts[1])
+
+        if not dates:
+            return None
+        # Lexicographically max works for ISO dates YYYY-MM-DD
+        return max(dates)
+    except Exception as e:
+        logging.getLogger(__name__).error(
+            f"Error listing canonical snapshots from MinIO: {e}"
+        )
+        return None
+
+# -------------- Endpoints for privacy acceptance ----------------
 
 @web_bp.post("/privacy/accept")
 @login_required
@@ -860,15 +930,20 @@ def download_canonical_zip():
 
     _upload_canonical_csvs_to_minio(csv_contents, version_date)
 
+    # Prepare ZIP bytes once
     mem.seek(0)
+    zip_bytes = mem.getvalue()
+
+    # Also upload all.zip snapshot to MinIO
+    _upload_canonical_all_zip_to_minio(zip_bytes, version_date)
+
+    # Send to user
     return send_file(
-        mem,
+        BytesIO(zip_bytes),
         as_attachment=True,
         download_name="all_canonical.zip",
         mimetype="application/zip",
     )
-
-
 # --------------------------------------------------------------------------
 # main UI
 # --------------------------------------------------------------------------
@@ -1412,7 +1487,14 @@ def search_samples():
     if fmt == "zip":
         query_string = request.query_string.decode("utf-8")
         generated = datetime.utcnow().isoformat() + "Z"
-        canonical_base = "https://echorepo.quanta-labs.com/download/canonical"
+
+        # Must match the date used when uploading all.zip in canonical_all_zip
+        base_url = request.url_root.rstrip("/")
+        version_date_current = date.today().isoformat()
+        snapshot_date = _get_latest_canonical_snapshot_date()
+        version_date = snapshot_date or version_date_current
+
+        snapshot_url = f"{base_url}/download/canonical/{version_date}/all.zip"        
 
         # Use the full canonical column set from data_api.py
         cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
@@ -1487,7 +1569,7 @@ def search_samples():
             # ----- METADATA HEADER -----
             out1.write("# ECHOrepo Filtered Dataset\n")
             out1.write("# Source table: samples (filtered subset)\n")
-            out1.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out1.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out1.write(f"# Generated at: {generated}\n")
             out1.write(f"# Query: {query_string}\n")
             out1.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
@@ -1510,11 +1592,11 @@ def search_samples():
 
             # ----- METADATA HEADER -----
             out2.write("# ECHOrepo Filtered Dataset\n")
-            out2.write("# Source table: sample_images (joined subset)\n")
-            out2.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out2.write("# Source table: sample_images (filtered subset)\n")
+            out2.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out2.write(f"# Generated at: {generated}\n")
             out2.write(f"# Query: {query_string}\n")
-            out2.write("# Note: Filtering is applied by sample_id match. Not a stable or citable dataset.\n")
+            out2.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
             out2.write("\n")
 
             w2 = csv.writer(out2)
@@ -1530,11 +1612,11 @@ def search_samples():
 
             # ----- METADATA HEADER -----
             out3.write("# ECHOrepo Filtered Dataset\n")
-            out3.write("# Source table: sample_parameters (joined subset)\n")
-            out3.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out3.write("# Source table: samples (filtered subset)\n")
+            out3.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out3.write(f"# Generated at: {generated}\n")
             out3.write(f"# Query: {query_string}\n")
-            out3.write("# Note: Oxides may be removed depending on platform settings. Not a stable or citable dataset.\n")
+            out3.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
             out3.write("\n")
 
             w3 = csv.writer(out3)
