@@ -462,15 +462,17 @@ def _canonical_where_from_request(alias: str = "") -> tuple[str, List[Any], Dict
     }
     return where_sql, params, filter_meta
 
-def _upload_canonical_to_minio(samples_path, params_path, images_path):
+# in echorepo/routes/data_api.py, near other MinIO helpers
+
+def _upload_canonical_zip_to_minio(zip_bytes: bytes, version_date: str):
     """
-    Upload canonical CSVs to MinIO under:
-      canonical/<YYYY-MM-DD>/{file}
-      canonical/latest/{file}
+    Upload canonical all.zip to MinIO under:
+      canonical/<version_date>/all.zip
+      canonical/latest/all.zip
     """
     mclient = _get_minio_client()
     if mclient is None:
-        current_app.logger.warning("No MinIO client, skipping canonical upload")
+        current_app.logger.warning("No MinIO client, skipping canonical ZIP upload")
         return
 
     bucket = (
@@ -478,16 +480,6 @@ def _upload_canonical_to_minio(samples_path, params_path, images_path):
         or os.getenv("MINIO_BUCKET")
         or "echorepo-uploads"
     )
-
-    today = datetime.utcnow().date().isoformat()
-    version_prefix = f"canonical/{today}/"
-    latest_prefix = "canonical/latest/"
-
-    files = {
-        "samples.csv": samples_path,
-        "sample_parameters.csv": params_path,
-        "sample_images.csv": images_path,
-    }
 
     # Make sure bucket exists
     try:
@@ -497,14 +489,69 @@ def _upload_canonical_to_minio(samples_path, params_path, images_path):
         current_app.logger.error(f"Error ensuring MinIO bucket {bucket}: {e}")
         return
 
-    for name, path in files.items():
+    from io import BytesIO
+
+    data = BytesIO(zip_bytes)
+    size = len(zip_bytes)
+
+    for prefix in (f"canonical/{version_date}/", "canonical/latest/"):
+        obj_name = prefix + "all.zip"
         try:
-            # versioned copy
-            mclient.fput_object(bucket, version_prefix + name, path)
-            # latest copy
-            mclient.fput_object(bucket, latest_prefix + name, path)
+            data.seek(0)
+            mclient.put_object(
+                bucket,
+                obj_name,
+                data,
+                length=size,
+                content_type="application/zip",
+            )
         except Exception as e:
-            current_app.logger.error(f"Error uploading {name} to MinIO: {e}")
+            current_app.logger.error(f"Error uploading {obj_name} to MinIO: {e}")
+
+def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str | None = None):
+    """
+    Upload canonical all.zip to MinIO under:
+      canonical/<YYYY-MM-DD>/all.zip
+      canonical/latest/all.zip
+    """
+    mclient = _get_minio_client()
+    if mclient is None:
+        current_app.logger.warning("No MinIO client, skipping all.zip upload")
+        return
+
+    bucket = (
+        current_app.config.get("MINIO_BUCKET")
+        or os.getenv("MINIO_BUCKET")
+        or "echorepo-uploads"
+    )
+
+    if not version_date:
+        version_date = datetime.utcnow().date().isoformat()
+
+    version_prefix = f"canonical/{version_date}/"
+    latest_prefix = "canonical/latest/"
+
+    try:
+        if not mclient.bucket_exists(bucket):
+            mclient.make_bucket(bucket)
+    except Exception as e:
+        current_app.logger.error(f"Error ensuring MinIO bucket {bucket}: {e}")
+        return
+
+    from io import BytesIO
+
+    for prefix in (version_prefix, latest_prefix):
+        obj_name = prefix + "all.zip"
+        try:
+            mclient.put_object(
+                bucket,
+                obj_name,
+                BytesIO(zip_bytes),
+                length=len(zip_bytes),
+                content_type="application/zip",
+            )
+        except Exception as e:
+            current_app.logger.error(f"Error uploading {obj_name} to MinIO: {e}")
 
 # -----------------------------------------------------------------------------
 # Endpoints
@@ -712,6 +759,93 @@ def _ensure_lab_enrichment(conn: sqlite3.Connection):
         )
         """
     )
+
+# data_api.py
+
+def build_canonical_all_zip_bytes(
+    where_sql: str = "",
+    params: list[Any] | None = None,
+) -> bytes:
+    """
+    Build the canonical all.zip (samples, sample_images, sample_parameters)
+    and return it as raw bytes. Optionally takes WHERE + params to reuse
+    the same logic with filters.
+    """
+    if params is None:
+        params = []
+
+    mem = io.BytesIO()
+
+    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        def _write_query_to_zip(zip_name: str, cols: list[str], sql: str, sql_params: list[Any]):
+            with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(sql, sql_params)
+                rows = cur.fetchall()
+
+            fields = cols[:] if cols else (list(rows[0].keys()) if rows else [])
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+            writer.writeheader()
+            for r in rows:
+                writer.writerow(r)
+            zf.writestr(zip_name, buf.getvalue())
+
+        # 1) samples
+        sample_cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
+        sql_samples = f"""
+            SELECT {sample_cols_sql}
+            FROM samples s
+            {where_sql}
+            ORDER BY s.timestamp_utc DESC, s.sample_id
+        """
+        _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
+
+        # 2) sample_images
+        img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
+        sql_imgs = f"""
+            SELECT {img_cols_sql}
+            FROM sample_images i
+            JOIN samples s ON s.sample_id = i.sample_id
+            {where_sql}
+            ORDER BY i.sample_id, i.image_id
+        """
+        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
+
+        # 3) sample_parameters
+        param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
+        sql_params = f"""
+            SELECT {param_cols_sql}
+            FROM sample_parameters p
+            JOIN samples s ON s.sample_id = p.sample_id
+            {where_sql}
+            ORDER BY p.sample_id, p.parameter_code
+        """
+        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
+
+
+        # sample_images
+        img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
+        sql_imgs = f"""
+            SELECT {img_cols_sql}
+            FROM sample_images i
+            JOIN samples s ON s.sample_id = i.sample_id
+            {where_sql}
+            ORDER BY i.sample_id, i.image_id
+        """
+        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
+
+        # sample_parameters
+        param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
+        sql_params = f"""
+            SELECT {param_cols_sql}
+            FROM sample_parameters p
+            JOIN samples s ON s.sample_id = p.sample_id
+            {where_sql}
+            ORDER BY p.sample_id, p.parameter_code
+        """
+        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
+
+    return mem.getvalue()
 
 @data_api.post("/lab-enrichment")
 def lab_enrichment_upload():
@@ -1227,59 +1361,13 @@ def canonical_all_zip():
     # WHERE over samples aliased as "s"
     where_sql, params, filter_meta = _canonical_where_from_request(alias="s")
 
-    mem = io.BytesIO()
+    # --- build ZIP bytes using your helper ---
+    zip_bytes = build_canonical_all_zip_bytes(where_sql=where_sql, params=params)
 
-    def _write_query_to_zip(zip_name: str, cols: List[str], sql: str, sql_params: List[Any]):
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(sql, sql_params)
-            rows = cur.fetchall()
-
-        if cols:
-            fields = cols[:]  # canonical order
-        else:
-            fields = list(rows[0].keys()) if rows else []
-
-        buf = io.StringIO()
-        writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
-        writer.writeheader()
-        for r in rows:
-            writer.writerow(r)
-        zf.writestr(zip_name, buf.getvalue())
-
-    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        # 1) samples.csv (from samples s)
-        sample_cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
-        sql_samples = f"""
-            SELECT {sample_cols_sql}
-            FROM samples s
-            {where_sql}
-            ORDER BY s.timestamp_utc DESC, s.sample_id
-        """
-        _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
-
-        # 2) sample_images.csv (images i joined to filtered samples s)
-        img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
-        sql_imgs = f"""
-            SELECT {img_cols_sql}
-            FROM sample_images i
-            JOIN samples s ON s.sample_id = i.sample_id
-            {where_sql}
-            ORDER BY i.sample_id, i.image_id
-        """
-        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
-
-        # 3) sample_parameters.csv (parameters p joined to filtered samples s)
-        param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
-        sql_params = f"""
-            SELECT {param_cols_sql}
-            FROM sample_parameters p
-            JOIN samples s ON s.sample_id = p.sample_id
-            {where_sql}
-            ORDER BY p.sample_id, p.parameter_code
-        """
-        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
-
-    mem.seek(0)
+    # --- if this is the FULL canonical dataset, snapshot to MinIO ---
+    if not where_sql.strip():
+        version_date = datetime.utcnow().date().isoformat()
+        _upload_canonical_all_zip_to_minio(zip_bytes, version_date=version_date)
 
     # Analytics: mark dataset + filters + api endpoint
     meta = {
@@ -1290,9 +1378,43 @@ def canonical_all_zip():
     g._analytics_extra = meta
 
     return Response(
-        mem.getvalue(),
+        zip_bytes,
         mimetype="application/zip",
         headers={
             "Content-Disposition": 'attachment; filename="canonical_all.zip"',
+        },
+    )
+
+@data_api.get("/canonical/snapshot/all.zip")
+def canonical_snapshot_all_zip():
+    """
+    Build the full canonical all.zip (no filters),
+    upload it to MinIO as canonical/<YYYY-MM-DD>/all.zip and canonical/latest/all.zip,
+    and also return it in the response.
+
+    Auth: API key / Bearer / session via require_api_auth().
+    """
+    require_api_auth()
+
+    # Full dataset snapshot – no WHERE clause
+    zip_bytes = build_canonical_all_zip_bytes(where_sql="", params=[])
+
+    version_date = datetime.utcnow().date().isoformat()
+
+    # Upload to MinIO for later dated access
+    _upload_canonical_zip_to_minio(zip_bytes, version_date)
+
+    # Optional analytics
+    g._analytics_extra = {
+        "dataset": "canonical_all",
+        "api_name": "canonical_snapshot_all_zip",
+        "version_date": version_date,
+    }
+
+    return Response(
+        zip_bytes,
+        mimetype="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="canonical_{version_date}.zip"',
         },
     )
