@@ -13,16 +13,25 @@ OXIDE_NAMES = {"MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O"}
 
 def _round_sig_str(v: float, sig: int = 2) -> str:
     """Round to `sig` significant figures, never using scientific notation."""
-    if v == 0 or not math.isfinite(v):
+    if not math.isfinite(v):
+        return str(v)
+    if v == 0:
         return "0"
+
     exp = int(math.floor(math.log10(abs(v))))
     dec = sig - 1 - exp                  # decimals to keep
     rounded = round(v, dec)
+
     if dec > 0:
+        # Fixed-point with `dec` decimals, then trim only *decimal* trailing zeros
         s = f"{rounded:.{dec}f}"
+        if "." in s:
+            s = s.rstrip("0").rstrip(".")
     else:
+        # No decimals needed; dec <= 0 means we're rounding to tens, hundreds, etc.
         s = f"{int(rounded)}"
-    return s.rstrip("0").rstrip(".")
+
+    return s
 
 def _clean_metals_info(s: str) -> str:
     """
