@@ -57,16 +57,24 @@
   // --- Metals cleaner: drop oxides + round to 2 sig figs ---
   const OXIDES = new Set(["MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"]);
 
-  function roundSigStr(n, sig=2){
+  function roundSigStr(n, sig = 2) {
     const v = Number(n);
     if (!Number.isFinite(v) || v === 0) return "0";
+
     const exp = Math.floor(Math.log10(Math.abs(v)));
     const dec = sig - 1 - exp;
+
     if (dec >= 0) {
-      return v.toFixed(dec).replace(/\.?0+$/,'');
+      let s = v.toFixed(dec);
+      if (s.includes(".")) {
+        // Remove trailing zeros after the decimal point
+        s = s.replace(/0+$/, "").replace(/\.$/, "");
+      }
+      return s;
     } else {
       const f = Math.pow(10, -dec);
-      return String(Math.round(v / f) * f);
+      const rounded = Math.round(v / f) * f;
+      return String(rounded);
     }
   }
 
