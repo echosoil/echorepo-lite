@@ -314,9 +314,62 @@
   }
   window.T = T;
 
-  function pickPhotoFromProps(props){
+  async function fetchSampleImage(sampleId) {
+    if (!sampleId) return null;
+    try {
+      const r = await fetch(`/public/sample_image/${encodeURIComponent(sampleId)}`, {
+        credentials: "same-origin"
+      });
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!j || !j.image_url) return null;
+      return { url: j.image_url, desc: j.caption || "" };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function pickPhotoFromProps(props) {
+    props = props || {};
+
+    // ------------------------------------------------------------
+    // 0) New/canonical/public support (single image)
+    // ------------------------------------------------------------
+    // If your public popup fetch puts these into properties:
+    //   { image_url, image_description_en, image_description_orig }
+    if (props.image_url) {
+      const url = String(props.image_url).trim();
+      if (url) {
+        const desc = String(
+          props.image_description_en || props.image_description_orig || ""
+        ).trim();
+        return { idx: 0, url, opt: "photo", desc };
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 1) New/canonical/public support (array of images)
+    // ------------------------------------------------------------
+    // If you ever decide to ship:
+    //   props.images = [{ image_url, image_description_en, ... }, ...]
+    if (Array.isArray(props.images) && props.images.length) {
+      const first = props.images.find(x => x && x.image_url) || props.images[0];
+      if (first && first.image_url) {
+        const url = String(first.image_url).trim();
+        if (url) {
+          const desc = String(
+            first.image_description_en || first.image_description_orig || first.caption || ""
+          ).trim();
+          return { idx: 0, url, opt: "photo", desc };
+        }
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 2) Legacy support: PHOTO_photos_<n>_path
+    // ------------------------------------------------------------
     const items = [];
-    for (const [k, v] of Object.entries(props || {})) {
+    for (const [k, v] of Object.entries(props)) {
       const m = /^PHOTO_photos_(\d+)_path$/.exec(k);
       if (!m || !v) continue;
       const idx = Number(m[1]);
@@ -329,10 +382,8 @@
     }
     if (!items.length) return null;
 
-    // stable order by index as tie-breaker
-    items.sort((a,b) => a.idx - b.idx);
+    items.sort((a, b) => a.idx - b.idx);
 
-    // preference rules
     const prefer = [
       (x) => /landscape/.test(x.opt),
       (x) => /cover|banner/.test(x.opt),
@@ -342,33 +393,92 @@
       const hit = items.find(rule);
       if (hit) return hit;
     }
-    return items[0]; // fallback: first available
+    return items[0];
   }
+
+
 
   function formatPopup(f, isOwnerLayer){
     const p = f.properties || {};
     const fmt = (v) => (v == null || (typeof v === "string" && v.trim() === "")) ? "—" : v;
 
+    // ---- helpers: pick first non-empty ----
+    const pick = (...vals) => {
+      for (const v of vals) {
+        if (v == null) continue;
+        if (typeof v === "string") {
+          const s = v.trim();
+          if (s !== "") return s;
+        } else {
+          return v;
+        }
+      }
+      return null;
+    };
+
+    // ---- normalize common fields (old UI schema OR canonical schema) ----
+    const sampleId = pick(p.sampleId, p.sample_id, p.Sample, p.QR_qrCode);
+    const dateIso  = pick(p.collectedAt, p.timestamp_utc, p.date, p.collected_at);
+    const qrLike   = pick(p.QR_qrCode, p.qr_code, p.qr, sampleId);
+
+    const phVal = pick(p.PH_ph, p.ph, p.pH, p.PH_value, p.ph_value);
+
+    const soilColor = pick(p.SOIL_COLOR_color, p.soil_color, p.color);
+
+    const texture = pick(
+      p.SOIL_TEXTURE_texture,
+      p.soil_texture_en, p.soil_texture_orig,
+      p.texture_en, p.texture_orig,
+      p.texture
+    );
+
+    const structure = pick(
+      p.SOIL_STRUCTURE_structure,
+      p.soil_structure_en, p.soil_structure_orig,
+      p.structure_en, p.structure_orig,
+      p.structure
+    );
+
+    const earthworms = pick(p.SOIL_DIVER_earthworms, p.earthworms_count, p.earthworms);
+    const plastic    = pick(p.SOIL_CONTAMINATION_plastic, p.contamination_plastic, p.plastic);
+    const debris     = pick(p.SOIL_CONTAMINATION_debris,  p.contamination_debris,  p.debris);
+
+    const contaminationNotes = pick(
+      p.SOIL_CONTAMINATION_comments,
+      p.contamination_other_en, p.contamination_other_orig,
+      p.observations_en, p.observations_orig,
+      p.notes
+    );
+
+    // metals: old blob OR canonical fields
+    const metalsRaw = pick(
+      p.METALS_info,
+      p.metals_info_en, p.metals_info_orig,
+      p.elemental_concentrations_en, p.elemental_concentrations_orig
+    );
+
     // Clean & format metals (oxide-free, 2 sig figs, <br> separators)
-    const metals = cleanMetalsInfo(p.METALS_info);
+    const metals = cleanMetalsInfo(metalsRaw);
 
     const rows = [
-      ['<i class="bi bi-calendar"></i> ' + T('date',{},'Date'),         formatDate(p.collectedAt)],
-      ['<i class="bi bi-qr-code-scan"></i> ' + T('qr',{},'QR code'),    p.QR_qrCode],
-      ['<i class="bi bi-droplet-half"></i> ' + T('ph',{},'pH'),         p.PH_ph],
-      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter',{},'Soil organic matter'),      p.SOIL_COLOR_color],
-      ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture',{},'Texture'), p.SOIL_TEXTURE_texture],
-      ['<i class="bi bi-diagram-3"></i> ' + T('structure',{},'Structure'), p.SOIL_STRUCTURE_structure],
-      ['<i class="bi bi-bug"></i> ' + T('earthworms',{},'Earthworms'),  fmtInt(p.SOIL_DIVER_earthworms)],
-      ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'),        fmtInt(p.SOIL_CONTAMINATION_plastic)],
-      ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'),       fmtInt(p.SOIL_CONTAMINATION_debris)],
-      ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), p.SOIL_CONTAMINATION_comments],
-      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'),          metals],
+      ['<i class="bi bi-calendar"></i> ' + T('date',{},'Date'), formatDate(dateIso)],
+      ['<i class="bi bi-qr-code-scan"></i> ' + T('qr',{},'QR code'), qrLike],
+      ['<i class="bi bi-droplet-half"></i> ' + T('ph',{},'pH'), phVal],
+      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter',{},'Soil organic matter'), soilColor],
+      ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture',{},'Texture'), texture],
+      ['<i class="bi bi-diagram-3"></i> ' + T('structure',{},'Structure'), structure],
+      ['<i class="bi bi-bug"></i> ' + T('earthworms',{},'Earthworms'), fmtInt(earthworms)],
+      ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'), fmtInt(plastic)],
+      ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'), fmtInt(debris)],
+      ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), contaminationNotes],
+      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'), metals],
     ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
 
     const tableHtml = `<table class="table table-sm popup-table mb-2">${
       rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")
     }</table>`;
+
+    const PUBLIC_MODE = !!(window.ECHOREPO_CFG || {}).public_mode;
 
     const bestPhoto = pickPhotoFromProps(p);
     let photoHtml = "";
@@ -387,17 +497,16 @@
     }
 
     let exportHtml = "";
-    if (p.sampleId) {
+    if (!PUBLIC_MODE && sampleId) {
       exportHtml = `<div class="mt-2">
         <a class="btn btn-sm btn-outline-primary"
-          href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
+          href="/download/sample_csv?sampleId=${encodeURIComponent(sampleId)}"
           target="_blank" rel="noopener">
           <i class="bi bi-filetype-csv"></i> ${T('export',{},'Export')}
         </a>
       </div>`;
     }
 
-    // Scrollable body
     return `<div class="popup-card">
               <div class="popup-scroll">
                 ${tableHtml}
@@ -469,6 +578,8 @@
     const otherStyle={radius:1,weight:0,opacity:0,fillOpacity:0,interactive:false};
     const mkUser=(_f,latlng)=>L.circleMarker(latlng,userStyle);
     const mkOther=(_f,latlng)=>L.circleMarker(latlng,otherStyle);
+    const cfg = window.ECHOREPO_CFG || {};
+    const PUBLIC_MODE = !!cfg.public_mode;
 
     function makeLayer(gj, mk, isOwner, bucket){
       return L.geoJSON(gj,{
@@ -489,6 +600,27 @@
             formatPopup(f, isOwner),
             { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
           );
+
+          // When the popup opens, fetch image and replace popup content (public mode too)
+          ring.on("popupopen", async (e) => {
+            const p = f.properties || {};
+            const sid = p.sampleId || p.sample_id || p.QR_qrCode;
+            if (!sid) return;
+
+            // fetch only once per feature
+            if (p.__img_loaded) return;
+            p.__img_loaded = true;
+
+            const img = await fetchSampleImage(sid);
+            if (!img) return;
+
+            // Attach the image to properties in a way pickPhotoFromProps understands
+            p.image_url = img.url;
+            p.image_description_en = img.desc || "";
+
+            // Replace popup HTML with updated content
+            e.popup.setContent(formatPopup(f, isOwner));
+          });
           ring.addTo(map);
           bucket.push(ring);
 
@@ -513,8 +645,9 @@
     othersCluster.addLayer(othersLayer);
     map.addLayer(userCluster);
     map.addLayer(othersCluster);
-
-    addTwoToggleControl();
+    if (!PUBLIC_MODE) {
+      addTwoToggleControl();
+    }
     addSelectionControl();
     addLegends();
 
@@ -830,27 +963,53 @@
     }; phLegend.addTo(map);
   }
 
-  // ---- Boot ----
-  Promise.all([
-    fetch('/i18n/labels?ts=' + Date.now(), { credentials:'same-origin' }).then(r => r.json()),
-    fetch('/api/user_geojson',   { credentials:'same-origin' }).then(r=>r.json()),
-    fetch('/api/others_geojson', { credentials:'same-origin' }).then(r=>r.json())
-  ]).then(([i18n, u, o])=>{
-    // Normalize whether server returns {labels, by_msgid} or a flat {key:text} map
-    const payload = (i18n && (i18n.labels || i18n.by_msgid)) ? i18n : { labels: i18n, by_msgid: {} };
-    window.I18N = {
-      labels:  payload.labels  || {},
-      by_msgid: payload.by_msgid || {}
-    };
+// ---- Boot ----
+(function boot(){
+  const cfg = (window.ECHOREPO_CFG || {});
+  const PUBLIC_MODE = !!cfg.public_mode;
 
-    userGJ = u;
-    othersGJ = o;
+  const userUrl   = cfg.geojson_user_url;   // optional (string) OR null to disable
+  const othersUrl = cfg.geojson_others_url; // optional (string)
+
+  // fetch JSON safely (never throws)
+  const safeJson = (url) =>
+    fetch(url, { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null);
+
+  const i18nReq = safeJson('/i18n/labels?ts=' + Date.now());
+
+  // In public mode: do NOT request /api/user_geojson at all.
+  const userReq =
+    (!PUBLIC_MODE && userUrl !== null)
+      ? safeJson(userUrl || '/api/user_geojson')
+      : Promise.resolve(null);
+
+  // In public mode: load others from configured public endpoint if provided.
+  const othersReq =
+    (othersUrl)
+      ? safeJson(othersUrl)
+      : (PUBLIC_MODE ? Promise.resolve(null) : safeJson('/api/others_geojson'));
+
+  Promise.all([i18nReq, userReq, othersReq]).then(([i18n, u, o]) => {
+    // normalize i18n payload
+    const payload = (i18n && (i18n.labels || i18n.by_msgid))
+      ? i18n
+      : { labels: (i18n || {}), by_msgid: {} };
+
+    window.I18N = { labels: payload.labels || {}, by_msgid: payload.by_msgid || {} };
+
+    // IMPORTANT: always give valid GeoJSON objects
+    userGJ   = u || { type: "FeatureCollection", features: [] };
+    othersGJ = o || { type: "FeatureCollection", features: [] };
 
     computeAllHeaders();
     buildLayers();
-  }).catch(err=>{
+  }).catch(err => {
     console.warn('Init failed:', err);
-    mapDiv.style.display='none';
+    // IMPORTANT: do NOT hide the map anymore
+    // mapDiv.style.display='none';  <-- remove/avoid this
   });
-
 })();
+
+})(); 

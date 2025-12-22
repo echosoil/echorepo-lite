@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('ECHOrepo — Explore') }}{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin="">
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+
+  <style>
+    #map {
+      height: 75vh;
+      min-height: 500px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">{{ _('Explore the map') }}</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('web.search_samples') }}">{{ _('Search') }}</a>
+      <a class="btn btn-eu" href="{{ url_for('auth.login') }}">{{ _('Sign in') }}</a>
+    </div>
+  </div>
+
+  <div id="map" class="mb-3"></div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  {% set cfg = {
+      'jitter_m': jitter_m|default(1000)|int,
+      'lat_col': lat_col|default('GPS_lat'),
+      'lon_col': lon_col|default('GPS_long')
+  } %}
+<script>
+window.ECHOREPO_CFG = Object.assign({}, window.ECHOREPO_CFG || {}, {
+  public_mode: true,
+  geojson_user_url: null,
+  geojson_others_url: "/public/others_geojson"
+});
+</script>
+  <script src="{{ url_for('static', filename='js/map.js') }}?v=8"></script>
+{% endblock %}
