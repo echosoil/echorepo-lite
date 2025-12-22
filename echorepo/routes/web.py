@@ -588,6 +588,21 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
                 f"Error uploading {obj_name} to MinIO: {e}"
             )
 
+# --------- Search helpers 
+def _parse_sample_id_list(raw: str) -> list[str]:
+    """
+    Accept:
+      - single: "AAAA-1111"
+      - comma-separated: "AAAA-1111,BBBB-2222"
+      - whitespace/newlines: "AAAA-1111  BBBB-2222"
+    Returns cleaned non-empty tokens.
+    """
+    if not raw:
+        return []
+    # split on commas OR whitespace
+    parts = re.split(r"[;,\s]+", raw.strip())
+    return [p.strip() for p in parts if p.strip()]
+
 def _get_latest_canonical_snapshot_date() -> str | None:
     """
     Return the latest YYYY-MM-DD for which canonical/<date>/all.zip exists
@@ -1508,8 +1523,19 @@ def search_samples():
         where = ["1=1"]
         params = []
         if criteria["sample_id"]:
-            where.append("sample_id ILIKE %s")
-            params.append(f"%{criteria['sample_id']}%")
+            tokens = _parse_sample_id_list(criteria["sample_id"])
+
+            if len(tokens) == 1:
+                # keep old behaviour: substring match
+                where.append("sample_id ILIKE %s")
+                params.append(f"%{tokens[0]}%")
+            else:
+                # multiple: match ANY of the tokens (OR)
+                ors = []
+                for t in tokens:
+                    ors.append("sample_id ILIKE %s")
+                    params.append(f"%{t}%")
+                where.append("(" + " OR ".join(ors) + ")")
         if criteria["country_code"]:
             where.append("country_code = %s")
             params.append(criteria["country_code"])
