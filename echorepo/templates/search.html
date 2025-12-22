@@ -56,6 +56,7 @@
       <input type="date" id="date_to" name="date_to" value="{{ criteria.date_to }}" class="form-control">
     </div>
     <div class="col-md-6 d-flex align-items-end justify-content-md-end">
+      {% if session.get("user") or (session.get("kc") or {}).get("profile") %}
       <a
         class="btn btn-outline-secondary"
         href="{{ url_for('web.search_samples',
@@ -68,6 +69,11 @@
                         format='zip') }}">
         <i class="bi bi-download"></i> {{ _('Export current search') }}
       </a>
+      {% else %}
+        <div class="alert alert-info">
+        {{ _('Sign in to export results as ZIP.') }}
+        </div>
+      {% endif %}
     </div>
   </div>
 </form>

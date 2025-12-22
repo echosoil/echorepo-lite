@@ -1034,8 +1034,9 @@ def canonical_samples():
       - format         (json|csv|geojson; default json)
       - api_key / Bearer / session as in require_api_auth()
     """
-    require_api_auth()
-
+    if not (current_app.config.get("CANONICAL_PUBLIC") or os.getenv("CANONICAL_PUBLIC") == "1"):
+        require_api_auth()
+        
     fmt = (request.args.get("format") or "json").lower()
     limit = max(1, min(int(request.args.get("limit", 100)), 1000))
     offset = max(0, int(request.args.get("offset", 0)))
