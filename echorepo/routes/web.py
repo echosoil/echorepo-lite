@@ -1008,7 +1008,14 @@ def download_canonical_zip():
 # --------------------------------------------------------------------------
 # main UI
 # --------------------------------------------------------------------------
-@web_bp.get("/", endpoint="home")
+@web_bp.get("/", endpoint="landing")
+def landing():
+    logged_in = bool(session.get("user") or (session.get("kc") or {}).get("profile"))
+    if logged_in:
+        return redirect(url_for("web.home"))      # now /my
+    return redirect(url_for("web.explore"))      
+
+@web_bp.get("/my", endpoint="home")
 @login_required
 def home():
     # who is this
@@ -1498,7 +1505,6 @@ def lab_upload_post():
 
 
 @web_bp.route("/search", endpoint="search_samples", methods=["GET"])
-@login_required
 def search_samples():
     q = request.args.get("q", "").strip()
 
@@ -1554,6 +1560,13 @@ def search_samples():
         return " AND ".join(where), params
 
     where_sql, params = _build_where(criteria)
+
+    def _is_logged_in() -> bool:
+        return bool(session.get("user") or (session.get("kc") or {}).get("profile"))
+
+    if fmt == "zip" and not _is_logged_in():
+        # show search page as normal, but deny export
+        abort(403, description="Please sign in to export ZIP files.")
 
     # ---- special case: export as ZIP ----
     if fmt == "zip":
@@ -1867,3 +1880,114 @@ def download_canonical_version(date, filename):
     """
     obj_name = f"{date}/{filename}"
     return _stream_minio_canonical(obj_name)
+
+@web_bp.get("/explore", endpoint="explore")
+def explore():
+    """
+    Public read-only explore page:
+      - show map
+      - allow search page
+      - do NOT show any downloads
+    """
+    i18n = {"labels": build_i18n_labels(_js_base_labels())}
+
+    # minimal context; no user table, no downloads
+    return render_template(
+        "explore.html",
+        jitter_m=int(settings.MAX_JITTER_METERS),
+        lat_col=settings.LAT_COL,
+        lon_col=settings.LON_COL,
+        I18N=i18n,
+        current_locale=str(get_locale() or "en"),
+        # used by templates to hide download UI
+        public_mode=True,
+    )
+
+@web_bp.get("/public/others_geojson")
+def public_others_geojson():
+    # Keep this very lightweight: only what the map needs.
+    sql = """
+    SELECT
+        sample_id, lat, lon, ph, country_code, timestamp_utc,
+        soil_texture_en, soil_texture_orig,
+        soil_structure_en, soil_structure_orig,
+        earthworms_count,
+        contamination_plastic, contamination_debris,
+        contamination_other_en, contamination_other_orig,
+        observations_en, observations_orig,
+        metals_info_en, metals_info_orig,
+        location_accuracy_m
+    FROM samples
+    WHERE lat IS NOT NULL AND lon IS NOT NULL
+    ORDER BY timestamp_utc DESC
+    LIMIT 20000
+    """
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    feats = []
+    for r in rows:
+        try:
+            lat = float(r["lat"])
+            lon = float(r["lon"])
+        except Exception:
+            continue
+
+        feats.append({
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [lon, lat]},
+        "properties": {
+            "sampleId": r["sample_id"],
+            "PH_ph": r.get("ph"),
+            "country_code": r.get("country_code"),
+            "timestamp_utc": (r["timestamp_utc"].isoformat() if r.get("timestamp_utc") else None),
+
+            # soil descriptors (your map.js "pick(...)" already supports these)
+            "soil_texture_en": r.get("soil_texture_en"),
+            "soil_texture_orig": r.get("soil_texture_orig"),
+            "soil_structure_en": r.get("soil_structure_en"),
+            "soil_structure_orig": r.get("soil_structure_orig"),
+
+            # simple counts/flags
+            "earthworms_count": r.get("earthworms_count"),
+            "contamination_plastic": r.get("contamination_plastic"),
+            "contamination_debris": r.get("contamination_debris"),
+            "contamination_other_en": r.get("contamination_other_en"),
+            "contamination_other_orig": r.get("contamination_other_orig"),
+            "observations_en": r.get("observations_en"),
+            "observations_orig": r.get("observations_orig"),
+
+            # “metals blob” if you have it in samples
+            "metals_info_en": r.get("metals_info_en"),
+            "metals_info_orig": r.get("metals_info_orig"),
+
+            # optional
+            "location_accuracy_m": r.get("location_accuracy_m"),
+        }
+
+        })
+
+    return jsonify({"type": "FeatureCollection", "features": feats})
+
+@web_bp.get("/public/sample_image/<sample_id>")
+def public_sample_image(sample_id: str):
+    # Return 1 thumbnail-ish image URL (or None) for a sample_id
+    sql = """
+      SELECT image_url, image_description_en, image_description_orig
+      FROM sample_images
+      WHERE sample_id = %s
+        AND image_url IS NOT NULL AND image_url <> ''
+      ORDER BY image_id
+      LIMIT 1
+    """
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql, (sample_id,))
+        row = cur.fetchone()
+
+    if not row:
+        return jsonify({"ok": True, "image_url": None})
+
+    desc = row.get("image_description_en") or row.get("image_description_orig") or ""
+    return jsonify({"ok": True, "image_url": row.get("image_url"), "caption": desc})
