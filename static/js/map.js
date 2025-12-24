@@ -181,6 +181,12 @@
 
       // LAT ticks on left edge
       const latStart = Math.ceil(south / latStep) * latStep;
+      const bbox = [
+        b.getWest(),
+        b.getSouth(),
+        b.getEast(),
+        b.getNorth()
+      ].join(",");
       for (let lat = latStart; lat <= north + 1e-9; lat += latStep) {
         const pt = map.latLngToContainerPoint([lat, (west + east) / 2]);
         const y = Math.round(pt.y);
@@ -797,11 +803,40 @@
       L.DomEvent.disableClickPropagation(div);
       selectionButtonEl=div.querySelector('#btnExportSel');
       clearButtonEl=div.querySelector('#btnClearSel');
-      selectionButtonEl.addEventListener('click',()=>{
-        if(!selectionRows.length) return;
-        const csv=toCsv(selectionRows); if(!csv) return;
-        downloadCsv('echorepo_selection.csv', csv);
+      selectionButtonEl.addEventListener('click', () => {
+        if (!selectionRows.length) return;
+
+        // Compute bounding box of selected points
+        // We take min/max of lon and lat from selectionRows
+        let minLon = Infinity, minLat = Infinity;
+        let maxLon = -Infinity, maxLat = -Infinity;
+        selectionRows.forEach(r => {
+          const lon = parseFloat(r.lon ?? r.GPS_long ?? r.longitude ?? r.lng);
+          const lat = parseFloat(r.lat ?? r.GPS_lat ?? r.latitude ?? r.lat);
+          if (!isNaN(lon) && !isNaN(lat)) {
+            minLon = Math.min(minLon, lon);
+            minLat = Math.min(minLat, lat);
+            maxLon = Math.max(maxLon, lon);
+            maxLat = Math.max(maxLat, lat);
+          }
+        });
+
+        if (!isFinite(minLon)) return;
+
+        const bbox = [
+          minLon, minLat,
+          maxLon, maxLat
+        ].join(',');
+
+        // Construct URL to the search ZIP endpoint
+        // It will include samples, sample_images, sample_parameters
+        const url = `/search?format=zip&bbox=${encodeURIComponent(bbox)}`;
+
+        // Trigger the download in the browser
+        window.location = url;
+
       });
+
       clearButtonEl.addEventListener('click', clearSelections);
       return div;
     };
