@@ -135,7 +135,25 @@
             </ul>
           </div>
 
-          {% block nav_right %}{% endblock %}
+          {% block nav_right %}
+            {% if g.user %}
+              <div class="text-white-50 small me-2">{{ _('Logged in as') }}</div>
+              <div class="chip bg-white">
+                <i class="bi bi-person-badge"></i>
+                <strong>{{ g.user.email }}</strong>
+              </div>
+              <a class="btn btn-sm btn-warning"
+                href="{{ url_for('auth.logout') }}">
+                <i class="bi bi-box-arrow-right"></i> {{ _('Logout') }}
+              </a>
+            {% else %}
+              <a class="btn btn-outline-light btn-sm"
+                href="{{ url_for('auth.login') }}">
+                {{ _('Sign in') }}
+              </a>
+            {% endif %}
+          {% endblock %}
+
         </div>
       </div>
     </div>
