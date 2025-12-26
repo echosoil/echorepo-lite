@@ -31,6 +31,38 @@
     </div>
   </div>
 
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+    <span class="text-muted small">{{ _('pH') }}</span>
+
+    <input type="number" step="0.1" min="0" max="14"
+          id="phMin"
+          class="form-control form-control-sm"
+          placeholder="{{ _('min') }}"
+          style="width:5.5rem">
+
+    <span class="text-muted">–</span>
+
+    <input type="number" step="0.1" min="0" max="14"
+          id="phMax"
+          class="form-control form-control-sm"
+          placeholder="{{ _('max') }}"
+          style="width:5.5rem">
+
+    <button class="btn btn-sm btn-outline-secondary"
+            id="btnApplyFilter"
+            type="button">
+      {{ _('Apply') }}
+    </button>
+
+    <button class="btn btn-sm btn-outline-primary"
+            id="btnExportFiltered"
+            type="button"
+            disabled>
+      {{ _('Export filtered (0)') }}
+    </button>
+  </div>
+
+
   <div id="map" class="mb-3"></div>
 {% endblock %}
 
@@ -50,6 +82,17 @@ window.ECHOREPO_CFG = Object.assign({}, window.ECHOREPO_CFG || {}, {
   geojson_user_url: null,
   geojson_others_url: "/public/others_geojson"
 });
+</script>
+<script>
+  if (window.ECHOREPO_CFG?.public_mode) {
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('btnExportFiltered');
+      if (btn) {
+        btn.disabled = true;
+        btn.title = "{{ _('Sign in to export data') }}";
+      }
+    });
+  }
 </script>
   <script src="{{ url_for('static', filename='js/map.js') }}?v=8"></script>
 {% endblock %}
