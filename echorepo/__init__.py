@@ -265,7 +265,22 @@ def create_app() -> Flask:
             _gettext_with_overrides, _ngettext_with_overrides, newstyle=True
         )
         app.jinja_env.globals["_"] = _gettext_with_overrides
-        
+    
+    @app.before_request
+    def inject_current_user():
+        """
+        Make the current user available to templates as g.user.
+        """
+        user_id = _get_current_user_id()
+        if user_id:
+            # minimal, safe object for templates
+            g.user = {
+                "id": user_id,
+                "email": user_id,
+            }
+        else:
+            g.user = None
+
     # ---- Inject JS labels + locale into templates (for pages that need it) ----
     @app.context_processor
     def inject_i18n_and_locale():

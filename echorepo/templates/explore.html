@@ -25,9 +25,16 @@
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h4 mb-0">{{ _('Explore the map') }}</h1>
+    {% if not g.user %}
+      <div class="alert alert-info small">
+        {{ _('Sign in to export data and access your personal samples.') }}
+      </div>
+    {% endif %}
+
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="{{ url_for('web.search_samples') }}">{{ _('Search') }}</a>
-      <a class="btn btn-eu" href="{{ url_for('auth.login') }}">{{ _('Sign in') }}</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('web.search_samples') }}">
+        {{ _('Search') }}
+      </a>
     </div>
   </div>
 
