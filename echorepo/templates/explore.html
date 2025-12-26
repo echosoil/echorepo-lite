@@ -64,7 +64,11 @@
     <button class="btn btn-sm btn-outline-primary"
             id="btnExportFiltered"
             type="button"
-            disabled>
+            {% if not g.user %}
+              hidden
+            {% else %}
+              disabled
+            {% endif %}>
       {{ _('Export filtered (0)') }}
     </button>
   </div>
