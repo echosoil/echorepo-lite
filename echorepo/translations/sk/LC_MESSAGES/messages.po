@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-06 23:23+0000\n"
+"POT-Creation-Date: 2025-12-27 09:58+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sk\n"
@@ -76,8 +76,9 @@ msgstr "Dátum"
 msgid "QR code"
 msgstr "QR kód"
 
-#: /work/echorepo/routes/web.py:368 /work/echorepo/templates/results.html:321
-#: /work/echorepo/templates/search.html:84
+#: /work/echorepo/routes/web.py:368 /work/echorepo/templates/explore.html:42
+#: /work/echorepo/templates/results.html:309
+#: /work/echorepo/templates/search.html:90
 msgid "pH"
 msgstr "p H"
 
@@ -229,25 +230,81 @@ msgstr "Archív noviniek"
 msgid "Change language"
 msgstr "Zmeniť jazyk"
 
+#: /work/echorepo/templates/base.html:140
+msgid "Logged in as"
+msgstr "Prihlásený ako"
+
+#: /work/echorepo/templates/base.html:147
+msgid "Logout"
+msgstr "Odhlásenie"
+
 #: /work/echorepo/templates/base.html:152
+msgid "Sign in"
+msgstr "Prihlásiť sa"
+
+#: /work/echorepo/templates/base.html:170
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo je súčasťou financovania EÚ a UKRI"
 
-#: /work/echorepo/templates/base.html:152
+#: /work/echorepo/templates/base.html:170
 msgid "project"
 msgstr "projekt"
 
-#: /work/echorepo/templates/base.html:154
+#: /work/echorepo/templates/base.html:172
 msgid "Need help?"
 msgstr "Potrebuješ pomoc?"
 
-#: /work/echorepo/templates/base.html:158
-msgid "EU-funded"
-msgstr "Financované EÚ"
+#: /work/echorepo/templates/base.html:181
+msgid "Funded by UK Research and Innovation (UKRI)"
+msgstr "Financované UK Research and Innovation (UKRI)"
 
-#: /work/echorepo/templates/base.html:159
-msgid "EU-funded initiative"
-msgstr "Iniciatíva financovaná EÚ"
+#: /work/echorepo/templates/base.html:189
+msgid "Co-funded by the European Union"
+msgstr "Spolufinancované Európskou úniou"
+
+#: /work/echorepo/templates/base.html:195
+msgid "Funded by the European Union and UK Research and Innovation"
+msgstr "Financované Európskou úniou a UK výskum a inovácie"
+
+#: /work/echorepo/templates/explore.html:2
+msgid "ECHOrepo — Explore"
+msgstr "ECHOrepo"
+
+#: /work/echorepo/templates/explore.html:27
+msgid "Explore the map"
+msgstr "Objavte mapu"
+
+#: /work/echorepo/templates/explore.html:30
+msgid "Sign in to export data and access your personal samples."
+msgstr "Prihláste sa na export údajov a prístup k svojim osobným vzorky."
+
+#: /work/echorepo/templates/explore.html:36 /work/echorepo/templates/search.html:44
+msgid "Search"
+msgstr "Hľadať"
+
+#: /work/echorepo/templates/explore.html:47
+#: /work/echorepo/templates/results.html:311
+msgid "min"
+msgstr "min"
+
+#: /work/echorepo/templates/explore.html:55
+#: /work/echorepo/templates/results.html:314
+msgid "max"
+msgstr "max"
+
+#: /work/echorepo/templates/explore.html:61
+#: /work/echorepo/templates/results.html:316
+msgid "Apply"
+msgstr "Použiť"
+
+#: /work/echorepo/templates/explore.html:72
+#: /work/echorepo/templates/results.html:319
+msgid "Export filtered (0)"
+msgstr "Export filtrované (0)"
+
+#: /work/echorepo/templates/explore.html:103
+msgid "Sign in to export data"
+msgstr "Prihláste sa do exportných údajov"
 
 #: /work/echorepo/templates/issues.html:2
 msgid "Data quality issues — ECHOrepo"
@@ -287,12 +344,12 @@ msgid "QR"
 msgstr "QR"
 
 #: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
-#: /work/echorepo/templates/search.html:85
+#: /work/echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Lat"
 
 #: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
-#: /work/echorepo/templates/search.html:86
+#: /work/echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Lon"
 
@@ -325,7 +382,7 @@ msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr "Skutočná krajina (z koords) nie je v plánovanom zozname pre túto QR."
 
 #: /work/echorepo/templates/lab_upload.html:3
-#: /work/echorepo/templates/results.html:159
+#: /work/echorepo/templates/results.html:147
 msgid "Upload lab data"
 msgstr "Nahrať laboratórne údaje"
 
@@ -353,31 +410,31 @@ msgstr "Podpíšte sa so svojimi Keycloak poverenia."
 msgid "Email or username"
 msgstr "E-mail alebo užívateľské meno"
 
-#: /work/echorepo/templates/login.html:36
+#: /work/echorepo/templates/login.html:33
 msgid "you@example.org"
 msgstr "you@ example.org"
 
-#: /work/echorepo/templates/login.html:43
+#: /work/echorepo/templates/login.html:38
 msgid "Password"
 msgstr "Heslo"
 
-#: /work/echorepo/templates/login.html:60
-msgid "Forgot your password?"
-msgstr "Zabudol si heslo?"
-
-#: /work/echorepo/templates/login.html:66
+#: /work/echorepo/templates/login.html:49
 msgid "Continue"
 msgstr "Pokračovať"
 
-#: /work/echorepo/templates/login.html:73
+#: /work/echorepo/templates/login.html:59
+msgid "Forgot your password?"
+msgstr "Zabudol si heslo?"
+
+#: /work/echorepo/templates/login.html:67
 msgid "Issues signing in? Contact the organisers."
 msgstr "Problémy? Kontaktujte organizátorov."
 
-#: /work/echorepo/templates/login.html:81
+#: /work/echorepo/templates/login.html:75
 msgid "GDPR-friendly access"
 msgstr "Prístup k GDPR"
 
-#: /work/echorepo/templates/login.html:84
+#: /work/echorepo/templates/login.html:78
 msgid "Download your data anytime"
 msgstr "Stiahnite si dáta kedykoľvek"
 
@@ -390,24 +447,16 @@ msgid "Download all samples (CSV)"
 msgstr "Stiahnite si všetky vzorky (CSV)"
 
 #: /work/echorepo/templates/results.html:13
-#: /work/echorepo/templates/results.html:163 /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/results.html:151 /work/echorepo/templates/search.html:2
 #: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Prehľadávanie vzoriek"
 
-#: /work/echorepo/templates/results.html:20
-msgid "Logged in as"
-msgstr "Prihlásený ako"
-
-#: /work/echorepo/templates/results.html:26
-msgid "Logout"
-msgstr "Odhlásenie"
-
-#: /work/echorepo/templates/results.html:145
+#: /work/echorepo/templates/results.html:133
 msgid "Your data"
 msgstr "Vaše údaje"
 
-#: /work/echorepo/templates/results.html:146
+#: /work/echorepo/templates/results.html:134
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
@@ -415,21 +464,21 @@ msgstr ""
 "Preskúmajte umiestnenie vzorky pôdy na mape, potom exportujte alebo prezrite "
 "tabuľku."
 
-#: /work/echorepo/templates/results.html:154
+#: /work/echorepo/templates/results.html:142
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Fix dáta problémy (%(n)s_)"
 
-#: /work/echorepo/templates/results.html:171
-#: /work/echorepo/templates/results.html:229
+#: /work/echorepo/templates/results.html:159
+#: /work/echorepo/templates/results.html:217
 msgid "Final survey"
 msgstr "Záverečný prieskum"
 
-#: /work/echorepo/templates/results.html:173
+#: /work/echorepo/templates/results.html:161
 msgid "We sincerely thank you for your commitment to this project!"
 msgstr "Úprimne vám ďakujeme za váš záväzok k tomuto projektu!"
 
-#: /work/echorepo/templates/results.html:176
+#: /work/echorepo/templates/results.html:164
 msgid ""
 "This is the third and final survey in the project, following the initial ones"
 " you completed before and after soil sampling. The majority of questions are "
@@ -441,7 +490,7 @@ msgstr ""
 " s predchádzajúcimi prieskumami, aby sme mohli v priebehu času presne merať "
 "zmeny a pochopiť vplyv účasti na projekte."
 
-#: /work/echorepo/templates/results.html:179
+#: /work/echorepo/templates/results.html:167
 msgid ""
 "Before you start: please only complete this survey if the lab results from "
 "your soil sample(s) have already been added to the repository. If the results"
@@ -451,23 +500,23 @@ msgstr ""
 "úložiska pridané výsledky laboratória z vašej vzorky pôdy. Ak výsledky ešte "
 "nie sú k dispozícii, prosím, skontrolujte ich neskôr."
 
-#: /work/echorepo/templates/results.html:184
+#: /work/echorepo/templates/results.html:172
 msgid "Go to final survey"
 msgstr "Prejsť na záverečný prieskum"
 
-#: /work/echorepo/templates/results.html:193
+#: /work/echorepo/templates/results.html:181
 msgid "Data use information"
 msgstr "Informácie o použití údajov"
 
-#: /work/echorepo/templates/results.html:200
+#: /work/echorepo/templates/results.html:188
 msgid "I have already completed it"
 msgstr "Už som to dokončil"
 
-#: /work/echorepo/templates/results.html:205
+#: /work/echorepo/templates/results.html:193
 msgid "Processing survey data in the ECHO project"
 msgstr "Spracovanie údajov z prieskumu v projekte ECHO"
 
-#: /work/echorepo/templates/results.html:207
+#: /work/echorepo/templates/results.html:195
 msgid ""
 "The objective of this survey data is to examine the impact of project "
 "participation on participant attitudes and motivation towards soil."
@@ -475,7 +524,7 @@ msgstr ""
 "Cieľom tohto prieskumu je preskúmať vplyv účasti projektu na postoje "
 "účastníkov a motiváciu k pôde."
 
-#: /work/echorepo/templates/results.html:210
+#: /work/echorepo/templates/results.html:198
 msgid ""
 "Your information will only be used for scientific purposes. We do not collect"
 " names or addresses. Your details regarding age and gender are only used for "
@@ -487,7 +536,7 @@ msgstr ""
 "štatistické účely a všetky detaily sa zhromažďujú a hodnotia anonymne. O "
 "vašej osobe nie je možné urobiť žiadne závery."
 
-#: /work/echorepo/templates/results.html:213
+#: /work/echorepo/templates/results.html:201
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
 "crucial role in providing valuable insights that enhance the relevance and "
@@ -502,7 +551,7 @@ msgstr ""
 "zapojenie sa do projektu ovplyvňuje postoje a motivácie, zabezpečenie "
 "výsledkov projektu sú zmysluplné a dobre informované."
 
-#: /work/echorepo/templates/results.html:216
+#: /work/echorepo/templates/results.html:204
 msgid ""
 "The survey will take approximately 8–10 minutes to complete. Please find a "
 "quiet space where you won’t be interrupted. There are no right or wrong "
@@ -512,7 +561,7 @@ msgstr ""
 "priestor, kde budete chcieť byť prerušená. Neexistujú žiadne správne alebo "
 "nesprávne odpovede ."
 
-#: /work/echorepo/templates/results.html:219
+#: /work/echorepo/templates/results.html:207
 msgid ""
 "Based on the information provided to you, please consent to participate in "
 "the survey below."
@@ -520,95 +569,79 @@ msgstr ""
 "Na základe informácií, ktoré vám boli poskytnuté, súhlas s účasťou na ďalšom "
 "prieskume."
 
-#: /work/echorepo/templates/results.html:230
+#: /work/echorepo/templates/results.html:218
 msgid "thank you for your participation!"
 msgstr "ďakujem za vašu účasť!"
 
-#: /work/echorepo/templates/results.html:236
+#: /work/echorepo/templates/results.html:224
 msgid "Show details"
 msgstr "Zobraziť detaily"
 
-#: /work/echorepo/templates/results.html:242
+#: /work/echorepo/templates/results.html:230
 msgid "Dismiss"
 msgstr "Odchod"
 
-#: /work/echorepo/templates/results.html:252
+#: /work/echorepo/templates/results.html:240
 msgid "No data found for"
 msgstr "Nenájdené žiadne údaje"
 
-#: /work/echorepo/templates/results.html:252
+#: /work/echorepo/templates/results.html:240
 msgid "If you recently submitted samples, try again later."
 msgstr "Ak ste nedávno predložili vzorky, skúste to neskôr."
 
-#: /work/echorepo/templates/results.html:265
+#: /work/echorepo/templates/results.html:253
 msgid "Download"
 msgstr "Stiahnuť"
 
-#: /work/echorepo/templates/results.html:272
+#: /work/echorepo/templates/results.html:260
 msgid "CSV (per-user)"
 msgstr "CSV (na užívateľa)"
 
-#: /work/echorepo/templates/results.html:280
+#: /work/echorepo/templates/results.html:268
 msgid "XLSX (per-user)"
 msgstr "XLSX (na užívateľa)"
 
-#: /work/echorepo/templates/results.html:287
+#: /work/echorepo/templates/results.html:275
 msgid "All samples (CSV, anonymised)"
 msgstr "Všetky vzorky (CSV, anonymizované)"
 
-#: /work/echorepo/templates/results.html:292
+#: /work/echorepo/templates/results.html:280
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (na užívateľa)"
 
-#: /work/echorepo/templates/results.html:296
+#: /work/echorepo/templates/results.html:284
 msgid "Canonical exports"
 msgstr "Kanonické vývozy"
 
-#: /work/echorepo/templates/results.html:299
+#: /work/echorepo/templates/results.html:287
 msgid "samples.csv"
 msgstr "vzorky.csv"
 
-#: /work/echorepo/templates/results.html:304
+#: /work/echorepo/templates/results.html:292
 msgid "sample_images.csv"
 msgstr "vzorka_obrazy.csv"
 
-#: /work/echorepo/templates/results.html:309
+#: /work/echorepo/templates/results.html:297
 msgid "sample_parameters.csv"
 msgstr "vzorka_parametre.csv"
 
-#: /work/echorepo/templates/results.html:314
+#: /work/echorepo/templates/results.html:302
 msgid "All canonical (zip)"
 msgstr "Všetky kanonické (zips)"
 
-#: /work/echorepo/templates/results.html:323
-msgid "min"
-msgstr "min"
-
-#: /work/echorepo/templates/results.html:326
-msgid "max"
-msgstr "max"
-
-#: /work/echorepo/templates/results.html:328
+#: /work/echorepo/templates/results.html:316
 msgid "Apply pH filter"
 msgstr "Aplikovať pH filter"
 
-#: /work/echorepo/templates/results.html:328
-msgid "Apply"
-msgstr "Použiť"
-
-#: /work/echorepo/templates/results.html:330
+#: /work/echorepo/templates/results.html:318
 msgid "Export rows matching current pH filter"
 msgstr "Exportovať riadky zodpovedajúce aktuálnemu pH filtru"
 
-#: /work/echorepo/templates/results.html:331
-msgid "Export filtered (0)"
-msgstr "Export filtrované (0)"
-
-#: /work/echorepo/templates/results.html:358
+#: /work/echorepo/templates/results.html:346
 msgid "Privacy information"
 msgstr "Informácie o ochrane súkromia"
 
-#: /work/echorepo/templates/results.html:385
+#: /work/echorepo/templates/results.html:373
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for this project."
@@ -616,23 +649,23 @@ msgstr ""
 "Čítal som vyššie uvedené informácie o ochrane osobných údajov a súhlasím so "
 "spracovaním mojich osobných údajov pre tento projekt."
 
-#: /work/echorepo/templates/results.html:392
+#: /work/echorepo/templates/results.html:380
 msgid "Accept and continue"
 msgstr "Prijať a pokračovať"
 
-#: /work/echorepo/templates/results.html:703
+#: /work/echorepo/templates/results.html:691
 msgid "Show on map"
 msgstr "Zobraziť na mape"
 
-#: /work/echorepo/templates/results.html:707
+#: /work/echorepo/templates/results.html:695
 msgid "Could not locate this sample on the map."
 msgstr "Nepodarilo sa nájsť túto vzorku na mape."
 
-#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:81
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Vzorka/QR"
 
-#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:83
+#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Krajina"
 
@@ -700,10 +733,6 @@ msgstr "p H min"
 msgid "pH max"
 msgstr "p H max"
 
-#: /work/echorepo/templates/search.html:44
-msgid "Search"
-msgstr "Hľadať"
-
 #: /work/echorepo/templates/search.html:51
 msgid "Date from"
 msgstr "Dátum"
@@ -712,31 +741,35 @@ msgstr "Dátum"
 msgid "Date to"
 msgstr "Dátum"
 
-#: /work/echorepo/templates/search.html:69
+#: /work/echorepo/templates/search.html:70
 msgid "Export current search"
 msgstr "Exportovať aktuálne vyhľadávanie"
 
-#: /work/echorepo/templates/search.html:82
+#: /work/echorepo/templates/search.html:74
+msgid "Sign in to export results as ZIP."
+msgstr "Prihláste sa na export výsledkov ako ZIP."
+
+#: /work/echorepo/templates/search.html:88
 msgid "Timestamp"
 msgstr "Časová pečiatka"
 
-#: /work/echorepo/templates/search.html:87
+#: /work/echorepo/templates/search.html:93
 msgid "Collected by"
 msgstr "Zhromažďované"
 
-#: /work/echorepo/templates/search.html:106
+#: /work/echorepo/templates/search.html:112
 msgid "No results for these filters."
 msgstr "Žiadne výsledky pre tieto filtre."
 
-#: /work/echorepo/templates/search.html:118
+#: /work/echorepo/templates/search.html:124
 msgid "Showing page"
 msgstr "Zobrazenie stránky"
 
-#: /work/echorepo/templates/search.html:118
+#: /work/echorepo/templates/search.html:124
 msgid "of"
 msgstr "z"
 
-#: /work/echorepo/templates/search.html:118
+#: /work/echorepo/templates/search.html:124
 msgid "results"
 msgstr "výsledky"
 
@@ -759,4 +792,10 @@ msgstr "výsledky"
 
 #~ msgid "Copy user key"
 #~ msgstr "Kopírovať užívateľský kľúč"
+
+#~ msgid "EU-funded"
+#~ msgstr "Financované EÚ"
+
+#~ msgid "EU-funded initiative"
+#~ msgstr "Iniciatíva financovaná EÚ"
 
