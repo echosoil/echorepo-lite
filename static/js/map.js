@@ -54,6 +54,35 @@
     document.head.appendChild(style);
   })();
 
+  function refreshI18NTexts() {
+    // Export selection button
+    if (selectionButtonEl) {
+      const n = selectionRows?.length || 0;
+      selectionButtonEl.textContent =
+        `${T('export', {}, 'Export')} (${n})`;
+    }
+
+    // Export filtered button
+    if (btnExportFiltered) {
+      const n = filteredRows?.length || 0;
+      btnExportFiltered.textContent =
+        T('exportFiltered', { n }, `Export filtered (${n})`);
+    }
+
+    // Draw tool hint (rectangle)
+    if (window.__echodraw) {
+      try {
+        const rect =
+          window.__echodraw._toolbars.draw._modes.rectangle?.handler;
+        if (rect) {
+          rect._endLabelText =
+            T('releaseToFinish', {}, 'Release mouse to finish drawing.');
+        }
+      } catch (_) {}
+    }
+  }
+
+
   // --- Metals cleaner: drop oxides + round to 2 sig figs ---
   const OXIDES = new Set(["MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"]);
 
@@ -293,31 +322,31 @@
     return d.toLocaleDateString(UI_LANG,{year:'numeric',month:'short',day:'2-digit'});
   }
 
-  // ---- i18n: T() with msgid override fallback ----
   function T(key, vars = {}, defaultText) {
-    const dict    = (window.I18N && window.I18N.labels)   || {};
-    const byMsgid = (window.I18N && window.I18N.by_msgid) || {};
+    const I = window.I18N || {};
+    const labels  = I.labels  || {};
+    const byMsgid = I.by_msgid || {};
 
     let raw =
-      (key != null && Object.prototype.hasOwnProperty.call(dict, key))
-        ? dict[key]
+      (key != null && Object.prototype.hasOwnProperty.call(labels, key))
+        ? labels[key]
         : (defaultText != null && Object.prototype.hasOwnProperty.call(byMsgid, defaultText))
             ? byMsgid[defaultText]
             : (defaultText != null ? defaultText : key);
 
     let out = String(raw);
 
-    // {name}
     out = out.replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
       Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
     );
-    // %(name)s
+
     out = out.replace(/%\(([A-Za-z0-9_]+)\)s/g, (_, k) =>
       Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `%(${k})s`
     );
 
     return out;
   }
+
   window.T = T;
 
   async function fetchSampleImage(sampleId) {
@@ -895,7 +924,7 @@
     selectionRows = collectRowsWithinAll();
     const n = selectionRows.length;
     selectionButtonEl.disabled = n===0;
-    selectionButtonEl.textContent = `${T('export',{},'Export')} (${n})`;
+      selectionButtonEl.textContent = `${T('export',{},'Export')} (${n})`;
     clearButtonEl.disabled = selectionLayers.length===0;
   }
 
@@ -942,7 +971,7 @@
     rebuildClustersForFilter();
 
     filteredRows = collectRowsFiltered(activePhMin, activePhMax);
-    updateFilteredCountsLabelOnly();
+      updateFilteredCountsLabelOnly();
     updateSelectionCount();
   }
 
@@ -1032,7 +1061,15 @@
       ? i18n
       : { labels: (i18n || {}), by_msgid: {} };
 
-    window.I18N = { labels: payload.labels || {}, by_msgid: payload.by_msgid || {} };
+    window.I18N = window.I18N || { labels: {}, by_msgid: {} };
+
+    if (payload.labels && Object.keys(payload.labels).length) {
+      Object.assign(window.I18N.labels, payload.labels);
+    }
+
+    if (payload.by_msgid && Object.keys(payload.by_msgid).length) {
+      Object.assign(window.I18N.by_msgid, payload.by_msgid);
+    }
 
     // IMPORTANT: always give valid GeoJSON objects
     userGJ   = u || { type: "FeatureCollection", features: [] };
@@ -1040,6 +1077,7 @@
 
     computeAllHeaders();
     buildLayers();
+    refreshI18NTexts();
   }).catch(err => {
     console.warn('Init failed:', err);
     // IMPORTANT: do NOT hide the map anymore

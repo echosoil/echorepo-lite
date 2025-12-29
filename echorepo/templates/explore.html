@@ -78,32 +78,20 @@
 {% endblock %}
 
 {% block extra_js %}
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
-  {% set cfg = {
-      'jitter_m': jitter_m|default(1000)|int,
-      'lat_col': lat_col|default('GPS_lat'),
-      'lon_col': lon_col|default('GPS_long')
-  } %}
-<script>
-window.ECHOREPO_CFG = Object.assign({}, window.ECHOREPO_CFG || {}, {
-  public_mode: true,
-  geojson_user_url: null,
-  geojson_others_url: "/public/others_geojson"
-});
-</script>
-<script>
-  if (window.ECHOREPO_CFG?.public_mode) {
-    document.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('btnExportFiltered');
-      if (btn) {
-        btn.disabled = true;
-        btn.title = "{{ _('Sign in to export data') }}";
-      }
+  <script>
+    window.I18N = {{ I18N | tojson | safe }};
+  </script>
+  <script>
+    window.ECHOREPO_CFG = Object.assign({}, window.ECHOREPO_CFG || {}, {
+      public_mode: true,
+      geojson_user_url: null,
+      geojson_others_url: "/public/others_geojson"
     });
-  }
-</script>
+  </script>
+
   <script src="{{ url_for('static', filename='js/map.js') }}?v=8"></script>
 {% endblock %}

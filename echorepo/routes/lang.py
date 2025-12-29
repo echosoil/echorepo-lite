@@ -10,5 +10,11 @@ def set_language(lang_code):
     ref = request.headers.get("Referer") or url_for("root.index")
     resp = redirect(ref)
     # store for ~2 years
-    resp.set_cookie("locale", lang_code, max_age=60*60*24*730, samesite="Lax")
+    resp.set_cookie(
+        "locale",
+        lang_code,
+        max_age=60*60*24*730,
+        samesite="Lax",
+        path="/",
+    )
     return resp
