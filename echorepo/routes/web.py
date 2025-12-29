@@ -1881,17 +1881,18 @@ def download_canonical_version(date, filename):
     obj_name = f"{date}/{filename}"
     return _stream_minio_canonical(obj_name)
 
+
+from echorepo.i18n import base_labels, build_i18n_labels
+
 @web_bp.get("/explore", endpoint="explore")
 def explore():
-    """
-    Public read-only explore page:
-      - show map
-      - allow search page
-      - do NOT show any downloads
-    """
-    i18n = {"labels": build_i18n_labels(_js_base_labels())}
+    base = base_labels()  # <-- THIS IS THE KEY LINE
 
-    # minimal context; no user table, no downloads
+    i18n = {
+        "labels": build_i18n_labels(base),
+        "by_msgid": {},
+    }
+
     return render_template(
         "explore.html",
         jitter_m=int(settings.MAX_JITTER_METERS),
@@ -1899,9 +1900,9 @@ def explore():
         lon_col=settings.LON_COL,
         I18N=i18n,
         current_locale=str(get_locale() or "en"),
-        # used by templates to hide download UI
         public_mode=True,
     )
+
 
 @web_bp.get("/public/others_geojson")
 def public_others_geojson():

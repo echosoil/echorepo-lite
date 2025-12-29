@@ -1,7 +1,6 @@
 # echorepo/i18n.py
-from flask import Blueprint, redirect, request, session, url_for, current_app, g
+from flask import Blueprint, redirect, request, session, url_for, current_app
 from flask_babel import Babel, _, get_locale, gettext as _real_gettext
-from werkzeug.user_agent import UserAgent
 import os
 from .services.i18n_overrides import get_overrides
 
@@ -40,22 +39,6 @@ BASE_LABEL_MSGIDS = {
     "deleteLastPoint": "Delete last point",
 }
 
-def base_labels() -> dict:
-    # Translate the msgids for current locale
-    return {k: _real_gettext(v) for k, v in BASE_LABEL_MSGIDS.items()}
-
-def build_i18n_labels(base: dict | None = None) -> dict:
-    try:
-        locale = str(get_locale() or "en")
-    except Exception:
-        locale = "en"
-    base = base or base_labels()
-    overrides = get_overrides(locale)
-    out = dict(base)
-    out.update(overrides)
-    return out
-
-# language -> flag-icons country code
 LOCALE_FLAGS = {
     "en":"gb","cs":"cz","nl":"nl","fi":"fi","fr":"fr",
     "de":"de","el":"gr","it":"it","pl":"pl","pt":"pt",
@@ -64,62 +47,77 @@ LOCALE_FLAGS = {
 
 babel = Babel()
 
+def base_labels() -> dict:
+    # Translate the raw English msgids for the current locale
+    return {k: _real_gettext(v) for k, v in BASE_LABEL_MSGIDS.items()}
+
 def _select_locale():
-    # 1) explicit URL param
+    # 1) cookie (persistent, survives logout)
+    c = request.cookies.get("locale")
+    if c in SUPPORTED_LOCALES:
+        return c
+
+    # 2) explicit URL param
     q = request.args.get("lang")
     if q in SUPPORTED_LOCALES:
         return q
-    # 2) session (set by /lang/<code>)
-    s = session.get("lang")
-    if s in SUPPORTED_LOCALES:
-        return s
+
     # 3) Accept-Language
     return request.accept_languages.best_match(SUPPORTED_LOCALES) or "en"
 
-def init_i18n(app):
-    # IMPORTANT: point to the directory that actually contains your *.mo
-    # Using an absolute path avoids surprises with CWD:
-    app.config.setdefault("BABEL_DEFAULT_LOCALE", "en")
-    trans_dir = os.path.join(app.root_path, "translations")
-    app.config["BABEL_TRANSLATION_DIRECTORIES"] = trans_dir
 
-    # Flask-Babel 3.x+: locale_selector=...
-    # Flask-Babel 2.x: use the @babel.localeselector decorator
+def build_i18n_labels(base: dict) -> dict:
+    """
+    base: dict of key -> already-translated strings (via _())
+    """
     try:
-        babel.init_app(app, locale_selector=_select_locale)
-    except TypeError:
-        babel.init_app(app)
+        locale = str(get_locale() or "en")
+    except Exception:
+        locale = "en"
 
-        @babel.localeselector  # type: ignore[attr-defined]
-        def _legacy_localeselector():
-            return _select_locale()
+    overrides = get_overrides(locale)
+    out = dict(base)
+    out.update(overrides)
+    return out
 
-    # Debug logs each request (helpful while testing)
-    @app.before_request
-    def _dbg():
-        # avoid heavy work; just log what Babel will use
-        loc = _select_locale()
-        current_app.logger.debug(
-            "i18n: locale=%s session.lang=%r args.lang=%r dirs=%s",
-            loc, session.get("lang"), request.args.get("lang"),
-            app.config.get("BABEL_TRANSLATION_DIRECTORIES"),
-        )
+
+def init_i18n(app):
+    app.config.setdefault("BABEL_DEFAULT_LOCALE", "en")
+    app.config["BABEL_TRANSLATION_DIRECTORIES"] = os.path.join(
+        app.root_path, "translations"
+    )
+
+    babel.init_app(app, locale_selector=_select_locale)
+
+    from flask import current_app
 
     @app.context_processor
-    def inject_locale():
-        # we compute current locale the same way to keep things consistent
-        return {
-            "current_locale": _select_locale(),
-            "SUPPORTED_LOCALES": SUPPORTED_LOCALES,
-            "LOCALE_FLAGS": LOCALE_FLAGS,
-            "_": _,
-        }
+    def inject_i18n():
+        base = base_labels()
+        labels = build_i18n_labels(base)
 
-# blueprint to set session language
+        try:
+            current_app.logger.warning(
+                "inject_i18n: locale=%s cookie.locale=%r labels_count=%s keys_sample=%s",
+                str(get_locale() or "NONE"),
+        tf := request.cookies.get("locale"),
+                len(labels),
+                list(labels.keys())[:5],
+            )
+        except Exception as e:
+            current_app.logger.warning("inject_i18n log failed: %s", e)
+
+        return {"I18N": {"labels": labels, "by_msgid": {}}}
+
+
+# /lang/<code> route
 lang_bp = Blueprint("lang", __name__, url_prefix="/lang")
 
 @lang_bp.route("/<lang_code>")
 def set_language(lang_code):
-    if lang_code in SUPPORTED_LOCALES:
-        session["lang"] = lang_code
-    return redirect(request.referrer or url_for("home"))
+    if lang_code not in SUPPORTED_LOCALES:
+        lang_code = "en"
+
+    resp = redirect(request.referrer or url_for("web.explore"))
+    resp.set_cookie("locale", lang_code, max_age=60*60*24*730, samesite="Lax")
+    return resp
