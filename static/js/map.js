@@ -17,6 +17,87 @@
     maxZoom: 15
   }).setView([50, 10], 5);  // try 6, 7, 8, etc.
 
+  const COUNTRY_NAMES = {
+    DE: 'Germany',
+    ES: 'Spain',
+    FR: 'France',
+    IT: 'Italy',
+    PT: 'Portugal',
+    PL: 'Poland',
+    FI: 'Finland',
+    RO: 'Romania',
+    NL: 'Netherlands',
+    CZ: 'Czechia',
+    SK: 'Slovakia',
+    GR: 'Greece',
+    RU: 'Russia',
+    GB: 'United Kingdom',
+    UA: 'Ukraine',
+    HU: 'Hungary',
+    SE: 'Sweden',
+    BG: 'Bulgaria',
+    BE: 'Belgium',
+    HR: 'Croatia',
+    AT: 'Austria',
+    IE: 'Ireland',
+    DK: 'Denmark',
+    LT: 'Lithuania',
+    SI: 'Slovenia',
+    LV: 'Latvia',
+    EE: 'Estonia',
+    CY: 'Cyprus',
+    LU: 'Luxembourg',
+    MT: 'Malta',
+    AL: 'Albania',
+    RS: 'Serbia',
+    ME: 'Montenegro',
+    MK: 'North Macedonia',
+    BA: 'Bosnia and Herzegovina',
+    IS: 'Iceland',
+    NO: 'Norway',
+    CH: 'Switzerland',
+    TR: 'Turkey',
+    MD: 'Moldova',
+    AD: 'Andorra',
+    LI: 'Liechtenstein',
+    SM: 'San Marino',
+    VA: 'Vatican City',
+    GE: 'Georgia',
+
+  };
+
+  let activeCountry = null;
+
+  function populateCountryFilter() {
+    const sel = document.getElementById('countryFilter');
+    if (!sel) return;
+
+    const countries = new Set();
+
+    for (const ring of window.__echomapIndex.values()) {
+      const p = ring.__props || {};
+      if (p.country_code) {
+        countries.add(String(p.country_code).toUpperCase());
+      }
+    }
+
+    const counts = {};
+
+    for (const ring of window.__echomapIndex.values()) {
+      const p = ring.__props || {};
+      if (!p.country_code) continue;
+      const cc = String(p.country_code).toUpperCase();
+      counts[cc] = (counts[cc] || 0) + 1;
+    }
+
+    [...countries].sort().forEach(cc => {
+      const opt = document.createElement('option');
+      opt.value = cc;
+      opt.textContent = `${COUNTRY_NAMES[cc] || cc} (${counts[cc]})`;
+      sel.appendChild(opt);
+    });
+  }
+
   // 👇 Expose map + global index + "show" helper
   window.__echomap = map;
   window.__echomapIndex = new Map();
@@ -579,6 +660,12 @@
   let activePhMax = null;
   let filteredRows = [];
 
+  const countryEl = document.getElementById('countryFilter');
+  countryEl?.addEventListener('change', () => {
+    activeCountry = countryEl.value || null;
+    updateFiltered();
+  });
+
   function inRangeGiven(ph, min, max){
     if (!Number.isFinite(ph)) return (min == null && max == null);
     if (min != null && ph < min) return false;
@@ -587,6 +674,8 @@
   }
   function passesCurrentFilter(props){
     const ph = getPhFromProps(props || {});
+    if (activeCountry && props.country_code !== activeCountry) return false;
+
     return inRangeGiven(ph, activePhMin, activePhMax);
   }
 
@@ -976,12 +1065,29 @@
   }
 
   btnApplyFilter?.addEventListener('click', updateFiltered);
-  btnExportFiltered?.addEventListener('click', ()=>{
-    if(!filteredRows.length) return;
-    const csv = toCsv(filteredRows);
-    if(!csv) return;
-    downloadCsv('echorepo_filtered.csv', csv);
+  btnExportFiltered?.addEventListener('click', () => {
+    const cfg = window.ECHOREPO_CFG || {};
+    const PUBLIC_MODE = !!cfg.public_mode;
+
+    // Safety: should never happen, but double-guard
+    if (PUBLIC_MODE) {
+      alert(T('signInToExport', {}, 'Please sign in to export data.'));
+      return;
+    }
+
+    if (!filteredRows.length) return;
+
+    const params = new URLSearchParams();
+    params.set('format', 'zip');
+
+    if (activePhMin != null) params.set('ph_min', activePhMin);
+    if (activePhMax != null) params.set('ph_max', activePhMax);
+    if (activeCountry) params.set('country_code', activeCountry);
+
+    // Delegate everything to /search
+    window.location.href = `/search?${params.toString()}`;
   });
+
   [phMinEl, phMaxEl].forEach(el=> el?.addEventListener('keydown', (e)=>{
     if(e.key==='Enter'){ e.preventDefault(); updateFiltered(); }
   }));
@@ -1078,6 +1184,7 @@
     computeAllHeaders();
     buildLayers();
     refreshI18NTexts();
+    populateCountryFilter();
   }).catch(err => {
     console.warn('Init failed:', err);
     // IMPORTANT: do NOT hide the map anymore
