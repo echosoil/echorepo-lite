@@ -66,6 +66,19 @@
 
   };
 
+  // ---- Country name i18n (browser-native) ----
+  const countryNames = (() => {
+    try {
+      const lang =
+        document.documentElement.lang ||
+        (navigator.language || 'en').split('-')[0];
+
+      return new Intl.DisplayNames([lang], { type: 'region' });
+    } catch (e) {
+      return null;
+    }
+  })();
+
   let activeCountry = null;
 
   function populateCountryFilter() {
@@ -93,7 +106,12 @@
     [...countries].sort().forEach(cc => {
       const opt = document.createElement('option');
       opt.value = cc;
-      opt.textContent = `${COUNTRY_NAMES[cc] || cc} (${counts[cc]})`;
+      // Get localized country name if possible
+      const label =
+        countryNames?.of(cc) ||
+        cc;
+
+      opt.textContent = `${label} (${counts[cc]})`;
       sel.appendChild(opt);
     });
   }
@@ -112,6 +130,27 @@
 
     history.replaceState({}, '', newUrl);
   }
+
+  function getBoundsForCountry(countryCode) {
+    let bounds = null;
+
+    for (const ring of window.__echomapIndex.values()) {
+      const p = ring.__props || {};
+      if (p.country_code !== countryCode) continue;
+
+      const ll = ring.getLatLng?.();
+      if (!ll) continue;
+
+      if (!bounds) {
+        bounds = L.latLngBounds(ll, ll);
+      } else {
+        bounds.extend(ll);
+      }
+    }
+
+    return bounds;
+  }
+  
   // 👇 Expose map + global index + "show" helper
   window.__echomap = map;
   window.__echomapIndex = new Map();
@@ -698,6 +737,19 @@
     activeCountry = countryEl.value || null;
     updateFiltered();
     updateURLFromFilters();
+
+    if (activeCountry) {
+      const b = getBoundsForCountry(activeCountry);
+      if (b) {
+        map.fitBounds(b, {
+          padding: [40, 40],
+          maxZoom: 6
+        });
+      }
+    }
+    if (!activeCountry) {
+      map.setView([50, 10], 5);
+    }
   });
 
   function inRangeGiven(ph, min, max){
