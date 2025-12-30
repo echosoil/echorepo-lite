@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-27 09:58+0000\n"
+"POT-Creation-Date: 2025-12-30 22:59+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -294,18 +294,24 @@ msgstr ""
 msgid "max"
 msgstr ""
 
-#: /work/echorepo/templates/explore.html:61
+#: /work/echorepo/templates/explore.html:60
+#: /work/echorepo/templates/search.html:15
+#: /work/echorepo/templates/search.html:89
+msgid "Country"
+msgstr ""
+
+#: /work/echorepo/templates/explore.html:65
+msgid "All countries"
+msgstr ""
+
+#: /work/echorepo/templates/explore.html:72
 #: /work/echorepo/templates/results.html:316
 msgid "Apply"
 msgstr ""
 
-#: /work/echorepo/templates/explore.html:72
+#: /work/echorepo/templates/explore.html:81
 #: /work/echorepo/templates/results.html:319
 msgid "Export filtered (0)"
-msgstr ""
-
-#: /work/echorepo/templates/explore.html:103
-msgid "Sign in to export data"
 msgstr ""
 
 #: /work/echorepo/templates/issues.html:2
@@ -652,11 +658,6 @@ msgstr ""
 #: /work/echorepo/templates/search.html:10
 #: /work/echorepo/templates/search.html:87
 msgid "Sample / QR"
-msgstr ""
-
-#: /work/echorepo/templates/search.html:15
-#: /work/echorepo/templates/search.html:89
-msgid "Country"
 msgstr ""
 
 #: /work/echorepo/templates/search.html:17
