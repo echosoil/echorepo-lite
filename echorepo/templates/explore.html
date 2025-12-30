@@ -55,22 +55,33 @@
           placeholder="{{ _('max') }}"
           style="width:5.5rem">
 
+    
+
+    <span class="text-muted small">{{ _('Country') }}</span>
+
+    <select id="countryFilter"
+            class="form-select form-select-sm"
+            style="width: 14rem">
+      <option value="">{{ _('All countries') }}</option>
+    </select>
+
+
     <button class="btn btn-sm btn-outline-secondary"
             id="btnApplyFilter"
             type="button">
       {{ _('Apply') }}
     </button>
 
-    <button class="btn btn-sm btn-outline-primary"
-            id="btnExportFiltered"
-            type="button"
-            {% if not g.user %}
-              hidden
-            {% else %}
-              disabled
-            {% endif %}>
-      {{ _('Export filtered (0)') }}
-    </button>
+    {% if g.user %}
+      <a
+        id="btnExportFiltered"
+        class="btn btn-sm btn-outline-primary disabled"
+        href="#"
+        aria-disabled="true">
+        {{ _('Export filtered (0)') }}
+      </a>
+    {% endif %}
+
   </div>
 
 
