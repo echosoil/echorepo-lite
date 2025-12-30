@@ -98,6 +98,20 @@
     });
   }
 
+  function updateURLFromFilters() {
+    const params = new URLSearchParams();
+
+    if (activeCountry) params.set('country', activeCountry);
+    if (activePhMin != null) params.set('ph_min', activePhMin);
+    if (activePhMax != null) params.set('ph_max', activePhMax);
+
+    const newUrl =
+      params.toString()
+        ? `${location.pathname}?${params.toString()}`
+        : location.pathname;
+
+    history.replaceState({}, '', newUrl);
+  }
   // 👇 Expose map + global index + "show" helper
   window.__echomap = map;
   window.__echomapIndex = new Map();
@@ -660,10 +674,30 @@
   let activePhMax = null;
   let filteredRows = [];
 
+  // ---- Restore filters from URL (Optional D) ----
+  (function restoreFiltersFromURL() {
+    const qs = new URLSearchParams(window.location.search);
+
+    if (qs.has('country')) {
+      activeCountry = qs.get('country');
+    }
+
+    if (qs.has('ph_min')) {
+      const v = parseFloat(qs.get('ph_min'));
+      if (Number.isFinite(v)) activePhMin = v;
+    }
+
+    if (qs.has('ph_max')) {
+      const v = parseFloat(qs.get('ph_max'));
+      if (Number.isFinite(v)) activePhMax = v;
+    }
+  })();
+
   const countryEl = document.getElementById('countryFilter');
   countryEl?.addEventListener('change', () => {
     activeCountry = countryEl.value || null;
     updateFiltered();
+    updateURLFromFilters();
   });
 
   function inRangeGiven(ph, min, max){
@@ -777,6 +811,7 @@
 
     // Initialize filter counts/UI using default (no filter)
     updateFiltered();
+    updateURLFromFilters();
   }
 
   // ---- Rebuild clusters to reflect current filter ----
@@ -1064,8 +1099,11 @@
     updateSelectionCount();
   }
 
-  btnApplyFilter?.addEventListener('click', updateFiltered);
-  btnExportFiltered?.addEventListener('click', () => {
+    btnApplyFilter?.addEventListener('click', () => {
+      updateFiltered();
+      updateURLFromFilters();
+    });
+    btnExportFiltered?.addEventListener('click', () => {
     const cfg = window.ECHOREPO_CFG || {};
     const PUBLIC_MODE = !!cfg.public_mode;
 
@@ -1183,6 +1221,15 @@
 
     computeAllHeaders();
     buildLayers();
+    // ---- Apply restored filters to UI ----
+    function syncFiltersToUI() {
+      if (phMinEl && activePhMin != null) phMinEl.value = activePhMin;
+      if (phMaxEl && activePhMax != null) phMaxEl.value = activePhMax;
+      if (countryEl && activeCountry) countryEl.value = activeCountry;
+    }
+    syncFiltersToUI();
+    updateFiltered();
+    updateURLFromFilters();
     refreshI18NTexts();
     populateCountryFilter();
   }).catch(err => {
