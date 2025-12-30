@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-27 09:58+0000\n"
+"POT-Creation-Date: 2025-12-30 22:59+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fi\n"
@@ -163,7 +163,9 @@ msgid "New password may take up to 30 minutes to activate in ECHOREPO."
 msgstr "Uusi salasana voi kestää jopa 30 minuuttia aktivoida ECHOREEPO."
 
 #: /work/echorepo/services/firebase.py:68
-msgid "Password recovery is temporarily unavailable. Please contact the organisers."
+msgid ""
+"Password recovery is temporarily unavailable. Please contact the "
+"organisers."
 msgstr ""
 "Salasanan palautus ei ole tilapäisesti käytettävissä. Ota yhteyttä "
 "järjestäjiin."
@@ -267,8 +269,8 @@ msgstr "Euroopan unionin osarahoitus"
 #: /work/echorepo/templates/base.html:195
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr ""
-"Euroopan unionin sekä Yhdistyneen kuningaskunnan tutkimuksen ja innovoinnin "
-"rahoittama"
+"Euroopan unionin sekä Yhdistyneen kuningaskunnan tutkimuksen ja "
+"innovoinnin rahoittama"
 
 #: /work/echorepo/templates/explore.html:2
 msgid "ECHOrepo — Explore"
@@ -284,7 +286,8 @@ msgstr ""
 "Kirjaudu sisään viedäksesi tietoja ja käyttääksesi henkilökohtaisia "
 "näytteitäsi."
 
-#: /work/echorepo/templates/explore.html:36 /work/echorepo/templates/search.html:44
+#: /work/echorepo/templates/explore.html:36
+#: /work/echorepo/templates/search.html:44
 msgid "Search"
 msgstr "Etsi"
 
@@ -298,25 +301,32 @@ msgstr "min"
 msgid "max"
 msgstr "enintään"
 
-#: /work/echorepo/templates/explore.html:61
+#: /work/echorepo/templates/explore.html:60
+#: /work/echorepo/templates/search.html:15
+#: /work/echorepo/templates/search.html:89
+msgid "Country"
+msgstr "Maa"
+
+#: /work/echorepo/templates/explore.html:65
+msgid "All countries"
+msgstr "Kaikki maat"
+
+#: /work/echorepo/templates/explore.html:72
 #: /work/echorepo/templates/results.html:316
 msgid "Apply"
 msgstr "Käytä"
 
-#: /work/echorepo/templates/explore.html:72
+#: /work/echorepo/templates/explore.html:81
 #: /work/echorepo/templates/results.html:319
 msgid "Export filtered (0)"
 msgstr "Vie suodatettu (0)"
-
-#: /work/echorepo/templates/explore.html:103
-msgid "Sign in to export data"
-msgstr "Kirjaudu sisään vientitietoihin"
 
 #: /work/echorepo/templates/issues.html:2
 msgid "Data quality issues — ECHOrepo"
 msgstr "Tietojen laatua koskevat kysymykset"
 
-#: /work/echorepo/templates/issues.html:6 /work/echorepo/templates/issues.html:14
+#: /work/echorepo/templates/issues.html:6
+#: /work/echorepo/templates/issues.html:14
 msgid "Back to My Data"
 msgstr "Takaisin omaan dataani"
 
@@ -337,41 +347,50 @@ msgstr "Oletuskoordinaatit (__%(lat)s_, %(lon)s)"
 msgid "No entries with default coordinates"
 msgstr "Ei tietueita oletuskoordinaateilla"
 
-#: /work/echorepo/templates/issues.html:28 /work/echorepo/templates/issues.html:72
+#: /work/echorepo/templates/issues.html:28
+#: /work/echorepo/templates/issues.html:72
 msgid "Sample"
 msgstr "Näyte"
 
-#: /work/echorepo/templates/issues.html:29 /work/echorepo/templates/issues.html:73
+#: /work/echorepo/templates/issues.html:29
+#: /work/echorepo/templates/issues.html:73
 msgid "User"
 msgstr "Käyttäjä"
 
-#: /work/echorepo/templates/issues.html:30 /work/echorepo/templates/issues.html:74
+#: /work/echorepo/templates/issues.html:30
+#: /work/echorepo/templates/issues.html:74
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
+#: /work/echorepo/templates/issues.html:31
+#: /work/echorepo/templates/issues.html:75
 #: /work/echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Lat"
 
-#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
+#: /work/echorepo/templates/issues.html:32
+#: /work/echorepo/templates/issues.html:76
 #: /work/echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Lon"
 
-#: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:77
+#: /work/echorepo/templates/issues.html:33
+#: /work/echorepo/templates/issues.html:77
 msgid "Fix"
 msgstr "Korjaa"
 
-#: /work/echorepo/templates/issues.html:49 /work/echorepo/templates/issues.html:92
+#: /work/echorepo/templates/issues.html:49
+#: /work/echorepo/templates/issues.html:92
 msgid "Lat (dec or DMS)"
 msgstr "Lat (dec tai DMS)"
 
-#: /work/echorepo/templates/issues.html:50 /work/echorepo/templates/issues.html:93
+#: /work/echorepo/templates/issues.html:50
+#: /work/echorepo/templates/issues.html:93
 msgid "Lon (dec or DMS)"
 msgstr "Lon (dec tai DMS)"
 
-#: /work/echorepo/templates/issues.html:51 /work/echorepo/templates/issues.html:94
+#: /work/echorepo/templates/issues.html:51
+#: /work/echorepo/templates/issues.html:94
 msgid "Save"
 msgstr "Tallenna"
 
@@ -453,7 +472,8 @@ msgid "Download all samples (CSV)"
 msgstr "Lataa kaikki näytteet (CSV)"
 
 #: /work/echorepo/templates/results.html:13
-#: /work/echorepo/templates/results.html:151 /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/results.html:151
+#: /work/echorepo/templates/search.html:2
 #: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Hakunäytteet"
@@ -466,7 +486,9 @@ msgstr "Tietosi"
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
-msgstr "Tutustu maaperänäytteen sijainti kartalla, sitten viedä tai selata taulukkoa."
+msgstr ""
+"Tutustu maaperänäytteen sijainti kartalla, sitten viedä tai selata "
+"taulukkoa."
 
 #: /work/echorepo/templates/results.html:142
 #, python-format
@@ -484,24 +506,26 @@ msgstr "Kiitämme teitä vilpittömästi sitoutumisestanne tähän hankkeeseen!"
 
 #: /work/echorepo/templates/results.html:164
 msgid ""
-"This is the third and final survey in the project, following the initial ones"
-" you completed before and after soil sampling. The majority of questions are "
-"consistent with the previous surveys so that we can accurately measure "
-"changes over time and understand the impact of project participation."
+"This is the third and final survey in the project, following the initial "
+"ones you completed before and after soil sampling. The majority of "
+"questions are consistent with the previous surveys so that we can "
+"accurately measure changes over time and understand the impact of project"
+" participation."
 msgstr ""
-"Tämä on hankkeen kolmas ja viimeinen tutkimus, joka on tehty ennen ja jälkeen"
-" maaperänäytteenoton. Suurin osa kysymyksistä on yhteneviä aiempien "
-"kyselyiden kanssa, jotta voimme tarkasti mitata muutoksia ajan mittaan ja "
-"ymmärtää hankkeiden osallistumisen vaikutuksia."
+"Tämä on hankkeen kolmas ja viimeinen tutkimus, joka on tehty ennen ja "
+"jälkeen maaperänäytteenoton. Suurin osa kysymyksistä on yhteneviä "
+"aiempien kyselyiden kanssa, jotta voimme tarkasti mitata muutoksia ajan "
+"mittaan ja ymmärtää hankkeiden osallistumisen vaikutuksia."
 
 #: /work/echorepo/templates/results.html:167
 msgid ""
-"Before you start: please only complete this survey if the lab results from "
-"your soil sample(s) have already been added to the repository. If the results"
-" are pending, please check back at a later time."
+"Before you start: please only complete this survey if the lab results "
+"from your soil sample(s) have already been added to the repository. If "
+"the results are pending, please check back at a later time."
 msgstr ""
-"Ennen kuin aloitat: Täytä tämä tutkimus vain, jos maaperänäytteiden tulokset "
-"on jo lisätty varastoon. Jos tulokset ovat kesken, tarkista myöhemmin."
+"Ennen kuin aloitat: Täytä tämä tutkimus vain, jos maaperänäytteiden "
+"tulokset on jo lisätty varastoon. Jos tulokset ovat kesken, tarkista "
+"myöhemmin."
 
 #: /work/echorepo/templates/results.html:172
 msgid "Go to final survey"
@@ -524,50 +548,54 @@ msgid ""
 "The objective of this survey data is to examine the impact of project "
 "participation on participant attitudes and motivation towards soil."
 msgstr ""
-"Tämän kyselyn tavoitteena on selvittää hankkeen osallistumisen vaikutusta "
-"osallistujien asenteisiin ja motivaatioon maaperää kohtaan."
+"Tämän kyselyn tavoitteena on selvittää hankkeen osallistumisen vaikutusta"
+" osallistujien asenteisiin ja motivaatioon maaperää kohtaan."
 
 #: /work/echorepo/templates/results.html:198
 msgid ""
-"Your information will only be used for scientific purposes. We do not collect"
-" names or addresses. Your details regarding age and gender are only used for "
-"statistical purposes and all details are collected and evaluated anonymously."
-" It is not possible to draw conclusions about your person at any time."
+"Your information will only be used for scientific purposes. We do not "
+"collect names or addresses. Your details regarding age and gender are "
+"only used for statistical purposes and all details are collected and "
+"evaluated anonymously. It is not possible to draw conclusions about your "
+"person at any time."
 msgstr ""
-"Tietojasi käytetään vain tieteellisiin tarkoituksiin. Emme kerää nimiä tai "
-"osoitteita. Ikää ja sukupuolta koskevia tietojasi käytetään vain "
+"Tietojasi käytetään vain tieteellisiin tarkoituksiin. Emme kerää nimiä "
+"tai osoitteita. Ikää ja sukupuolta koskevia tietojasi käytetään vain "
 "tilastollisiin tarkoituksiin ja kaikki tiedot kerätään ja arvioidaan "
 "nimettömästi. Henkilöstä ei voi tehdä johtopäätöksiä milloinkaan."
 
 #: /work/echorepo/templates/results.html:201
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
-"crucial role in providing valuable insights that enhance the relevance and "
-"impact of the ECHO project. Your honest responses are essential for "
+"crucial role in providing valuable insights that enhance the relevance "
+"and impact of the ECHO project. Your honest responses are essential for "
 "understanding how engagement with the project influences attitudes and "
 "motivations, ensuring the project’s outcomes are meaningful and well-"
 "informed."
 msgstr ""
-"Kuhunkin kysymykseen vastaaminen tutkimuksessa on erittäin tärkeää, koska "
-"sillä on ratkaiseva merkitys ECHO-hankkeen merkityksellisyyden ja vaikutusten"
-" kannalta. Rehelliset vastauksesi ovat olennaisia, jotta voidaan ymmärtää, "
-"miten sitoutuminen projektiin vaikuttaa asenteisiin ja motivaatioihin ja "
-"varmistaa, että hankkeen tulokset ovat mielekkäitä ja hyvin perillä asioista."
+"Kuhunkin kysymykseen vastaaminen tutkimuksessa on erittäin tärkeää, koska"
+" sillä on ratkaiseva merkitys ECHO-hankkeen merkityksellisyyden ja "
+"vaikutusten kannalta. Rehelliset vastauksesi ovat olennaisia, jotta "
+"voidaan ymmärtää, miten sitoutuminen projektiin vaikuttaa asenteisiin ja "
+"motivaatioihin ja varmistaa, että hankkeen tulokset ovat mielekkäitä ja "
+"hyvin perillä asioista."
 
 #: /work/echorepo/templates/results.html:204
 msgid ""
-"The survey will take approximately 8–10 minutes to complete. Please find a "
-"quiet space where you won’t be interrupted. There are no right or wrong "
-"answers — answer spontaneously."
+"The survey will take approximately 8–10 minutes to complete. Please find "
+"a quiet space where you won’t be interrupted. There are no right or wrong"
+" answers — answer spontaneously."
 msgstr ""
 "Kyselyn valmistuminen kestää noin 8.10. Etsi hiljainen tila, jossa voit "
 "keskeyttää. Ei ole oikeita tai vääriä vastauksia . Vastaus spontaanisti."
 
 #: /work/echorepo/templates/results.html:207
 msgid ""
-"Based on the information provided to you, please consent to participate in "
-"the survey below."
-msgstr "Saamiesi tietojen perusteella suostut osallistumaan alla olevaan tutkimukseen."
+"Based on the information provided to you, please consent to participate "
+"in the survey below."
+msgstr ""
+"Saamiesi tietojen perusteella suostut osallistumaan alla olevaan "
+"tutkimukseen."
 
 #: /work/echorepo/templates/results.html:218
 msgid "thank you for your participation!"
@@ -643,8 +671,8 @@ msgstr "Yksityisyydensuoja"
 
 #: /work/echorepo/templates/results.html:373
 msgid ""
-"I have read the privacy information above and I consent to the processing of "
-"my personal data for this project."
+"I have read the privacy information above and I consent to the processing"
+" of my personal data for this project."
 msgstr ""
 "Olen lukenut yllä olevat tietosuojatiedot ja hyväksyn tämän projektin "
 "henkilötietojeni käsittelyn."
@@ -661,13 +689,10 @@ msgstr "Näytä kartalta"
 msgid "Could not locate this sample on the map."
 msgstr "Tätä näytettä ei löytynyt kartalta."
 
-#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:87
+#: /work/echorepo/templates/search.html:10
+#: /work/echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Näyte / QR"
-
-#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:89
-msgid "Country"
-msgstr "Maa"
 
 #: /work/echorepo/templates/search.html:17
 msgid "Any country"
@@ -798,4 +823,7 @@ msgstr "tulokset"
 
 #~ msgid "EU-funded initiative"
 #~ msgstr "EU:n rahoittama aloite"
+
+#~ msgid "Sign in to export data"
+#~ msgstr "Kirjaudu sisään vientitietoihin"
 
