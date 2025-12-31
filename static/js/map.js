@@ -35,6 +35,15 @@
 
   map.setView([initialView.lat, initialView.lng], initialView.z);
 
+  // ---- Debounced URL update on map move ----
+  let _viewUrlTimer = null;
+
+  function updateURLFromViewDebounced() {
+    clearTimeout(_viewUrlTimer);
+    _viewUrlTimer = setTimeout(updateURLFromView, 150);
+  }
+
+  map.on('moveend zoomend', updateURLFromViewDebounced);
 
   document.getElementById('btnCopyView')?.addEventListener('click', async () => {
     try {
