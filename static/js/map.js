@@ -15,7 +15,38 @@
   const map = L.map('map', {
     minZoom: 4,
     maxZoom: 15
-  }).setView([50, 10], 5);  // try 6, 7, 8, etc.
+  });
+
+  // Default fallback view
+  let initialView = { lat: 50, lng: 10, z: 5 };
+
+  // If URL has lat/lng/z, use it
+  (function initViewFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+
+    const lat = parseFloat(params.get('lat'));
+    const lng = parseFloat(params.get('lng'));
+    const z   = parseInt(params.get('z'), 10);
+
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(z)) {
+      initialView = { lat, lng, z };
+    }
+  })();
+
+  map.setView([initialView.lat, initialView.lng], initialView.z);
+
+
+  document.getElementById('btnCopyView')?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      alert(T('viewLinkCopied', {}, 'Link copied to clipboard'));
+    } catch {
+      prompt(
+        T('copyThisLink', {}, 'Copy this link:'),
+        location.href
+      );
+    }
+  });
 
   const COUNTRY_NAMES = {
     DE: 'Germany',
@@ -154,6 +185,12 @@
     if (activeDateTo) params.set('date_to', activeDateTo);
     else params.delete('date_to');
     
+    // map view
+    const center = map.getCenter();
+    params.set('lat', center.lat.toFixed(5));
+    params.set('lng', center.lng.toFixed(5));
+    params.set('z', map.getZoom());
+
     // Build new URL
     const newUrl =
       params.toString()
@@ -166,6 +203,17 @@
     
     // Update URL without reloading
     history.replaceState({}, '', newUrl);
+  }
+
+  function updateURLFromView() {
+    const params = new URLSearchParams(location.search);
+
+    const center = map.getCenter();
+    params.set('lat', center.lat.toFixed(5));
+    params.set('lng', center.lng.toFixed(5));
+    params.set('z', map.getZoom());
+
+    history.replaceState({}, '', `${location.pathname}?${params.toString()}`);
   }
 
 
@@ -933,6 +981,11 @@
 
     // Initialize filter counts/UI using default (no filter)
     updateFiltered();
+
+    map.off('moveend zoomend'); // clear previous
+    map.on('moveend zoomend', () => {
+      updateURLFromView();
+    });
   }
 
   // ---- Rebuild clusters to reflect current filter ----
