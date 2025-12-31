@@ -117,19 +117,31 @@
   }
 
   function updateURLFromFilters() {
-    const params = new URLSearchParams();
+    // START from current URL, not from scratch
+    const params = new URLSearchParams(window.location.search);
 
+    // country
     if (activeCountry) params.set('country', activeCountry);
+    else params.delete('country');
+
+    // pH range
     if (activePhMin != null) params.set('ph_min', activePhMin);
+    else params.delete('ph_min');
+
     if (activePhMax != null) params.set('ph_max', activePhMax);
+    else params.delete('ph_max');
 
     const newUrl =
       params.toString()
         ? `${location.pathname}?${params.toString()}`
         : location.pathname;
 
+    const old = window.location.search.replace(/^\?/, '');
+    if (old === params.toString()) return;
+
     history.replaceState({}, '', newUrl);
   }
+
 
   function getBoundsForCountry(countryCode) {
     let bounds = null;
@@ -151,6 +163,33 @@
     return bounds;
   }
   
+  function initFiltersFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+
+    // pH
+    const phMin = params.get('ph_min');
+    const phMax = params.get('ph_max');
+
+    if (phMin !== null && phMinEl) {
+      phMinEl.value = phMin;
+      activePhMin = parseFloat(phMin);
+    }
+
+    if (phMax !== null && phMaxEl) {
+      phMaxEl.value = phMax;
+      activePhMax = parseFloat(phMax);
+    }
+
+    // country
+    const c = params.get('country');
+    if (c) {
+      activeCountry = c;
+      if (countrySelectEl) {
+        countrySelectEl.value = c;
+      }
+    }
+  }
+
   // 👇 Expose map + global index + "show" helper
   window.__echomap = map;
   window.__echomapIndex = new Map();
@@ -1114,8 +1153,7 @@
       layer.eachLayer(m=>{
         const ll=m.getLatLng(); if(!ll) return;
         const f=m.feature||{}; const props={...(f.properties||{})};
-        const ph = getPhFromProps(props);
-        if(!inRange(ph)) return;
+        if (!passesCurrentFilter(props)) return;
         Object.keys(props).forEach(k=>{ if(SHOULD_DROP(k)) delete props[k]; });
         props[LAT_KEY]=ll.lat; props[LON_KEY]=ll.lng;
         const key=props.sampleId||props.QR_qrCode||`${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
@@ -1267,27 +1305,33 @@
       Object.assign(window.I18N.by_msgid, payload.by_msgid);
     }
 
-    // IMPORTANT: always give valid GeoJSON objects
+    // ALWAYS give valid GeoJSON
     userGJ   = u || { type: "FeatureCollection", features: [] };
     othersGJ = o || { type: "FeatureCollection", features: [] };
 
     computeAllHeaders();
     buildLayers();
-    // ---- Apply restored filters to UI ----
-    function syncFiltersToUI() {
-      if (phMinEl && activePhMin != null) phMinEl.value = activePhMin;
-      if (phMaxEl && activePhMax != null) phMaxEl.value = activePhMax;
-      if (countryEl && activeCountry) countryEl.value = activeCountry;
-    }
-    syncFiltersToUI();
-    updateFiltered();
-    updateURLFromFilters();
-    refreshI18NTexts();
+
+    // ✅ 1. Populate country selector from FULL dataset
     populateCountryFilter();
+
+    // ✅ 2. Restore filters from URL (sets activeCountry / activePhMin / activePhMax)
+    initFiltersFromUrl();
+
+    // ✅ 3. Sync restored values into inputs
+    if (phMinEl && activePhMin != null) phMinEl.value = activePhMin;
+    if (phMaxEl && activePhMax != null) phMaxEl.value = activePhMax;
+    if (countryEl && activeCountry) countryEl.value = activeCountry;
+
+    // ✅ 4. Apply filters to map + counts
+    updateFiltered();
+
+    // ❌ DO NOT call updateURLFromFilters() here
+    // (otherwise you overwrite the original URL on page load)
+
+    refreshI18NTexts();
   }).catch(err => {
     console.warn('Init failed:', err);
-    // IMPORTANT: do NOT hide the map anymore
-    // mapDiv.style.display='none';  <-- remove/avoid this
   });
 })();
 
