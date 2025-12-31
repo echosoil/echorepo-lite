@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-31 09:31+0000\n"
+"POT-Creation-Date: 2025-12-31 13:02+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -160,14 +160,10 @@ msgstr "Wenn diese Adresse registriert ist, wurde ein Reset-Link gesendet."
 
 #: /work/echorepo/services/firebase.py:65
 msgid "New password may take up to 30 minutes to activate in ECHOREPO."
-msgstr ""
-"Neues Passwort kann bis zu 30 Minuten dauern, um in ECHOREPO zu "
-"aktivieren."
+msgstr "Neues Passwort kann bis zu 30 Minuten dauern, um in ECHOREPO zu aktivieren."
 
 #: /work/echorepo/services/firebase.py:68
-msgid ""
-"Password recovery is temporarily unavailable. Please contact the "
-"organisers."
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
 msgstr ""
 "Passwortwiederherstellung ist vorübergehend nicht verfügbar. Bitte "
 "kontaktieren Sie die Veranstalter."
@@ -179,14 +175,12 @@ msgstr "ECHOrepo — EU Bodendaten"
 #: /work/echorepo/templates/base.html:9
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr ""
-"ECHOrepo — bürgerwissenschaftliche Bodenproben im Rahmen des EU-"
-"geförderten ECHO-Projekts"
+"ECHOrepo — bürgerwissenschaftliche Bodenproben im Rahmen des EU-geförderten "
+"ECHO-Projekts"
 
 #: /work/echorepo/templates/base.html:12
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
-msgstr ""
-"Zugriff und Download Ihrer Bodenproben. Teil des EU-geförderten ECHO-"
-"Projekts."
+msgstr "Zugriff und Download Ihrer Bodenproben. Teil des EU-geförderten ECHO-Projekts."
 
 #: /work/echorepo/templates/base.html:79
 msgid "Skip to content"
@@ -287,11 +281,10 @@ msgstr "Entdecken Sie die Karte"
 #: /work/echorepo/templates/explore.html:30
 msgid "Sign in to export data and access your personal samples."
 msgstr ""
-"Melden Sie sich an, um Daten zu exportieren und auf Ihre persönlichen "
-"Proben zuzugreifen."
+"Melden Sie sich an, um Daten zu exportieren und auf Ihre persönlichen Proben "
+"zuzugreifen."
 
-#: /work/echorepo/templates/explore.html:36
-#: /work/echorepo/templates/search.html:44
+#: /work/echorepo/templates/explore.html:36 /work/echorepo/templates/search.html:44
 msgid "Search"
 msgstr "Suche"
 
@@ -305,8 +298,7 @@ msgstr "min"
 msgid "max"
 msgstr "max"
 
-#: /work/echorepo/templates/explore.html:60
-#: /work/echorepo/templates/search.html:15
+#: /work/echorepo/templates/explore.html:60 /work/echorepo/templates/search.html:15
 #: /work/echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Land"
@@ -325,12 +317,15 @@ msgstr "Anwendung"
 msgid "Export filtered (0)"
 msgstr "Export gefiltert (0)"
 
+#: /work/echorepo/templates/explore.html:103
+msgid "Copy view link"
+msgstr "Link zur Übersicht"
+
 #: /work/echorepo/templates/issues.html:2
 msgid "Data quality issues — ECHOrepo"
 msgstr "Probleme der Datenqualität — ECHOrepo"
 
-#: /work/echorepo/templates/issues.html:6
-#: /work/echorepo/templates/issues.html:14
+#: /work/echorepo/templates/issues.html:6 /work/echorepo/templates/issues.html:14
 msgid "Back to My Data"
 msgstr "Zurück zu Meine Daten"
 
@@ -351,50 +346,41 @@ msgstr "Standardkoordinaten (%(lat)s, %(lon)s_)"
 msgid "No entries with default coordinates"
 msgstr "Keine Einträge mit Standardkoordinaten"
 
-#: /work/echorepo/templates/issues.html:28
-#: /work/echorepo/templates/issues.html:72
+#: /work/echorepo/templates/issues.html:28 /work/echorepo/templates/issues.html:72
 msgid "Sample"
 msgstr "Stichprobe"
 
-#: /work/echorepo/templates/issues.html:29
-#: /work/echorepo/templates/issues.html:73
+#: /work/echorepo/templates/issues.html:29 /work/echorepo/templates/issues.html:73
 msgid "User"
 msgstr "Benutzer"
 
-#: /work/echorepo/templates/issues.html:30
-#: /work/echorepo/templates/issues.html:74
+#: /work/echorepo/templates/issues.html:30 /work/echorepo/templates/issues.html:74
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:31
-#: /work/echorepo/templates/issues.html:75
+#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
 #: /work/echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Latein"
 
-#: /work/echorepo/templates/issues.html:32
-#: /work/echorepo/templates/issues.html:76
+#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
 #: /work/echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Darlehen"
 
-#: /work/echorepo/templates/issues.html:33
-#: /work/echorepo/templates/issues.html:77
+#: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:77
 msgid "Fix"
 msgstr "Fehler"
 
-#: /work/echorepo/templates/issues.html:49
-#: /work/echorepo/templates/issues.html:92
+#: /work/echorepo/templates/issues.html:49 /work/echorepo/templates/issues.html:92
 msgid "Lat (dec or DMS)"
 msgstr "Lat (dec oder DMS)"
 
-#: /work/echorepo/templates/issues.html:50
-#: /work/echorepo/templates/issues.html:93
+#: /work/echorepo/templates/issues.html:50 /work/echorepo/templates/issues.html:93
 msgid "Lon (dec or DMS)"
 msgstr "Kredit (dec oder DMS)"
 
-#: /work/echorepo/templates/issues.html:51
-#: /work/echorepo/templates/issues.html:94
+#: /work/echorepo/templates/issues.html:51 /work/echorepo/templates/issues.html:94
 msgid "Save"
 msgstr "Speichern"
 
@@ -409,8 +395,8 @@ msgstr "Keine Landunfälle"
 #: /work/echorepo/templates/issues.html:68
 msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr ""
-"Das tatsächliche Land (aus den Koordinaten) ist nicht in der geplanten "
-"Liste für diesen QR."
+"Das tatsächliche Land (aus den Koordinaten) ist nicht in der geplanten Liste "
+"für diesen QR."
 
 #: /work/echorepo/templates/lab_upload.html:3
 #: /work/echorepo/templates/results.html:147
@@ -478,8 +464,7 @@ msgid "Download all samples (CSV)"
 msgstr "Alle Proben herunterladen (CSV)"
 
 #: /work/echorepo/templates/results.html:13
-#: /work/echorepo/templates/results.html:151
-#: /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/results.html:151 /work/echorepo/templates/search.html:2
 #: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Suchproben"
@@ -512,28 +497,27 @@ msgstr "Wir danken Ihnen herzlich für Ihr Engagement für dieses Projekt!"
 
 #: /work/echorepo/templates/results.html:164
 msgid ""
-"This is the third and final survey in the project, following the initial "
-"ones you completed before and after soil sampling. The majority of "
-"questions are consistent with the previous surveys so that we can "
-"accurately measure changes over time and understand the impact of project"
-" participation."
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after soil sampling. The majority of questions are "
+"consistent with the previous surveys so that we can accurately measure "
+"changes over time and understand the impact of project participation."
 msgstr ""
-"Dies ist die dritte und letzte Umfrage im Projekt, nach den ersten, die "
-"Sie vor und nach der Bodenprobenahme abgeschlossen. Die meisten Fragen "
-"stehen im Einklang mit den bisherigen Erhebungen, so dass wir Änderungen "
-"im Laufe der Zeit genau messen und die Auswirkungen der "
-"Projektbeteiligung verstehen können."
+"Dies ist die dritte und letzte Umfrage im Projekt, nach den ersten, die Sie "
+"vor und nach der Bodenprobenahme abgeschlossen. Die meisten Fragen stehen im "
+"Einklang mit den bisherigen Erhebungen, so dass wir Änderungen im Laufe der "
+"Zeit genau messen und die Auswirkungen der Projektbeteiligung verstehen "
+"können."
 
 #: /work/echorepo/templates/results.html:167
 msgid ""
-"Before you start: please only complete this survey if the lab results "
-"from your soil sample(s) have already been added to the repository. If "
-"the results are pending, please check back at a later time."
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already been added to the repository. If the results"
+" are pending, please check back at a later time."
 msgstr ""
-"Bevor Sie beginnen: Vervollständigen Sie bitte nur diese Umfrage, wenn "
-"die Laborergebnisse Ihrer Bodenprobe(en) bereits zum Projektarchiv "
-"hinzugefügt wurden. Wenn die Ergebnisse anhängig sind, überprüfen Sie "
-"bitte zu einem späteren Zeitpunkt zurück."
+"Bevor Sie beginnen: Vervollständigen Sie bitte nur diese Umfrage, wenn die "
+"Laborergebnisse Ihrer Bodenprobe(en) bereits zum Projektarchiv hinzugefügt "
+"wurden. Wenn die Ergebnisse anhängig sind, überprüfen Sie bitte zu einem "
+"späteren Zeitpunkt zurück."
 
 #: /work/echorepo/templates/results.html:172
 msgid "Go to final survey"
@@ -556,57 +540,56 @@ msgid ""
 "The objective of this survey data is to examine the impact of project "
 "participation on participant attitudes and motivation towards soil."
 msgstr ""
-"Ziel dieser Erhebungsdaten ist es, die Auswirkungen der "
-"Projektbeteiligung auf die Einstellung der Teilnehmer und die Motivation "
-"des Bodens zu untersuchen."
+"Ziel dieser Erhebungsdaten ist es, die Auswirkungen der Projektbeteiligung "
+"auf die Einstellung der Teilnehmer und die Motivation des Bodens zu "
+"untersuchen."
 
 #: /work/echorepo/templates/results.html:198
 msgid ""
-"Your information will only be used for scientific purposes. We do not "
-"collect names or addresses. Your details regarding age and gender are "
-"only used for statistical purposes and all details are collected and "
-"evaluated anonymously. It is not possible to draw conclusions about your "
-"person at any time."
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your details regarding age and gender are only used for "
+"statistical purposes and all details are collected and evaluated anonymously."
+" It is not possible to draw conclusions about your person at any time."
 msgstr ""
-"Ihre Informationen werden nur für wissenschaftliche Zwecke verwendet. Wir"
-" sammeln keine Namen oder Adressen. Ihre Angaben zum Alter und Geschlecht"
-" werden nur für statistische Zwecke verwendet und alle Details werden "
-"anonym erhoben und ausgewertet. Es ist nicht möglich, jederzeit "
-"Rückschlüsse auf Ihre Person zu ziehen."
+"Ihre Informationen werden nur für wissenschaftliche Zwecke verwendet. Wir "
+"sammeln keine Namen oder Adressen. Ihre Angaben zum Alter und Geschlecht "
+"werden nur für statistische Zwecke verwendet und alle Details werden anonym "
+"erhoben und ausgewertet. Es ist nicht möglich, jederzeit Rückschlüsse auf "
+"Ihre Person zu ziehen."
 
 #: /work/echorepo/templates/results.html:201
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
-"crucial role in providing valuable insights that enhance the relevance "
-"and impact of the ECHO project. Your honest responses are essential for "
+"crucial role in providing valuable insights that enhance the relevance and "
+"impact of the ECHO project. Your honest responses are essential for "
 "understanding how engagement with the project influences attitudes and "
 "motivations, ensuring the project’s outcomes are meaningful and well-"
 "informed."
 msgstr ""
-"Die Beantwortung jeder Frage in der Umfrage wird am meisten geschätzt, da"
-" sie eine entscheidende Rolle bei der Bereitstellung wertvoller "
-"Erkenntnisse spielt, die die Relevanz und Wirkung des ECHO-Projekts "
-"verbessern. Ihre ehrlichen Antworten sind wichtig, um zu verstehen, wie "
-"das Engagement mit dem Projekt Einstellungen und Motivationen beeinflusst"
-" und die Ergebnisse des Projekts sinnvoll und gut informiert sind."
+"Die Beantwortung jeder Frage in der Umfrage wird am meisten geschätzt, da sie"
+" eine entscheidende Rolle bei der Bereitstellung wertvoller Erkenntnisse "
+"spielt, die die Relevanz und Wirkung des ECHO-Projekts verbessern. Ihre "
+"ehrlichen Antworten sind wichtig, um zu verstehen, wie das Engagement mit dem"
+" Projekt Einstellungen und Motivationen beeinflusst und die Ergebnisse des "
+"Projekts sinnvoll und gut informiert sind."
 
 #: /work/echorepo/templates/results.html:204
 msgid ""
-"The survey will take approximately 8–10 minutes to complete. Please find "
-"a quiet space where you won’t be interrupted. There are no right or wrong"
-" answers — answer spontaneously."
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be interrupted. There are no right or wrong "
+"answers — answer spontaneously."
 msgstr ""
-"Die Umfrage dauert ca. 8-10 Minuten, um zu beenden. Bitte finden Sie "
-"einen ruhigen Raum, wo Sie nicht unterbrochen werden. Es gibt keine "
-"richtigen oder falschen Antworten – Antwort spontan."
+"Die Umfrage dauert ca. 8-10 Minuten, um zu beenden. Bitte finden Sie einen "
+"ruhigen Raum, wo Sie nicht unterbrochen werden. Es gibt keine richtigen oder "
+"falschen Antworten – Antwort spontan."
 
 #: /work/echorepo/templates/results.html:207
 msgid ""
-"Based on the information provided to you, please consent to participate "
-"in the survey below."
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
 msgstr ""
-"Anhand der Ihnen zur Verfügung gestellten Informationen erklären Sie sich"
-" bitte mit der Teilnahme an der untenstehenden Umfrage einverstanden."
+"Anhand der Ihnen zur Verfügung gestellten Informationen erklären Sie sich "
+"bitte mit der Teilnahme an der untenstehenden Umfrage einverstanden."
 
 #: /work/echorepo/templates/results.html:218
 msgid "thank you for your participation!"
@@ -626,9 +609,7 @@ msgstr "Keine Daten gefunden für"
 
 #: /work/echorepo/templates/results.html:240
 msgid "If you recently submitted samples, try again later."
-msgstr ""
-"Wenn Sie kürzlich Proben eingereicht haben, versuchen Sie es später "
-"erneut."
+msgstr "Wenn Sie kürzlich Proben eingereicht haben, versuchen Sie es später erneut."
 
 #: /work/echorepo/templates/results.html:253
 msgid "Download"
@@ -684,11 +665,11 @@ msgstr "Informationen zum Datenschutz"
 
 #: /work/echorepo/templates/results.html:373
 msgid ""
-"I have read the privacy information above and I consent to the processing"
-" of my personal data for this project."
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for this project."
 msgstr ""
-"Ich habe die Datenschutzerklärung oben gelesen und stimme der "
-"Verarbeitung meiner personenbezogenen Daten für dieses Projekt zu."
+"Ich habe die Datenschutzerklärung oben gelesen und stimme der Verarbeitung "
+"meiner personenbezogenen Daten für dieses Projekt zu."
 
 #: /work/echorepo/templates/results.html:380
 msgid "Accept and continue"
@@ -702,8 +683,7 @@ msgstr "Auf der Karte zeigen"
 msgid "Could not locate this sample on the map."
 msgstr "Diese Probe konnte nicht auf der Karte lokalisiert werden."
 
-#: /work/echorepo/templates/search.html:10
-#: /work/echorepo/templates/search.html:87
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Beispiel / QR"
 
