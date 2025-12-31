@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-31 09:31+0000\n"
+"POT-Creation-Date: 2025-12-31 13:02+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sk\n"
@@ -163,9 +163,7 @@ msgid "New password may take up to 30 minutes to activate in ECHOREPO."
 msgstr "Aktivácia nového hesla v ECHOREPO môže trvať až 30 minút."
 
 #: /work/echorepo/services/firebase.py:68
-msgid ""
-"Password recovery is temporarily unavailable. Please contact the "
-"organisers."
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
 msgstr "Obnova hesla je dočasne nedostupná. Prosím kontaktujte organizátorov."
 
 #: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
@@ -280,8 +278,7 @@ msgstr "Objavte mapu"
 msgid "Sign in to export data and access your personal samples."
 msgstr "Prihláste sa na export údajov a prístup k svojim osobným vzorky."
 
-#: /work/echorepo/templates/explore.html:36
-#: /work/echorepo/templates/search.html:44
+#: /work/echorepo/templates/explore.html:36 /work/echorepo/templates/search.html:44
 msgid "Search"
 msgstr "Hľadať"
 
@@ -295,8 +292,7 @@ msgstr "min"
 msgid "max"
 msgstr "max"
 
-#: /work/echorepo/templates/explore.html:60
-#: /work/echorepo/templates/search.html:15
+#: /work/echorepo/templates/explore.html:60 /work/echorepo/templates/search.html:15
 #: /work/echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Krajina"
@@ -315,12 +311,15 @@ msgstr "Použiť"
 msgid "Export filtered (0)"
 msgstr "Export filtrované (0)"
 
+#: /work/echorepo/templates/explore.html:103
+msgid "Copy view link"
+msgstr "Kopírovať odkaz na zobrazenie"
+
 #: /work/echorepo/templates/issues.html:2
 msgid "Data quality issues — ECHOrepo"
 msgstr "Otázky kvality údajov "
 
-#: /work/echorepo/templates/issues.html:6
-#: /work/echorepo/templates/issues.html:14
+#: /work/echorepo/templates/issues.html:6 /work/echorepo/templates/issues.html:14
 msgid "Back to My Data"
 msgstr "Späť k mojim údajom"
 
@@ -341,50 +340,41 @@ msgstr "Štandardné súradnice (%(lat)s, __%(lon)s_)"
 msgid "No entries with default coordinates"
 msgstr "Žiadne položky so štandardnými súradnicami"
 
-#: /work/echorepo/templates/issues.html:28
-#: /work/echorepo/templates/issues.html:72
+#: /work/echorepo/templates/issues.html:28 /work/echorepo/templates/issues.html:72
 msgid "Sample"
 msgstr "Vzorka"
 
-#: /work/echorepo/templates/issues.html:29
-#: /work/echorepo/templates/issues.html:73
+#: /work/echorepo/templates/issues.html:29 /work/echorepo/templates/issues.html:73
 msgid "User"
 msgstr "Užívateľ"
 
-#: /work/echorepo/templates/issues.html:30
-#: /work/echorepo/templates/issues.html:74
+#: /work/echorepo/templates/issues.html:30 /work/echorepo/templates/issues.html:74
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:31
-#: /work/echorepo/templates/issues.html:75
+#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
 #: /work/echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Lat"
 
-#: /work/echorepo/templates/issues.html:32
-#: /work/echorepo/templates/issues.html:76
+#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
 #: /work/echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Lon"
 
-#: /work/echorepo/templates/issues.html:33
-#: /work/echorepo/templates/issues.html:77
+#: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:77
 msgid "Fix"
 msgstr "Fix"
 
-#: /work/echorepo/templates/issues.html:49
-#: /work/echorepo/templates/issues.html:92
+#: /work/echorepo/templates/issues.html:49 /work/echorepo/templates/issues.html:92
 msgid "Lat (dec or DMS)"
 msgstr "Lat (dec alebo DMS)"
 
-#: /work/echorepo/templates/issues.html:50
-#: /work/echorepo/templates/issues.html:93
+#: /work/echorepo/templates/issues.html:50 /work/echorepo/templates/issues.html:93
 msgid "Lon (dec or DMS)"
 msgstr "Lon (dek alebo DMS)"
 
-#: /work/echorepo/templates/issues.html:51
-#: /work/echorepo/templates/issues.html:94
+#: /work/echorepo/templates/issues.html:51 /work/echorepo/templates/issues.html:94
 msgid "Save"
 msgstr "Uložiť"
 
@@ -466,8 +456,7 @@ msgid "Download all samples (CSV)"
 msgstr "Stiahnite si všetky vzorky (CSV)"
 
 #: /work/echorepo/templates/results.html:13
-#: /work/echorepo/templates/results.html:151
-#: /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/results.html:151 /work/echorepo/templates/search.html:2
 #: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Prehľadávanie vzoriek"
@@ -481,8 +470,8 @@ msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
 msgstr ""
-"Preskúmajte umiestnenie vzorky pôdy na mape, potom exportujte alebo "
-"prezrite tabuľku."
+"Preskúmajte umiestnenie vzorky pôdy na mape, potom exportujte alebo prezrite "
+"tabuľku."
 
 #: /work/echorepo/templates/results.html:142
 #, python-format
@@ -500,26 +489,25 @@ msgstr "Úprimne vám ďakujeme za váš záväzok k tomuto projektu!"
 
 #: /work/echorepo/templates/results.html:164
 msgid ""
-"This is the third and final survey in the project, following the initial "
-"ones you completed before and after soil sampling. The majority of "
-"questions are consistent with the previous surveys so that we can "
-"accurately measure changes over time and understand the impact of project"
-" participation."
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after soil sampling. The majority of questions are "
+"consistent with the previous surveys so that we can accurately measure "
+"changes over time and understand the impact of project participation."
 msgstr ""
 "Toto je tretí a posledný prieskum v projekte, ktorý nasleduje po prvých, "
-"ktoré ste dokončili pred a po odbere vzoriek pôdy. Väčšina otázok je v "
-"súlade s predchádzajúcimi prieskumami, aby sme mohli v priebehu času "
-"presne merať zmeny a pochopiť vplyv účasti na projekte."
+"ktoré ste dokončili pred a po odbere vzoriek pôdy. Väčšina otázok je v súlade"
+" s predchádzajúcimi prieskumami, aby sme mohli v priebehu času presne merať "
+"zmeny a pochopiť vplyv účasti na projekte."
 
 #: /work/echorepo/templates/results.html:167
 msgid ""
-"Before you start: please only complete this survey if the lab results "
-"from your soil sample(s) have already been added to the repository. If "
-"the results are pending, please check back at a later time."
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already been added to the repository. If the results"
+" are pending, please check back at a later time."
 msgstr ""
 "Pred začatím: prosím, dokončite tento prieskum len vtedy, ak už boli do "
-"úložiska pridané výsledky laboratória z vašej vzorky pôdy. Ak výsledky "
-"ešte nie sú k dispozícii, prosím, skontrolujte ich neskôr."
+"úložiska pridané výsledky laboratória z vašej vzorky pôdy. Ak výsledky ešte "
+"nie sú k dispozícii, prosím, skontrolujte ich neskôr."
 
 #: /work/echorepo/templates/results.html:172
 msgid "Go to final survey"
@@ -547,49 +535,48 @@ msgstr ""
 
 #: /work/echorepo/templates/results.html:198
 msgid ""
-"Your information will only be used for scientific purposes. We do not "
-"collect names or addresses. Your details regarding age and gender are "
-"only used for statistical purposes and all details are collected and "
-"evaluated anonymously. It is not possible to draw conclusions about your "
-"person at any time."
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your details regarding age and gender are only used for "
+"statistical purposes and all details are collected and evaluated anonymously."
+" It is not possible to draw conclusions about your person at any time."
 msgstr ""
-"Vaše informácie budú použité len na vedecké účely. Nezhromažďujeme mená "
-"ani adresy. Vaše údaje týkajúce sa veku a pohlavia sa používajú len na "
+"Vaše informácie budú použité len na vedecké účely. Nezhromažďujeme mená ani "
+"adresy. Vaše údaje týkajúce sa veku a pohlavia sa používajú len na "
 "štatistické účely a všetky detaily sa zhromažďujú a hodnotia anonymne. O "
 "vašej osobe nie je možné urobiť žiadne závery."
 
 #: /work/echorepo/templates/results.html:201
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
-"crucial role in providing valuable insights that enhance the relevance "
-"and impact of the ECHO project. Your honest responses are essential for "
+"crucial role in providing valuable insights that enhance the relevance and "
+"impact of the ECHO project. Your honest responses are essential for "
 "understanding how engagement with the project influences attitudes and "
 "motivations, ensuring the project’s outcomes are meaningful and well-"
 "informed."
 msgstr ""
 "Odpoveď na každú otázku v prieskume sa najviac oceňuje, pretože zohráva "
-"kľúčovú úlohu pri poskytovaní cenných poznatkov, ktoré zvyšujú význam a "
-"vplyv projektu ECHO. Vaša úprimná odpoveď je nevyhnutná pre pochopenie "
-"toho, ako zapojenie sa do projektu ovplyvňuje postoje a motivácie, "
-"zabezpečenie výsledkov projektu sú zmysluplné a dobre informované."
+"kľúčovú úlohu pri poskytovaní cenných poznatkov, ktoré zvyšujú význam a vplyv"
+" projektu ECHO. Vaša úprimná odpoveď je nevyhnutná pre pochopenie toho, ako "
+"zapojenie sa do projektu ovplyvňuje postoje a motivácie, zabezpečenie "
+"výsledkov projektu sú zmysluplné a dobre informované."
 
 #: /work/echorepo/templates/results.html:204
 msgid ""
-"The survey will take approximately 8–10 minutes to complete. Please find "
-"a quiet space where you won’t be interrupted. There are no right or wrong"
-" answers — answer spontaneously."
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be interrupted. There are no right or wrong "
+"answers — answer spontaneously."
 msgstr ""
 "Prieskum bude trvať približne 8-10 minút dokončiť. Prosím, nájdite tichý "
-"priestor, kde budete chcieť byť prerušená. Neexistujú žiadne správne "
-"alebo nesprávne odpovede ."
+"priestor, kde budete chcieť byť prerušená. Neexistujú žiadne správne alebo "
+"nesprávne odpovede ."
 
 #: /work/echorepo/templates/results.html:207
 msgid ""
-"Based on the information provided to you, please consent to participate "
-"in the survey below."
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
 msgstr ""
-"Na základe informácií, ktoré vám boli poskytnuté, súhlas s účasťou na "
-"ďalšom prieskume."
+"Na základe informácií, ktoré vám boli poskytnuté, súhlas s účasťou na ďalšom "
+"prieskume."
 
 #: /work/echorepo/templates/results.html:218
 msgid "thank you for your participation!"
@@ -665,11 +652,11 @@ msgstr "Informácie o ochrane súkromia"
 
 #: /work/echorepo/templates/results.html:373
 msgid ""
-"I have read the privacy information above and I consent to the processing"
-" of my personal data for this project."
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for this project."
 msgstr ""
-"Čítal som vyššie uvedené informácie o ochrane osobných údajov a súhlasím "
-"so spracovaním mojich osobných údajov pre tento projekt."
+"Čítal som vyššie uvedené informácie o ochrane osobných údajov a súhlasím so "
+"spracovaním mojich osobných údajov pre tento projekt."
 
 #: /work/echorepo/templates/results.html:380
 msgid "Accept and continue"
@@ -683,8 +670,7 @@ msgstr "Zobraziť na mape"
 msgid "Could not locate this sample on the map."
 msgstr "Nepodarilo sa nájsť túto vzorku na mape."
 
-#: /work/echorepo/templates/search.html:10
-#: /work/echorepo/templates/search.html:87
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Vzorka/QR"
 
