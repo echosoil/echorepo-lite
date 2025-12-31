@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-30 22:59+0000\n"
+"POT-Creation-Date: 2025-12-31 09:31+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -67,7 +67,7 @@ msgstr ""
 msgid "Export filtered ({n})"
 msgstr ""
 
-#: /work/echorepo/routes/web.py:366
+#: /work/echorepo/routes/web.py:366 /work/echorepo/templates/explore.html:68
 msgid "Date"
 msgstr ""
 
@@ -304,12 +304,12 @@ msgstr ""
 msgid "All countries"
 msgstr ""
 
-#: /work/echorepo/templates/explore.html:72
+#: /work/echorepo/templates/explore.html:86
 #: /work/echorepo/templates/results.html:316
 msgid "Apply"
 msgstr ""
 
-#: /work/echorepo/templates/explore.html:81
+#: /work/echorepo/templates/explore.html:95
 #: /work/echorepo/templates/results.html:319
 msgid "Export filtered (0)"
 msgstr ""

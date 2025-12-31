@@ -80,6 +80,22 @@
   })();
 
   let activeCountry = null;
+  let activeDateFrom = null; // YYYY-MM-DD
+  let activeDateTo   = null; // YYYY-MM-DD
+
+  const dateFromEl = document.getElementById('dateFrom');
+  const dateToEl   = document.getElementById('dateTo');
+
+  function inDateRange(ts) {
+    if (!ts) return false;
+
+    const d = ts.slice(0, 10); // YYYY-MM-DD
+
+    if (activeDateFrom && d < activeDateFrom) return false;
+    if (activeDateTo   && d > activeDateTo)   return false;
+
+    return true;
+  }
 
   function populateCountryFilter() {
     const sel = document.getElementById('countryFilter');
@@ -131,14 +147,24 @@
     if (activePhMax != null) params.set('ph_max', activePhMax);
     else params.delete('ph_max');
 
+    // date range
+    if (activeDateFrom) params.set('date_from', activeDateFrom);
+    else params.delete('date_from');
+
+    if (activeDateTo) params.set('date_to', activeDateTo);
+    else params.delete('date_to');
+    
+    // Build new URL
     const newUrl =
       params.toString()
         ? `${location.pathname}?${params.toString()}`
         : location.pathname;
 
+    // Avoid spamming history if nothing changed
     const old = window.location.search.replace(/^\?/, '');
     if (old === params.toString()) return;
-
+    
+    // Update URL without reloading
     history.replaceState({}, '', newUrl);
   }
 
@@ -166,28 +192,30 @@
   function initFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
 
-    // pH
+    // ---- pH ----
     const phMin = params.get('ph_min');
     const phMax = params.get('ph_max');
 
-    if (phMin !== null && phMinEl) {
-      phMinEl.value = phMin;
-      activePhMin = parseFloat(phMin);
-    }
+    activePhMin = Number.isFinite(parseFloat(phMin)) ? parseFloat(phMin) : null;
+    activePhMax = Number.isFinite(parseFloat(phMax)) ? parseFloat(phMax) : null;
 
-    if (phMax !== null && phMaxEl) {
-      phMaxEl.value = phMax;
-      activePhMax = parseFloat(phMax);
-    }
+    // ---- country ----
+    activeCountry = params.get('country') || null;
 
-    // country
-    const c = params.get('country');
-    if (c) {
-      activeCountry = c;
-      if (countrySelectEl) {
-        countrySelectEl.value = c;
-      }
-    }
+    // ---- date range ----
+    activeDateFrom = params.get('date_from') || null;
+    activeDateTo   = params.get('date_to')   || null;
+  }
+
+  function syncFiltersToUI() {
+    if (phMinEl) phMinEl.value = activePhMin ?? '';
+    if (phMaxEl) phMaxEl.value = activePhMax ?? '';
+
+    if (dateFromEl) dateFromEl.value = activeDateFrom ?? '';
+    if (dateToEl)   dateToEl.value   = activeDateTo   ?? '';
+
+    const sel = document.getElementById('countryFilter');
+    if (sel) sel.value = activeCountry ?? '';
   }
 
   // 👇 Expose map + global index + "show" helper
@@ -798,6 +826,9 @@
     return true;
   }
   function passesCurrentFilter(props){
+    const ts = props.timestamp_utc || props.collectedAt;
+    if (!inDateRange(ts)) return false;
+    
     const ph = getPhFromProps(props || {});
     if (activeCountry && props.country_code !== activeCountry) return false;
 
@@ -902,7 +933,6 @@
 
     // Initialize filter counts/UI using default (no filter)
     updateFiltered();
-    updateURLFromFilters();
   }
 
   // ---- Rebuild clusters to reflect current filter ----
@@ -1144,26 +1174,54 @@
   }
 
   // ---- Filter by pH & export ----
-  function collectRowsFiltered(phMin, phMax){
-    const active = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
-    const rows=[], seen=new Set();
-    function inRange(ph){ return inRangeGiven(ph, phMin, phMax); }
-    function scan(layer, include){
-      if(!include||!layer) return;
-      layer.eachLayer(m=>{
-        const ll=m.getLatLng(); if(!ll) return;
-        const f=m.feature||{}; const props={...(f.properties||{})};
+  function collectRowsFiltered(phMin, phMax, dateFrom, dateTo) {
+    const active = twoToggleControl
+      ? twoToggleControl._getState()
+      : { user: true, others: true };
+
+    const rows = [];
+    const seen = new Set();
+
+    function scan(layer, include) {
+      if (!include || !layer) return;
+
+      layer.eachLayer(m => {
+        const ll = m.getLatLng();
+        if (!ll) return;
+
+        const f = m.feature || {};
+        const props = { ...(f.properties || {}) };
+
+        // ---- SINGLE source of truth for filtering ----
         if (!passesCurrentFilter(props)) return;
-        Object.keys(props).forEach(k=>{ if(SHOULD_DROP(k)) delete props[k]; });
-        props[LAT_KEY]=ll.lat; props[LON_KEY]=ll.lng;
-        const key=props.sampleId||props.QR_qrCode||`${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
-        if(seen.has(key)) return; seen.add(key); rows.push(props);
+
+        // ---- Clean props ----
+        Object.keys(props).forEach(k => {
+          if (SHOULD_DROP(k)) delete props[k];
+        });
+
+        // ---- Ensure coordinates ----
+        props[LAT_KEY] = ll.lat;
+        props[LON_KEY] = ll.lng;
+
+        const key =
+          props.sampleId ||
+          props.QR_qrCode ||
+          `${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
+
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        rows.push(props);
       });
     }
+
     scan(userLayer,   active.user);
     scan(othersLayer, active.others);
+
     return rows;
   }
+
 
   function updateFilteredCountsLabelOnly(){
     if(!btnExportFiltered) return;
@@ -1172,20 +1230,35 @@
     btnExportFiltered.textContent = T('exportFiltered', { n }, `Export filtered (${n})`);
   }
 
-  function updateFiltered(){
-    if(!btnExportFiltered) return;
-
+  function updateFiltered() {
+    // ---- pH ----
     const minV = phMinEl ? parseFloat(phMinEl.value) : NaN;
     const maxV = phMaxEl ? parseFloat(phMaxEl.value) : NaN;
 
     activePhMin = Number.isFinite(minV) ? minV : null;
     activePhMax = Number.isFinite(maxV) ? maxV : null;
 
+    // ---- Date range ----
+    activeDateFrom = dateFromEl?.value || null;
+    activeDateTo   = dateToEl?.value || null;
+
+    // ---- Apply to map ----
     applyFilterToRings();
     rebuildClustersForFilter();
 
-    filteredRows = collectRowsFiltered(activePhMin, activePhMax);
+    // ---- Collect filtered rows ----
+    filteredRows = collectRowsFiltered(
+      activePhMin,
+      activePhMax,
+      activeDateFrom,
+      activeDateTo
+    );
+
+    // ---- UI updates (guarded) ----
+    if (btnExportFiltered) {
       updateFilteredCountsLabelOnly();
+    }
+
     updateSelectionCount();
   }
 
@@ -1194,27 +1267,27 @@
       updateURLFromFilters();
     });
     btnExportFiltered?.addEventListener('click', () => {
-    const cfg = window.ECHOREPO_CFG || {};
-    const PUBLIC_MODE = !!cfg.public_mode;
+      const cfg = window.ECHOREPO_CFG || {};
+      const PUBLIC_MODE = !!cfg.public_mode;
 
-    // Safety: should never happen, but double-guard
-    if (PUBLIC_MODE) {
-      alert(T('signInToExport', {}, 'Please sign in to export data.'));
-      return;
-    }
+      if (PUBLIC_MODE) {
+        alert(T('signInToExport', {}, 'Please sign in to export data.'));
+        return;
+      }
 
-    if (!filteredRows.length) return;
+      if (!filteredRows.length) return;
 
-    const params = new URLSearchParams();
-    params.set('format', 'zip');
+      const params = new URLSearchParams();
+      params.set('format', 'zip');
 
-    if (activePhMin != null) params.set('ph_min', activePhMin);
-    if (activePhMax != null) params.set('ph_max', activePhMax);
-    if (activeCountry) params.set('country_code', activeCountry);
+      if (activePhMin != null) params.set('ph_min', activePhMin);
+      if (activePhMax != null) params.set('ph_max', activePhMax);
+      if (activeCountry)       params.set('country', activeCountry);
+      if (activeDateFrom)      params.set('date_from', activeDateFrom);
+      if (activeDateTo)        params.set('date_to', activeDateTo);
 
-    // Delegate everything to /search
-    window.location.href = `/search?${params.toString()}`;
-  });
+      window.location.href = `/search?${params.toString()}`;
+    });
 
   [phMinEl, phMaxEl].forEach(el=> el?.addEventListener('keydown', (e)=>{
     if(e.key==='Enter'){ e.preventDefault(); updateFiltered(); }
@@ -1319,16 +1392,12 @@
     initFiltersFromUrl();
 
     // ✅ 3. Sync restored values into inputs
-    if (phMinEl && activePhMin != null) phMinEl.value = activePhMin;
-    if (phMaxEl && activePhMax != null) phMaxEl.value = activePhMax;
-    if (countryEl && activeCountry) countryEl.value = activeCountry;
+    syncFiltersToUI();
 
     // ✅ 4. Apply filters to map + counts
     updateFiltered();
 
-    // ❌ DO NOT call updateURLFromFilters() here
-    // (otherwise you overwrite the original URL on page load)
-
+    // ✅ 5. Apply i18n to dynamic texts
     refreshI18NTexts();
   }).catch(err => {
     console.warn('Init failed:', err);

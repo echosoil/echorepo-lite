@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-30 22:59+0000\n"
+"POT-Creation-Date: 2025-12-31 09:31+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ro\n"
@@ -69,7 +69,7 @@ msgstr "Clar"
 msgid "Export filtered ({n})"
 msgstr "Export filtrat ({n})"
 
-#: /work/echorepo/routes/web.py:366
+#: /work/echorepo/routes/web.py:366 /work/echorepo/templates/explore.html:68
 msgid "Date"
 msgstr "Dată"
 
@@ -312,12 +312,12 @@ msgstr "Țara"
 msgid "All countries"
 msgstr "Toate țările"
 
-#: /work/echorepo/templates/explore.html:72
+#: /work/echorepo/templates/explore.html:86
 #: /work/echorepo/templates/results.html:316
 msgid "Apply"
 msgstr "Aplicare"
 
-#: /work/echorepo/templates/explore.html:81
+#: /work/echorepo/templates/explore.html:95
 #: /work/echorepo/templates/results.html:319
 msgid "Export filtered (0)"
 msgstr "Export filtrat (0)"
