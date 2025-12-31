@@ -192,43 +192,30 @@
   function initFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
 
-    // pH
+    // ---- pH ----
     const phMin = params.get('ph_min');
     const phMax = params.get('ph_max');
 
-    if (phMin !== null && phMinEl) {
-      phMinEl.value = phMin;
-      activePhMin = parseFloat(phMin);
-    }
+    activePhMin = Number.isFinite(parseFloat(phMin)) ? parseFloat(phMin) : null;
+    activePhMax = Number.isFinite(parseFloat(phMax)) ? parseFloat(phMax) : null;
 
-    if (phMax !== null && phMaxEl) {
-      phMaxEl.value = phMax;
-      activePhMax = parseFloat(phMax);
-    }
+    // ---- country ----
+    activeCountry = params.get('country') || null;
 
-    // country
-    const c = params.get('country');
-    if (c) {
-      activeCountry = c;
-      if (countrySelectEl) {
-        countrySelectEl.value = c;
-      }
-    }
+    // ---- date range ----
+    activeDateFrom = params.get('date_from') || null;
+    activeDateTo   = params.get('date_to')   || null;
+  }
 
-    // date range
-    const df = params.get('date_from');
-    const dt = params.get('date_to');
+  function syncFiltersToUI() {
+    if (phMinEl) phMinEl.value = activePhMin ?? '';
+    if (phMaxEl) phMaxEl.value = activePhMax ?? '';
 
-    if (df) {
-      activeDateFrom = df;
-      if (dateFromEl) dateFromEl.value = df;
-    }
+    if (dateFromEl) dateFromEl.value = activeDateFrom ?? '';
+    if (dateToEl)   dateToEl.value   = activeDateTo   ?? '';
 
-    if (dt) {
-      activeDateTo = dt;
-      if (dateToEl) dateToEl.value = dt;
-    }
-
+    const sel = document.getElementById('countryFilter');
+    if (sel) sel.value = activeCountry ?? '';
   }
 
   // 👇 Expose map + global index + "show" helper
@@ -946,7 +933,6 @@
 
     // Initialize filter counts/UI using default (no filter)
     updateFiltered();
-    updateURLFromFilters();
   }
 
   // ---- Rebuild clusters to reflect current filter ----
@@ -1406,16 +1392,12 @@
     initFiltersFromUrl();
 
     // ✅ 3. Sync restored values into inputs
-    if (phMinEl && activePhMin != null) phMinEl.value = activePhMin;
-    if (phMaxEl && activePhMax != null) phMaxEl.value = activePhMax;
-    if (countryEl && activeCountry) countryEl.value = activeCountry;
+    syncFiltersToUI();
 
     // ✅ 4. Apply filters to map + counts
     updateFiltered();
 
-    // ❌ DO NOT call updateURLFromFilters() here
-    // (otherwise you overwrite the original URL on page load)
-
+    // ✅ 5. Apply i18n to dynamic texts
     refreshI18NTexts();
   }).catch(err => {
     console.warn('Init failed:', err);
