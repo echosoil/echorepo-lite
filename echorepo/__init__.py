@@ -1,24 +1,35 @@
 # echorepo/__init__.py
-import os
 import json
-from flask import Flask, jsonify, make_response, request, render_template_string, current_app, g, session
-from flask_babel import get_locale, gettext as _real_gettext, ngettext as _real_ngettext
-import time 
-import re 
+import logging
+import os
+import re
+import time
 
-from .config import settings
+from flask import (
+    Flask,
+    current_app,
+    g,
+    jsonify,
+    make_response,
+    render_template_string,
+    request,
+    session,
+)
+from flask_babel import get_locale
+from flask_babel import gettext as _real_gettext
+from flask_babel import ngettext as _real_ngettext
+
+from .analytics import hash_ip, log_usage_event
 from .auth.routes import auth_bp, init_oauth
-from .routes.web import web_bp
-from .routes.api import api_bp
-from .routes.i18n_admin import bp as i18n_admin_bp
-from .routes.errors import errors_bp
+from .config import settings
+from .i18n import BASE_LABEL_MSGIDS, init_i18n, lang_bp
 from .routes import data_api
-
+from .routes.api import api_bp
+from .routes.errors import errors_bp
+from .routes.i18n_admin import bp as i18n_admin_bp
+from .routes.web import web_bp
 from .services.db import init_db_sanity
 from .services.i18n_overrides import get_overrides, get_overrides_msgid
-from .i18n import init_i18n, lang_bp, BASE_LABEL_MSGIDS
-from .analytics import hash_ip, log_usage_event
-import logging, time
 
 # ---------- Logging ----------
 logger = logging.getLogger(__name__)
@@ -34,7 +45,7 @@ if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
     logger.addHandler(fh)
 
 # ---------- helpers ----------
-from flask import session
+
 
 def _get_current_user_id():
     """
@@ -55,11 +66,7 @@ def _get_current_user_id():
 
         # If your auth stores it as a dict
         if isinstance(profile, dict):
-            return (
-                profile.get("email")
-                or profile.get("preferred_username")
-                or profile.get("name")
-            )
+            return profile.get("email") or profile.get("preferred_username") or profile.get("name")
 
         # If it's a stringified dict (as it looks in the snapshot),
         # try to regex out the email: "{'email': '...'}"
@@ -71,16 +78,29 @@ def _get_current_user_id():
     # If nothing found, treat as anonymous
     return None
 
+
 def _canon_locale(lang: str) -> str:
     if not lang:
         return "en"
     lang = lang.strip().lower().replace("-", "_")
     return lang.split("_", 1)[0]
 
+
 def _default_flags(codes):
     base = {
-        "en": "gb", "cs": "cz", "de": "de", "el": "gr", "es": "es", "fi": "fi",
-        "fr": "fr", "it": "it", "nl": "nl", "pl": "pl", "pt": "pt", "ro": "ro", "sk": "sk",
+        "en": "gb",
+        "cs": "cz",
+        "de": "de",
+        "el": "gr",
+        "es": "es",
+        "fi": "fi",
+        "fr": "fr",
+        "it": "it",
+        "nl": "nl",
+        "pl": "pl",
+        "pt": "pt",
+        "ro": "ro",
+        "sk": "sk",
     }
     out = dict(base)
     for c in codes:
@@ -95,7 +115,7 @@ def _build_labels_for_locale(loc: str) -> dict:
     """
     loc = _canon_locale(loc or "en")
     by_msgid = get_overrides_msgid(loc) or {}
-    by_key   = get_overrides(loc) or {}
+    by_key = get_overrides(loc) or {}
 
     labels = {}
     for key, msgid in BASE_LABEL_MSGIDS.items():
@@ -120,9 +140,9 @@ def create_app() -> Flask:
     # ---- Analytics configuration ----
     # Paths we consider "noise" (don't log them at all)
     ANALYTICS_EXCLUDED_PREFIXES = (
-        "/static/",       # CSS, JS, images served as static files
-        "/i18n/",         # labels.js / labels.json etc.
-        "/debug/",        # debug helpers
+        "/static/",  # CSS, JS, images served as static files
+        "/i18n/",  # labels.js / labels.json etc.
+        "/debug/",  # debug helpers
         "/favicon.ico",
         "/robots.txt",
     )
@@ -133,8 +153,8 @@ def create_app() -> Flask:
         "/download/canonical/samples.csv",
         "/download/canonical/sample_images.csv",
         "/download/canonical/sample_parameters.csv",
-        "/download/sample_csv",   # old alias
-        "/download/all_csv",      # old alias
+        "/download/sample_csv",  # old alias
+        "/download/all_csv",  # old alias
     )
 
     # ---- Request timing logging, see /tmp/echorepo-slow.log ----
@@ -159,7 +179,6 @@ def create_app() -> Flask:
     app.config.update(
         SESSION_COOKIE_SAMESITE=settings.SESSION_COOKIE_SAMESITE,
         SESSION_COOKIE_SECURE=settings.SESSION_COOKIE_SECURE,
-
         # General settings
         LAT_COL=getattr(settings, "LAT_COL", "GPS_lat"),
         LON_COL=getattr(settings, "LON_COL", "GPS_long"),
@@ -170,15 +189,12 @@ def create_app() -> Flask:
         ORIG_COL_SUFFIX=getattr(settings, "ORIG_COL_SUFFIX", "_orig"),
         HIDE_ORIG_COLS=getattr(settings, "HIDE_ORIG_COLS", True),
         MAX_JITTER_METERS=getattr(settings, "MAX_JITTER_METERS", 1000),
-
         # Firebase / creds
         FIREBASE_PROJECT_ID=getattr(settings, "FIREBASE_PROJECT_ID", None),
         GOOGLE_APPLICATION_CREDENTIALS=getattr(settings, "GOOGLE_APPLICATION_CREDENTIALS", None),
-
         # Overrides storage path
         I18N_OVERRIDES_PATH=os.environ.get("I18N_OVERRIDES_PATH", "/data/i18n_overrides.json"),
         LOCAL_STORAGE_DIR=os.environ.get("LOCAL_STORAGE_DIR", "/data/storage"),
-        
         # Expose allowlist path to current_app.config
         LAB_UPLOAD_ALLOWLIST_PATH=getattr(
             settings,
@@ -188,15 +204,16 @@ def create_app() -> Flask:
     )
 
     # ---- i18n ----
-    init_i18n(app)                 # set up Babel, locale selection, etc.
-    if 'jinja2.ext.i18n' not in app.jinja_env.extensions:
-        app.jinja_env.add_extension('jinja2.ext.i18n')
+    init_i18n(app)  # set up Babel, locale selection, etc.
+    if "jinja2.ext.i18n" not in app.jinja_env.extensions:
+        app.jinja_env.add_extension("jinja2.ext.i18n")
     app.register_blueprint(lang_bp)  # /set-lang/<code>
 
     # Supported locales & flags (from settings or defaults)
     SUPPORTED_LOCALES = getattr(
-        settings, "SUPPORTED_LOCALES",
-        ["en", "cs", "de", "el", "es", "fi", "fr", "it", "nl", "pl", "pt", "ro", "sk"]
+        settings,
+        "SUPPORTED_LOCALES",
+        ["en", "cs", "de", "el", "es", "fi", "fr", "it", "nl", "pl", "pt", "ro", "sk"],
     )
     LOCALE_FLAGS = getattr(settings, "LOCALE_FLAGS", _default_flags(SUPPORTED_LOCALES))
 
@@ -228,7 +245,6 @@ def create_app() -> Flask:
         # Fall back to Babel plural handling
         return _real_ngettext(singular, plural, n, **kwargs)
 
-
     def _install_callables():
         # Install override-aware gettext/ngettext into the Jinja env
         app.jinja_env.install_gettext_callables(
@@ -251,9 +267,9 @@ def create_app() -> Flask:
 
     # Make Jinja use our override-aware functions everywhere
     app.jinja_env.install_gettext_callables(
-    _gettext_with_overrides,
-    _ngettext_with_overrides,
-    newstyle=True,   # enables %(name)s formatting
+        _gettext_with_overrides,
+        _ngettext_with_overrides,
+        newstyle=True,  # enables %(name)s formatting
     )
 
     app.jinja_env.globals["_"] = _gettext_with_overrides
@@ -265,7 +281,7 @@ def create_app() -> Flask:
             _gettext_with_overrides, _ngettext_with_overrides, newstyle=True
         )
         app.jinja_env.globals["_"] = _gettext_with_overrides
-    
+
     @app.before_request
     def inject_current_user():
         """
@@ -292,7 +308,7 @@ def create_app() -> Flask:
         # Build JS labels with both override layers
         labels = {}
         by_msgid = get_overrides_msgid(loc)  # {msgid: value}
-        by_key   = get_overrides(loc)        # {key: value}
+        by_key = get_overrides(loc)  # {key: value}
         for key, msgid in BASE_LABEL_MSGIDS.items():
             base = by_msgid.get(msgid) or _real_gettext(msgid)
             labels[key] = by_key.get(key, base)
@@ -303,11 +319,11 @@ def create_app() -> Flask:
             "current_locale": loc,
             "SUPPORTED_LOCALES": SUPPORTED_LOCALES,
             "LOCALE_FLAGS": LOCALE_FLAGS,
-            "_": _gettext_with_overrides,          # <—
-            "gettext": _gettext_with_overrides,    # <—
+            "_": _gettext_with_overrides,  # <—
+            "gettext": _gettext_with_overrides,  # <—
             "ngettext": _ngettext_with_overrides,  # <—
         }
-    
+
     # ---- OAuth / Blueprints ----
     init_oauth(app)
     app.register_blueprint(auth_bp)
@@ -317,27 +333,26 @@ def create_app() -> Flask:
     app.register_blueprint(errors_bp)
     app.register_blueprint(data_api.data_api, url_prefix="/api/v1")  # or url_prefix="/api"
     from echorepo.routes.storage import storage_bp
-    app.register_blueprint(storage_bp)               # ← add this
+
+    app.register_blueprint(storage_bp)  # ← add this
 
     # ---- Back-compat endpoint aliases ----
     alias_map = [
         # web
-        ("home",               "web.home",               "/",                  ["GET"]),
-        ("download_csv",       "web.download_csv",       "/download/csv",      ["POST"]),
-        ("download_xlsx",      "web.download_xlsx",      "/download/xlsx",     ["POST"]),
-        ("download_all_csv",   "web.download_all_csv",   "/download/all_csv",  ["GET"]),
-
+        ("home", "web.home", "/", ["GET"]),
+        ("download_csv", "web.download_csv", "/download/csv", ["POST"]),
+        ("download_xlsx", "web.download_xlsx", "/download/xlsx", ["POST"]),
+        ("download_all_csv", "web.download_all_csv", "/download/all_csv", ["GET"]),
         # api
-        ("user_geojson",       "api.user_geojson",       "/api/user_geojson",       ["GET"]),
+        ("user_geojson", "api.user_geojson", "/api/user_geojson", ["GET"]),
         ("user_geojson_debug", "api.user_geojson_debug", "/api/user_geojson_debug", ["GET"]),
-        ("others_geojson",     "api.others_geojson",     "/api/others_geojson",     ["GET"]),
-        ("download_sample_csv","api.download_sample_csv","/download/sample_csv",    ["GET"]),
-
+        ("others_geojson", "api.others_geojson", "/api/others_geojson", ["GET"]),
+        ("download_sample_csv", "api.download_sample_csv", "/download/sample_csv", ["GET"]),
         # auth
-        ("login",              "auth.login",              "/login",        ["GET"]),
-        ("sso_password_login", "auth.sso_password_login", "/login",        ["POST"]),
-        ("logout",             "auth.logout",             "/logout",       ["GET"]),
-        ("sso_callback",       "auth.sso_callback",       "/sso/callback", ["GET"]),
+        ("login", "auth.login", "/login", ["GET"]),
+        ("sso_password_login", "auth.sso_password_login", "/login", ["POST"]),
+        ("logout", "auth.logout", "/logout", ["GET"]),
+        ("sso_callback", "auth.sso_callback", "/sso/callback", ["GET"]),
     ]
     for ep, target, rule, methods in alias_map:
         app.add_url_rule(
@@ -362,23 +377,25 @@ def create_app() -> Flask:
         resp = jsonify({"labels": labels, "locale": _canon_locale(raw)})
         resp.headers["Cache-Control"] = "no-store"
         return resp
-    
+
     @app.get("/i18n/probe-json")
     def i18n_probe_json():
         s = request.args.get("s", "About")
         loc = _canon_locale(str(get_locale() or "en"))
-        return jsonify({
-            "locale": loc,
-            "override": get_overrides_msgid(loc).get(s),
-            "gettext_with_overrides": _gettext_with_overrides(s),
-            "babel_gettext": _real_gettext(s),
-        })
+        return jsonify(
+            {
+                "locale": loc,
+                "override": get_overrides_msgid(loc).get(s),
+                "gettext_with_overrides": _gettext_with_overrides(s),
+                "babel_gettext": _real_gettext(s),
+            }
+        )
 
     @app.get("/i18n/probe-tpl")
     def i18n_probe_tpl():
         s = request.args.get("s", "About")
         # Render via Jinja so we test what templates *actually* call.
-        out = render_template_string("{{ _('"+s.replace('\"','\\\"')+"') }}")
+        out = render_template_string("{{ _('" + s.replace('"', '\\"') + "') }}")
         return out
 
     @app.get("/i18n/labels.js")
@@ -502,7 +519,7 @@ def create_app() -> Flask:
 
         return response
 
-    # ----- Debug routes --------------------------------------------    
+    # ----- Debug routes --------------------------------------------
     @app.get("/debug/whoami")
     def debug_whoami():
         # WARNING: remove or restrict this in production
@@ -512,7 +529,7 @@ def create_app() -> Flask:
         sess_snapshot = {}
         for k in list(session.keys()):
             v = session.get(k)
-            if isinstance(v, (str, bytes)):
+            if isinstance(v, str | bytes):
                 s = v.decode("utf-8", errors="ignore") if isinstance(v, bytes) else v
                 if len(s) > 120:
                     sess_snapshot[k] = s[:60] + "... (len=" + str(len(s)) + ")"
@@ -530,11 +547,13 @@ def create_app() -> Flask:
                 r = repr(v)
                 sess_snapshot[k] = r[:120] + ("..." if len(r) > 120 else "")
 
-        return jsonify({
-            "user_id_from_helper": _get_current_user_id(),
-            "session_keys": list(session.keys()),
-            "session_snapshot": sess_snapshot,
-        })
+        return jsonify(
+            {
+                "user_id_from_helper": _get_current_user_id(),
+                "session_keys": list(session.keys()),
+                "session_snapshot": sess_snapshot,
+            }
+        )
 
     @app.get("/i18n/debug")
     def i18n_debug():
@@ -544,22 +563,26 @@ def create_app() -> Flask:
             loc_raw = "en"
         loc = _canon_locale(loc_raw)
         labels = _build_labels_for_locale(loc)
-        return jsonify({
-            "locale_raw": loc_raw,
-            "locale_canon": loc,
-            "labels_count": len(labels),
-            "labels_sample": {k: labels[k] for k in list(labels)[:10]},
-            "has_privacyRadius": "privacyRadius" in labels,
-            "privacyRadius": labels.get("privacyRadius"),
-        })
+        return jsonify(
+            {
+                "locale_raw": loc_raw,
+                "locale_canon": loc,
+                "labels_count": len(labels),
+                "labels_sample": {k: labels[k] for k in list(labels)[:10]},
+                "has_privacyRadius": "privacyRadius" in labels,
+                "privacyRadius": labels.get("privacyRadius"),
+            }
+        )
 
     @app.get("/i18n/check-overrides")
     def i18n_check_overrides():
         loc = _canon_locale(str(get_locale() or "en"))
-        return jsonify({
-            "locale": loc,
-            "by_key": get_overrides(loc),
-            "by_msgid": get_overrides_msgid(loc),
-        })
+        return jsonify(
+            {
+                "locale": loc,
+                "by_key": get_overrides(loc),
+                "by_msgid": get_overrides_msgid(loc),
+            }
+        )
 
     return app

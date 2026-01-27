@@ -1,14 +1,16 @@
 # echorepo/services/planned.py
 from __future__ import annotations
+
 import os
 import re
-from typing import Dict, Set
+
 import pandas as pd
-from ..config import settings
 
 # Optional deps used by country normalisation:
 #   pycountry, openpyxl  (add to requirements.txt)
 import pycountry
+
+from ..config import settings
 
 # Common alias fixes.
 # For stuff like "Scotland" we go straight to ISO2 "GB" so we don't depend
@@ -23,13 +25,11 @@ ALIASES = {
     "scotland": "GB",
     "wales": "GB",
     "northern ireland": "GB",
-
     # US variants
     "us": "United States",
     "u.s.": "United States",
     "usa": "United States",
     "u.s.a.": "United States",
-
     # other common ones
     "russia": "Russian Federation",
     "czech republic": "Czechia",
@@ -81,12 +81,12 @@ def _country_to_iso2(name: str | None) -> str | None:
             return None
 
 
-def _split_planned(s: str | None) -> Set[str]:
+def _split_planned(s: str | None) -> set[str]:
     """Split 'Denmark, Sweden; Scotland' -> {'DK','SE','GB'} (ISO2)."""
     if s is None or str(s).strip() == "":
         return set()
     parts = re.split(r"[;,]", str(s))
-    out: Set[str] = set()
+    out: set[str] = set()
     for p in parts:
         iso2 = _country_to_iso2(p.strip())
         if iso2:
@@ -109,11 +109,13 @@ def _guess_columns(df: pd.DataFrame) -> tuple[str, str]:
         if cl in ("country planned", "planned country", "countries planned"):
             planned_col = c
     if not qr_col or not planned_col:
-        raise ValueError("Planned XLSX must have columns 'QR code' and 'Country Planned' (case-insensitive).")
+        raise ValueError(
+            "Planned XLSX must have columns 'QR code' and 'Country Planned' (case-insensitive)."
+        )
     return qr_col, planned_col
 
 
-def load_qr_to_planned(xlsx_path: str | None = None) -> Dict[str, Set[str]]:
+def load_qr_to_planned(xlsx_path: str | None = None) -> dict[str, set[str]]:
     """
     Load planned countries per QR from an Excel file and return:
       { qr_code (str): {ISO2, ISO2, ...}, ... }
@@ -122,11 +124,7 @@ def load_qr_to_planned(xlsx_path: str | None = None) -> Dict[str, Set[str]]:
     - Duplicate QRs union their country sets.
     - Returns {} if path not set or file doesn’t exist.
     """
-    path = (
-        xlsx_path
-        or getattr(settings, "PLANNED_XLSX", None)
-        or os.getenv("PLANNED_XLSX")
-    )
+    path = xlsx_path or getattr(settings, "PLANNED_XLSX", None) or os.getenv("PLANNED_XLSX")
     if not path or not os.path.exists(path):
         print(f"[WARN][planned] planned countries XLSX not found at {path}, skipping")
         return {}
@@ -136,7 +134,7 @@ def load_qr_to_planned(xlsx_path: str | None = None) -> Dict[str, Set[str]]:
     df[qr_col] = df[qr_col].astype(str).str.strip()
     df[planned_col] = df[planned_col].astype(str)
 
-    mapping: Dict[str, Set[str]] = {}
+    mapping: dict[str, set[str]] = {}
     for _, row in df.iterrows():
         q = row[qr_col].strip()
         if not q:

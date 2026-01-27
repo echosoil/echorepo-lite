@@ -1,12 +1,12 @@
 # echorepo/routes/api.py
-from flask import Blueprint, jsonify, abort, session, send_file, request
 from io import BytesIO
-import pandas as pd
+
+from flask import Blueprint, abort, jsonify, request, send_file, session
 
 from ..auth.decorators import login_required
-from ..services.db import query_user_df, query_others_df, query_sample_df
-from ..utils.geo import df_to_geojson, pick_lat_lon_cols
 from ..config import settings
+from ..services.db import query_others_df, query_sample_df, query_user_df
+from ..utils.geo import df_to_geojson, pick_lat_lon_cols
 
 api_bp = Blueprint("api", __name__)
 
@@ -15,9 +15,11 @@ api_bp = Blueprint("api", __name__)
 @login_required
 def user_geojson():
     user_key = session.get("user")
-    if not user_key: abort(401)
+    if not user_key:
+        abort(401)
     df = query_user_df(user_key)
     return jsonify(df_to_geojson(df))
+
 
 @api_bp.get("/user_geojson_debug")
 @login_required
@@ -29,8 +31,10 @@ def user_geojson_debug():
         "session_user": user_key,
         "rows": 0 if df is None else len(df),
         "columns": [] if df is None else list(df.columns),
-        "lat_col": lat_col, "lon_col": lon_col,
-        "env_LAT_COL": settings.LAT_COL, "env_LON_COL": settings.LON_COL,
+        "lat_col": lat_col,
+        "lon_col": lon_col,
+        "env_LAT_COL": settings.LAT_COL,
+        "env_LON_COL": settings.LON_COL,
         "feature_count_if_converted": 0,
     }
     if df is not None and not df.empty and lat_col and lon_col:
@@ -41,11 +45,13 @@ def user_geojson_debug():
             pass
     return jsonify(info)
 
+
 @api_bp.get("/others_geojson")
 @login_required
 def others_geojson():
     user_key = session.get("user")
-    if not user_key: abort(401)
+    if not user_key:
+        abort(401)
     df = query_others_df(user_key)
     gj = df_to_geojson(df)
     for f in gj.get("features", []):
@@ -53,6 +59,7 @@ def others_geojson():
             f["properties"].pop("email", None)
             f["properties"].pop("userId", None)
     return jsonify(gj)
+
 
 @api_bp.get("/download/sample_csv")
 @login_required

@@ -1,6 +1,5 @@
 import csv
 from pathlib import Path
-from typing import Set
 
 from flask import current_app
 
@@ -16,15 +15,20 @@ def _allowlist_path() -> Path:
     override = current_app.config.get("LAB_UPLOAD_ALLOWLIST_PATH")
     if override:
         return Path(override)
-    return Path(current_app.root_path).parent.parent / "data" / "config" / "lab_upload_lab_allowlist.csv"
+    return (
+        Path(current_app.root_path).parent.parent
+        / "data"
+        / "config"
+        / "lab_upload_lab_allowlist.csv"
+    )
 
 
-def _read_allowlist() -> Set[str]:
+def _read_allowlist() -> set[str]:
     path = _allowlist_path()
     if not path.exists():
         return set()
 
-    allowed: Set[str] = set()
+    allowed: set[str] = set()
     with path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         if not reader.fieldnames:

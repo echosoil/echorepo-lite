@@ -1,43 +1,48 @@
+import csv
+import io
+import json
+import logging
+import os
+import pathlib
+import re
+import sqlite3
+import zipfile  # kept in case you later want to build ZIPs locally
+from datetime import date, datetime, timedelta
+from io import BytesIO
+
+import pandas as pd
 from flask import (
     Blueprint,
+    abort,
+    g,
+    jsonify,
+    redirect,
     render_template,
     request,
     send_file,
-    abort,
     session,
-    redirect,
     url_for,
-    jsonify,
-    g,
 )
-import pandas as pd
-from io import BytesIO
-import pathlib
-from datetime import datetime, timedelta, date
-import sqlite3
-import os
-import json
-import io
-import zipfile  # kept in case you later want to build ZIPs locally
-import logging
-import csv
-import psycopg2
+from flask_babel import get_locale
+from flask_babel import gettext as _
 from psycopg2.extras import RealDictCursor
-import re  
 
-from flask_babel import gettext as _, get_locale
-
-from ..config import settings
-from ..auth.decorators import login_required
-from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment, get_pg_conn
-from ..services.validation import find_default_coord_rows, select_country_mismatches
-from ..services.lab_permissions import can_upload_lab_data
-
-from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
+from echorepo.services.i18n_labels import make_labels
+from echorepo.services.i18n_overrides import (
+    _canon_locale,
+    get_overrides_msgid,
+)
+
+from ..auth.decorators import login_required
+from ..config import settings
+from ..services.db import _ensure_lab_enrichment, get_pg_conn, query_sample, query_user_df
+from ..services.lab_permissions import can_upload_lab_data
+from ..services.validation import find_default_coord_rows, select_country_mismatches
+from ..utils.table import make_table_html, strip_orig_cols
 
 try:
-    from echorepo.routes.data_api import _oxide_to_metal, CANONICAL_SAMPLE_COLS
+    from echorepo.routes.data_api import CANONICAL_SAMPLE_COLS, _oxide_to_metal
 except Exception:
     # fallback – if import fails, just no conversion
     def _oxide_to_metal(param, value):
@@ -72,7 +77,7 @@ except Exception:
         "qa_status",
         "licence",
     ]
-    
+
 # constants for privacy acceptance
 PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
 PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv")
@@ -81,6 +86,7 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 web_bp = Blueprint("web", __name__)
 
 # --- Remove oxides helpers ------------------------------------------------
+
 
 def _looks_like_oxide(label: str) -> bool:
     """
@@ -98,7 +104,10 @@ def _looks_like_oxide(label: str) -> bool:
     # oxide if one of the tokens is 'O', 'O2', 'O3', ...
     return any(t.startswith("O") for t in tokens)
 
-def _drop_oxide_rows(df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name") -> pd.DataFrame:
+
+def _drop_oxide_rows(
+    df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name"
+) -> pd.DataFrame:
     if df is None or df.empty:
         return df
     mask = pd.Series(False, index=df.index)
@@ -107,6 +116,7 @@ def _drop_oxide_rows(df: pd.DataFrame, code_col="parameter_code", name_col="para
     if name_col in df.columns:
         mask |= df[name_col].fillna("").map(_looks_like_oxide)
     return df.loc[~mask].copy()
+
 
 def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -132,7 +142,9 @@ def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
         df = df.drop(columns=to_drop, errors="ignore")
     return df
 
-OXIDE_NAMES = {"MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"}
+
+OXIDE_NAMES = {"MN2O3", "AL2O3", "CAO", "FE2O3", "MGO", "SIO2", "P2O5", "TIO2", "K2O", "SO3"}
+
 
 def _strip_oxides_from_info_str(s: str) -> str:
     if not isinstance(s, str) or not s.strip():
@@ -147,6 +159,7 @@ def _strip_oxides_from_info_str(s: str) -> str:
         keep.append(token)
     return "; ".join(keep)
 
+
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
 # --------------------------------------------------------------------------
@@ -155,6 +168,7 @@ def _env_true(name: str, default: bool = True) -> bool:
     if val is None:
         return default
     return str(val).strip().lower() in {"1", "true", "yes", "on", "y", "t"}
+
 
 def _get_repo_user_id_from_db() -> str | None:
     """
@@ -178,6 +192,7 @@ def _get_repo_user_id_from_db() -> str | None:
 
     return user_key
 
+
 def _current_user_id() -> str | None:
     kc_profile = (session.get("kc") or {}).get("profile") or {}
 
@@ -197,6 +212,7 @@ def _current_user_id() -> str | None:
 
     return None
 
+
 def _has_accepted_privacy(user_id: str) -> bool:
     if not user_id:
         return False
@@ -211,10 +227,7 @@ def _has_accepted_privacy(user_id: str) -> bool:
         with open(PRIVACY_CSV_PATH, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                if (
-                    row.get("user_id") == user_id
-                    and row.get("version") == PRIVACY_VERSION
-                ):
+                if row.get("user_id") == user_id and row.get("version") == PRIVACY_VERSION:
                     # cache in session
                     session["privacy_accepted_version"] = PRIVACY_VERSION
                     return True
@@ -244,6 +257,7 @@ def _append_privacy_acceptance(user_id: str):
         )
     session["privacy_accepted_version"] = PRIVACY_VERSION
 
+
 # --------------------------------------------------------------------------
 # SoSci survey helper
 # --------------------------------------------------------------------------
@@ -265,13 +279,7 @@ def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
         if not sid_col:
             return False
 
-        sample_ids = (
-            df_samples[sid_col]
-            .dropna()
-            .astype(str)
-            .unique()
-            .tolist()
-        )
+        sample_ids = df_samples[sid_col].dropna().astype(str).unique().tolist()
         if not sample_ids:
             return False
 
@@ -286,27 +294,37 @@ def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
         logging.getLogger(__name__).warning("lab presence check failed: %s", e)
         return False
 
+
 def _user_has_metals_legacy(df: pd.DataFrame) -> bool:
     if df is None or df.empty:
         return False
     candidates = [
-        "METALS_info","lab_METALS_info","METALS","metals",
-        "metals_info","metals_info_en","metals_info_orig",
-        "elemental_concentrations","elemental_concentrations_en","elemental_concentrations_orig",
+        "METALS_info",
+        "lab_METALS_info",
+        "METALS",
+        "metals",
+        "metals_info",
+        "metals_info_en",
+        "metals_info_orig",
+        "elemental_concentrations",
+        "elemental_concentrations_en",
+        "elemental_concentrations_orig",
     ]
     for c in df.columns:
         cl = str(c).lower()
         if c in candidates or "metals" in cl or ("elemental" in cl and "concentration" in cl):
             s = (
-                df[c].fillna("")
-                    .astype(str)
-                    .str.replace("<br>", ";", regex=False)
-                    .str.strip()
-                    .replace({"nan":"","None":"","NaN":"","0":"","0.0":""})
+                df[c]
+                .fillna("")
+                .astype(str)
+                .str.replace("<br>", ";", regex=False)
+                .str.strip()
+                .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
             )
             if s.str.contains("=", regex=False).any():
                 return True
     return False
+
 
 def _build_sosci_url(user_id: str | None) -> str | None:
     if not user_id:
@@ -406,18 +424,25 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
     cols = list(df.columns)
     # Common exact names across old/new pipelines
     exact = {
-        "METALS_info", "lab_METALS_info", "METALS", "metals",
-        "metals_info", "metals_info_en", "metals_info_orig",
-        "elemental_concentrations", "elemental_concentrations_en", "elemental_concentrations_orig",
+        "METALS_info",
+        "lab_METALS_info",
+        "METALS",
+        "metals",
+        "metals_info",
+        "metals_info_en",
+        "metals_info_orig",
+        "elemental_concentrations",
+        "elemental_concentrations_en",
+        "elemental_concentrations_orig",
     }
 
     def _series_has_assignments(series: pd.Series) -> bool:
         s = (
             series.fillna("")
-                  .astype(str)
-                  .str.replace("<br>", ";", regex=False)
-                  .str.strip()
-                  .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
+            .astype(str)
+            .str.replace("<br>", ";", regex=False)
+            .str.strip()
+            .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
         )
         # our metals blob looks like "Cu=12; Zn=5" etc.
         return s.str.contains("=", regex=False).any()
@@ -434,6 +459,7 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
             if _series_has_assignments(df[c]):
                 return True
     return False
+
 
 # --------------------------------------------------------------------------
 # MinIO helpers + canonical download routes (proxy through Flask)
@@ -504,6 +530,7 @@ def _stream_minio_canonical(obj_name: str):
         download_name=obj_name,
     )
 
+
 def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str):
     """
     Upload canonical CSVs (given as text) to MinIO, under:
@@ -547,6 +574,7 @@ def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str)
             except Exception as e:
                 logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
 
+
 def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
     """
     Upload all.zip snapshot to MinIO under:
@@ -555,9 +583,7 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
     """
     client = _get_minio_client()
     if client is None:
-        logging.getLogger(__name__).warning(
-            "MinIO not configured; skipping all.zip upload"
-        )
+        logging.getLogger(__name__).warning("MinIO not configured; skipping all.zip upload")
         return
 
     bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
@@ -566,9 +592,7 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
         if not client.bucket_exists(bucket):
             client.make_bucket(bucket)
     except Exception as e:
-        logging.getLogger(__name__).error(
-            f"Error ensuring MinIO bucket {bucket}: {e}"
-        )
+        logging.getLogger(__name__).error(f"Error ensuring MinIO bucket {bucket}: {e}")
         return
 
     from io import BytesIO
@@ -584,11 +608,10 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
                 content_type="application/zip",
             )
         except Exception as e:
-            logging.getLogger(__name__).error(
-                f"Error uploading {obj_name} to MinIO: {e}"
-            )
+            logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
 
-# --------- Search helpers 
+
+# --------- Search helpers
 def _parse_sample_id_list(raw: str) -> list[str]:
     """
     Accept:
@@ -602,6 +625,7 @@ def _parse_sample_id_list(raw: str) -> list[str]:
     # split on commas OR whitespace
     parts = re.split(r"[;,\s]+", raw.strip())
     return [p.strip() for p in parts if p.strip()]
+
 
 def _get_latest_canonical_snapshot_date() -> str | None:
     """
@@ -627,12 +651,12 @@ def _get_latest_canonical_snapshot_date() -> str | None:
         # Lexicographically max works for ISO dates YYYY-MM-DD
         return max(dates)
     except Exception as e:
-        logging.getLogger(__name__).error(
-            f"Error listing canonical snapshots from MinIO: {e}"
-        )
+        logging.getLogger(__name__).error(f"Error listing canonical snapshots from MinIO: {e}")
         return None
 
+
 # -------------- Endpoints for privacy acceptance ----------------
+
 
 @web_bp.post("/privacy/accept")
 @login_required
@@ -646,15 +670,16 @@ def privacy_accept():
     # make sure the dir exists (handle the case when path has no dir part)
     dir_name = os.path.dirname(PRIVACY_CSV_PATH)
     if dir_name:
-      os.makedirs(dir_name, exist_ok=True)
+        os.makedirs(dir_name, exist_ok=True)
 
     _append_privacy_acceptance(repo_user_id)
     return redirect(url_for("web.home"))
 
+
 # --------------------------------------------------------------------------
 # Canonical downloads (now built from Postgres on demand)
 # --------------------------------------------------------------------------
-from psycopg2.extras import RealDictCursor
+
 
 @web_bp.route("/download/canonical/samples.csv")
 @login_required
@@ -748,7 +773,6 @@ def download_canonical_samples():
     )
 
 
-
 @web_bp.route("/download/canonical/sample_images.csv")
 @login_required
 def download_canonical_sample_images():
@@ -779,7 +803,7 @@ def download_canonical_sample_images():
         abort(404, description="No canonical sample_images found in database")
 
     df = pd.DataFrame(rows)
-    
+
     # build CSV body into text
     buf_txt = io.StringIO()
     df.to_csv(buf_txt, index=False)
@@ -856,7 +880,7 @@ def download_canonical_sample_parameters():
         abort(404, description="No canonical sample_parameters found in database")
 
     df = pd.DataFrame(rows)
-    df = _drop_oxide_rows(df)  
+    df = _drop_oxide_rows(df)
 
     # build CSV body into text
     buf_txt = io.StringIO()
@@ -900,6 +924,7 @@ def download_canonical_sample_parameters():
         mimetype="text/csv",
     )
 
+
 @web_bp.route("/download/canonical/all.zip")
 @login_required
 def download_canonical_zip():
@@ -908,7 +933,7 @@ def download_canonical_zip():
         "file_name": "all_canonical.zip",
         "kind": "canonical_export",
     }
-    
+
     # Version date for this canonical snapshot
     version_date = datetime.utcnow().date().isoformat()
     # Base URL for building reference links in headers
@@ -1005,6 +1030,8 @@ def download_canonical_zip():
         download_name="all_canonical.zip",
         mimetype="application/zip",
     )
+
+
 # --------------------------------------------------------------------------
 # main UI
 # --------------------------------------------------------------------------
@@ -1012,8 +1039,9 @@ def download_canonical_zip():
 def landing():
     logged_in = bool(session.get("user") or (session.get("kc") or {}).get("profile"))
     if logged_in:
-        return redirect(url_for("web.home"))      # now /my
-    return redirect(url_for("web.explore"))      
+        return redirect(url_for("web.home"))  # now /my
+    return redirect(url_for("web.explore"))
+
 
 @web_bp.get("/my", endpoint="home")
 @login_required
@@ -1081,9 +1109,9 @@ def home():
 
     if survey_override_enabled:
         survey_override = (request.args.get("survey") or "").strip().lower()
-        if survey_override in {"on","1","true","yes","y"}:
-            show_survey = bool(survey_url)   # ignore has_metals here
-        elif survey_override in {"off","0","false","no","n"}:
+        if survey_override in {"on", "1", "true", "yes", "y"}:
+            show_survey = bool(survey_url)  # ignore has_metals here
+        elif survey_override in {"off", "0", "false", "no", "n"}:
             show_survey = False
     # else: ignore any ?survey=... and keep show_survey as computed
 
@@ -1158,6 +1186,7 @@ def home():
         current_locale=str(get_locale() or "en"),
     )
 
+
 # --------------------------------------------------------------------------
 # misc routes
 # --------------------------------------------------------------------------
@@ -1166,16 +1195,18 @@ def home():
 def i18n_labels():
     return jsonify({"labels": build_i18n_labels(_js_base_labels())})
 
+
 @web_bp.get("/labels")
 @login_required
 def labels_json():
     loc_raw = request.args.get("locale") or str(get_locale() or "en")
     loc = _canon_locale(loc_raw)
     payload = {
-        "labels": _make_labels(loc),               # key → text (already merges catalog + overrides)
-        "by_msgid": get_overrides_msgid(loc) or {} # msgid → override text (only overrides)
+        "labels": make_labels(loc),
+        "by_msgid": get_overrides_msgid(loc) or {},
     }
     return jsonify(payload)
+
 
 @web_bp.post("/download/csv")
 @login_required
@@ -1323,7 +1354,10 @@ def download_sample_csv():
     user_key = session.get("user")
     is_owner = False
     try:
-        if settings.USER_KEY_COLUMN in df.columns and (df[settings.USER_KEY_COLUMN] == user_key).any():
+        if (
+            settings.USER_KEY_COLUMN in df.columns
+            and (df[settings.USER_KEY_COLUMN] == user_key).any()
+        ):
             is_owner = True
         if "userId" in df.columns and (df["userId"] == user_key).any():
             is_owner = True
@@ -1361,13 +1395,8 @@ def lab_import():
         abort(400, description="No file uploaded")
 
     kc_profile = (session.get("kc") or {}).get("profile") or {}
-    uploader_id = (
-        kc_profile.get("id")
-        or kc_profile.get("sub")
-        or session.get("user")
-        or "unknown"
-    )
-    
+    uploader_id = kc_profile.get("id") or kc_profile.get("sub") or session.get("user") or "unknown"
+
     filename = file.filename or ""
     try:
         if filename.lower().endswith(".xlsx"):
@@ -1408,7 +1437,7 @@ def lab_import():
 
     fieldnames = list(df.columns)
 
-    for _, row in df.iterrows():
+    for __idx, row in df.iterrows():
         raw_dict = row.to_dict()
         qr = _normalize_qr(raw_dict.get("ID") or raw_dict.get("id") or "")
         if not qr:
@@ -1579,7 +1608,7 @@ def search_samples():
         snapshot_date = _get_latest_canonical_snapshot_date()
         version_date = snapshot_date or version_date_current
 
-        snapshot_url = f"{base_url}/download/canonical/{version_date}/all.zip"        
+        snapshot_url = f"{base_url}/download/canonical/{version_date}/all.zip"
 
         # Use the full canonical column set from data_api.py
         cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
@@ -1596,15 +1625,28 @@ def search_samples():
             samples = cur.fetchall()
 
             # sample_id is the first canonical column
-            sample_ids = [row[CANONICAL_SAMPLE_COLS.index("sample_id")] for row in samples if row[CANONICAL_SAMPLE_COLS.index("sample_id")]]
+            sample_ids = [
+                row[CANONICAL_SAMPLE_COLS.index("sample_id")]
+                for row in samples
+                if row[CANONICAL_SAMPLE_COLS.index("sample_id")]
+            ]
             # to avoid "IN ()" when no results
             if not sample_ids:
                 # return empty zip
                 mem = io.BytesIO()
                 with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-                    zf.writestr("samples_filtered.csv", "sample_id,timestamp_utc,country_code,ph,lat,lon,collected_by\n")
-                    zf.writestr("sample_images_filtered.csv", "sample_id,country_code,image_id,image_url,image_description_orig,image_description_en,collected_by,timestamp_utc,licence\n")
-                    zf.writestr("sample_parameters_filtered.csv", "sample_id,country_code,parameter_code,parameter_name,value,uom,analysis_method,analysis_date,lab_id,created_by,licence,parameter_uri\n")
+                    zf.writestr(
+                        "samples_filtered.csv",
+                        "sample_id,timestamp_utc,country_code,ph,lat,lon,collected_by\n",
+                    )
+                    zf.writestr(
+                        "sample_images_filtered.csv",
+                        "sample_id,country_code,image_id,image_url,image_description_orig,image_description_en,collected_by,timestamp_utc,licence\n",
+                    )
+                    zf.writestr(
+                        "sample_parameters_filtered.csv",
+                        "sample_id,country_code,parameter_code,parameter_name,value,uom,analysis_method,analysis_date,lab_id,created_by,licence,parameter_uri\n",
+                    )
                 mem.seek(0)
                 return send_file(
                     mem,
@@ -1639,12 +1681,12 @@ def search_samples():
 
         # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
         def _row_is_oxide(t):
-           code = (t[2] or "").strip()
-           name = (t[3] or "").strip()
-           return _looks_like_oxide(code) or _looks_like_oxide(name)
+            code = (t[2] or "").strip()
+            name = (t[3] or "").strip()
+            return _looks_like_oxide(code) or _looks_like_oxide(name)
 
         params_rows = [r for r in params_rows if not _row_is_oxide(r)]
-        
+
         # build zip in-memory
         mem = io.BytesIO()
         with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
@@ -1657,7 +1699,9 @@ def search_samples():
             out1.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out1.write(f"# Generated at: {generated}\n")
             out1.write(f"# Query: {query_string}\n")
-            out1.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
+            out1.write(
+                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+            )
             out1.write("\n")
 
             w1 = csv.writer(out1)
@@ -1671,7 +1715,6 @@ def search_samples():
 
             zf.writestr("samples_filtered.csv", out1.getvalue())
 
-
             # sample_images_filtered.csv
             out2 = io.StringIO()
 
@@ -1681,13 +1724,25 @@ def search_samples():
             out2.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out2.write(f"# Generated at: {generated}\n")
             out2.write(f"# Query: {query_string}\n")
-            out2.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
+            out2.write(
+                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+            )
             out2.write("\n")
 
             w2 = csv.writer(out2)
-            w2.writerow(["sample_id", "country_code", "image_id", "image_url",
-                         "image_description_orig", "image_description_en",
-                         "collected_by", "timestamp_utc", "licence"])
+            w2.writerow(
+                [
+                    "sample_id",
+                    "country_code",
+                    "image_id",
+                    "image_url",
+                    "image_description_orig",
+                    "image_description_en",
+                    "collected_by",
+                    "timestamp_utc",
+                    "licence",
+                ]
+            )
             for r in images:
                 w2.writerow(r)
             zf.writestr("sample_images_filtered.csv", out2.getvalue())
@@ -1701,13 +1756,28 @@ def search_samples():
             out3.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out3.write(f"# Generated at: {generated}\n")
             out3.write(f"# Query: {query_string}\n")
-            out3.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
+            out3.write(
+                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+            )
             out3.write("\n")
 
             w3 = csv.writer(out3)
-            w3.writerow(["sample_id", "country_code", "parameter_code", "parameter_name",
-                         "value", "uom", "analysis_method", "analysis_date",
-                         "lab_id", "created_by", "licence", "parameter_uri"])
+            w3.writerow(
+                [
+                    "sample_id",
+                    "country_code",
+                    "parameter_code",
+                    "parameter_name",
+                    "value",
+                    "uom",
+                    "analysis_method",
+                    "analysis_date",
+                    "lab_id",
+                    "created_by",
+                    "licence",
+                    "parameter_uri",
+                ]
+            )
             for r in params_rows:
                 w3.writerow(r)
             zf.writestr("sample_parameters_filtered.csv", out3.getvalue())
@@ -1760,6 +1830,7 @@ def search_samples():
         total_pages=total_pages,
         total_rows=total_rows,
     )
+
 
 @web_bp.route("/admin/usage")
 @login_required  # TODO: restrict to admins if possible
@@ -1870,6 +1941,7 @@ def usage_dashboard():
         by_type=by_type,
     )
 
+
 @web_bp.get("/download/canonical/<date>/<filename>")
 @login_required
 def download_canonical_version(date, filename):
@@ -1882,7 +1954,8 @@ def download_canonical_version(date, filename):
     return _stream_minio_canonical(obj_name)
 
 
-from echorepo.i18n import base_labels, build_i18n_labels
+from echorepo.i18n import base_labels
+
 
 @web_bp.get("/explore", endpoint="explore")
 def explore():
@@ -1936,41 +2009,41 @@ def public_others_geojson():
         except Exception:
             continue
 
-        feats.append({
-        "type": "Feature",
-        "geometry": {"type": "Point", "coordinates": [lon, lat]},
-        "properties": {
-            "sampleId": r["sample_id"],
-            "PH_ph": r.get("ph"),
-            "country_code": r.get("country_code"),
-            "timestamp_utc": (r["timestamp_utc"].isoformat() if r.get("timestamp_utc") else None),
-
-            # soil descriptors (your map.js "pick(...)" already supports these)
-            "soil_texture_en": r.get("soil_texture_en"),
-            "soil_texture_orig": r.get("soil_texture_orig"),
-            "soil_structure_en": r.get("soil_structure_en"),
-            "soil_structure_orig": r.get("soil_structure_orig"),
-
-            # simple counts/flags
-            "earthworms_count": r.get("earthworms_count"),
-            "contamination_plastic": r.get("contamination_plastic"),
-            "contamination_debris": r.get("contamination_debris"),
-            "contamination_other_en": r.get("contamination_other_en"),
-            "contamination_other_orig": r.get("contamination_other_orig"),
-            "observations_en": r.get("observations_en"),
-            "observations_orig": r.get("observations_orig"),
-
-            # “metals blob” if you have it in samples
-            "metals_info_en": r.get("metals_info_en"),
-            "metals_info_orig": r.get("metals_info_orig"),
-
-            # optional
-            "location_accuracy_m": r.get("location_accuracy_m"),
-        }
-
-        })
+        feats.append(
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "properties": {
+                    "sampleId": r["sample_id"],
+                    "PH_ph": r.get("ph"),
+                    "country_code": r.get("country_code"),
+                    "timestamp_utc": (
+                        r["timestamp_utc"].isoformat() if r.get("timestamp_utc") else None
+                    ),
+                    # soil descriptors (your map.js "pick(...)" already supports these)
+                    "soil_texture_en": r.get("soil_texture_en"),
+                    "soil_texture_orig": r.get("soil_texture_orig"),
+                    "soil_structure_en": r.get("soil_structure_en"),
+                    "soil_structure_orig": r.get("soil_structure_orig"),
+                    # simple counts/flags
+                    "earthworms_count": r.get("earthworms_count"),
+                    "contamination_plastic": r.get("contamination_plastic"),
+                    "contamination_debris": r.get("contamination_debris"),
+                    "contamination_other_en": r.get("contamination_other_en"),
+                    "contamination_other_orig": r.get("contamination_other_orig"),
+                    "observations_en": r.get("observations_en"),
+                    "observations_orig": r.get("observations_orig"),
+                    # “metals blob” if you have it in samples
+                    "metals_info_en": r.get("metals_info_en"),
+                    "metals_info_orig": r.get("metals_info_orig"),
+                    # optional
+                    "location_accuracy_m": r.get("location_accuracy_m"),
+                },
+            }
+        )
 
     return jsonify({"type": "FeatureCollection", "features": feats})
+
 
 @web_bp.get("/public/sample_image/<sample_id>")
 def public_sample_image(sample_id: str):

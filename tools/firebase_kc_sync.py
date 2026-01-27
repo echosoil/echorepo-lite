@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
+import csv
+import datetime
+import hashlib
+import json
 import os
 import sys
-import json
 import time
-import csv
-import hashlib
-import datetime
-from typing import Dict, Any, Tuple, Optional
+from typing import Any
 
 import requests
-from google.oauth2 import service_account
-from google.auth.transport.requests import Request
 from dotenv import load_dotenv
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 
 # =========================================================
 # ENV / CONFIG
@@ -41,7 +41,9 @@ USERS_JSON = os.environ.get("USERS_JSON", "data/users.json")
 
 # API
 SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
-AUTH_EXPORT_URL = "https://identitytoolkit.googleapis.com/v1/projects/{project_id}/accounts:batchGet"
+AUTH_EXPORT_URL = (
+    "https://identitytoolkit.googleapis.com/v1/projects/{project_id}/accounts:batchGet"
+)
 FIRESTORE_LIST_PROFILES = "https://firestore.googleapis.com/v1/projects/{project_id}/databases/(default)/documents/profiles"
 
 # which profile fields go to user.attributes in KC
@@ -69,6 +71,7 @@ UTC = datetime.timezone.utc
 # SMALL HELPERS
 # =========================================================
 
+
 def to_iso_from_millis_str(s: str) -> str | None:
     if not s:
         return None
@@ -78,6 +81,7 @@ def to_iso_from_millis_str(s: str) -> str | None:
         return None
     dt = datetime.datetime.fromtimestamp(ms / 1000.0, tz=UTC)
     return dt.isoformat()
+
 
 def to_iso_from_seconds_str(s: str) -> str | None:
     if not s:
@@ -93,7 +97,7 @@ def to_iso_from_seconds_str(s: str) -> str | None:
 def to_std_b64(s: str) -> str:
     if not s:
         return s
-    s = s.replace('-', '+').replace('_', '/')
+    s = s.replace("-", "+").replace("_", "/")
     pad = (4 - (len(s) % 4)) % 4
     return s + ("=" * pad)
 
@@ -101,6 +105,7 @@ def to_std_b64(s: str) -> str:
 # =========================================================
 # FIREBASE PART
 # =========================================================
+
 
 def get_fb_token(sa_path: str) -> str:
     creds = service_account.Credentials.from_service_account_file(sa_path, scopes=SCOPES)
@@ -145,16 +150,18 @@ def export_auth_users(project_id: str, token: str):
     return users
 
 
-def export_profiles(project_id: str, token: str) -> Dict[str, Dict[str, Any]]:
+def export_profiles(project_id: str, token: str) -> dict[str, dict[str, Any]]:
     headers = {"Authorization": f"Bearer {token}"}
     url = FIRESTORE_LIST_PROFILES.format(project_id=project_id)
     params = {"pageSize": 1000}
-    profiles: Dict[str, Dict[str, Any]] = {}
+    profiles: dict[str, dict[str, Any]] = {}
 
     while True:
         r = requests.get(url, headers=headers, params=params, timeout=60)
         if r.status_code == 403:
-            print("WARN: cannot read Firestore profiles (403). Skipping enrichment.", file=sys.stderr)
+            print(
+                "WARN: cannot read Firestore profiles (403). Skipping enrichment.", file=sys.stderr
+            )
             return {}
         r.raise_for_status()
         data = r.json()
@@ -163,7 +170,7 @@ def export_profiles(project_id: str, token: str) -> Dict[str, Dict[str, Any]]:
             full_name = doc["name"]
             doc_id = full_name.rsplit("/", 1)[-1]
             fields = doc.get("fields", {})
-            flat: Dict[str, Any] = {}
+            flat: dict[str, Any] = {}
             for f in PROFILE_FIELDS:
                 if f in fields:
                     fv = fields[f]
@@ -191,6 +198,7 @@ def export_profiles(project_id: str, token: str) -> Dict[str, Dict[str, Any]]:
 # =========================================================
 # KEYCLOAK PART
 # =========================================================
+
 
 def token_endpoints():
     return [
@@ -243,7 +251,7 @@ def admin_bases():
     ]
 
 
-def lookup_user(token: str, identifier: str) -> Tuple[Optional[str], Optional[str]]:
+def lookup_user(token: str, identifier: str) -> tuple[str | None, str | None]:
     headers = {"Authorization": f"Bearer {token}"}
     for base in admin_bases():
         # username
@@ -262,7 +270,7 @@ def lookup_user(token: str, identifier: str) -> Tuple[Optional[str], Optional[st
 
 
 def load_hash_params():
-    with open(HASH_PARAMS_FILE, "r", encoding="utf-8") as f:
+    with open(HASH_PARAMS_FILE, encoding="utf-8") as f:
         hp = json.load(f)
     return {
         "rounds": hp.get("rounds", 8),
@@ -273,21 +281,22 @@ def load_hash_params():
 # HASH-CACHE PART
 # =========================================================
 
-def load_last_sync() -> Dict[str, str]:
+
+def load_last_sync() -> dict[str, str]:
     if not os.path.exists(LAST_SYNC_FILE):
         return {}
-    with open(LAST_SYNC_FILE, "r", encoding="utf-8") as f:
+    with open(LAST_SYNC_FILE, encoding="utf-8") as f:
         return json.load(f)
 
 
-def save_last_sync(d: Dict[str, str]):
+def save_last_sync(d: dict[str, str]):
     tmp = LAST_SYNC_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False, indent=2)
     os.replace(tmp, LAST_SYNC_FILE)
 
 
-def hash_payload(payload: Dict[str, Any]) -> str:
+def hash_payload(payload: dict[str, Any]) -> str:
     # only hash the parts we control
     minimal = {
         "username": payload.get("username"),
@@ -306,6 +315,7 @@ def hash_payload(payload: Dict[str, Any]) -> str:
 # =========================================================
 # MAIN SYNC
 # =========================================================
+
 
 def main():
     # --- 1. export from Firebase ---
@@ -357,7 +367,11 @@ def main():
         orphan_profiles.append(rec)
 
     if orphan_profiles:
-        fields = ["profileId"] + [f for f in PROFILE_FIELDS if f not in ("createdAt", "updatedAt")] + ["createdAtIso", "updatedAtIso"]
+        fields = (
+            ["profileId"]
+            + [f for f in PROFILE_FIELDS if f not in ("createdAt", "updatedAt")]
+            + ["createdAtIso", "updatedAtIso"]
+        )
         with open(ORPHAN_PROFILES, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
             w.writeheader()
@@ -390,7 +404,7 @@ def main():
         if salt:
             salt = to_std_b64(salt)
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "username": email,
             "email": email,
             "enabled": not u.get("disabled", False),
@@ -408,12 +422,14 @@ def main():
         if password_hash and salt:
             secret_data = {"value": password_hash, "salt": salt}
             credential_data = {"algorithm": "firebase-scrypt", "hashIterations": rounds}
-            payload["credentials"] = [{
-                "type": "password",
-                "userLabel": "firebase-scrypt",
-                "secretData": json.dumps(secret_data),
-                "credentialData": json.dumps(credential_data),
-            }]
+            payload["credentials"] = [
+                {
+                    "type": "password",
+                    "userLabel": "firebase-scrypt",
+                    "secretData": json.dumps(secret_data),
+                    "credentialData": json.dumps(credential_data),
+                }
+            ]
         else:
             # no creds
             pass
@@ -477,7 +493,9 @@ def main():
                 # need to update
                 found_base, uid = lookup_user(kc_token, email)
                 if found_base and uid:
-                    r2 = requests.put(f"{found_base}/users/{uid}", headers=headers, data=json.dumps(payload))
+                    r2 = requests.put(
+                        f"{found_base}/users/{uid}", headers=headers, data=json.dumps(payload)
+                    )
                     if r2.status_code in (204, 200):
                         print("updated", email)
                         created_or_updated = True

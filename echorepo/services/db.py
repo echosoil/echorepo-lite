@@ -1,15 +1,18 @@
+import math
 import os
 import re
 import sqlite3
+
 import pandas as pd
+import psycopg2
+
+from echorepo.utils.load_csv import MAX_JITTER_METERS as LC_MAX_JITTER_METERS
+from echorepo.utils.load_csv import deterministic_jitter
+
 from ..config import settings
 
-from echorepo.utils.load_csv import deterministic_jitter, MAX_JITTER_METERS as LC_MAX_JITTER_METERS
+OXIDE_NAMES = {"MN2O3", "AL2O3", "CAO", "FE2O3", "MGO", "SIO2", "P2O5", "TIO2", "K2O"}
 
-import psycopg2 
-import math
-
-OXIDE_NAMES = {"MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O"}
 
 def _round_sig_str(v: float, sig: int = 2) -> str:
     """Round to `sig` significant figures, never using scientific notation."""
@@ -19,7 +22,7 @@ def _round_sig_str(v: float, sig: int = 2) -> str:
         return "0"
 
     exp = int(math.floor(math.log10(abs(v))))
-    dec = sig - 1 - exp                  # decimals to keep
+    dec = sig - 1 - exp  # decimals to keep
     rounded = round(v, dec)
 
     if dec > 0:
@@ -32,6 +35,7 @@ def _round_sig_str(v: float, sig: int = 2) -> str:
         s = f"{int(rounded)}"
 
     return s
+
 
 def _clean_metals_info(s: str) -> str:
     """
@@ -70,18 +74,20 @@ def _clean_metals_info(s: str) -> str:
         out.append(f"{left.strip()}={val_fmt}{(' ' + unit) if unit else ''}")
     return "; ".join(out)
 
+
 def _strip_oxides_from_info_str(s: str) -> str:
     if not isinstance(s, str) or not s.strip():
         return ""
     parts = [p.strip() for p in s.split(";") if p.strip()]
     keep = []
     for token in parts:
-        left = token.split("=", 1)[0]           # param part before '='
-        norm = re.sub(r"\s+", "", left).upper() # drop spaces, upper
+        left = token.split("=", 1)[0]  # param part before '='
+        norm = re.sub(r"\s+", "", left).upper()  # drop spaces, upper
         if norm in OXIDE_NAMES:
             continue
         keep.append(token)
     return "; ".join(keep)
+
 
 def get_pg_conn():
     """
@@ -126,11 +132,13 @@ def _find_main_table(conn: sqlite3.Connection) -> str | None:
             return tname
     return None
 
+
 def _ensure_col(conn: sqlite3.Connection, table: str, name: str, decl: str):
     cur = conn.execute(f"PRAGMA table_info({table})")
     cols = {r[1] for r in cur.fetchall()}
     if name not in cols:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
+
 
 def update_coords_sqlite(sample_id: str, lat: float, lon: float) -> tuple[bool, str]:
     """
@@ -153,13 +161,15 @@ def update_coords_sqlite(sample_id: str, lat: float, lon: float) -> tuple[bool, 
         _ensure_col(conn, tbl, "lon", "REAL")
 
         # write ORIGINAL coords
-        conn.execute(f"UPDATE {tbl} SET GPS_lat = ?, GPS_long = ? WHERE sampleId = ?",
-                     (lat, lon, sample_id))
+        conn.execute(
+            f"UPDATE {tbl} SET GPS_lat = ?, GPS_long = ? WHERE sampleId = ?", (lat, lon, sample_id)
+        )
 
         # recompute jitter
         jlat, jlon = deterministic_jitter(lat, lon, sample_id, LC_MAX_JITTER_METERS)
-        conn.execute(f"UPDATE {tbl} SET lat = ?, lon = ? WHERE sampleId = ?",
-                     (jlat, jlon, sample_id))
+        conn.execute(
+            f"UPDATE {tbl} SET lat = ?, lon = ? WHERE sampleId = ?", (jlat, jlon, sample_id)
+        )
 
         conn.commit()
         return True, f"SQLite updated: GPS=({lat},{lon}) / jitter=({jlat},{jlon})"
@@ -168,6 +178,7 @@ def update_coords_sqlite(sample_id: str, lat: float, lon: float) -> tuple[bool, 
         return False, f"SQLite update failed: {e}"
     finally:
         conn.close()
+
 
 def _ensure_lab_enrichment(conn: sqlite3.Connection):
     conn.execute("""
@@ -193,7 +204,7 @@ def init_db_sanity():
         with sqlite3.connect(settings.SQLITE_PATH) as conn:
             c = conn.execute(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?;",
-                (settings.TABLE_NAME,)
+                (settings.TABLE_NAME,),
             )
             if c.fetchone()[0] != 1:
                 print(f"[app] Table '{settings.TABLE_NAME}' missing in {settings.SQLITE_PATH}.")
@@ -243,17 +254,13 @@ def _merge_metals_cols(df: pd.DataFrame, html: bool = False) -> pd.DataFrame:
     # 3) final cleanup + optional HTML formatting
     if "METALS_info" in df.columns:
         # 3a) drop oxides
-        df["METALS_info"] = (
-            df["METALS_info"]
-            .fillna("")
-            .astype(str)
-            .map(_clean_metals_info)
-        )
+        df["METALS_info"] = df["METALS_info"].fillna("").astype(str).map(_clean_metals_info)
         # 3b) pretty HTML (only after filtering)
         if html:
             df["METALS_info"] = df["METALS_info"].str.replace(r";\s*", "<br>", regex=True)
 
     return df
+
 
 def query_user_df(user_key: str) -> pd.DataFrame:
     user_col = settings.USER_KEY_COLUMN
@@ -292,6 +299,7 @@ def query_user_df(user_key: str) -> pd.DataFrame:
 
     df = _merge_metals_cols(df, html=True)
     return df
+
 
 # helper: this is the normalized join condition we’ll reuse
 # strip ECHO-, uppercase, trim
@@ -337,7 +345,7 @@ def query_others_df(user_key: str) -> pd.DataFrame:
           AND (s.userId IS NULL OR s.userId <> ?)
         """
         df = pd.read_sql_query(q, conn, params=(user_key, user_key))
-    
+
     df = _merge_metals_cols(df, html=True)
     return df
 
@@ -379,6 +387,5 @@ def query_sample(sample_id: str) -> pd.DataFrame:
 def query_sample_df(sample_id: str) -> pd.DataFrame:
     with sqlite3.connect(settings.SQLITE_PATH) as conn:
         return pd.read_sql_query(
-            f"SELECT * FROM {settings.TABLE_NAME} WHERE sampleId = ?",
-            conn, params=(sample_id,)
+            f"SELECT * FROM {settings.TABLE_NAME} WHERE sampleId = ?", conn, params=(sample_id,)
         )

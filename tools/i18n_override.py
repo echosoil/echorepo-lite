@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-import argparse, sqlite3
+import argparse
+import sqlite3
 from pathlib import Path
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -24,14 +26,20 @@ def main():
             )
         """)
         if args.value == "":
-            cx.execute("DELETE FROM i18n_overrides WHERE locale=? AND key=?", (args.locale, args.key))
+            cx.execute(
+                "DELETE FROM i18n_overrides WHERE locale=? AND key=?", (args.locale, args.key)
+            )
             print(f"Deleted override: [{args.locale}] {args.key}")
         else:
-            cx.execute("""
+            cx.execute(
+                """
                 INSERT INTO i18n_overrides(locale,key,value) VALUES (?,?,?)
                 ON CONFLICT(locale,key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP
-            """, (args.locale, args.key, args.value))
+            """,
+                (args.locale, args.key, args.value),
+            )
             print(f"Set override: [{args.locale}] {args.key} = {args.value!r}")
+
 
 if __name__ == "__main__":
     main()

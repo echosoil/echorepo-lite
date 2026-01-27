@@ -1,28 +1,39 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from ..auth.decorators import login_required
-from ..services.db import query_user_df, query_sample, update_coords_sqlite
-from ..services.validation import find_default_coord_rows, annotate_country_mismatches, select_country_mismatches
-from ..services.firebase import update_coords_by_user_sample
-from ..utils.coords import parse_coord
-from ..config import settings
-import math, os
+import math
+import os
 from functools import lru_cache
 
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+
+from ..auth.decorators import login_required
+from ..config import settings
+from ..services.db import query_sample, query_user_df, update_coords_sqlite
+from ..services.firebase import update_coords_by_user_sample
+from ..services.validation import (
+    annotate_country_mismatches,
+    find_default_coord_rows,
+    select_country_mismatches,
+)
+from ..utils.coords import parse_coord
 
 errors_bp = Blueprint("errors", __name__)
 
 
 DEFAULT_LAT = float(os.getenv("DEFAULT_LAT", "46.5"))
 DEFAULT_LON = float(os.getenv("DEFAULT_LON", "11.35"))
-COUNTRY_SHP = os.getenv("COUNTRY_SHP", "/data/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp")  # e.g. /app/data/ne_110m_admin_0_countries.shp
+COUNTRY_SHP = os.getenv(
+    "COUNTRY_SHP", "/data/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"
+)  # e.g. /app/data/ne_110m_admin_0_countries.shp
+
 
 def _to_float(x):
     try:
-        if x is None: return None
+        if x is None:
+            return None
         s = str(x).strip().replace(",", ".")
         return float(s)
     except Exception:
         return None
+
 
 def _haversine_km(lat1, lon1, lat2, lon2):
     try:
@@ -30,10 +41,11 @@ def _haversine_km(lat1, lon1, lat2, lon2):
         phi1, phi2 = math.radians(lat1), math.radians(lat2)
         dphi = math.radians(lat2 - lat1)
         dl = math.radians(lon2 - lon1)
-        a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dl/2)**2
-        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dl / 2) ** 2
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     except Exception:
         return None
+
 
 @lru_cache(maxsize=1)
 def _country_index():
@@ -45,7 +57,8 @@ def _country_index():
         return (None, None)
     try:
         import shapefile  # pyshp
-        from shapely.geometry import shape as shp_shape, Point
+        from shapely.geometry import shape as shp_shape
+
         sf = shapefile.Reader(COUNTRY_SHP)
         shapes = sf.shapes()
         records = sf.records()
@@ -70,6 +83,7 @@ def _country_index():
     except Exception:
         return (None, None)
 
+
 def _country_from_coords(lat, lon):
     """
     Returns dict with iso2 and name if shapefile is available, else None.
@@ -80,6 +94,7 @@ def _country_from_coords(lat, lon):
         return None
     try:
         from shapely.geometry import Point
+
         pt = Point(float(lon), float(lat))
         for geom, iso2, name in items:
             if geom.contains(pt):
@@ -91,6 +106,7 @@ def _country_from_coords(lat, lon):
     except Exception as e:
         print("[ERROR][COORDS] country lookup error:", e)
     return None
+
 
 @errors_bp.get("/issues")
 @login_required
@@ -104,7 +120,8 @@ def issues():
     orig_lon_col = getattr(settings, "ORIG_LON_COL", None) or settings.LON_COL
 
     # minimal columns for the view
-    cols = ["sampleId","userId","QR_qrCode", orig_lat_col, orig_lon_col]
+    cols = ["sampleId", "userId", "QR_qrCode", orig_lat_col, orig_lon_col]
+
     def pick(d):
         present = [c for c in cols if c in d.columns]
         return d[present].copy()
@@ -114,8 +131,9 @@ def issues():
         default_rows=pick(defaults),
         mismatch_rows=pick(mism),
         orig_lat_col=orig_lat_col,
-        orig_lon_col=orig_lon_col,      
+        orig_lon_col=orig_lon_col,
     )
+
 
 @errors_bp.post("/issues/fix-coords")
 @login_required
@@ -126,14 +144,17 @@ def fix_coords():
     accepts decimal or DMS
     """
     sample_id = (request.form.get("sampleId") or "").strip()
-    user_id   = (request.form.get("userId") or "").strip()
-    lat_s     = (request.form.get("lat_input") or "").strip()
-    lon_s     = (request.form.get("lon_input") or "").strip()
+    user_id = (request.form.get("userId") or "").strip()
+    lat_s = (request.form.get("lat_input") or "").strip()
+    lon_s = (request.form.get("lon_input") or "").strip()
 
     lat = parse_coord(lat_s, is_lon=False)
     lon = parse_coord(lon_s, is_lon=True)
     if lat is None or lon is None:
-        flash("Could not parse coordinates. Use decimal or DMS like 43°03'24.7\" N, 12°45'22.0\" E.", "danger")
+        flash(
+            "Could not parse coordinates. Use decimal or DMS like 43°03'24.7\" N, 12°45'22.0\" E.",
+            "danger",
+        )
         return redirect(url_for("errors.issues"))
 
     # 1) Firestore
@@ -147,6 +168,7 @@ def fix_coords():
 
     flash("Coordinates updated.", "success")
     return redirect(url_for("errors.issues"))
+
 
 @errors_bp.get("/issues/why")
 @login_required
@@ -165,8 +187,9 @@ def why():
     if df is None or df.empty:
         return {"error": f"sampleId '{sample_id}' not found"}, 404
     import pandas as pd
-    pd.set_option("display.max_columns", None)   # show all columns
-    pd.set_option("display.width", None)        # don't wrap to the next line
+
+    pd.set_option("display.max_columns", None)  # show all columns
+    pd.set_option("display.width", None)  # don't wrap to the next line
 
     # Work with the first row (there should normally be 1 per sampleId)
     r = df.iloc[0].to_dict()
@@ -183,28 +206,31 @@ def why():
     ann = annotate_country_mismatches(one)
     row = ann.iloc[0].to_dict()
 
-    in_default  = not find_default_coord_rows(one).empty
+    in_default = not find_default_coord_rows(one).empty
 
     # True mismatch only when both sides exist AND not matching
     has_planned = bool(row.get("planned_iso2_set"))
-    has_actual  = row.get("actual_cc") is not None
+    has_actual = row.get("actual_cc") is not None
     in_mismatch = has_planned and has_actual and (not bool(row.get("planned_match")))
 
     coord_checks = {
-        "lat_raw": lat_raw, 
-        "lon_raw": lon_raw, 
-        "lat_float": lat, 
-        "lon_float": lon, 
-        "missing": (lat is None or lon is None), 
-        "non_numeric": (lat is None or lon is None) and (bool(lat_raw) or bool(lon_raw)), 
-        "out_of_bounds": (lat is not None and lon is not None) and not (-90 <= lat <= 90 and -180 <= lon <= 180), 
-        "equals_default_exact": ( lat is not None and lon is not None and lat == DEFAULT_LAT and lon == DEFAULT_LON ), 
-        "distance_to_default_km": ( None if (lat is None or lon is None) else _haversine_km(lat, lon, DEFAULT_LAT, DEFAULT_LON) ), } 
-        
-    actual_country = None 
-    if lat is not None and lon is not None: 
-        actual_country = _country_from_coords(lat, lon) # optional if COUNTRY_SHP set declared = mism.iloc[0].get("planned_iso2") if not mism.empty else None
-    declared = ann.iloc[0].get("planned_iso2") if not ann.empty else None
+        "lat_raw": lat_raw,
+        "lon_raw": lon_raw,
+        "lat_float": lat,
+        "lon_float": lon,
+        "missing": (lat is None or lon is None),
+        "non_numeric": (lat is None or lon is None) and (bool(lat_raw) or bool(lon_raw)),
+        "out_of_bounds": (lat is not None and lon is not None)
+        and not (-90 <= lat <= 90 and -180 <= lon <= 180),
+        "equals_default_exact": (
+            lat is not None and lon is not None and lat == DEFAULT_LAT and lon == DEFAULT_LON
+        ),
+        "distance_to_default_km": (
+            None
+            if (lat is None or lon is None)
+            else _haversine_km(lat, lon, DEFAULT_LAT, DEFAULT_LON)
+        ),
+    }
 
     return {
         "sampleId": sample_id,

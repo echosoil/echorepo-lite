@@ -9,11 +9,15 @@ Env/Args:
   OUT_CSV (optional; if not set, prints to stdout)
 """
 
-import os, sys, argparse
+import argparse
+import os
+import sys
+
 import pandas as pd
 
 DEFAULT_LAT = 46.5
 DEFAULT_LON = 11.35
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -41,6 +45,7 @@ def main():
         print(f"[find_default_coords] wrote {len(bad)} rows -> {args.out_csv}")
     else:
         print(bad.to_csv(index=False), end="")
+
 
 if __name__ == "__main__":
     main()
