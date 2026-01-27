@@ -45,7 +45,7 @@ coverage.xml
 .vscode/
 .idea/
 *.iml
-.ruff_cache
+.ruff_cache/
 
 # ── OS junk ───────────────────────────────────────────────────────────────────
 .DS_Store
