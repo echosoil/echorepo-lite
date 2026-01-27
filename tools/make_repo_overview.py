@@ -7,9 +7,12 @@ sees as part of your project (tracked + untracked but not ignored).
 - Route scan supports @*.route("/...") and @*.(get|post|put|delete|patch|options|head)("/...").
 """
 
-import os, re, io, sys, subprocess, textwrap
+import io
+import os
+import re
+import subprocess
 from collections import defaultdict
-from typing import List, Iterable, Tuple, Set
+from collections.abc import Iterable
 
 # ---------- Config ----------
 MAX_DEPTH = 4
@@ -18,10 +21,11 @@ MAX_DEPTH = 4
 #   @app.route("/x")              @bp.route('/x', methods=['GET'])
 #   @app.get("/x")                @bp.post('/x'), @api.delete("/x"), etc.
 ROUTE_RE = re.compile(
-    r'@(?:[A-Za-z_][\w\.]*)\.(?:route|get|post|put|delete|patch|options|head)\s*'
+    r"@(?:[A-Za-z_][\w\.]*)\.(?:route|get|post|put|delete|patch|options|head)\s*"
     r'\(\s*(?P<q>[\'"])(?P<path>.*?)(?P=q)',
-    re.S
+    re.S,
 )
+
 
 # ---------- Helpers ----------
 def repo_root() -> str:
@@ -35,7 +39,8 @@ def repo_root() -> str:
     except Exception:
         return os.path.abspath(".")
 
-def git_list_project_paths(root: str) -> List[str]:
+
+def git_list_project_paths(root: str) -> list[str]:
     """
     Return repo-relative paths that Git considers part of the project:
     - tracked files
@@ -62,9 +67,10 @@ def git_list_project_paths(root: str) -> List[str]:
                 paths.append(rp)
         return sorted(paths)
 
-def collect_dirs_for_paths(paths: Iterable[str]) -> Set[str]:
+
+def collect_dirs_for_paths(paths: Iterable[str]) -> set[str]:
     """All directories implied by the file list, including parents up to root.”"""
-    dirs: Set[str] = set()
+    dirs: set[str] = set()
     for p in paths:
         d = os.path.dirname(p)
         while True:
@@ -77,7 +83,8 @@ def collect_dirs_for_paths(paths: Iterable[str]) -> Set[str]:
             d = nd
     return dirs
 
-def render_tree(paths: List[str], maxdepth: int = MAX_DEPTH) -> str:
+
+def render_tree(paths: list[str], maxdepth: int = MAX_DEPTH) -> str:
     """
     Render a tree limited to the provided repo-relative paths.
     Only directories/files that exist in `paths` are shown.
@@ -118,19 +125,21 @@ def render_tree(paths: List[str], maxdepth: int = MAX_DEPTH) -> str:
 
     return walk(".", "", 0).getvalue()
 
-def find_routes(root: str, py_paths: Iterable[str]) -> List[Tuple[str, str]]:
+
+def find_routes(root: str, py_paths: Iterable[str]) -> list[tuple[str, str]]:
     """Scan only the given Python file subset for route-like decorators."""
-    results: List[Tuple[str, str]] = []
+    results: list[tuple[str, str]] = []
     for rel in py_paths:
         p = os.path.join(root, rel)
         try:
-            with open(p, "r", encoding="utf-8", errors="ignore") as fh:
+            with open(p, encoding="utf-8", errors="ignore") as fh:
                 txt = fh.read()
         except Exception:
             continue
         for m in ROUTE_RE.finditer(txt):
             results.append((rel, m.group("path")))
     return sorted(results)
+
 
 # ---------- Main ----------
 def main():
@@ -179,6 +188,7 @@ def main():
     with open("REPO_OVERVIEW.md", "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines))
     print(f"Wrote REPO_OVERVIEW.md at {ROOT}")
+
 
 if __name__ == "__main__":
     main()

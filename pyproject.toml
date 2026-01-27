@@ -25,4 +25,12 @@ exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
-ignore = ["E501"]  # handled by black
+ignore = [
+  "E501",  # line length handled by formatter
+  "B905",  # zip(strict=...) - noisy; enable later if you want
+  "B023",  # lambda capturing loop vars - noisy in pandas apply patterns
+  "E402",  # "imports not at top" - scripts often need sys.path/env hacks
+]  # handled by black
+
+[tool.ruff.lint.per-file-ignores]
+"tools/*.py" = ["E402", "F401", "B007", "B905"]
