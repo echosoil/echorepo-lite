@@ -11,7 +11,6 @@ import sys
 from pathlib import Path
 
 import psycopg2
-from psycopg2 import sql
 from dotenv import load_dotenv
 
 

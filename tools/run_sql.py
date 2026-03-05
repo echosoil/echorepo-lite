@@ -1,10 +1,11 @@
 # tools/run_sql.py
-import sys
 import sqlite3
+import sys
 from pathlib import Path
 
 # adjust this if your DB is elsewhere
 DB_PATH = Path("data/db/echo.db")
+
 
 def main():
     if len(sys.argv) < 2:
@@ -29,6 +30,7 @@ def main():
         print("SQL executed successfully.")
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     main()
