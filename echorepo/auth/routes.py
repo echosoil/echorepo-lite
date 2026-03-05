@@ -1,12 +1,14 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify, session
 import requests
+from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+
 from ..config import settings
 from ..extensions import oauth
 from ..services.firebase import send_password_reset_email
-from .keycloak import KC_WELLKNOWN, KC_TOKEN, KC_LOGOUT, KC_ISSUER, KC_USERINFO
-from .tokens import create_session_from_tokens, before_request_refresh
+from .keycloak import KC_ISSUER, KC_LOGOUT, KC_TOKEN, KC_USERINFO, KC_WELLKNOWN
+from .tokens import before_request_refresh, create_session_from_tokens
 
 auth_bp = Blueprint("auth", __name__)
+
 
 def init_oauth(app):
     if not settings.KC_CLIENT_SECRET:
@@ -22,18 +24,22 @@ def init_oauth(app):
     # register global before_request token refresh
     app.before_request(before_request_refresh)
 
+
 @auth_bp.get("/diag/oidc")
 def diag_oidc():
-    return jsonify({
-        "issuer": KC_ISSUER,
-        "well_known": KC_WELLKNOWN,
-        "token": KC_TOKEN,
-        "userinfo": KC_USERINFO,
-        "logout": KC_LOGOUT,
-        "use_auth_prefix": settings.KC_USE_AUTH_PREFIX,
-        "client_id": settings.KC_CLIENT_ID,
-        "has_client_secret": bool(settings.KC_CLIENT_SECRET),
-    })
+    return jsonify(
+        {
+            "issuer": KC_ISSUER,
+            "well_known": KC_WELLKNOWN,
+            "token": KC_TOKEN,
+            "userinfo": KC_USERINFO,
+            "logout": KC_LOGOUT,
+            "use_auth_prefix": settings.KC_USE_AUTH_PREFIX,
+            "client_id": settings.KC_CLIENT_ID,
+            "has_client_secret": bool(settings.KC_CLIENT_SECRET),
+        }
+    )
+
 
 @auth_bp.get("/login")
 def login():
@@ -44,16 +50,22 @@ def login():
             "refresh_token": "demo",
             "exp": 9999999999,
             "refresh_exp": 9999999999,
-            "profile": {"email": settings.DEMO_USER, "username": settings.DEMO_USER, "name": "Demo User", "sub":"demo"},
+            "profile": {
+                "email": settings.DEMO_USER,
+                "username": settings.DEMO_USER,
+                "name": "Demo User",
+                "sub": "demo",
+            },
         }
         session["user"] = settings.DEMO_USER
         return redirect(url_for("web.home"))
     return render_template("login.html")
 
+
 @auth_bp.post("/login")
 def sso_password_login():
-    username = request.form.get("username","").strip()
-    password = request.form.get("password","")
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
     if not username or not password:
         return render_template("login.html", error="Please enter your email and password.")
     data = {
@@ -69,7 +81,11 @@ def sso_password_login():
     except requests.RequestException as e:
         return render_template("login.html", error=f"Cannot reach identity provider: {e}")
     if r.status_code != 200:
-        msg = r.json().get("error_description") if r.headers.get("content-type","").startswith("application/json") else "Invalid credentials."
+        msg = (
+            r.json().get("error_description")
+            if r.headers.get("content-type", "").startswith("application/json")
+            else "Invalid credentials."
+        )
         return render_template("login.html", error=msg)
 
     try:
@@ -78,10 +94,12 @@ def sso_password_login():
         return render_template("login.html", error=f"Login failed: {e}")
     return redirect(url_for("web.home"))
 
+
 @auth_bp.get("/sso/login")
 def sso_login():
     redirect_uri = url_for("auth.sso_callback", _external=True)
     return oauth.keycloak.authorize_redirect(redirect_uri)
+
 
 @auth_bp.get("/sso/callback")
 def sso_callback():
@@ -90,6 +108,7 @@ def sso_callback():
     create_session_from_tokens(token)
     return redirect(url_for("web.home"))
 
+
 @auth_bp.get("/logout")
 def logout():
     kc = session.get("kc")
@@ -97,13 +116,18 @@ def logout():
         try:
             requests.post(
                 KC_LOGOUT,
-                data={"client_id": settings.KC_CLIENT_ID, "client_secret": settings.KC_CLIENT_SECRET, "refresh_token": kc.get("refresh_token","")},
-                timeout=10
+                data={
+                    "client_id": settings.KC_CLIENT_ID,
+                    "client_secret": settings.KC_CLIENT_SECRET,
+                    "refresh_token": kc.get("refresh_token", ""),
+                },
+                timeout=10,
             )
         except Exception:
             pass
     session.clear()
     return redirect(url_for("auth.login"))
+
 
 @auth_bp.post("/password-reset")
 def password_reset():
@@ -112,8 +136,7 @@ def password_reset():
 
     if not email:
         return render_template(
-            "login.html",
-            error="Please enter your email address to reset your password."
+            "login.html", error="Please enter your email address to reset your password."
         )
 
     ok, message = send_password_reset_email(email)

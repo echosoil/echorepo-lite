@@ -1,17 +1,23 @@
 # echorepo/routes/i18n_admin.py
-from flask_babel import get_locale, gettext as _
+import json
+import os
+from pathlib import Path
+
+from babel.support import Translations
+from flask import Blueprint, Response, abort, current_app, jsonify, render_template, request
+from flask_babel import get_locale
+
 from echorepo.auth.decorators import login_required
 from echorepo.i18n import BASE_LABEL_MSGIDS
+from echorepo.services.i18n_labels import make_labels
 from echorepo.services.i18n_overrides import (
-    get_overrides, set_override, delete_override,
-    get_overrides_msgid, set_override_msgid, delete_override_msgid,
+    delete_override,
+    delete_override_msgid,
+    get_overrides,
+    get_overrides_msgid,
+    set_override,
+    set_override_msgid,
 )
-import os
-import json
-from pathlib import Path
-from babel.support import Translations
-
-from flask import Blueprint, render_template, request, jsonify, abort, current_app, Response
 
 bp = Blueprint("i18n_admin", __name__, url_prefix="/i18n")
 
@@ -46,21 +52,6 @@ def _catalog_gettext(loc: str, msgid: str) -> str:
     return msgid
 
 
-def _make_labels(locale_code: str) -> dict:
-    """Build labels for /i18n/labels.js."""
-    loc = _canon_locale(locale_code)
-    by_msgid = get_overrides_msgid(loc) or {}
-    by_key = get_overrides(loc) or {}
-
-    labels = {}
-    for key, msgid in BASE_LABEL_MSGIDS.items():
-        text = _catalog_gettext(loc, msgid)
-        text = by_msgid.get(msgid, text)   # msgid override
-        text = by_key.get(key, text)       # JS key override (wins)
-        labels[key] = text
-    return labels
-
-
 def _load_pot_entries():
     """Read msgids + references from messages.pot if available."""
     pot = os.path.join(current_app.root_path, "translations", "messages.pot")
@@ -82,6 +73,7 @@ def _load_pot_entries():
 
 
 # ---------- Manual EN overrides (for canonical *_en translations) ----------
+
 
 def _manual_overrides_path() -> Path:
     """
@@ -129,7 +121,7 @@ def _save_manual_overrides(text_to_en: dict) -> None:
 def labels_js():
     loc_raw = request.args.get("locale") or str(get_locale() or "en")
     loc = _canon_locale(loc_raw)
-    payload = {"labels": _make_labels(loc)}
+    payload = {"labels": make_labels(loc)}
     js = "window.I18N = " + json.dumps(payload, ensure_ascii=False) + ";"
     resp = Response(js, mimetype="application/javascript; charset=utf-8")
     resp.headers["Cache-Control"] = "no-store"
@@ -164,10 +156,12 @@ def admin_page():
             en_str = "" if en_val is None else str(en_val)
             if q and not (q in orig_str.lower() or q in en_str.lower()):
                 continue
-            rows.append({
-                "orig": orig_str,
-                "override": en_str,
-            })
+            rows.append(
+                {
+                    "orig": orig_str,
+                    "override": en_str,
+                }
+            )
         rows.sort(key=lambda r: r["orig"].lower())
 
         return render_template(
@@ -206,12 +200,14 @@ def admin_page():
             catalog_txt = _catalog_gettext(loc, msgid)
             current_txt = msg_over.get(msgid, catalog_txt)
 
-            rows.append({
-                "msgid": msgid,
-                "current": current_txt,
-                "override": msg_over.get(msgid, ""),
-                "refs": refs,
-            })
+            rows.append(
+                {
+                    "msgid": msgid,
+                    "current": current_txt,
+                    "override": msg_over.get(msgid, ""),
+                    "refs": refs,
+                }
+            )
 
         return render_template(
             "i18n_admin.html",
@@ -231,12 +227,14 @@ def admin_page():
         if q and not (q in k.lower() or q in str(current_txt).lower() or q in msgid.lower()):
             continue
 
-        rows.append({
-            "key": k,
-            "msgid": msgid,
-            "current": current_txt,
-            "override": key_over.get(k, ""),
-        })
+        rows.append(
+            {
+                "key": k,
+                "msgid": msgid,
+                "current": current_txt,
+                "override": key_over.get(k, ""),
+            }
+        )
 
     return render_template(
         "i18n_admin.html",
