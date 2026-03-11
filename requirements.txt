@@ -17,3 +17,4 @@ minio
 psycopg2-binary
 pyshp
 shapely
+matplotlib
