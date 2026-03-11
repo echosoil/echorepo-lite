@@ -23,8 +23,8 @@ if [[ -f "$DEV_REPO_DIR/.env" ]]; then
 
   # normalize .env for prod
   sed -i 's/^APP_ENV=dev$/APP_ENV=prod/' "$TMPDIR/.env"
-  
-  # 2) remove literal "-dev" everywhere (for paths like echorepo-lite-dev, etc.)  
+
+  # 2) remove literal "-dev" everywhere (for paths like echorepo-lite-dev, etc.)
   sed -i 's/-dev//g' "$TMPDIR/.env"
 
   # 3) but restore the real Keycloak host, which *must* have -dev
@@ -65,6 +65,14 @@ fi
 
 echo "[INFO] switching to main..."
 git switch main
+
+echo "[INFO] updating local main from origin/main..."
+if ! git merge --ff-only origin/main; then
+  echo "[ERROR] local main cannot be fast-forwarded to origin/main."
+  echo "        Please inspect the prod repo manually:"
+  echo "        cd $PROD_REPO_DIR && git status && git log --oneline --graph --decorate --all -20"
+  exit 1
+fi
 
 echo "[INFO] merging origin/develop into main..."
 if ! git merge --no-ff origin/develop; then
