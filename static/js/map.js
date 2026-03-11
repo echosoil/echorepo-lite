@@ -80,55 +80,6 @@
     }
   });
 
-  const COUNTRY_NAMES = {
-    DE: 'Germany',
-    ES: 'Spain',
-    FR: 'France',
-    IT: 'Italy',
-    PT: 'Portugal',
-    PL: 'Poland',
-    FI: 'Finland',
-    RO: 'Romania',
-    NL: 'Netherlands',
-    CZ: 'Czechia',
-    SK: 'Slovakia',
-    GR: 'Greece',
-    RU: 'Russia',
-    GB: 'United Kingdom',
-    UA: 'Ukraine',
-    HU: 'Hungary',
-    SE: 'Sweden',
-    BG: 'Bulgaria',
-    BE: 'Belgium',
-    HR: 'Croatia',
-    AT: 'Austria',
-    IE: 'Ireland',
-    DK: 'Denmark',
-    LT: 'Lithuania',
-    SI: 'Slovenia',
-    LV: 'Latvia',
-    EE: 'Estonia',
-    CY: 'Cyprus',
-    LU: 'Luxembourg',
-    MT: 'Malta',
-    AL: 'Albania',
-    RS: 'Serbia',
-    ME: 'Montenegro',
-    MK: 'North Macedonia',
-    BA: 'Bosnia and Herzegovina',
-    IS: 'Iceland',
-    NO: 'Norway',
-    CH: 'Switzerland',
-    TR: 'Turkey',
-    MD: 'Moldova',
-    AD: 'Andorra',
-    LI: 'Liechtenstein',
-    SM: 'San Marino',
-    VA: 'Vatican City',
-    GE: 'Georgia',
-
-  };
-
   // ---- Country name i18n (browser-native) ----
   const countryNames = (() => {
     try {
@@ -150,16 +101,19 @@
   const dateToEl   = document.getElementById('dateTo');
 
   function inDateRange(ts) {
+    // If no date filter is active, do not exclude rows with missing dates
+    if (!activeDateFrom && !activeDateTo) return true;
+
+    // If date filter is active but sample has no date, exclude it
     if (!ts) return false;
 
-    const d = ts.slice(0, 10); // YYYY-MM-DD
+    const d = String(ts).slice(0, 10); // YYYY-MM-DD
 
     if (activeDateFrom && d < activeDateFrom) return false;
-    if (activeDateTo   && d > activeDateTo)   return false;
+    if (activeDateTo && d > activeDateTo) return false;
 
     return true;
   }
-
   function populateCountryFilter() {
     const sel = document.getElementById('countryFilter');
     if (!sel) return;
@@ -311,14 +265,12 @@
       try { ring.addTo(map); } catch (_) {}
     }
 
-    const target = ring.__dot || ring;
-    const ll = target.getLatLng ? target.getLatLng() : null;
-
+    const ll = ring.getLatLng ? ring.getLatLng() : null;
     if (!ll) return false;
 
     const targetZoom = (opts && opts.zoom) || Math.max(map.getZoom(), 14);
     map.setView(ll, targetZoom, { animate: true });
-    if (target.openPopup) target.openPopup();
+    if (ring.openPopup) ring.openPopup();
     return true;
   };
 
@@ -493,12 +445,6 @@
 
       // LAT ticks on left edge
       const latStart = Math.ceil(south / latStep) * latStep;
-      const bbox = [
-        b.getWest(),
-        b.getSouth(),
-        b.getEast(),
-        b.getNorth()
-      ].join(",");
       for (let lat = latStart; lat <= north + 1e-9; lat += latStep) {
         const pt = map.latLngToContainerPoint([lat, (west + east) / 2]);
         const y = Math.round(pt.y);
@@ -877,7 +823,8 @@
   let twoToggleControl=null;
 
   // Selection state
-  const drawnItems = new L.FeatureGroup([], { pane: 'selectionPane' }).addTo(map);  let selectionLayers=[], selectionRows=[];
+  const drawnItems = new L.FeatureGroup([], { pane: 'selectionPane' }).addTo(map);
+  let selectionLayers = [], selectionRows = [];
   let selectionButtonEl=null, clearButtonEl=null;
 
   // Filter state (UI elements in page)
@@ -989,44 +936,25 @@
             fillOpacity: 0.18
           });
 
-          const centerDot = L.circleMarker(marker.getLatLng(), {
-            radius: 4,
-            color: clr,
-            weight: 1,
-            opacity: 1,
-            fillColor: clr,
-            fillOpacity: 1
-          });
-
-          if (isOwner) {
-            userCluster.addLayer(centerDot);
-          } else {
-            othersCluster.addLayer(centerDot);
-          }
-          centerDot.__props = props;
-          centerDot.__owner = !!isOwner;
-          centerDot.feature = f;
-
-          ring.__dot = centerDot;
           ring.__props = props;
           ring.__owner = !!isOwner;
+          ring.feature = f;
 
-          // Bind popup only to the dot
-          centerDot.bindPopup(
+          // popup goes on the ring
+          ring.bindPopup(
             formatPopup(f, isOwner),
             { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
           );
 
-          // When the popup opens, fetch image and replace popup content
+          // When popup opens, lazy-load image + piechart
           ring.on("popupopen", async (e) => {
             const p = f.properties || {};
-            const sid = getPreferredSampleCode(p);
             const photoId = p.sampleId || p.sample_id || p.QR_qrCode;
             const chartId = p.QR_qrCode || p.qr_code || p.qr || p.sampleId || p.sample_id;
 
-            if (!sid) return;
+            if (!photoId && !chartId) return;
 
-            if (!p.__img_loaded) {
+            if (!p.__img_loaded && photoId) {
               p.__img_loaded = true;
               const img = await fetchSampleImage(photoId);
               if (img) {
@@ -1035,7 +963,7 @@
               }
             }
 
-            if (!p.__pie_loaded) {
+            if (!p.__pie_loaded && chartId) {
               p.__pie_loaded = true;
               const pie = await fetchSamplePiechart(chartId, "16S", "Genus");
               if (pie) {
@@ -1048,15 +976,26 @@
           });
 
           ring.addTo(map);
-          centerDot.addTo(map);
           bucket.push(ring);
 
-          // 👇 Index by sample id (with fallbacks)
+          // keep the invisible marker only for clustering
+          marker.__props = props;
+          marker.__owner = !!isOwner;
+          marker.feature = f;
+
+          if (isOwner) {
+            userCluster.addLayer(marker);
+          } else {
+            othersCluster.addLayer(marker);
+          }
+
+          // index by sample id
           const sid =
             props.sampleId ||
             props.sample_id ||
             props.Sample ||
             props.QR_qrCode || null;
+
           if (sid) {
             window.__echomapIndex.set(String(sid), ring);
           }
@@ -1079,57 +1018,52 @@
     // Initialize filter counts/UI using default (no filter)
     updateFiltered();
 
-    map.off('moveend zoomend'); // clear previous
-    map.on('moveend zoomend', () => {
-      updateURLFromView();
-    });
   }
 
   // ---- Rebuild clusters to reflect current filter ----
   function rebuildClustersForFilter(){
-    if (map.hasLayer(userCluster))   map.removeLayer(userCluster);
+    if (map.hasLayer(userCluster)) map.removeLayer(userCluster);
     if (map.hasLayer(othersCluster)) map.removeLayer(othersCluster);
 
-    const newUser   = L.markerClusterGroup();
+    const newUser = L.markerClusterGroup();
     const newOthers = L.markerClusterGroup();
 
-    function addFilteredDots(rings, targetGroup) {
-      for (const r of rings) {
-        const props = r.__props || {};
-        if (!passesCurrentFilter(props)) continue;
-        if (r.__dot) targetGroup.addLayer(r.__dot);
-      }
+    function addFilteredMarkers(layer, include, targetGroup) {
+      if (!include || !layer) return;
+
+      layer.eachLayer(m => {
+        const props = m.__props || {};
+        if (!passesCurrentFilter(props)) return;
+        targetGroup.addLayer(m);
+      });
     }
 
-    addFilteredDots(userRings, newUser);
-    addFilteredDots(otherRings, newOthers);
+    const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
+
+    addFilteredMarkers(userLayer, state.user, newUser);
+    addFilteredMarkers(othersLayer, state.others, newOthers);
 
     userCluster = newUser;
     othersCluster = newOthers;
 
-    const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
-    if (state.user)   map.addLayer(userCluster);
+    if (state.user) map.addLayer(userCluster);
     if (state.others) map.addLayer(othersCluster);
   }
-
   // ---- Show/hide rings based on current filter + toggles ----
-  function applyFilterToRings() {
-    const state = twoToggleControl ? twoToggleControl._getState() : { user: true, others: true };
+  function applyFilterToRings(){
+    const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
 
     function process(rings, includeGroup){
       for (const r of rings){
-        const d = r.__dot;
         const shouldShow = includeGroup && passesCurrentFilter(r.__props || {});
-
         if (shouldShow){
           if (!map.hasLayer(r)) r.addTo(map);
-          if (d && !map.hasLayer(d)) d.addTo(map);
         } else {
           if (map.hasLayer(r)) map.removeLayer(r);
-          if (d && map.hasLayer(d)) map.removeLayer(d);
         }
       }
     }
+
     process(userRings, state.user);
     process(otherRings, state.others);
   }
