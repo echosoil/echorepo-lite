@@ -25,6 +25,7 @@ from flask import (
 )
 from flask_babel import get_locale
 from flask_babel import gettext as _
+from openpyxl import load_workbook
 from psycopg2.extras import RealDictCursor
 
 from echorepo.i18n import build_i18n_labels
@@ -2264,31 +2265,29 @@ def lab_import_auto():
     if not can_upload_lab_data(user_key):
         abort(403, description="Not authorised to upload lab data")
 
-    f = request.files.get("file")
-    if not f:
+    file = request.files.get("file")
+    if not file:
         abort(400, description="No file uploaded")
+
+    filename = (file.filename or "").strip()
+    data = file.read()
+    if not data:
+        abort(400, description="Uploaded file is empty")
 
     kc_profile = (session.get("kc") or {}).get("profile") or {}
     uploader_id = kc_profile.get("id") or kc_profile.get("sub") or session.get("user") or "unknown"
-    filename = (f.filename or "").strip()
-    ext = pathlib.Path(filename).suffix.lower()
 
-    # Read bytes once so we can sniff + parse reliably
-    data = f.read()
-    if not data:
-        abort(400, description="Empty upload")
+    if filename.lower().endswith(".xlsx"):
+        inserted = _import_biodiversity_xlsx_streaming(data, filename, uploader_id)
 
-    # --- decide pipeline ---
-    is_xlsx = (ext == ".xlsx") or (
-        request.mimetype == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-    if is_xlsx and _looks_like_biodiversity_xlsx(data):
-        # biodiversity path
-        _import_biodiversity_xlsx_bytes(data, filename, uploader_id)
+        g._analytics_extra = {
+            "upload_type": "biodiversity_otu_xlsx",
+            "filename": filename,
+            "rows_inserted": inserted,
+        }
         return redirect(url_for("web.home"))
 
-    # otherwise: metals path (existing behavior)
+    # fallback to your normal metals importer
     _import_metals_file_bytes(data, filename, uploader_id)
     return redirect(url_for("web.home"))
 
@@ -2577,3 +2576,170 @@ def _import_biodiversity_xlsx_bytes(xlsx_bytes: bytes, filename: str, uploader_i
         abort(400, description="No non-zero OTU counts found to import (all empty/zero?).")
 
     log.warning("BIOUPLOAD(auto): done, rows_inserted=%d", total_rows)
+
+
+def _import_biodiversity_xlsx_streaming(xlsx_bytes: bytes, filename: str, uploader_id: str):
+    sample_pat = re.compile(r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$", re.IGNORECASE)
+
+    try:
+        wb = load_workbook(BytesIO(xlsx_bytes), read_only=True, data_only=True)
+    except Exception as e:
+        abort(400, description=f"Cannot open XLSX: {e}")
+
+    if "clean_phylum" not in wb.sheetnames:
+        abort(400, description="XLSX does not contain required sheet 'clean_phylum'")
+
+    ws = wb["clean_phylum"]
+
+    rows_iter = ws.iter_rows(values_only=True)
+
+    try:
+        header = next(rows_iter)
+    except StopIteration:
+        abort(400, description="Sheet 'clean_phylum' is empty")
+
+    header = [("" if v is None else str(v).strip()) for v in header]
+
+    if not header:
+        abort(400, description="Sheet header is empty")
+
+    otu_col_idx = 0
+
+    sample_cols = []
+    for idx, col in enumerate(header):
+        if idx == otu_col_idx:
+            continue
+        if sample_pat.match(col):
+            sample_cols.append((idx, col))
+
+    if not sample_cols:
+        abort(400, description="No sample columns found like ABCD-1234-16S or ABCD-1234-ITS")
+
+    taxa_cols = []
+    for idx, col in enumerate(header):
+        if idx == otu_col_idx:
+            continue
+        if any(idx == sidx for sidx, _ in sample_cols):
+            continue
+        taxa_cols.append((idx, col))
+
+    insert_sql = """
+        INSERT INTO sample_otu_counts
+            (sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file)
+        VALUES
+            (%s, %s, %s, %s, %s::jsonb, now(), %s, %s)
+        ON CONFLICT (sample_id, marker, otu_id) DO UPDATE SET
+            count       = EXCLUDED.count,
+            taxa        = COALESCE(EXCLUDED.taxa, sample_otu_counts.taxa),
+            uploaded_at = now(),
+            uploaded_by = EXCLUDED.uploaded_by,
+            source_file = EXCLUDED.source_file
+    """
+
+    def split_sample_marker(s: str):
+        parts = s.rsplit("-", 1)
+        if len(parts) != 2:
+            return s.strip().upper(), ""
+        return parts[0].strip().upper(), parts[1].strip().upper()
+
+    def to_float_or_none(v):
+        if v is None:
+            return None
+        s = str(v).strip().replace(",", ".")
+        if not s:
+            return None
+        try:
+            return float(s)
+        except Exception:
+            return None
+
+    batch = []
+    batch_size = 5000
+    inserted = 0
+
+    try:
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS sample_otu_counts (
+                    sample_id TEXT NOT NULL,
+                    marker TEXT NOT NULL,
+                    otu_id TEXT NOT NULL,
+                    count DOUBLE PRECISION,
+                    taxa JSONB,
+                    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    uploaded_by TEXT,
+                    source_file TEXT,
+                    PRIMARY KEY (sample_id, marker, otu_id)
+                )
+            """)
+
+            cur.execute("""
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name='sample_otu_counts' AND column_name='taxa'
+            """)
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE sample_otu_counts ADD COLUMN taxa JSONB")
+
+            for row in rows_iter:
+                otu_id = "" if row[otu_col_idx] is None else str(row[otu_col_idx]).strip()
+                if not otu_id:
+                    continue
+
+                taxa_dict = {}
+                for idx, col_name in taxa_cols:
+                    val = row[idx] if idx < len(row) else None
+                    if val is None:
+                        continue
+                    sval = str(val).strip()
+                    if sval:
+                        taxa_dict[col_name] = sval
+
+                taxa_json = json.dumps(taxa_dict, ensure_ascii=False) if taxa_dict else None
+
+                for idx, sample_col in sample_cols:
+                    val = row[idx] if idx < len(row) else None
+                    count = to_float_or_none(val)
+                    if count is None or count == 0:
+                        continue
+
+                    sample_id, marker = split_sample_marker(sample_col)
+                    if not sample_id or not marker:
+                        continue
+
+                    batch.append(
+                        (sample_id, marker, otu_id, count, taxa_json, uploader_id, filename)
+                    )
+
+                    if len(batch) >= batch_size:
+                        cur.executemany(insert_sql, batch)
+                        inserted += len(batch)
+                        batch.clear()
+
+            if batch:
+                cur.executemany(insert_sql, batch)
+                inserted += len(batch)
+
+            conn.commit()
+
+    except Exception as e:
+        abort(500, description=f"Postgres biodiversity import failed: {e}")
+
+    return inserted
+
+
+@web_bp.get("/public/sample_piechart/<sample_id>")
+def public_sample_piechart(sample_id: str):
+    marker = (request.args.get("marker") or "16S").strip()
+    level = (request.args.get("level") or "Genus").strip()
+
+    # adapt path to however you store them in MinIO / storage
+    image_url = f"/storage/biodiversity/piecharts/{marker}/{level}/{sample_id}.png"
+
+    return jsonify(
+        {
+            "ok": True,
+            "image_url": image_url,
+            "caption": f"{marker} · {level}",
+        }
+    )
