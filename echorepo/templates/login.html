@@ -29,13 +29,8 @@
               <label for="username" class="form-label">{{ _('Email or username') }}</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-person"></i></span>
-                <input type="text"
-                       class="form-control"
-                       id="username"
-                       name="username"
-                       placeholder="{{ _('you@example.org') }}"
-                       required
-                       autofocus>
+                <input type="text" class="form-control" id="username" name="username"
+                      placeholder="{{ _('you@example.org') }}" required autofocus>
               </div>
             </div>
 
@@ -43,16 +38,20 @@
               <label for="password" class="form-label">{{ _('Password') }}</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-                <input type="password"
-                       class="form-control"
-                       id="password"
-                       name="password"
-                       placeholder="••••••••"
-                       required>
+                <input type="password" class="form-control" id="password" name="password"
+                      placeholder="••••••••" required>
               </div>
             </div>
 
-            <div class="d-flex justify-content-end mb-3">
+            {# 1) Put the normal login button FIRST so Enter triggers this one #}
+            <div class="d-grid gap-2 mt-3">
+              <button class="btn btn-eu" type="submit">
+                <span class="me-1 bi bi-box-arrow-in-right"></span> {{ _('Continue') }}
+              </button>
+            </div>
+
+            {# 2) Then the "forgot password" secondary button AFTER it #}
+            <div class="d-flex justify-content-end mt-2">
               <button class="btn btn-link btn-sm p-0"
                       type="submit"
                       formaction="{{ url_for('auth.password_reset') }}"
@@ -60,13 +59,8 @@
                 {{ _('Forgot your password?') }}
               </button>
             </div>
-
-            <div class="d-grid gap-2">
-              <button class="btn btn-eu" type="submit">
-                <span class="me-1 bi bi-box-arrow-in-right"></span> {{ _('Continue') }}
-              </button>
-            </div>
           </form>
+
 
           <div class="mt-3">
             <small class="text-muted">

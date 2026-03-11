@@ -1,19 +1,29 @@
-import os
-import sqlite3
-import math
 import hashlib
-import pandas as pd
+import math
+import os
+import re
+import sqlite3
 import tempfile  # <-- added
-import re 
-from dotenv import load_dotenv
 from pathlib import Path
+
+import pandas as pd
+from dotenv import load_dotenv
+
 # ---- Config (env) ----
 load_dotenv()
-CSV_PATH    = os.getenv("CSV_PATH") if not os.getenv("CSV_PATH").startswith("/") else os.getenv("CSV_PATH")[1:]
-CSV_PATH    = str(Path(os.getenv("PROJECT_ROOT")) / CSV_PATH)
-SQLITE_PATH = os.getenv("SQLITE_PATH") if not os.getenv("SQLITE_PATH").startswith("/") else os.getenv("SQLITE_PATH")[1:]
+CSV_PATH = (
+    os.getenv("CSV_PATH")
+    if not os.getenv("CSV_PATH").startswith("/")
+    else os.getenv("CSV_PATH")[1:]
+)
+CSV_PATH = str(Path(os.getenv("PROJECT_ROOT")) / CSV_PATH)
+SQLITE_PATH = (
+    os.getenv("SQLITE_PATH")
+    if not os.getenv("SQLITE_PATH").startswith("/")
+    else os.getenv("SQLITE_PATH")[1:]
+)
 SQLITE_PATH = str(Path(os.getenv("PROJECT_ROOT")) / SQLITE_PATH)
-TABLE_NAME  = os.getenv("TABLE_NAME", "samples")
+TABLE_NAME = os.getenv("TABLE_NAME", "samples")
 
 # Max jitter distance in meters (match the map legend/toggle)
 MAX_JITTER_METERS = float(os.getenv("MAX_JITTER_METERS", "1000"))
@@ -29,14 +39,28 @@ PREFERRED_LAT = os.getenv("LAT_COL", "GPS_lat")
 PREFERRED_LON = os.getenv("LON_COL", "GPS_long")
 
 LAT_CANDIDATES = [
-    "lat", "latitude", "y",
-    "gps_lat", "gps_latitude", "geom_lat", "geo_lat",
-    "gps_lat_deg", "latitude_deg"
+    "lat",
+    "latitude",
+    "y",
+    "gps_lat",
+    "gps_latitude",
+    "geom_lat",
+    "geo_lat",
+    "gps_lat_deg",
+    "latitude_deg",
 ]
 LON_CANDIDATES = [
-    "lon", "lng", "longitude", "x",
-    "gps_lon", "gps_longitude", "geom_lon", "geo_lon",
-    "long", "gps_long", "longitude_deg"
+    "lon",
+    "lng",
+    "longitude",
+    "x",
+    "gps_lon",
+    "gps_longitude",
+    "geom_lon",
+    "geo_lon",
+    "long",
+    "gps_long",
+    "longitude_deg",
 ]
 
 # Columns to try (in order) as a stable key for the jitter
@@ -71,7 +95,7 @@ def _parse_coord(value, kind: str):
     s = s.replace("\u2212", "-").replace(",", ".")
 
     # try: number with optional hemisphere
-    m = re.match(r'^\s*([+-]?\d+(?:\.\d+)?)\s*([NnSsEeWw])?\s*$', s)
+    m = re.match(r"^\s*([+-]?\d+(?:\.\d+)?)\s*([NnSsEeWw])?\s*$", s)
     if m:
         num = float(m.group(1))
         hemi = (m.group(2) or "").upper()
@@ -94,6 +118,7 @@ def _parse_coord(value, kind: str):
         return val if -180.0 <= val <= 180.0 else None
     return None
 
+
 def _pick_lat_lon_cols(columns):
     """Find lat/lon columns in a case-insensitive way."""
     cols_lower = {c.lower(): c for c in columns}
@@ -102,6 +127,7 @@ def _pick_lat_lon_cols(columns):
     lat = next((cols_lower[c] for c in LAT_CANDIDATES if c in cols_lower), None)
     lon = next((cols_lower[c] for c in LON_CANDIDATES if c in cols_lower), None)
     return lat, lon
+
 
 def _hash_file_sha256(path, chunk=1024 * 1024):
     """SHA-256 of a file (streamed)."""
@@ -113,6 +139,7 @@ def _hash_file_sha256(path, chunk=1024 * 1024):
                 break
             h.update(b)
     return h.hexdigest()
+
 
 def _config_signature():
     """A small string capturing all settings that affect the DB output."""
@@ -128,19 +155,22 @@ def _config_signature():
     ]
     return "|".join(parts)
 
+
 def _load_last_signature(path=SIG_PATH):
     if not os.path.exists(path):
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return f.read().strip()
     except Exception:
         return None
+
 
 def _save_signature(sig, path=SIG_PATH):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(sig)
+
 
 def _compose_signature(csv_hash):
     """Combine CSV hash + config into one signature string/hash."""
@@ -150,6 +180,7 @@ def _compose_signature(csv_hash):
     h.update(_config_signature().encode("utf-8"))
     return h.hexdigest()
 
+
 def _table_exists(conn, table_name):
     cur = conn.execute(
         "SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?;",
@@ -157,15 +188,17 @@ def _table_exists(conn, table_name):
     )
     return cur.fetchone()[0] == 1
 
+
 def _hash_to_unit_floats(key: str, n: int = 2):
     """Deterministically map a key -> n floats in [0,1)."""
     h = hashlib.sha256(key.encode("utf-8")).digest()
     vals = []
     for i in range(n):
-        chunk = h[i*8:(i+1)*8]
+        chunk = h[i * 8 : (i + 1) * 8]
         ui = int.from_bytes(chunk, "big", signed=False)
         vals.append((ui % (10**12)) / (10**12))
     return vals
+
 
 def deterministic_jitter(lat: float, lon: float, key: str, max_dist_m: float = MAX_JITTER_METERS):
     """
@@ -187,10 +220,13 @@ def deterministic_jitter(lat: float, lon: float, key: str, max_dist_m: float = M
     j_lat = lat + d_lat
     j_lon = lon + d_lon
 
-    if j_lon > 180: j_lon -= 360
-    if j_lon < -180: j_lon += 360
+    if j_lon > 180:
+        j_lon -= 360
+    if j_lon < -180:
+        j_lon += 360
     j_lat = max(min(j_lat, 90), -90)
     return j_lat, j_lon
+
 
 def _choose_stable_key(row: pd.Series) -> str:
     for k in STABLE_KEY_PREFS:
@@ -216,7 +252,9 @@ def ensure_sqlite():
         try:
             with sqlite3.connect(SQLITE_PATH) as conn:
                 if _table_exists(conn, TABLE_NAME):
-                    print(f"[load_csv] No changes detected (signature match). Keeping existing {SQLITE_PATH}:{TABLE_NAME}.")
+                    print(
+                        f"[load_csv] No changes detected (signature match). Keeping existing {SQLITE_PATH}:{TABLE_NAME}."
+                    )
                     return
         except Exception:
             pass  # If any error checking table, we’ll rebuild below.
@@ -273,7 +311,9 @@ def ensure_sqlite():
     # --- Atomic write: build into a temp DB, then swap into place ---
     dirpath = os.path.dirname(SQLITE_PATH) or "."
     print(f"[load_csv] Writing to temporary DB in {dirpath}...")
-    with tempfile.NamedTemporaryFile(prefix="echo_db_", suffix=".tmp", dir=dirpath, delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(
+        prefix="echo_db_", suffix=".tmp", dir=dirpath, delete=False
+    ) as tmp:
         tmp_db = tmp.name
 
     try:
@@ -307,9 +347,13 @@ def ensure_sqlite():
         # Save signature for next time (only after successful swap)
         _save_signature(current_sig)
 
-        print(f"[load_csv] Loaded {len(df)} jittered rows from {CSV_PATH} into {SQLITE_PATH}:{TABLE_NAME}")
+        print(
+            f"[load_csv] Loaded {len(df)} jittered rows from {CSV_PATH} into {SQLITE_PATH}:{TABLE_NAME}"
+        )
         if KEEP_ORIGINALS:
-            print(f"[load_csv] Original coordinates preserved in columns: {lat_col}_orig, {lon_col}_orig")
+            print(
+                f"[load_csv] Original coordinates preserved in columns: {lat_col}_orig, {lon_col}_orig"
+            )
         else:
             print("[load_csv] Original coordinates overwritten (not preserved in DB).")
 

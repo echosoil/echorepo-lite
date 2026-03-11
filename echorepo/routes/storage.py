@@ -1,16 +1,20 @@
 # echorepo/routes/storage.py
 import os
 from io import BytesIO
-from flask import Blueprint, abort, send_file, current_app
+
+from flask import Blueprint, abort, current_app, send_file
 
 try:
     from minio import Minio
     from minio.error import S3Error
 except ImportError:
     Minio = None
+
     class S3Error(Exception): ...
-    
+
+
 storage_bp = Blueprint("storage", __name__)
+
 
 def _get_minio_client():
     if Minio is None:
@@ -19,7 +23,7 @@ def _get_minio_client():
     endpoint = (
         current_app.config.get("MINIO_ENDPOINT")
         or os.getenv("MINIO_ENDPOINT")
-        or "echorepo-minio:9000"   # works in your docker network
+        or "echorepo-minio:9000"  # works in your docker network
     )
     access_key = (
         current_app.config.get("MINIO_ACCESS_KEY")
@@ -52,12 +56,11 @@ def _get_minio_client():
         secure=secure,
     )
 
+
 @storage_bp.get("/storage/<path:relpath>")
 def serve_storage(relpath):
     bucket = (
-        current_app.config.get("MINIO_BUCKET")
-        or os.getenv("MINIO_BUCKET")
-        or "echorepo-uploads"
+        current_app.config.get("MINIO_BUCKET") or os.getenv("MINIO_BUCKET") or "echorepo-uploads"
     )
 
     mclient = _get_minio_client()
@@ -95,6 +98,7 @@ def serve_storage(relpath):
         abort(404)
     return send_file(full)
 
+
 @storage_bp.get("/exports/canonical/<date>/<filename>")
 def serve_canonical_version(date, filename):
     """
@@ -102,9 +106,7 @@ def serve_canonical_version(date, filename):
     /exports/canonical/2025-12-02/samples.csv
     """
     bucket = (
-        current_app.config.get("MINIO_BUCKET")
-        or os.getenv("MINIO_BUCKET")
-        or "echorepo-uploads"
+        current_app.config.get("MINIO_BUCKET") or os.getenv("MINIO_BUCKET") or "echorepo-uploads"
     )
 
     relpath = f"canonical/{date}/{filename}"
@@ -149,9 +151,7 @@ def serve_canonical_latest(filename):
     which internally maps to canonical/latest/samples.csv
     """
     bucket = (
-        current_app.config.get("MINIO_BUCKET")
-        or os.getenv("MINIO_BUCKET")
-        or "echorepo-uploads"
+        current_app.config.get("MINIO_BUCKET") or os.getenv("MINIO_BUCKET") or "echorepo-uploads"
     )
 
     relpath = f"canonical/latest/{filename}"

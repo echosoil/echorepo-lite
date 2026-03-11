@@ -1,43 +1,49 @@
+import csv
+import io
+import json
+import logging
+import os
+import pathlib
+import re
+import sqlite3
+import zipfile  # kept in case you later want to build ZIPs locally
+from datetime import date, datetime, timedelta
+from io import BytesIO
+
+import pandas as pd
 from flask import (
     Blueprint,
+    abort,
+    g,
+    jsonify,
+    redirect,
     render_template,
     request,
     send_file,
-    abort,
     session,
-    redirect,
     url_for,
-    jsonify,
-    g,
 )
-import pandas as pd
-from io import BytesIO
-import pathlib
-from datetime import datetime, timedelta
-import sqlite3
-import os
-import json
-import io
-import zipfile  # kept in case you later want to build ZIPs locally
-import logging
-import csv
-import psycopg2
+from flask_babel import get_locale
+from flask_babel import gettext as _
+from openpyxl import load_workbook
 from psycopg2.extras import RealDictCursor
-import re  
 
-from flask_babel import gettext as _, get_locale
-
-from ..config import settings
-from ..auth.decorators import login_required
-from ..services.db import query_user_df, query_sample, _ensure_lab_enrichment, get_pg_conn
-from ..services.validation import find_default_coord_rows, select_country_mismatches
-from ..services.lab_permissions import can_upload_lab_data
-
-from ..utils.table import make_table_html, strip_orig_cols
 from echorepo.i18n import build_i18n_labels
+from echorepo.services.i18n_labels import make_labels
+from echorepo.services.i18n_overrides import (
+    _canon_locale,
+    get_overrides_msgid,
+)
+
+from ..auth.decorators import login_required
+from ..config import settings
+from ..services.db import _ensure_lab_enrichment, get_pg_conn, query_sample, query_user_df
+from ..services.lab_permissions import can_upload_lab_data
+from ..services.validation import find_default_coord_rows, select_country_mismatches
+from ..utils.table import make_table_html, strip_orig_cols
 
 try:
-    from echorepo.routes.data_api import _oxide_to_metal, CANONICAL_SAMPLE_COLS
+    from echorepo.routes.data_api import CANONICAL_SAMPLE_COLS, _oxide_to_metal
 except Exception:
     # fallback – if import fails, just no conversion
     def _oxide_to_metal(param, value):
@@ -72,7 +78,7 @@ except Exception:
         "qa_status",
         "licence",
     ]
-    
+
 # constants for privacy acceptance
 PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
 PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv")
@@ -81,6 +87,7 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 web_bp = Blueprint("web", __name__)
 
 # --- Remove oxides helpers ------------------------------------------------
+
 
 def _looks_like_oxide(label: str) -> bool:
     """
@@ -98,7 +105,10 @@ def _looks_like_oxide(label: str) -> bool:
     # oxide if one of the tokens is 'O', 'O2', 'O3', ...
     return any(t.startswith("O") for t in tokens)
 
-def _drop_oxide_rows(df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name") -> pd.DataFrame:
+
+def _drop_oxide_rows(
+    df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name"
+) -> pd.DataFrame:
     if df is None or df.empty:
         return df
     mask = pd.Series(False, index=df.index)
@@ -107,6 +117,7 @@ def _drop_oxide_rows(df: pd.DataFrame, code_col="parameter_code", name_col="para
     if name_col in df.columns:
         mask |= df[name_col].fillna("").map(_looks_like_oxide)
     return df.loc[~mask].copy()
+
 
 def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -132,7 +143,9 @@ def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
         df = df.drop(columns=to_drop, errors="ignore")
     return df
 
-OXIDE_NAMES = {"MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"}
+
+OXIDE_NAMES = {"MN2O3", "AL2O3", "CAO", "FE2O3", "MGO", "SIO2", "P2O5", "TIO2", "K2O", "SO3"}
+
 
 def _strip_oxides_from_info_str(s: str) -> str:
     if not isinstance(s, str) or not s.strip():
@@ -147,6 +160,7 @@ def _strip_oxides_from_info_str(s: str) -> str:
         keep.append(token)
     return "; ".join(keep)
 
+
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
 # --------------------------------------------------------------------------
@@ -155,6 +169,7 @@ def _env_true(name: str, default: bool = True) -> bool:
     if val is None:
         return default
     return str(val).strip().lower() in {"1", "true", "yes", "on", "y", "t"}
+
 
 def _get_repo_user_id_from_db() -> str | None:
     """
@@ -178,6 +193,7 @@ def _get_repo_user_id_from_db() -> str | None:
 
     return user_key
 
+
 def _current_user_id() -> str | None:
     kc_profile = (session.get("kc") or {}).get("profile") or {}
 
@@ -197,6 +213,7 @@ def _current_user_id() -> str | None:
 
     return None
 
+
 def _has_accepted_privacy(user_id: str) -> bool:
     if not user_id:
         return False
@@ -211,10 +228,7 @@ def _has_accepted_privacy(user_id: str) -> bool:
         with open(PRIVACY_CSV_PATH, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                if (
-                    row.get("user_id") == user_id
-                    and row.get("version") == PRIVACY_VERSION
-                ):
+                if row.get("user_id") == user_id and row.get("version") == PRIVACY_VERSION:
                     # cache in session
                     session["privacy_accepted_version"] = PRIVACY_VERSION
                     return True
@@ -244,6 +258,7 @@ def _append_privacy_acceptance(user_id: str):
         )
     session["privacy_accepted_version"] = PRIVACY_VERSION
 
+
 # --------------------------------------------------------------------------
 # SoSci survey helper
 # --------------------------------------------------------------------------
@@ -265,13 +280,7 @@ def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
         if not sid_col:
             return False
 
-        sample_ids = (
-            df_samples[sid_col]
-            .dropna()
-            .astype(str)
-            .unique()
-            .tolist()
-        )
+        sample_ids = df_samples[sid_col].dropna().astype(str).unique().tolist()
         if not sample_ids:
             return False
 
@@ -286,27 +295,37 @@ def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
         logging.getLogger(__name__).warning("lab presence check failed: %s", e)
         return False
 
+
 def _user_has_metals_legacy(df: pd.DataFrame) -> bool:
     if df is None or df.empty:
         return False
     candidates = [
-        "METALS_info","lab_METALS_info","METALS","metals",
-        "metals_info","metals_info_en","metals_info_orig",
-        "elemental_concentrations","elemental_concentrations_en","elemental_concentrations_orig",
+        "METALS_info",
+        "lab_METALS_info",
+        "METALS",
+        "metals",
+        "metals_info",
+        "metals_info_en",
+        "metals_info_orig",
+        "elemental_concentrations",
+        "elemental_concentrations_en",
+        "elemental_concentrations_orig",
     ]
     for c in df.columns:
         cl = str(c).lower()
         if c in candidates or "metals" in cl or ("elemental" in cl and "concentration" in cl):
             s = (
-                df[c].fillna("")
-                    .astype(str)
-                    .str.replace("<br>", ";", regex=False)
-                    .str.strip()
-                    .replace({"nan":"","None":"","NaN":"","0":"","0.0":""})
+                df[c]
+                .fillna("")
+                .astype(str)
+                .str.replace("<br>", ";", regex=False)
+                .str.strip()
+                .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
             )
             if s.str.contains("=", regex=False).any():
                 return True
     return False
+
 
 def _build_sosci_url(user_id: str | None) -> str | None:
     if not user_id:
@@ -406,18 +425,25 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
     cols = list(df.columns)
     # Common exact names across old/new pipelines
     exact = {
-        "METALS_info", "lab_METALS_info", "METALS", "metals",
-        "metals_info", "metals_info_en", "metals_info_orig",
-        "elemental_concentrations", "elemental_concentrations_en", "elemental_concentrations_orig",
+        "METALS_info",
+        "lab_METALS_info",
+        "METALS",
+        "metals",
+        "metals_info",
+        "metals_info_en",
+        "metals_info_orig",
+        "elemental_concentrations",
+        "elemental_concentrations_en",
+        "elemental_concentrations_orig",
     }
 
     def _series_has_assignments(series: pd.Series) -> bool:
         s = (
             series.fillna("")
-                  .astype(str)
-                  .str.replace("<br>", ";", regex=False)
-                  .str.strip()
-                  .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
+            .astype(str)
+            .str.replace("<br>", ";", regex=False)
+            .str.strip()
+            .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
         )
         # our metals blob looks like "Cu=12; Zn=5" etc.
         return s.str.contains("=", regex=False).any()
@@ -434,6 +460,7 @@ def _user_has_metals(df: pd.DataFrame) -> bool:
             if _series_has_assignments(df[c]):
                 return True
     return False
+
 
 # --------------------------------------------------------------------------
 # MinIO helpers + canonical download routes (proxy through Flask)
@@ -504,6 +531,7 @@ def _stream_minio_canonical(obj_name: str):
         download_name=obj_name,
     )
 
+
 def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str):
     """
     Upload canonical CSVs (given as text) to MinIO, under:
@@ -529,8 +557,6 @@ def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str)
         logging.getLogger(__name__).error(f"Error ensuring MinIO bucket {bucket}: {e}")
         return
 
-    from io import BytesIO
-
     for filename, csv_text in csv_dict.items():
         if not csv_text:
             continue
@@ -549,6 +575,90 @@ def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str)
             except Exception as e:
                 logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
 
+
+def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
+    """
+    Upload all.zip snapshot to MinIO under:
+      canonical/<version_date>/all.zip
+      canonical/latest/all.zip
+    """
+    client = _get_minio_client()
+    if client is None:
+        logging.getLogger(__name__).warning("MinIO not configured; skipping all.zip upload")
+        return
+
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+
+    try:
+        if not client.bucket_exists(bucket):
+            client.make_bucket(bucket)
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error ensuring MinIO bucket {bucket}: {e}")
+        return
+
+    from io import BytesIO
+
+    for prefix in (f"canonical/{version_date}/", "canonical/latest/"):
+        obj_name = prefix + "all.zip"
+        try:
+            client.put_object(
+                bucket,
+                obj_name,
+                BytesIO(zip_bytes),
+                length=len(zip_bytes),
+                content_type="application/zip",
+            )
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
+
+
+# --------- Search helpers
+def _parse_sample_id_list(raw: str) -> list[str]:
+    """
+    Accept:
+      - single: "AAAA-1111"
+      - comma-separated: "AAAA-1111,BBBB-2222"
+      - whitespace/newlines: "AAAA-1111  BBBB-2222"
+    Returns cleaned non-empty tokens.
+    """
+    if not raw:
+        return []
+    # split on commas OR whitespace
+    parts = re.split(r"[;,\s]+", raw.strip())
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _get_latest_canonical_snapshot_date() -> str | None:
+    """
+    Return the latest YYYY-MM-DD for which canonical/<date>/all.zip exists
+    in MinIO. Used by search export headers.
+    """
+    client = _get_minio_client()
+    if client is None:
+        return None
+
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+
+    try:
+        dates: set[str] = set()
+        # Expect keys like: canonical/2025-12-08/all.zip
+        for obj in client.list_objects(bucket, prefix="canonical/", recursive=True):
+            parts = obj.object_name.split("/")
+            if len(parts) == 3 and parts[0] == "canonical" and parts[2] == "all.zip":
+                dates.add(parts[1])
+
+        if not dates:
+            return None
+        # Lexicographically max works for ISO dates YYYY-MM-DD
+        return max(dates)
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error listing canonical snapshots from MinIO: {e}")
+        return None
+
+
+# -------------- Endpoints for privacy acceptance ----------------
+
+
 @web_bp.post("/privacy/accept")
 @login_required
 def privacy_accept():
@@ -561,15 +671,16 @@ def privacy_accept():
     # make sure the dir exists (handle the case when path has no dir part)
     dir_name = os.path.dirname(PRIVACY_CSV_PATH)
     if dir_name:
-      os.makedirs(dir_name, exist_ok=True)
+        os.makedirs(dir_name, exist_ok=True)
 
     _append_privacy_acceptance(repo_user_id)
     return redirect(url_for("web.home"))
 
+
 # --------------------------------------------------------------------------
 # Canonical downloads (now built from Postgres on demand)
 # --------------------------------------------------------------------------
-from psycopg2.extras import RealDictCursor
+
 
 @web_bp.route("/download/canonical/samples.csv")
 @login_required
@@ -627,12 +738,28 @@ def download_canonical_samples():
     # simple "live export" header
     generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
     base_url = request.url_root.rstrip("/")
+
+    # latest citable snapshot date (may be None if not yet created)
+    snapshot_date = _get_latest_canonical_snapshot_date()
+    if snapshot_date:
+        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
+        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/samples.csv"
+        snapshot_lines = [
+            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
+            f"# Latest citable snapshot (samples.csv): {snapshot_csv_url}",
+        ]
+    else:
+        snapshot_lines = [
+            "# Latest citable snapshot: (not available yet on this instance)",
+        ]
+
     header = [
         "# ECHOrepo Canonical Dataset",
         "# File: samples.csv",
         f"# Generated at: {generated_at}",
         f"# Downloaded from: {base_url}/download/canonical/samples.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
+        *snapshot_lines,
         "",
     ]
     csv_text = "\n".join(header) + body
@@ -645,7 +772,6 @@ def download_canonical_samples():
         download_name="samples.csv",
         mimetype="text/csv",
     )
-
 
 
 @web_bp.route("/download/canonical/sample_images.csv")
@@ -678,7 +804,7 @@ def download_canonical_sample_images():
         abort(404, description="No canonical sample_images found in database")
 
     df = pd.DataFrame(rows)
-    
+
     # build CSV body into text
     buf_txt = io.StringIO()
     df.to_csv(buf_txt, index=False)
@@ -687,12 +813,27 @@ def download_canonical_sample_images():
     # simple "live export" header
     generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
     base_url = request.url_root.rstrip("/")
+
+    snapshot_date = _get_latest_canonical_snapshot_date()
+    if snapshot_date:
+        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
+        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_images.csv"
+        snapshot_lines = [
+            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
+            f"# Latest citable snapshot (sample_images.csv): {snapshot_csv_url}",
+        ]
+    else:
+        snapshot_lines = [
+            "# Latest citable snapshot: (not available yet on this instance)",
+        ]
+
     header = [
         "# ECHOrepo Canonical Dataset",
         "# File: sample_images.csv",
         f"# Generated at: {generated_at}",
         f"# Downloaded from: {base_url}/download/canonical/sample_images.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
+        *snapshot_lines,
         "",
     ]
     csv_text = "\n".join(header) + body
@@ -740,7 +881,7 @@ def download_canonical_sample_parameters():
         abort(404, description="No canonical sample_parameters found in database")
 
     df = pd.DataFrame(rows)
-    df = _drop_oxide_rows(df)  
+    df = _drop_oxide_rows(df)
 
     # build CSV body into text
     buf_txt = io.StringIO()
@@ -750,12 +891,27 @@ def download_canonical_sample_parameters():
     # simple "live export" header
     generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
     base_url = request.url_root.rstrip("/")
+
+    snapshot_date = _get_latest_canonical_snapshot_date()
+    if snapshot_date:
+        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
+        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_parameters.csv"
+        snapshot_lines = [
+            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
+            f"# Latest citable snapshot (sample_parameters.csv): {snapshot_csv_url}",
+        ]
+    else:
+        snapshot_lines = [
+            "# Latest citable snapshot: (not available yet on this instance)",
+        ]
+
     header = [
         "# ECHOrepo Canonical Dataset",
         "# File: sample_parameters.csv",
         f"# Generated at: {generated_at}",
         f"# Downloaded from: {base_url}/download/canonical/sample_parameters.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export.",
+        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
+        *snapshot_lines,
         "",
     ]
     csv_text = "\n".join(header) + body
@@ -769,6 +925,7 @@ def download_canonical_sample_parameters():
         mimetype="text/csv",
     )
 
+
 @web_bp.route("/download/canonical/all.zip")
 @login_required
 def download_canonical_zip():
@@ -777,7 +934,7 @@ def download_canonical_zip():
         "file_name": "all_canonical.zip",
         "kind": "canonical_export",
     }
-    
+
     # Version date for this canonical snapshot
     version_date = datetime.utcnow().date().isoformat()
     # Base URL for building reference links in headers
@@ -860,9 +1017,16 @@ def download_canonical_zip():
 
     _upload_canonical_csvs_to_minio(csv_contents, version_date)
 
+    # Prepare ZIP bytes once
     mem.seek(0)
+    zip_bytes = mem.getvalue()
+
+    # Also upload all.zip snapshot to MinIO
+    _upload_canonical_all_zip_to_minio(zip_bytes, version_date)
+
+    # Send to user
     return send_file(
-        mem,
+        BytesIO(zip_bytes),
         as_attachment=True,
         download_name="all_canonical.zip",
         mimetype="application/zip",
@@ -872,7 +1036,15 @@ def download_canonical_zip():
 # --------------------------------------------------------------------------
 # main UI
 # --------------------------------------------------------------------------
-@web_bp.get("/", endpoint="home")
+@web_bp.get("/", endpoint="landing")
+def landing():
+    logged_in = bool(session.get("user") or (session.get("kc") or {}).get("profile"))
+    if logged_in:
+        return redirect(url_for("web.home"))  # now /my
+    return redirect(url_for("web.explore"))
+
+
+@web_bp.get("/my", endpoint="home")
 @login_required
 def home():
     # who is this
@@ -938,9 +1110,9 @@ def home():
 
     if survey_override_enabled:
         survey_override = (request.args.get("survey") or "").strip().lower()
-        if survey_override in {"on","1","true","yes","y"}:
-            show_survey = bool(survey_url)   # ignore has_metals here
-        elif survey_override in {"off","0","false","no","n"}:
+        if survey_override in {"on", "1", "true", "yes", "y"}:
+            show_survey = bool(survey_url)  # ignore has_metals here
+        elif survey_override in {"off", "0", "false", "no", "n"}:
             show_survey = False
     # else: ignore any ?survey=... and keep show_survey as computed
 
@@ -1015,6 +1187,7 @@ def home():
         current_locale=str(get_locale() or "en"),
     )
 
+
 # --------------------------------------------------------------------------
 # misc routes
 # --------------------------------------------------------------------------
@@ -1023,16 +1196,18 @@ def home():
 def i18n_labels():
     return jsonify({"labels": build_i18n_labels(_js_base_labels())})
 
+
 @web_bp.get("/labels")
 @login_required
 def labels_json():
     loc_raw = request.args.get("locale") or str(get_locale() or "en")
     loc = _canon_locale(loc_raw)
     payload = {
-        "labels": _make_labels(loc),               # key → text (already merges catalog + overrides)
-        "by_msgid": get_overrides_msgid(loc) or {} # msgid → override text (only overrides)
+        "labels": make_labels(loc),
+        "by_msgid": get_overrides_msgid(loc) or {},
     }
     return jsonify(payload)
+
 
 @web_bp.post("/download/csv")
 @login_required
@@ -1180,7 +1355,10 @@ def download_sample_csv():
     user_key = session.get("user")
     is_owner = False
     try:
-        if settings.USER_KEY_COLUMN in df.columns and (df[settings.USER_KEY_COLUMN] == user_key).any():
+        if (
+            settings.USER_KEY_COLUMN in df.columns
+            and (df[settings.USER_KEY_COLUMN] == user_key).any()
+        ):
             is_owner = True
         if "userId" in df.columns and (df["userId"] == user_key).any():
             is_owner = True
@@ -1218,13 +1396,8 @@ def lab_import():
         abort(400, description="No file uploaded")
 
     kc_profile = (session.get("kc") or {}).get("profile") or {}
-    uploader_id = (
-        kc_profile.get("id")
-        or kc_profile.get("sub")
-        or session.get("user")
-        or "unknown"
-    )
-    
+    uploader_id = kc_profile.get("id") or kc_profile.get("sub") or session.get("user") or "unknown"
+
     filename = file.filename or ""
     try:
         if filename.lower().endswith(".xlsx"):
@@ -1265,7 +1438,7 @@ def lab_import():
 
     fieldnames = list(df.columns)
 
-    for _, row in df.iterrows():
+    for __idx, row in df.iterrows():
         raw_dict = row.to_dict()
         qr = _normalize_qr(raw_dict.get("ID") or raw_dict.get("id") or "")
         if not qr:
@@ -1362,7 +1535,6 @@ def lab_upload_post():
 
 
 @web_bp.route("/search", endpoint="search_samples", methods=["GET"])
-@login_required
 def search_samples():
     q = request.args.get("q", "").strip()
 
@@ -1387,8 +1559,19 @@ def search_samples():
         where = ["1=1"]
         params = []
         if criteria["sample_id"]:
-            where.append("sample_id ILIKE %s")
-            params.append(f"%{criteria['sample_id']}%")
+            tokens = _parse_sample_id_list(criteria["sample_id"])
+
+            if len(tokens) == 1:
+                # keep old behaviour: substring match
+                where.append("sample_id ILIKE %s")
+                params.append(f"%{tokens[0]}%")
+            else:
+                # multiple: match ANY of the tokens (OR)
+                ors = []
+                for t in tokens:
+                    ors.append("sample_id ILIKE %s")
+                    params.append(f"%{t}%")
+                where.append("(" + " OR ".join(ors) + ")")
         if criteria["country_code"]:
             where.append("country_code = %s")
             params.append(criteria["country_code"])
@@ -1408,11 +1591,25 @@ def search_samples():
 
     where_sql, params = _build_where(criteria)
 
+    def _is_logged_in() -> bool:
+        return bool(session.get("user") or (session.get("kc") or {}).get("profile"))
+
+    if fmt == "zip" and not _is_logged_in():
+        # show search page as normal, but deny export
+        abort(403, description="Please sign in to export ZIP files.")
+
     # ---- special case: export as ZIP ----
     if fmt == "zip":
         query_string = request.query_string.decode("utf-8")
         generated = datetime.utcnow().isoformat() + "Z"
-        canonical_base = "https://echorepo.quanta-labs.com/download/canonical"
+
+        # Must match the date used when uploading all.zip in canonical_all_zip
+        base_url = request.url_root.rstrip("/")
+        version_date_current = date.today().isoformat()
+        snapshot_date = _get_latest_canonical_snapshot_date()
+        version_date = snapshot_date or version_date_current
+
+        snapshot_url = f"{base_url}/download/canonical/{version_date}/all.zip"
 
         # Use the full canonical column set from data_api.py
         cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
@@ -1429,15 +1626,28 @@ def search_samples():
             samples = cur.fetchall()
 
             # sample_id is the first canonical column
-            sample_ids = [row[CANONICAL_SAMPLE_COLS.index("sample_id")] for row in samples if row[CANONICAL_SAMPLE_COLS.index("sample_id")]]
+            sample_ids = [
+                row[CANONICAL_SAMPLE_COLS.index("sample_id")]
+                for row in samples
+                if row[CANONICAL_SAMPLE_COLS.index("sample_id")]
+            ]
             # to avoid "IN ()" when no results
             if not sample_ids:
                 # return empty zip
                 mem = io.BytesIO()
                 with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-                    zf.writestr("samples_filtered.csv", "sample_id,timestamp_utc,country_code,ph,lat,lon,collected_by\n")
-                    zf.writestr("sample_images_filtered.csv", "sample_id,country_code,image_id,image_url,image_description_orig,image_description_en,collected_by,timestamp_utc,licence\n")
-                    zf.writestr("sample_parameters_filtered.csv", "sample_id,country_code,parameter_code,parameter_name,value,uom,analysis_method,analysis_date,lab_id,created_by,licence,parameter_uri\n")
+                    zf.writestr(
+                        "samples_filtered.csv",
+                        "sample_id,timestamp_utc,country_code,ph,lat,lon,collected_by\n",
+                    )
+                    zf.writestr(
+                        "sample_images_filtered.csv",
+                        "sample_id,country_code,image_id,image_url,image_description_orig,image_description_en,collected_by,timestamp_utc,licence\n",
+                    )
+                    zf.writestr(
+                        "sample_parameters_filtered.csv",
+                        "sample_id,country_code,parameter_code,parameter_name,value,uom,analysis_method,analysis_date,lab_id,created_by,licence,parameter_uri\n",
+                    )
                 mem.seek(0)
                 return send_file(
                     mem,
@@ -1472,12 +1682,12 @@ def search_samples():
 
         # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
         def _row_is_oxide(t):
-           code = (t[2] or "").strip()
-           name = (t[3] or "").strip()
-           return _looks_like_oxide(code) or _looks_like_oxide(name)
+            code = (t[2] or "").strip()
+            name = (t[3] or "").strip()
+            return _looks_like_oxide(code) or _looks_like_oxide(name)
 
         params_rows = [r for r in params_rows if not _row_is_oxide(r)]
-        
+
         # build zip in-memory
         mem = io.BytesIO()
         with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
@@ -1487,10 +1697,12 @@ def search_samples():
             # ----- METADATA HEADER -----
             out1.write("# ECHOrepo Filtered Dataset\n")
             out1.write("# Source table: samples (filtered subset)\n")
-            out1.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out1.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out1.write(f"# Generated at: {generated}\n")
             out1.write(f"# Query: {query_string}\n")
-            out1.write("# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n")
+            out1.write(
+                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+            )
             out1.write("\n")
 
             w1 = csv.writer(out1)
@@ -1504,23 +1716,34 @@ def search_samples():
 
             zf.writestr("samples_filtered.csv", out1.getvalue())
 
-
             # sample_images_filtered.csv
             out2 = io.StringIO()
 
             # ----- METADATA HEADER -----
             out2.write("# ECHOrepo Filtered Dataset\n")
-            out2.write("# Source table: sample_images (joined subset)\n")
-            out2.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out2.write("# Source table: sample_images (filtered subset)\n")
+            out2.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out2.write(f"# Generated at: {generated}\n")
             out2.write(f"# Query: {query_string}\n")
-            out2.write("# Note: Filtering is applied by sample_id match. Not a stable or citable dataset.\n")
+            out2.write(
+                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+            )
             out2.write("\n")
 
             w2 = csv.writer(out2)
-            w2.writerow(["sample_id", "country_code", "image_id", "image_url",
-                         "image_description_orig", "image_description_en",
-                         "collected_by", "timestamp_utc", "licence"])
+            w2.writerow(
+                [
+                    "sample_id",
+                    "country_code",
+                    "image_id",
+                    "image_url",
+                    "image_description_orig",
+                    "image_description_en",
+                    "collected_by",
+                    "timestamp_utc",
+                    "licence",
+                ]
+            )
             for r in images:
                 w2.writerow(r)
             zf.writestr("sample_images_filtered.csv", out2.getvalue())
@@ -1530,17 +1753,32 @@ def search_samples():
 
             # ----- METADATA HEADER -----
             out3.write("# ECHOrepo Filtered Dataset\n")
-            out3.write("# Source table: sample_parameters (joined subset)\n")
-            out3.write(f"# Download full dataset: {canonical_base}/all.zip\n")
+            out3.write("# Source table: samples (filtered subset)\n")
+            out3.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out3.write(f"# Generated at: {generated}\n")
             out3.write(f"# Query: {query_string}\n")
-            out3.write("# Note: Oxides may be removed depending on platform settings. Not a stable or citable dataset.\n")
+            out3.write(
+                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+            )
             out3.write("\n")
 
             w3 = csv.writer(out3)
-            w3.writerow(["sample_id", "country_code", "parameter_code", "parameter_name",
-                         "value", "uom", "analysis_method", "analysis_date",
-                         "lab_id", "created_by", "licence", "parameter_uri"])
+            w3.writerow(
+                [
+                    "sample_id",
+                    "country_code",
+                    "parameter_code",
+                    "parameter_name",
+                    "value",
+                    "uom",
+                    "analysis_method",
+                    "analysis_date",
+                    "lab_id",
+                    "created_by",
+                    "licence",
+                    "parameter_uri",
+                ]
+            )
             for r in params_rows:
                 w3.writerow(r)
             zf.writestr("sample_parameters_filtered.csv", out3.getvalue())
@@ -1593,6 +1831,7 @@ def search_samples():
         total_pages=total_pages,
         total_rows=total_rows,
     )
+
 
 @web_bp.route("/admin/usage")
 @login_required  # TODO: restrict to admins if possible
@@ -1703,6 +1942,7 @@ def usage_dashboard():
         by_type=by_type,
     )
 
+
 @web_bp.get("/download/canonical/<date>/<filename>")
 @login_required
 def download_canonical_version(date, filename):
@@ -1713,3 +1953,793 @@ def download_canonical_version(date, filename):
     """
     obj_name = f"{date}/{filename}"
     return _stream_minio_canonical(obj_name)
+
+
+from echorepo.i18n import base_labels
+
+
+@web_bp.get("/explore", endpoint="explore")
+def explore():
+    base = base_labels()  # <-- THIS IS THE KEY LINE
+
+    i18n = {
+        "labels": build_i18n_labels(base),
+        "by_msgid": {},
+    }
+
+    return render_template(
+        "explore.html",
+        jitter_m=int(settings.MAX_JITTER_METERS),
+        lat_col=settings.LAT_COL,
+        lon_col=settings.LON_COL,
+        I18N=i18n,
+        current_locale=str(get_locale() or "en"),
+        public_mode=True,
+    )
+
+
+@web_bp.get("/public/others_geojson")
+def public_others_geojson():
+    # Keep this very lightweight: only what the map needs.
+    sql = """
+    SELECT
+        sample_id, lat, lon, ph, country_code, timestamp_utc,
+        soil_texture_en, soil_texture_orig,
+        soil_structure_en, soil_structure_orig,
+        earthworms_count,
+        contamination_plastic, contamination_debris,
+        contamination_other_en, contamination_other_orig,
+        observations_en, observations_orig,
+        metals_info_en, metals_info_orig,
+        location_accuracy_m
+    FROM samples
+    WHERE lat IS NOT NULL AND lon IS NOT NULL
+    ORDER BY timestamp_utc DESC
+    LIMIT 20000
+    """
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    feats = []
+    for r in rows:
+        try:
+            lat = float(r["lat"])
+            lon = float(r["lon"])
+        except Exception:
+            continue
+
+        feats.append(
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "properties": {
+                    "sampleId": r["sample_id"],
+                    "PH_ph": r.get("ph"),
+                    "country_code": r.get("country_code"),
+                    "timestamp_utc": (
+                        r["timestamp_utc"].isoformat() if r.get("timestamp_utc") else None
+                    ),
+                    # soil descriptors (your map.js "pick(...)" already supports these)
+                    "soil_texture_en": r.get("soil_texture_en"),
+                    "soil_texture_orig": r.get("soil_texture_orig"),
+                    "soil_structure_en": r.get("soil_structure_en"),
+                    "soil_structure_orig": r.get("soil_structure_orig"),
+                    # simple counts/flags
+                    "earthworms_count": r.get("earthworms_count"),
+                    "contamination_plastic": r.get("contamination_plastic"),
+                    "contamination_debris": r.get("contamination_debris"),
+                    "contamination_other_en": r.get("contamination_other_en"),
+                    "contamination_other_orig": r.get("contamination_other_orig"),
+                    "observations_en": r.get("observations_en"),
+                    "observations_orig": r.get("observations_orig"),
+                    # “metals blob” if you have it in samples
+                    "metals_info_en": r.get("metals_info_en"),
+                    "metals_info_orig": r.get("metals_info_orig"),
+                    # optional
+                    "location_accuracy_m": r.get("location_accuracy_m"),
+                },
+            }
+        )
+
+    return jsonify({"type": "FeatureCollection", "features": feats})
+
+
+@web_bp.get("/public/sample_image/<sample_id>")
+def public_sample_image(sample_id: str):
+    # Return 1 thumbnail-ish image URL (or None) for a sample_id
+    sql = """
+      SELECT image_url, image_description_en, image_description_orig
+      FROM sample_images
+      WHERE sample_id = %s
+        AND image_url IS NOT NULL AND image_url <> ''
+      ORDER BY image_id
+      LIMIT 1
+    """
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql, (sample_id,))
+        row = cur.fetchone()
+
+    if not row:
+        return jsonify({"ok": True, "image_url": None})
+
+    desc = row.get("image_description_en") or row.get("image_description_orig") or ""
+    return jsonify({"ok": True, "image_url": row.get("image_url"), "caption": desc})
+
+
+@web_bp.post("/lab-import-biodiversity")
+@login_required
+def lab_import_biodiversity():
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    if not can_upload_lab_data(user_key):
+        abort(403, description="Not authorised to upload lab data")
+
+    file = request.files.get("file")
+    if not file:
+        abort(400, description="No file uploaded")
+
+    kc_profile = (session.get("kc") or {}).get("profile") or {}
+    uploader_id = kc_profile.get("id") or kc_profile.get("sub") or session.get("user") or "unknown"
+    filename = (file.filename or "").strip()
+
+    log = logging.getLogger(__name__)
+
+    # --- Read XLSX (only the sheet you want) ---
+    try:
+        df = pd.read_excel(
+            file,
+            engine="openpyxl",
+            sheet_name="clean_phylum",
+            dtype=str,  # keep everything as text; we'll parse counts ourselves
+        )
+    except Exception as e:
+        abort(400, description=f"Cannot read XLSX (sheet clean_phylum): {e}")
+
+    if df is None or df.empty:
+        abort(400, description="Uploaded file has no rows")
+
+    # Drop fully empty columns (Excel exports often have trailing blanks)
+    df = df.dropna(axis=1, how="all")
+
+    log.warning(
+        "BIOUPLOAD: loaded sheet rows=%d cols=%d file=%s", len(df), len(df.columns), filename
+    )
+
+    # --- Find OTU column ---
+    otu_col = None
+    for cand in ("OTU ID", "OTU_ID", "OTU", "otu_id", "otu"):
+        if cand in df.columns:
+            otu_col = cand
+            break
+    if not otu_col:
+        otu_col = df.columns[0]
+
+    # Detect sample columns like "AAUU-9633-16S" / "ABYU-1769-ITS"
+    sample_pat = re.compile(r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$", re.IGNORECASE)
+    sample_cols = [c for c in df.columns if c != otu_col and sample_pat.match(str(c).strip())]
+
+    if not sample_cols:
+        abort(
+            400,
+            description="No sample columns found. Expected headers like 'AAUU-9633-16S' or 'AAUU-9633-ITS'.",
+        )
+
+    # Taxonomy columns = everything else (except OTU + sample columns)
+    taxa_cols = [c for c in df.columns if c not in ([otu_col] + sample_cols)]
+    # Drop taxonomy cols that are fully empty
+    clean_taxa_cols = []
+    for c in taxa_cols:
+        s = df[c]
+        if s.notna().any() and (s.astype(str).str.strip() != "").any():
+            clean_taxa_cols.append(c)
+    taxa_cols = clean_taxa_cols
+    has_taxa = bool(taxa_cols)
+
+    # Prepare OTU ids and taxa JSON per row index (cheap, avoids recomputing per sample)
+    otu_ids = df[otu_col].fillna("").astype(str).str.strip().tolist()
+    if has_taxa:
+        taxa_json_by_row = []
+        taxa_df = df[taxa_cols].fillna("")
+        for _, rr in taxa_df.iterrows():
+            d = {}
+            for c in taxa_cols:
+                v = str(rr.get(c) or "").strip()
+                if v:
+                    d[str(c)] = v
+            taxa_json_by_row.append(json.dumps(d, ensure_ascii=False) if d else None)
+    else:
+        taxa_json_by_row = [None] * len(df)
+
+    # --- Postgres insert ---
+    upsert_sql = """
+      INSERT INTO sample_otu_counts
+        (sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file)
+      VALUES
+        (%s, %s, %s, %s, %s::jsonb, now(), %s, %s)
+      ON CONFLICT (sample_id, marker, otu_id) DO UPDATE SET
+        count       = EXCLUDED.count,
+        taxa        = COALESCE(EXCLUDED.taxa, sample_otu_counts.taxa),
+        uploaded_at = now(),
+        uploaded_by = EXCLUDED.uploaded_by,
+        source_file = EXCLUDED.source_file
+    """
+
+    def _to_float(v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        if not s or s.lower() in {"nan", "none", "null"}:
+            return None
+        # treat "0" as zero
+        try:
+            return float(s.replace(",", "."))
+        except Exception:
+            return None
+
+    CHUNK = 20000
+    total_rows = 0
+
+    try:
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            # ensure table exists (ok for now; move to migrations later)
+            cur.execute("""
+              CREATE TABLE IF NOT EXISTS sample_otu_counts (
+                sample_id TEXT NOT NULL,
+                marker TEXT NOT NULL,
+                otu_id TEXT NOT NULL,
+                count DOUBLE PRECISION,
+                taxa JSONB,
+                uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                uploaded_by TEXT,
+                source_file TEXT,
+                PRIMARY KEY (sample_id, marker, otu_id)
+              )
+            """)
+            conn.commit()
+
+            batch = []
+
+            # iterate column-by-column (no melt)
+            for col in sample_cols:
+                sample_id, marker = col.rsplit("-", 1)
+                sample_id = sample_id.strip().upper()
+                marker = marker.strip().upper()
+
+                vals = df[col].tolist()
+                for i, v in enumerate(vals):
+                    otu_id = otu_ids[i]
+                    if not otu_id:
+                        continue
+
+                    count = _to_float(v)
+                    if count is None or count == 0:
+                        continue
+
+                    batch.append(
+                        (
+                            sample_id,
+                            marker,
+                            otu_id,
+                            count,
+                            taxa_json_by_row[i],
+                            uploader_id,
+                            filename,
+                        )
+                    )
+
+                    if len(batch) >= CHUNK:
+                        cur.executemany(upsert_sql, batch)
+                        conn.commit()
+                        total_rows += len(batch)
+                        log.warning("BIOUPLOAD: inserted %d rows so far...", total_rows)
+                        batch.clear()
+
+            if batch:
+                cur.executemany(upsert_sql, batch)
+                conn.commit()
+                total_rows += len(batch)
+                batch.clear()
+
+    except Exception as e:
+        abort(500, description=f"Postgres import failed: {e}")
+
+    if total_rows == 0:
+        abort(400, description="No non-zero OTU counts found to import (all empty/zero?).")
+
+    g._analytics_extra = {
+        "upload_type": "biodiversity_otu_xlsx",
+        "filename": filename,
+        "rows_inserted": total_rows,
+        "sheet": "clean_phylum",
+    }
+
+    log.warning("BIOUPLOAD: done, rows_inserted=%d", total_rows)
+    return redirect(url_for("web.home"))
+
+
+@web_bp.post("/lab-import-auto")
+@login_required
+def lab_import_auto():
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    if not can_upload_lab_data(user_key):
+        abort(403, description="Not authorised to upload lab data")
+
+    file = request.files.get("file")
+    if not file:
+        abort(400, description="No file uploaded")
+
+    filename = (file.filename or "").strip()
+    data = file.read()
+    if not data:
+        abort(400, description="Uploaded file is empty")
+
+    kc_profile = (session.get("kc") or {}).get("profile") or {}
+    uploader_id = kc_profile.get("id") or kc_profile.get("sub") or session.get("user") or "unknown"
+
+    if filename.lower().endswith(".xlsx"):
+        inserted = _import_biodiversity_xlsx_streaming(data, filename, uploader_id)
+
+        g._analytics_extra = {
+            "upload_type": "biodiversity_otu_xlsx",
+            "filename": filename,
+            "rows_inserted": inserted,
+        }
+        return redirect(url_for("web.home"))
+
+    # fallback to your normal metals importer
+    _import_metals_file_bytes(data, filename, uploader_id)
+    return redirect(url_for("web.home"))
+
+
+def _looks_like_biodiversity_xlsx(xlsx_bytes: bytes) -> bool:
+    """
+    Detect OTU XLSX by presence of sheet 'clean_phylum' (case-insensitive) OR
+    by columns that look like '<QR>-16S'/'<QR>-ITS' and 'OTU ID'.
+    Cheap sniff: open workbook metadata only.
+    """
+    try:
+        xls = pd.ExcelFile(io.BytesIO(xlsx_bytes), engine="openpyxl")
+        sheet_names = [s.strip().lower() for s in xls.sheet_names]
+        if "clean_phylum" in sheet_names:
+            return True
+
+        # fallback: peek first sheet headers quickly
+        df0 = pd.read_excel(xls, sheet_name=0, nrows=1, dtype=str)
+        cols = [str(c).strip() for c in df0.columns]
+        if any(c.lower() in {"otu id", "otu_id", "otu"} for c in cols):
+            pat = re.compile(r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$", re.IGNORECASE)
+            if any(pat.match(c) for c in cols):
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _import_metals_file_bytes(data: bytes, filename: str, uploader_id: str):
+    """
+    Preserve your existing /lab-import behavior, but operate on bytes.
+    """
+    # parse to dataframe like before
+    try:
+        if filename.lower().endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(data))
+        else:
+            # try TSV then CSV
+            try:
+                df = pd.read_csv(io.BytesIO(data), sep="\t")
+            except Exception:
+                df = pd.read_csv(io.BytesIO(data))
+    except Exception as e:
+        abort(400, description=f"Cannot read file: {e}")
+
+    if df.empty:
+        abort(400, description="Uploaded file has no rows")
+
+    db_path = settings.SQLITE_PATH
+    if not os.path.exists(db_path):
+        abort(500, description=f"SQLite database not found at {db_path}")
+
+    conn = sqlite3.connect(db_path)
+    _ensure_lab_enrichment(conn)
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS lab_enrichment (
+          qr_code    TEXT NOT NULL,
+          param      TEXT NOT NULL,
+          value      TEXT,
+          unit       TEXT,
+          user_id    TEXT,
+          raw_row    TEXT,
+          updated_at TEXT DEFAULT (datetime('now')),
+          PRIMARY KEY (qr_code, param)
+        )
+    """)
+
+    fieldnames = list(df.columns)
+
+    for __idx, row in df.iterrows():
+        raw_dict = row.to_dict()
+        qr = _normalize_qr(raw_dict.get("ID") or raw_dict.get("id") or "")
+        if not qr:
+            continue
+
+        clean_raw = {k: ("" if pd.isna(v) else v) for k, v in raw_dict.items()}
+        raw_json = json.dumps(clean_raw, ensure_ascii=False)
+
+        for idx, col in enumerate(fieldnames):
+            if col in ("ID", "id"):
+                continue
+            val = row.get(col)
+            if pd.isna(val) or val == "":
+                continue
+            if str(col).lower().startswith("unit"):
+                continue
+
+            param = str(col).strip()
+            unit = ""
+
+            if idx + 1 < len(fieldnames):
+                maybe_unit_col = fieldnames[idx + 1]
+                if str(maybe_unit_col).lower().startswith("unit"):
+                    uval = row.get(maybe_unit_col)
+                    if not pd.isna(uval):
+                        unit = str(uval).strip()
+
+            cur.execute(
+                """
+                INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(qr_code, param) DO UPDATE SET
+                  value=excluded.value,
+                  unit=excluded.unit,
+                  user_id=excluded.user_id,
+                  raw_row=excluded.raw_row,
+                  updated_at=datetime('now')
+            """,
+                (qr, param, str(val), unit, uploader_id, raw_json),
+            )
+
+            conv = _oxide_to_metal(param, val)
+            if conv is not None:
+                metal_param, metal_val = conv
+                cur.execute(
+                    """
+                    INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+                    ON CONFLICT(qr_code, param) DO UPDATE SET
+                      value=excluded.value,
+                      unit=excluded.unit,
+                      user_id=excluded.user_id,
+                      raw_row=excluded.raw_row,
+                      updated_at=datetime('now')
+                """,
+                    (qr, metal_param, str(metal_val), unit, uploader_id, raw_json),
+                )
+
+    conn.commit()
+    conn.close()
+
+
+def _import_biodiversity_xlsx_bytes(xlsx_bytes: bytes, filename: str, uploader_id: str):
+    log = logging.getLogger(__name__)
+
+    try:
+        xls = pd.ExcelFile(io.BytesIO(xlsx_bytes), engine="openpyxl")
+        sheets = {s.strip().lower(): s for s in xls.sheet_names}
+        sheet = sheets.get("clean_phylum")
+        if not sheet:
+            abort(400, description="Sheet 'clean_phylum' not found in XLSX")
+        df = pd.read_excel(xls, sheet_name=sheet, dtype=str)
+    except Exception as e:
+        abort(400, description=f"Cannot read biodiversity XLSX: {e}")
+
+    if df is None or df.empty:
+        abort(400, description="Uploaded biodiversity file has no rows")
+
+    df = df.dropna(axis=1, how="all")
+    log.warning(
+        "BIOUPLOAD(auto): loaded sheet=%s rows=%d cols=%d file=%s",
+        sheet,
+        len(df),
+        len(df.columns),
+        filename,
+    )
+
+    otu_col = None
+    for cand in ("OTU ID", "OTU_ID", "OTU", "otu_id", "otu"):
+        if cand in df.columns:
+            otu_col = cand
+            break
+    if not otu_col:
+        otu_col = df.columns[0]
+
+    sample_pat = re.compile(r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$", re.IGNORECASE)
+    sample_cols = [c for c in df.columns if c != otu_col and sample_pat.match(str(c).strip())]
+
+    if not sample_cols:
+        abort(400, description="No OTU sample columns found (expected 'AAUU-9633-16S'/'...-ITS').")
+
+    taxa_cols = [c for c in df.columns if c not in ([otu_col] + sample_cols)]
+    clean_taxa_cols = []
+    for c in taxa_cols:
+        s = df[c]
+        if s.notna().any() and (s.astype(str).str.strip() != "").any():
+            clean_taxa_cols.append(c)
+    taxa_cols = clean_taxa_cols
+    has_taxa = bool(taxa_cols)
+
+    otu_ids = df[otu_col].fillna("").astype(str).str.strip().tolist()
+
+    if has_taxa:
+        taxa_json_by_row = []
+        taxa_df = df[taxa_cols].fillna("")
+        for _, rr in taxa_df.iterrows():
+            d = {}
+            for c in taxa_cols:
+                v = str(rr.get(c) or "").strip()
+                if v:
+                    d[str(c)] = v
+            taxa_json_by_row.append(json.dumps(d, ensure_ascii=False) if d else None)
+    else:
+        taxa_json_by_row = [None] * len(df)
+
+    def _to_float(v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        if not s or s.lower() in {"nan", "none", "null"}:
+            return None
+        try:
+            return float(s.replace(",", "."))
+        except Exception:
+            return None
+
+    upsert_sql = """
+      INSERT INTO sample_otu_counts
+        (sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file)
+      VALUES
+        (%s, %s, %s, %s, %s::jsonb, now(), %s, %s)
+      ON CONFLICT (sample_id, marker, otu_id) DO UPDATE SET
+        count       = EXCLUDED.count,
+        taxa        = COALESCE(EXCLUDED.taxa, sample_otu_counts.taxa),
+        uploaded_at = now(),
+        uploaded_by = EXCLUDED.uploaded_by,
+        source_file = EXCLUDED.source_file
+    """
+
+    chunk = 20000
+    total_rows = 0
+    batch = []
+
+    try:
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+              CREATE TABLE IF NOT EXISTS sample_otu_counts (
+                sample_id TEXT NOT NULL,
+                marker TEXT NOT NULL,
+                otu_id TEXT NOT NULL,
+                count DOUBLE PRECISION,
+                taxa JSONB,
+                uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                uploaded_by TEXT,
+                source_file TEXT,
+                PRIMARY KEY (sample_id, marker, otu_id)
+              )
+            """)
+            conn.commit()
+
+            for col in sample_cols:
+                sample_id, marker = str(col).strip().rsplit("-", 1)
+                sample_id = sample_id.strip().upper()
+                marker = marker.strip().upper()
+
+                vals = df[col].tolist()
+                for i, v in enumerate(vals):
+                    otu_id = otu_ids[i]
+                    if not otu_id:
+                        continue
+
+                    count = _to_float(v)
+                    if count is None or count == 0:
+                        continue
+
+                    batch.append(
+                        (
+                            sample_id,
+                            marker,
+                            otu_id,
+                            float(count),
+                            taxa_json_by_row[i],
+                            uploader_id,
+                            filename,
+                        )
+                    )
+
+                    if len(batch) >= chunk:
+                        cur.executemany(upsert_sql, batch)
+                        conn.commit()
+                        total_rows += len(batch)
+                        log.warning("BIOUPLOAD(auto): inserted %d rows so far...", total_rows)
+                        batch.clear()
+
+            if batch:
+                cur.executemany(upsert_sql, batch)
+                conn.commit()
+                total_rows += len(batch)
+
+    except Exception as e:
+        abort(500, description=f"Postgres biodiversity import failed: {e}")
+
+    if total_rows == 0:
+        abort(400, description="No non-zero OTU counts found to import (all empty/zero?).")
+
+    log.warning("BIOUPLOAD(auto): done, rows_inserted=%d", total_rows)
+
+
+def _import_biodiversity_xlsx_streaming(xlsx_bytes: bytes, filename: str, uploader_id: str):
+    sample_pat = re.compile(r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$", re.IGNORECASE)
+
+    try:
+        wb = load_workbook(BytesIO(xlsx_bytes), read_only=True, data_only=True)
+    except Exception as e:
+        abort(400, description=f"Cannot open XLSX: {e}")
+
+    if "clean_phylum" not in wb.sheetnames:
+        abort(400, description="XLSX does not contain required sheet 'clean_phylum'")
+
+    ws = wb["clean_phylum"]
+
+    rows_iter = ws.iter_rows(values_only=True)
+
+    try:
+        header = next(rows_iter)
+    except StopIteration:
+        abort(400, description="Sheet 'clean_phylum' is empty")
+
+    header = [("" if v is None else str(v).strip()) for v in header]
+
+    if not header:
+        abort(400, description="Sheet header is empty")
+
+    otu_col_idx = 0
+
+    sample_cols = []
+    for idx, col in enumerate(header):
+        if idx == otu_col_idx:
+            continue
+        if sample_pat.match(col):
+            sample_cols.append((idx, col))
+
+    if not sample_cols:
+        abort(400, description="No sample columns found like ABCD-1234-16S or ABCD-1234-ITS")
+
+    taxa_cols = []
+    for idx, col in enumerate(header):
+        if idx == otu_col_idx:
+            continue
+        if any(idx == sidx for sidx, _ in sample_cols):
+            continue
+        taxa_cols.append((idx, col))
+
+    insert_sql = """
+        INSERT INTO sample_otu_counts
+            (sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file)
+        VALUES
+            (%s, %s, %s, %s, %s::jsonb, now(), %s, %s)
+        ON CONFLICT (sample_id, marker, otu_id) DO UPDATE SET
+            count       = EXCLUDED.count,
+            taxa        = COALESCE(EXCLUDED.taxa, sample_otu_counts.taxa),
+            uploaded_at = now(),
+            uploaded_by = EXCLUDED.uploaded_by,
+            source_file = EXCLUDED.source_file
+    """
+
+    def split_sample_marker(s: str):
+        parts = s.rsplit("-", 1)
+        if len(parts) != 2:
+            return s.strip().upper(), ""
+        return parts[0].strip().upper(), parts[1].strip().upper()
+
+    def to_float_or_none(v):
+        if v is None:
+            return None
+        s = str(v).strip().replace(",", ".")
+        if not s:
+            return None
+        try:
+            return float(s)
+        except Exception:
+            return None
+
+    batch = []
+    batch_size = 5000
+    inserted = 0
+
+    try:
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS sample_otu_counts (
+                    sample_id TEXT NOT NULL,
+                    marker TEXT NOT NULL,
+                    otu_id TEXT NOT NULL,
+                    count DOUBLE PRECISION,
+                    taxa JSONB,
+                    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    uploaded_by TEXT,
+                    source_file TEXT,
+                    PRIMARY KEY (sample_id, marker, otu_id)
+                )
+            """)
+
+            cur.execute("""
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name='sample_otu_counts' AND column_name='taxa'
+            """)
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE sample_otu_counts ADD COLUMN taxa JSONB")
+
+            for row in rows_iter:
+                otu_id = "" if row[otu_col_idx] is None else str(row[otu_col_idx]).strip()
+                if not otu_id:
+                    continue
+
+                taxa_dict = {}
+                for idx, col_name in taxa_cols:
+                    val = row[idx] if idx < len(row) else None
+                    if val is None:
+                        continue
+                    sval = str(val).strip()
+                    if sval:
+                        taxa_dict[col_name] = sval
+
+                taxa_json = json.dumps(taxa_dict, ensure_ascii=False) if taxa_dict else None
+
+                for idx, sample_col in sample_cols:
+                    val = row[idx] if idx < len(row) else None
+                    count = to_float_or_none(val)
+                    if count is None or count == 0:
+                        continue
+
+                    sample_id, marker = split_sample_marker(sample_col)
+                    if not sample_id or not marker:
+                        continue
+
+                    batch.append(
+                        (sample_id, marker, otu_id, count, taxa_json, uploader_id, filename)
+                    )
+
+                    if len(batch) >= batch_size:
+                        cur.executemany(insert_sql, batch)
+                        inserted += len(batch)
+                        batch.clear()
+
+            if batch:
+                cur.executemany(insert_sql, batch)
+                inserted += len(batch)
+
+            conn.commit()
+
+    except Exception as e:
+        abort(500, description=f"Postgres biodiversity import failed: {e}")
+
+    return inserted
+
+
+@web_bp.get("/public/sample_piechart/<sample_id>")
+def public_sample_piechart(sample_id: str):
+    marker = (request.args.get("marker") or "16S").strip()
+    level = (request.args.get("level") or "Genus").strip()
+
+    # adapt path to however you store them in MinIO / storage
+    image_url = f"/storage/biodiversity/piecharts/{marker}/{level}/{sample_id}.png"
+
+    return jsonify(
+        {
+            "ok": True,
+            "image_url": image_url,
+            "caption": f"{marker} · {level}",
+        }
+    )

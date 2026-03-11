@@ -47,7 +47,7 @@ services:
   libretranslate:
     profiles: ["devtools"]
     image: libretranslate/libretranslate:latest
-    container_name: libretranslate
+    # container_name: libretranslate
     ports:
       - "5001:5000"
     environment:

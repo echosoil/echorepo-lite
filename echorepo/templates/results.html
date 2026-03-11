@@ -15,18 +15,6 @@
   </li>
 {% endblock %}
 
-{# RIGHT NAV #}
-{% block nav_right %}
-  <div class="text-white-50 small me-2">{{ _('Logged in as') }}</div>
-  <div class="chip bg-white">
-    <i class="bi bi-person-badge"></i>
-    <strong id="userKeyCopy">{{ user_key }}</strong>
-  </div>
-  <a class="btn btn-sm btn-warning" href="{{ url_for('logout') }}">
-    <i class="bi bi-box-arrow-right"></i> {{ _('Logout') }}
-  </a>
-{% endblock %}
-
 {% block extra_css %}
   <!-- Leaflet + MarkerCluster CSS -->
   <link rel="stylesheet"

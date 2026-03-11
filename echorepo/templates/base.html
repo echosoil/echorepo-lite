@@ -135,7 +135,25 @@
             </ul>
           </div>
 
-          {% block nav_right %}{% endblock %}
+          {% block nav_right %}
+            {% if g.user %}
+              <div class="text-white-50 small me-2">{{ _('Logged in as') }}</div>
+              <div class="chip bg-white">
+                <i class="bi bi-person-badge"></i>
+                <strong>{{ g.user.email }}</strong>
+              </div>
+              <a class="btn btn-sm btn-warning"
+                href="{{ url_for('auth.logout') }}">
+                <i class="bi bi-box-arrow-right"></i> {{ _('Logout') }}
+              </a>
+            {% else %}
+              <a class="btn btn-outline-light btn-sm"
+                href="{{ url_for('auth.login') }}">
+                {{ _('Sign in') }}
+              </a>
+            {% endif %}
+          {% endblock %}
+
         </div>
       </div>
     </div>
@@ -155,9 +173,27 @@
         </small>
       </div>
       <div class="col-md-4 text-md-end">
-        <span class="chip" title="{{ _('EU-funded') }}">
-          <i class="bi bi-stars"></i> {{ _('EU-funded initiative') }}
-        </span>
+        <div class="d-flex justify-content-md-end align-items-center gap-3 flex-wrap">
+          <!-- UKRI logo -->
+          <a href="https://www.ukri.org" target="_blank" rel="noopener">
+          <img
+            src="{{ url_for('static', filename='img/UKRI_8364f70b77_crop1_v2.png') }}"
+            alt="{{ _('Funded by UK Research and Innovation (UKRI)') }}"
+            style="height:50px; max-width:100%;"
+            loading="lazy">
+          </a>
+          <!-- EU co-funded logo -->
+          <a href="https://european-union.europa.eu" target="_blank" rel="noopener">
+          <img
+            src="{{ url_for('static', filename='img/EN_Co-funded_by_the_EU_POS_v2.png') }}"
+            alt="{{ _('Co-funded by the European Union') }}"
+            style="height:50px; max-width:100%;"
+            loading="lazy">
+          </a>
+        </div>
+        <small class="text-muted d-block mt-1">
+          {{ _('Funded by the European Union and UK Research and Innovation') }}
+        </small>
       </div>
     </div>
   </footer>

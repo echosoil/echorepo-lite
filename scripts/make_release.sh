@@ -40,19 +40,16 @@ else
   echo "[WARN] no .env in $DEV_REPO_DIR"
 fi
 
-# compiled translations
-# mkdir -p "$TMPDIR/echorepo/translations"
-# rsync -a \
-#   --prune-empty-dirs \
-#   --include '*/' \
-#   --include 'messages.mo' \
-#   --exclude '*' \
-#   "$DEV_REPO_DIR/echorepo/translations/" \
-#   "$TMPDIR/echorepo/translations/"
-# echo "[INFO] copied .mo files from dev into tmp"
+# ----------------------------------------------------------------------------
+# 2) remove existing libretranslate container (if any)
+# ----------------------------------------------------------------------------
+if docker ps -a --format '{{.Names}}' | grep -qx libretranslate; then
+  echo "[INFO] removing existing libretranslate container"
+  docker rm -f libretranslate
+fi
 
 # ---------------------------------------------------------------------------
-# 2) go to PROD and do git stuff
+# 3) go to PROD and do git stuff
 # ---------------------------------------------------------------------------
 cd "$PROD_REPO_DIR"
 
@@ -78,7 +75,7 @@ if ! git merge --no-ff origin/develop; then
   git commit -m "Merge origin/develop into main (auto-resolve docker-compose.prod.yml)"
 fi
 # ---------------------------------------------------------------------------
-# 3) restore into PROD
+# 4) restore into PROD
 # ---------------------------------------------------------------------------
 if [[ -f "$TMPDIR/.env" ]]; then
   cp "$TMPDIR/.env" .env
@@ -89,7 +86,7 @@ fi
 # echo "[INFO] restored .mo files into prod"
 
 # ---------------------------------------------------------------------------
-# 4) tag + push
+# 5) tag + push
 # ---------------------------------------------------------------------------
 TAG="v$(date +%Y.%m.%d-%H%M)"
 
