@@ -2733,9 +2733,19 @@ def public_sample_piechart(sample_id: str):
     marker = (request.args.get("marker") or "16S").strip()
     level = (request.args.get("level") or "Genus").strip()
 
-    # adapt path to however you store them in MinIO / storage
-    image_url = f"/storage/biodiversity/piecharts/{marker}/{level}/{sample_id}.png"
+    client = _get_minio_client()
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+    object_name = f"biodiversity/piecharts/{marker}/{level}/{sample_id}.png"
 
+    if client is None:
+        return jsonify({"ok": True, "image_url": None, "caption": ""})
+
+    try:
+        client.stat_object(bucket, object_name)
+    except Exception:
+        return jsonify({"ok": True, "image_url": None, "caption": ""})
+
+    image_url = f"/storage/{object_name}"
     return jsonify(
         {
             "ok": True,
