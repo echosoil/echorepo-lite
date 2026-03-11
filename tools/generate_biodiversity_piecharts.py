@@ -237,8 +237,7 @@ def make_piechart_for_sample(
 
 def main():
     marker = os.getenv("BIODIV_MARKER", "16S")
-    level = os.getenv("BIODIV_LEVEL", "Genus")
-
+    level = os.getenv("BIODIV_LEVEL", "Order")
     out_dir = PROJECT_ROOT / "data" / "biodiversity_piecharts" / marker / level
     out_dir.mkdir(parents=True, exist_ok=True)
 
