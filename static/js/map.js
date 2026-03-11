@@ -17,6 +17,9 @@
     maxZoom: 15
   });
 
+  map.createPane('selectionPane');
+  map.getPane('selectionPane').style.zIndex = 650;
+
   // Default fallback view
   let initialView = { lat: 50, lng: 10, z: 5 };
 
@@ -35,12 +38,32 @@
 
   map.setView([initialView.lat, initialView.lng], initialView.z);
 
+  // ---- Invalidate size after short delay (fixes display issues when map is in a hidden tab or collapsible) ----
+  setTimeout(() => map.invalidateSize(true), 0);
+  setTimeout(() => map.invalidateSize(true), 300);
+
+  window.addEventListener('resize', () => {
+    map.invalidateSize(true);
+  });
+
   // ---- Debounced URL update on map move ----
   let _viewUrlTimer = null;
 
   function updateURLFromViewDebounced() {
     clearTimeout(_viewUrlTimer);
     _viewUrlTimer = setTimeout(updateURLFromView, 150);
+  }
+
+  function getPreferredSampleCode(props) {
+    props = props || {};
+    return (
+      props.QR_qrCode ||
+      props.qr_code ||
+      props.qr ||
+      props.sampleId ||
+      props.sample_id ||
+      null
+    );
   }
 
   map.on('moveend zoomend', updateURLFromViewDebounced);
@@ -193,7 +216,7 @@
 
     if (activeDateTo) params.set('date_to', activeDateTo);
     else params.delete('date_to');
-    
+
     // map view
     const center = map.getCenter();
     params.set('lat', center.lat.toFixed(5));
@@ -209,7 +232,7 @@
     // Avoid spamming history if nothing changed
     const old = window.location.search.replace(/^\?/, '');
     if (old === params.toString()) return;
-    
+
     // Update URL without reloading
     history.replaceState({}, '', newUrl);
   }
@@ -245,7 +268,7 @@
 
     return bounds;
   }
-  
+
   function initFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
 
@@ -288,12 +311,14 @@
       try { ring.addTo(map); } catch (_) {}
     }
 
-    const ll = ring.getLatLng ? ring.getLatLng() : null;
+    const target = ring.__dot || ring;
+    const ll = target.getLatLng ? target.getLatLng() : null;
+
     if (!ll) return false;
 
     const targetZoom = (opts && opts.zoom) || Math.max(map.getZoom(), 14);
     map.setView(ll, targetZoom, { animate: true });
-    if (ring.openPopup) ring.openPopup();
+    if (target.openPopup) target.openPopup();
     return true;
   };
 
@@ -622,6 +647,21 @@
     }
   }
 
+  async function fetchSamplePiechart(sampleId, marker = "16S", level = "Genus") {
+    if (!sampleId) return null;
+    try {
+      const r = await fetch(
+        `/public/sample_piechart/${encodeURIComponent(sampleId)}?marker=${encodeURIComponent(marker)}&level=${encodeURIComponent(level)}`,
+        { credentials: "same-origin" }
+      );
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!j || !j.image_url) return null;
+      return { url: j.image_url, desc: j.caption || "" };
+    } catch {
+      return null;
+    }
+  }
   function pickPhotoFromProps(props) {
     props = props || {};
 
@@ -789,6 +829,20 @@
         </div>`;
     }
 
+    let piechartHtml = "";
+    if (p.piechart_url) {
+      piechartHtml = `
+        <div class="popup-piechart mt-2">
+          <a href="${p.piechart_url}" target="_blank" rel="noopener">
+            <img
+              src="${p.piechart_url}"
+              alt="${p.piechart_caption || 'Biodiversity pie chart'}"
+              style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:contain;border:1px solid #ddd;border-radius:6px;">
+          </a>
+          ${p.piechart_caption ? `<div class="small text-muted mt-1">${p.piechart_caption}</div>` : ""}
+        </div>`;
+    }
+
     let exportHtml = "";
     if (!PUBLIC_MODE && sampleId) {
       exportHtml = `<div class="mt-2">
@@ -804,6 +858,7 @@
               <div class="popup-scroll">
                 ${tableHtml}
                 ${photoHtml}
+                ${piechartHtml}
               </div>
               ${exportHtml}
             </div>`;
@@ -822,8 +877,7 @@
   let twoToggleControl=null;
 
   // Selection state
-  const drawnItems = new L.FeatureGroup().addTo(map);
-  let selectionLayers=[], selectionRows=[];
+  const drawnItems = new L.FeatureGroup([], { pane: 'selectionPane' }).addTo(map);  let selectionLayers=[], selectionRows=[];
   let selectionButtonEl=null, clearButtonEl=null;
 
   // Filter state (UI elements in page)
@@ -885,7 +939,7 @@
   function passesCurrentFilter(props){
     const ts = props.timestamp_utc || props.collectedAt;
     if (!inDateRange(ts)) return false;
-    
+
     const ph = getPhFromProps(props || {});
     if (activeCountry && props.country_code !== activeCountry) return false;
 
@@ -925,40 +979,76 @@
           const props = f.properties || {};
           const ph    = getPhFromProps(props);
           const clr   = phColor(ph);
-          const ring  = L.circle(marker.getLatLng(),{
-            radius:JITTER_M, color:clr, weight:1, opacity:0.9,
-            fillColor:clr, fillOpacity:0.35
+          const ring = L.circle(marker.getLatLng(), {
+            radius: JITTER_M,
+            color: clr,
+            weight: 2,
+            opacity: 0.95,
+            fill: true,
+            fillColor: clr,
+            fillOpacity: 0.18
           });
+
+          const centerDot = L.circleMarker(marker.getLatLng(), {
+            radius: 4,
+            color: clr,
+            weight: 1,
+            opacity: 1,
+            fillColor: clr,
+            fillOpacity: 1
+          });
+
+          if (isOwner) {
+            userCluster.addLayer(centerDot);
+          } else {
+            othersCluster.addLayer(centerDot);
+          }
+          centerDot.__props = props;
+          centerDot.__owner = !!isOwner;
+          centerDot.feature = f;
+
+          ring.__dot = centerDot;
           ring.__props = props;
           ring.__owner = !!isOwner;
 
-          // Bind popup
-          ring.bindPopup(
+          // Bind popup only to the dot
+          centerDot.bindPopup(
             formatPopup(f, isOwner),
             { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
           );
 
-          // When the popup opens, fetch image and replace popup content (public mode too)
+          // When the popup opens, fetch image and replace popup content
           ring.on("popupopen", async (e) => {
             const p = f.properties || {};
-            const sid = p.sampleId || p.sample_id || p.QR_qrCode;
+            const sid = getPreferredSampleCode(p);
+            const photoId = p.sampleId || p.sample_id || p.QR_qrCode;
+            const chartId = p.QR_qrCode || p.qr_code || p.qr || p.sampleId || p.sample_id;
+
             if (!sid) return;
 
-            // fetch only once per feature
-            if (p.__img_loaded) return;
-            p.__img_loaded = true;
+            if (!p.__img_loaded) {
+              p.__img_loaded = true;
+              const img = await fetchSampleImage(photoId);
+              if (img) {
+                p.image_url = img.url;
+                p.image_description_en = img.desc || "";
+              }
+            }
 
-            const img = await fetchSampleImage(sid);
-            if (!img) return;
+            if (!p.__pie_loaded) {
+              p.__pie_loaded = true;
+              const pie = await fetchSamplePiechart(chartId, "16S", "Genus");
+              if (pie) {
+                p.piechart_url = pie.url;
+                p.piechart_caption = pie.desc || "";
+              }
+            }
 
-            // Attach the image to properties in a way pickPhotoFromProps understands
-            p.image_url = img.url;
-            p.image_description_en = img.desc || "";
-
-            // Replace popup HTML with updated content
             e.popup.setContent(formatPopup(f, isOwner));
           });
+
           ring.addTo(map);
+          centerDot.addTo(map);
           bucket.push(ring);
 
           // 👇 Index by sample id (with fallbacks)
@@ -978,8 +1068,6 @@
     othersLayer = makeLayer(othersGJ, mkOther, false, otherRings);
 
     // Initial clusters (unfiltered = all)
-    userCluster.addLayer(userLayer);
-    othersCluster.addLayer(othersLayer);
     map.addLayer(userCluster);
     map.addLayer(othersCluster);
     if (!PUBLIC_MODE) {
@@ -1005,23 +1093,16 @@
     const newUser   = L.markerClusterGroup();
     const newOthers = L.markerClusterGroup();
 
-    const invisible = { radius:1, weight:0, opacity:0, fillOpacity:0, interactive:false };
-
-    function addFilteredMarkers(gj, targetGroup){
-      (gj?.features||[]).forEach(f=>{
-        const coords = f?.geometry?.coordinates || [];
-        const lon = coords[0], lat = coords[1];
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-        const props = f.properties || {};
-        if (!passesCurrentFilter(props)) return;
-        const m = L.circleMarker([lat, lon], invisible);
-        m.feature = f;
-        targetGroup.addLayer(m);
-      });
+    function addFilteredDots(rings, targetGroup) {
+      for (const r of rings) {
+        const props = r.__props || {};
+        if (!passesCurrentFilter(props)) continue;
+        if (r.__dot) targetGroup.addLayer(r.__dot);
+      }
     }
 
-    addFilteredMarkers(userGJ, newUser);
-    addFilteredMarkers(othersGJ, newOthers);
+    addFilteredDots(userRings, newUser);
+    addFilteredDots(otherRings, newOthers);
 
     userCluster = newUser;
     othersCluster = newOthers;
@@ -1032,22 +1113,26 @@
   }
 
   // ---- Show/hide rings based on current filter + toggles ----
-  function applyFilterToRings(){
-    const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
+  function applyFilterToRings() {
+    const state = twoToggleControl ? twoToggleControl._getState() : { user: true, others: true };
+
     function process(rings, includeGroup){
       for (const r of rings){
+        const d = r.__dot;
         const shouldShow = includeGroup && passesCurrentFilter(r.__props || {});
+
         if (shouldShow){
           if (!map.hasLayer(r)) r.addTo(map);
+          if (d && !map.hasLayer(d)) d.addTo(map);
         } else {
           if (map.hasLayer(r)) map.removeLayer(r);
+          if (d && map.hasLayer(d)) map.removeLayer(d);
         }
       }
     }
-    process(userRings,  state.user);
+    process(userRings, state.user);
     process(otherRings, state.others);
   }
-
   // ---- Two checkboxes (toggle clusters + rings together) ----
   function addTwoToggleControl(){
     const state={user:true, others:true};
@@ -1180,9 +1265,26 @@
 
     applyLeafletDrawTranslations();
 
-    const RECT_STYLE = { color:'#0d6efd', weight:2, opacity:1, fill:true, fillOpacity:0.18 };
+    const RECT_STYLE = {
+      pane: 'selectionPane',
+      color: '#0d6efd',
+      weight: 2,
+      opacity: 1,
+      fill: true,
+      fillColor: '#0d6efd',
+      fillOpacity: 0.18
+    };
     const drawControl = new L.Control.Draw({
-      draw: { polygon:false, polyline:false, circle:false, marker:false, circlemarker:false, rectangle:{ shapeOptions: RECT_STYLE } },
+      draw: {
+        polygon: false,
+        polyline: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+        rectangle: {
+          shapeOptions: RECT_STYLE
+        }
+      },
       edit: false
     });
     map.addControl(drawControl);
@@ -1195,9 +1297,9 @@
     map.on(L.Draw.Event.CREATED, (e) => {
       const layer = e.layer;
       if (layer.setStyle) layer.setStyle(RECT_STYLE);
+      drawnItems.addLayer(layer);
       if (layer.bringToFront) layer.bringToFront();
       selectionLayers.push(layer);
-      drawnItems.addLayer(layer);
       updateSelectionCount();
     });
   }
@@ -1466,4 +1568,4 @@
   });
 })();
 
-})(); 
+})();

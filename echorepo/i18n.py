@@ -1,10 +1,13 @@
 # echorepo/i18n.py
-from flask import Blueprint, redirect, request, session, url_for, current_app
-from flask_babel import Babel, _, get_locale, gettext as _real_gettext
 import os
+
+from flask import Blueprint, current_app, redirect, request, url_for
+from flask_babel import Babel, get_locale
+from flask_babel import gettext as _real_gettext
+
 from .services.i18n_overrides import get_overrides
 
-SUPPORTED_LOCALES = ["en","cs","nl","fi","fr","de","el","it","pl","pt","ro","sk","es"]
+SUPPORTED_LOCALES = ["en", "cs", "nl", "fi", "fr", "de", "el", "it", "pl", "pt", "ro", "sk", "es"]
 
 # Raw English msgids used for JS labels
 BASE_LABEL_MSGIDS = {
@@ -40,16 +43,28 @@ BASE_LABEL_MSGIDS = {
 }
 
 LOCALE_FLAGS = {
-    "en":"gb","cs":"cz","nl":"nl","fi":"fi","fr":"fr",
-    "de":"de","el":"gr","it":"it","pl":"pl","pt":"pt",
-    "ro":"ro","sk":"sk","es":"es",
+    "en": "gb",
+    "cs": "cz",
+    "nl": "nl",
+    "fi": "fi",
+    "fr": "fr",
+    "de": "de",
+    "el": "gr",
+    "it": "it",
+    "pl": "pl",
+    "pt": "pt",
+    "ro": "ro",
+    "sk": "sk",
+    "es": "es",
 }
 
 babel = Babel()
 
+
 def base_labels() -> dict:
     # Translate the raw English msgids for the current locale
     return {k: _real_gettext(v) for k, v in BASE_LABEL_MSGIDS.items()}
+
 
 def _select_locale():
     # 1) cookie (persistent, survives logout)
@@ -83,13 +98,9 @@ def build_i18n_labels(base: dict) -> dict:
 
 def init_i18n(app):
     app.config.setdefault("BABEL_DEFAULT_LOCALE", "en")
-    app.config["BABEL_TRANSLATION_DIRECTORIES"] = os.path.join(
-        app.root_path, "translations"
-    )
+    app.config["BABEL_TRANSLATION_DIRECTORIES"] = os.path.join(app.root_path, "translations")
 
     babel.init_app(app, locale_selector=_select_locale)
-
-    from flask import current_app
 
     @app.context_processor
     def inject_i18n():
@@ -100,7 +111,7 @@ def init_i18n(app):
             current_app.logger.warning(
                 "inject_i18n: locale=%s cookie.locale=%r labels_count=%s keys_sample=%s",
                 str(get_locale() or "NONE"),
-        tf := request.cookies.get("locale"),
+                request.cookies.get("locale"),
                 len(labels),
                 list(labels.keys())[:5],
             )
@@ -113,11 +124,12 @@ def init_i18n(app):
 # /lang/<code> route
 lang_bp = Blueprint("lang", __name__, url_prefix="/lang")
 
+
 @lang_bp.route("/<lang_code>")
 def set_language(lang_code):
     if lang_code not in SUPPORTED_LOCALES:
         lang_code = "en"
 
     resp = redirect(request.referrer or url_for("web.explore"))
-    resp.set_cookie("locale", lang_code, max_age=60*60*24*730, samesite="Lax")
+    resp.set_cookie("locale", lang_code, max_age=60 * 60 * 24 * 730, samesite="Lax")
     return resp

@@ -1,26 +1,36 @@
-import base64, json, time, requests
-from flask import session, request
+import base64
+import json
+import time
+
+import requests
+from flask import request, session
+
 from ..config import settings
 from .keycloak import KC_TOKEN, KC_USERINFO
+
 
 def _jwt_payload_unverified(token: str) -> dict:
     try:
         parts = token.split(".")
-        if len(parts) != 3: return {}
+        if len(parts) != 3:
+            return {}
         payload_b64 = parts[1] + "=" * (-len(parts[1]) % 4)
         return json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
     except Exception:
         return {}
 
+
 def create_session_from_tokens(tok_json: dict):
-    access_token  = tok_json.get("access_token")
+    access_token = tok_json.get("access_token")
     refresh_token = tok_json.get("refresh_token")
     if not access_token or not refresh_token:
         raise ValueError("Missing tokens from IdP")
 
     profile = None
     try:
-        r = requests.get(KC_USERINFO, headers={"Authorization": f"Bearer {access_token}"}, timeout=10)
+        r = requests.get(
+            KC_USERINFO, headers={"Authorization": f"Bearer {access_token}"}, timeout=10
+        )
         profile = r.json() if r.status_code == 200 else None
     except Exception:
         profile = None
@@ -44,6 +54,7 @@ def create_session_from_tokens(tok_json: dict):
     session["user"] = profile.get("email") or profile.get("username") or profile.get("sub")
     session.permanent = True
 
+
 def refresh_tokens_if_needed():
     kc = session.get("kc")
     if not kc:
@@ -65,6 +76,7 @@ def refresh_tokens_if_needed():
             session.pop("kc", None)
     except Exception:
         session.pop("kc", None)
+
 
 def before_request_refresh():
     if request.endpoint in ("static", "auth.sso_password_login", "auth.login", "auth.logout"):
