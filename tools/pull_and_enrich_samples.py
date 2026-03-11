@@ -1407,6 +1407,22 @@ def ensure_pg_tables():
           PRIMARY KEY (sample_id, parameter_code)
         )
     """)
+    cur.execute("""
+            CREATE TABLE IF NOT EXISTS sample_otu_counts (
+                sample_id TEXT NOT NULL,
+                marker    TEXT NOT NULL,
+                otu_id    TEXT NOT NULL,
+                count     DOUBLE PRECISION,
+                uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                uploaded_by TEXT,
+                source_file TEXT,
+                PRIMARY KEY (sample_id, marker, otu_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_otu_otu_id ON sample_otu_counts (otu_id);
+            CREATE INDEX IF NOT EXISTS idx_otu_sample ON sample_otu_counts (sample_id);
+            CREATE INDEX IF NOT EXISTS idx_otu_marker ON sample_otu_counts (marker);
+    """)
 
     def ensure_col(table: str, col: str, typ: str):
         cur.execute(
