@@ -16,14 +16,13 @@ With --anew:
   then re-runs the translation from the *_orig fields.
 """
 
+import argparse
 import os
 import sys
-import argparse
 from pathlib import Path
-from typing import Dict, Tuple
 
-from dotenv import load_dotenv
 import psycopg2
+from dotenv import load_dotenv
 
 # ---------------------------------------------------------------------------
 # Project root / imports
@@ -58,9 +57,7 @@ def _get_pg_conn():
         or "postgres"
     )
     port = int(
-        os.getenv("DB_PORT_INSIDE")
-        or os.getenv("DB_PORT_OUTSIDE")
-        or os.getenv("DB_PORT", "5432")
+        os.getenv("DB_PORT_INSIDE") or os.getenv("DB_PORT_OUTSIDE") or os.getenv("DB_PORT", "5432")
     )
 
     dbname = os.getenv("DB_NAME", "echorepo")
@@ -188,7 +185,7 @@ def translate_samples(conn) -> None:
     # collect unique (text, country_code) pairs
     pairs_set = set()
     # per-sample pending translations: sample_id -> {en_col: (text, CC)}
-    pending: Dict[str, Dict[str, Tuple[str, str]]] = {}
+    pending: dict[str, dict[str, tuple[str, str]]] = {}
 
     for (
         sample_id,
@@ -210,7 +207,12 @@ def translate_samples(conn) -> None:
         CC = _norm_cc(country_code)
 
         cols = [
-            ("contamination_other_orig", "contamination_other_en", contamination_other_orig, contamination_other_en),
+            (
+                "contamination_other_orig",
+                "contamination_other_en",
+                contamination_other_orig,
+                contamination_other_en,
+            ),
             ("soil_structure_orig", "soil_structure_en", soil_structure_orig, soil_structure_en),
             ("soil_texture_orig", "soil_texture_en", soil_texture_orig, soil_texture_en),
             ("observations_orig", "observations_en", observations_orig, observations_en),
@@ -293,7 +295,7 @@ def translate_sample_images(conn) -> None:
     print(f"[TR] sample_images: {len(rows)} rows need translation")
 
     pairs_set = set()
-    pending_imgs: Dict[Tuple[str, int], Tuple[str, str]] = {}
+    pending_imgs: dict[tuple[str, int], tuple[str, str]] = {}
 
     for sample_id, image_id, country_code, orig, en_val in rows:
         sid = str(sample_id).strip()

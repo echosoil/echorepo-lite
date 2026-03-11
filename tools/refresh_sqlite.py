@@ -8,9 +8,10 @@ PROJECT_ROOT when you run it on the host.
 """
 
 import os
-import sys
 import sqlite3
+import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # ---------------------------------------------------------------------
@@ -22,11 +23,11 @@ PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", "/home/echo/ECHO-STORE/echorepo-li
 ENV_PATH = PROJECT_ROOT / ".env"
 
 # set defaults (may be container-style)
-os.environ.setdefault("CSV_PATH",     str(PROJECT_ROOT / "data" / "echorepo_samples_with_email.csv"))
-os.environ.setdefault("SQLITE_PATH",  str(PROJECT_ROOT / "data" / "db" / "echo.db"))
-os.environ.setdefault("TABLE_NAME",   "samples")
+os.environ.setdefault("CSV_PATH", str(PROJECT_ROOT / "data" / "echorepo_samples_with_email.csv"))
+os.environ.setdefault("SQLITE_PATH", str(PROJECT_ROOT / "data" / "db" / "echo.db"))
+os.environ.setdefault("TABLE_NAME", "samples")
 os.environ.setdefault("MAX_JITTER_METERS", "1000")
-os.environ.setdefault("JITTER_SALT",  "change-this-salt")
+os.environ.setdefault("JITTER_SALT", "change-this-salt")
 os.environ.setdefault("KEEP_ORIGINALS", "true")
 os.environ.setdefault("ECHO_FORCE_REBUILD", "false")
 
@@ -102,9 +103,9 @@ def _restore_lab_enrichment(db_path: str, backup):
     if backup:
         for r in backup["rows"]:
             qr_code = r.get("qr_code") or r.get("QR_code") or ""
-            param   = r.get("param") or ""
-            value   = r.get("value")
-            unit    = r.get("unit")
+            param = r.get("param") or ""
+            value = r.get("value")
+            unit = r.get("unit")
             user_id = r.get("user_id")
             raw_row = r.get("raw_row")
             updated = r.get("updated_at")

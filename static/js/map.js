@@ -15,7 +15,288 @@
   const map = L.map('map', {
     minZoom: 4,
     maxZoom: 15
-  }).setView([50, 10], 5);  // try 6, 7, 8, etc.
+  });
+
+  map.createPane('selectionPane');
+  map.getPane('selectionPane').style.zIndex = 650;
+
+  // Default fallback view
+  let initialView = { lat: 50, lng: 10, z: 5 };
+
+  // If URL has lat/lng/z, use it
+  (function initViewFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+
+    const lat = parseFloat(params.get('lat'));
+    const lng = parseFloat(params.get('lng'));
+    const z   = parseInt(params.get('z'), 10);
+
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(z)) {
+      initialView = { lat, lng, z };
+    }
+  })();
+
+  map.setView([initialView.lat, initialView.lng], initialView.z);
+
+  // ---- Invalidate size after short delay (fixes display issues when map is in a hidden tab or collapsible) ----
+  setTimeout(() => map.invalidateSize(true), 0);
+  setTimeout(() => map.invalidateSize(true), 300);
+
+  window.addEventListener('resize', () => {
+    map.invalidateSize(true);
+  });
+
+  // ---- Debounced URL update on map move ----
+  let _viewUrlTimer = null;
+
+  function updateURLFromViewDebounced() {
+    clearTimeout(_viewUrlTimer);
+    _viewUrlTimer = setTimeout(updateURLFromView, 150);
+  }
+
+  function getPreferredSampleCode(props) {
+    props = props || {};
+    return (
+      props.QR_qrCode ||
+      props.qr_code ||
+      props.qr ||
+      props.sampleId ||
+      props.sample_id ||
+      null
+    );
+  }
+
+  map.on('moveend zoomend', updateURLFromViewDebounced);
+
+  document.getElementById('btnCopyView')?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      alert(T('viewLinkCopied', {}, 'Link copied to clipboard'));
+    } catch {
+      prompt(
+        T('copyThisLink', {}, 'Copy this link:'),
+        location.href
+      );
+    }
+  });
+
+  const COUNTRY_NAMES = {
+    DE: 'Germany',
+    ES: 'Spain',
+    FR: 'France',
+    IT: 'Italy',
+    PT: 'Portugal',
+    PL: 'Poland',
+    FI: 'Finland',
+    RO: 'Romania',
+    NL: 'Netherlands',
+    CZ: 'Czechia',
+    SK: 'Slovakia',
+    GR: 'Greece',
+    RU: 'Russia',
+    GB: 'United Kingdom',
+    UA: 'Ukraine',
+    HU: 'Hungary',
+    SE: 'Sweden',
+    BG: 'Bulgaria',
+    BE: 'Belgium',
+    HR: 'Croatia',
+    AT: 'Austria',
+    IE: 'Ireland',
+    DK: 'Denmark',
+    LT: 'Lithuania',
+    SI: 'Slovenia',
+    LV: 'Latvia',
+    EE: 'Estonia',
+    CY: 'Cyprus',
+    LU: 'Luxembourg',
+    MT: 'Malta',
+    AL: 'Albania',
+    RS: 'Serbia',
+    ME: 'Montenegro',
+    MK: 'North Macedonia',
+    BA: 'Bosnia and Herzegovina',
+    IS: 'Iceland',
+    NO: 'Norway',
+    CH: 'Switzerland',
+    TR: 'Turkey',
+    MD: 'Moldova',
+    AD: 'Andorra',
+    LI: 'Liechtenstein',
+    SM: 'San Marino',
+    VA: 'Vatican City',
+    GE: 'Georgia',
+
+  };
+
+  // ---- Country name i18n (browser-native) ----
+  const countryNames = (() => {
+    try {
+      const lang =
+        document.documentElement.lang ||
+        (navigator.language || 'en').split('-')[0];
+
+      return new Intl.DisplayNames([lang], { type: 'region' });
+    } catch (e) {
+      return null;
+    }
+  })();
+
+  let activeCountry = null;
+  let activeDateFrom = null; // YYYY-MM-DD
+  let activeDateTo   = null; // YYYY-MM-DD
+
+  const dateFromEl = document.getElementById('dateFrom');
+  const dateToEl   = document.getElementById('dateTo');
+
+  function inDateRange(ts) {
+    if (!ts) return false;
+
+    const d = ts.slice(0, 10); // YYYY-MM-DD
+
+    if (activeDateFrom && d < activeDateFrom) return false;
+    if (activeDateTo   && d > activeDateTo)   return false;
+
+    return true;
+  }
+
+  function populateCountryFilter() {
+    const sel = document.getElementById('countryFilter');
+    if (!sel) return;
+
+    const countries = new Set();
+
+    for (const ring of window.__echomapIndex.values()) {
+      const p = ring.__props || {};
+      if (p.country_code) {
+        countries.add(String(p.country_code).toUpperCase());
+      }
+    }
+
+    const counts = {};
+
+    for (const ring of window.__echomapIndex.values()) {
+      const p = ring.__props || {};
+      if (!p.country_code) continue;
+      const cc = String(p.country_code).toUpperCase();
+      counts[cc] = (counts[cc] || 0) + 1;
+    }
+
+    [...countries].sort().forEach(cc => {
+      const opt = document.createElement('option');
+      opt.value = cc;
+      // Get localized country name if possible
+      const label =
+        countryNames?.of(cc) ||
+        cc;
+
+      opt.textContent = `${label} (${counts[cc]})`;
+      sel.appendChild(opt);
+    });
+  }
+
+  function updateURLFromFilters() {
+    // START from current URL, not from scratch
+    const params = new URLSearchParams(window.location.search);
+
+    // country
+    if (activeCountry) params.set('country', activeCountry);
+    else params.delete('country');
+
+    // pH range
+    if (activePhMin != null) params.set('ph_min', activePhMin);
+    else params.delete('ph_min');
+
+    if (activePhMax != null) params.set('ph_max', activePhMax);
+    else params.delete('ph_max');
+
+    // date range
+    if (activeDateFrom) params.set('date_from', activeDateFrom);
+    else params.delete('date_from');
+
+    if (activeDateTo) params.set('date_to', activeDateTo);
+    else params.delete('date_to');
+
+    // map view
+    const center = map.getCenter();
+    params.set('lat', center.lat.toFixed(5));
+    params.set('lng', center.lng.toFixed(5));
+    params.set('z', map.getZoom());
+
+    // Build new URL
+    const newUrl =
+      params.toString()
+        ? `${location.pathname}?${params.toString()}`
+        : location.pathname;
+
+    // Avoid spamming history if nothing changed
+    const old = window.location.search.replace(/^\?/, '');
+    if (old === params.toString()) return;
+
+    // Update URL without reloading
+    history.replaceState({}, '', newUrl);
+  }
+
+  function updateURLFromView() {
+    const params = new URLSearchParams(location.search);
+
+    const center = map.getCenter();
+    params.set('lat', center.lat.toFixed(5));
+    params.set('lng', center.lng.toFixed(5));
+    params.set('z', map.getZoom());
+
+    history.replaceState({}, '', `${location.pathname}?${params.toString()}`);
+  }
+
+
+  function getBoundsForCountry(countryCode) {
+    let bounds = null;
+
+    for (const ring of window.__echomapIndex.values()) {
+      const p = ring.__props || {};
+      if (p.country_code !== countryCode) continue;
+
+      const ll = ring.getLatLng?.();
+      if (!ll) continue;
+
+      if (!bounds) {
+        bounds = L.latLngBounds(ll, ll);
+      } else {
+        bounds.extend(ll);
+      }
+    }
+
+    return bounds;
+  }
+
+  function initFiltersFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+
+    // ---- pH ----
+    const phMin = params.get('ph_min');
+    const phMax = params.get('ph_max');
+
+    activePhMin = Number.isFinite(parseFloat(phMin)) ? parseFloat(phMin) : null;
+    activePhMax = Number.isFinite(parseFloat(phMax)) ? parseFloat(phMax) : null;
+
+    // ---- country ----
+    activeCountry = params.get('country') || null;
+
+    // ---- date range ----
+    activeDateFrom = params.get('date_from') || null;
+    activeDateTo   = params.get('date_to')   || null;
+  }
+
+  function syncFiltersToUI() {
+    if (phMinEl) phMinEl.value = activePhMin ?? '';
+    if (phMaxEl) phMaxEl.value = activePhMax ?? '';
+
+    if (dateFromEl) dateFromEl.value = activeDateFrom ?? '';
+    if (dateToEl)   dateToEl.value   = activeDateTo   ?? '';
+
+    const sel = document.getElementById('countryFilter');
+    if (sel) sel.value = activeCountry ?? '';
+  }
 
   // 👇 Expose map + global index + "show" helper
   window.__echomap = map;
@@ -30,12 +311,14 @@
       try { ring.addTo(map); } catch (_) {}
     }
 
-    const ll = ring.getLatLng ? ring.getLatLng() : null;
+    const target = ring.__dot || ring;
+    const ll = target.getLatLng ? target.getLatLng() : null;
+
     if (!ll) return false;
 
     const targetZoom = (opts && opts.zoom) || Math.max(map.getZoom(), 14);
     map.setView(ll, targetZoom, { animate: true });
-    if (ring.openPopup) ring.openPopup();
+    if (target.openPopup) target.openPopup();
     return true;
   };
 
@@ -54,19 +337,56 @@
     document.head.appendChild(style);
   })();
 
+  function refreshI18NTexts() {
+    // Export selection button
+    if (selectionButtonEl) {
+      const n = selectionRows?.length || 0;
+      selectionButtonEl.textContent =
+        `${T('export', {}, 'Export')} (${n})`;
+    }
+
+    // Export filtered button
+    if (btnExportFiltered) {
+      const n = filteredRows?.length || 0;
+      btnExportFiltered.textContent =
+        T('exportFiltered', { n }, `Export filtered (${n})`);
+    }
+
+    // Draw tool hint (rectangle)
+    if (window.__echodraw) {
+      try {
+        const rect =
+          window.__echodraw._toolbars.draw._modes.rectangle?.handler;
+        if (rect) {
+          rect._endLabelText =
+            T('releaseToFinish', {}, 'Release mouse to finish drawing.');
+        }
+      } catch (_) {}
+    }
+  }
+
+
   // --- Metals cleaner: drop oxides + round to 2 sig figs ---
   const OXIDES = new Set(["MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"]);
 
-  function roundSigStr(n, sig=2){
+  function roundSigStr(n, sig = 2) {
     const v = Number(n);
     if (!Number.isFinite(v) || v === 0) return "0";
+
     const exp = Math.floor(Math.log10(Math.abs(v)));
     const dec = sig - 1 - exp;
+
     if (dec >= 0) {
-      return v.toFixed(dec).replace(/\.?0+$/,'');
+      let s = v.toFixed(dec);
+      if (s.includes(".")) {
+        // Remove trailing zeros after the decimal point
+        s = s.replace(/0+$/, "").replace(/\.$/, "");
+      }
+      return s;
     } else {
       const f = Math.pow(10, -dec);
-      return String(Math.round(v / f) * f);
+      const rounded = Math.round(v / f) * f;
+      return String(rounded);
     }
   }
 
@@ -173,6 +493,12 @@
 
       // LAT ticks on left edge
       const latStart = Math.ceil(south / latStep) * latStep;
+      const bbox = [
+        b.getWest(),
+        b.getSouth(),
+        b.getEast(),
+        b.getNorth()
+      ].join(",");
       for (let lat = latStart; lat <= north + 1e-9; lat += latStep) {
         const pt = map.latLngToContainerPoint([lat, (west + east) / 2]);
         const y = Math.round(pt.y);
@@ -279,36 +605,104 @@
     return d.toLocaleDateString(UI_LANG,{year:'numeric',month:'short',day:'2-digit'});
   }
 
-  // ---- i18n: T() with msgid override fallback ----
   function T(key, vars = {}, defaultText) {
-    const dict    = (window.I18N && window.I18N.labels)   || {};
-    const byMsgid = (window.I18N && window.I18N.by_msgid) || {};
+    const I = window.I18N || {};
+    const labels  = I.labels  || {};
+    const byMsgid = I.by_msgid || {};
 
     let raw =
-      (key != null && Object.prototype.hasOwnProperty.call(dict, key))
-        ? dict[key]
+      (key != null && Object.prototype.hasOwnProperty.call(labels, key))
+        ? labels[key]
         : (defaultText != null && Object.prototype.hasOwnProperty.call(byMsgid, defaultText))
             ? byMsgid[defaultText]
             : (defaultText != null ? defaultText : key);
 
     let out = String(raw);
 
-    // {name}
     out = out.replace(/\{([A-Za-z0-9_]+)\}/g, (_, k) =>
       Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `{${k}}`
     );
-    // %(name)s
+
     out = out.replace(/%\(([A-Za-z0-9_]+)\)s/g, (_, k) =>
       Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : `%(${k})s`
     );
 
     return out;
   }
+
   window.T = T;
 
-  function pickPhotoFromProps(props){
+  async function fetchSampleImage(sampleId) {
+    if (!sampleId) return null;
+    try {
+      const r = await fetch(`/public/sample_image/${encodeURIComponent(sampleId)}`, {
+        credentials: "same-origin"
+      });
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!j || !j.image_url) return null;
+      return { url: j.image_url, desc: j.caption || "" };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function fetchSamplePiechart(sampleId, marker = "16S", level = "Genus") {
+    if (!sampleId) return null;
+    try {
+      const r = await fetch(
+        `/public/sample_piechart/${encodeURIComponent(sampleId)}?marker=${encodeURIComponent(marker)}&level=${encodeURIComponent(level)}`,
+        { credentials: "same-origin" }
+      );
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!j || !j.image_url) return null;
+      return { url: j.image_url, desc: j.caption || "" };
+    } catch {
+      return null;
+    }
+  }
+  function pickPhotoFromProps(props) {
+    props = props || {};
+
+    // ------------------------------------------------------------
+    // 0) New/canonical/public support (single image)
+    // ------------------------------------------------------------
+    // If your public popup fetch puts these into properties:
+    //   { image_url, image_description_en, image_description_orig }
+    if (props.image_url) {
+      const url = String(props.image_url).trim();
+      if (url) {
+        const desc = String(
+          props.image_description_en || props.image_description_orig || ""
+        ).trim();
+        return { idx: 0, url, opt: "photo", desc };
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 1) New/canonical/public support (array of images)
+    // ------------------------------------------------------------
+    // If you ever decide to ship:
+    //   props.images = [{ image_url, image_description_en, ... }, ...]
+    if (Array.isArray(props.images) && props.images.length) {
+      const first = props.images.find(x => x && x.image_url) || props.images[0];
+      if (first && first.image_url) {
+        const url = String(first.image_url).trim();
+        if (url) {
+          const desc = String(
+            first.image_description_en || first.image_description_orig || first.caption || ""
+          ).trim();
+          return { idx: 0, url, opt: "photo", desc };
+        }
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 2) Legacy support: PHOTO_photos_<n>_path
+    // ------------------------------------------------------------
     const items = [];
-    for (const [k, v] of Object.entries(props || {})) {
+    for (const [k, v] of Object.entries(props)) {
       const m = /^PHOTO_photos_(\d+)_path$/.exec(k);
       if (!m || !v) continue;
       const idx = Number(m[1]);
@@ -321,10 +715,8 @@
     }
     if (!items.length) return null;
 
-    // stable order by index as tie-breaker
-    items.sort((a,b) => a.idx - b.idx);
+    items.sort((a, b) => a.idx - b.idx);
 
-    // preference rules
     const prefer = [
       (x) => /landscape/.test(x.opt),
       (x) => /cover|banner/.test(x.opt),
@@ -334,33 +726,92 @@
       const hit = items.find(rule);
       if (hit) return hit;
     }
-    return items[0]; // fallback: first available
+    return items[0];
   }
+
+
 
   function formatPopup(f, isOwnerLayer){
     const p = f.properties || {};
     const fmt = (v) => (v == null || (typeof v === "string" && v.trim() === "")) ? "—" : v;
 
+    // ---- helpers: pick first non-empty ----
+    const pick = (...vals) => {
+      for (const v of vals) {
+        if (v == null) continue;
+        if (typeof v === "string") {
+          const s = v.trim();
+          if (s !== "") return s;
+        } else {
+          return v;
+        }
+      }
+      return null;
+    };
+
+    // ---- normalize common fields (old UI schema OR canonical schema) ----
+    const sampleId = pick(p.sampleId, p.sample_id, p.Sample, p.QR_qrCode);
+    const dateIso  = pick(p.collectedAt, p.timestamp_utc, p.date, p.collected_at);
+    const qrLike   = pick(p.QR_qrCode, p.qr_code, p.qr, sampleId);
+
+    const phVal = pick(p.PH_ph, p.ph, p.pH, p.PH_value, p.ph_value);
+
+    const soilColor = pick(p.SOIL_COLOR_color, p.soil_color, p.color);
+
+    const texture = pick(
+      p.SOIL_TEXTURE_texture,
+      p.soil_texture_en, p.soil_texture_orig,
+      p.texture_en, p.texture_orig,
+      p.texture
+    );
+
+    const structure = pick(
+      p.SOIL_STRUCTURE_structure,
+      p.soil_structure_en, p.soil_structure_orig,
+      p.structure_en, p.structure_orig,
+      p.structure
+    );
+
+    const earthworms = pick(p.SOIL_DIVER_earthworms, p.earthworms_count, p.earthworms);
+    const plastic    = pick(p.SOIL_CONTAMINATION_plastic, p.contamination_plastic, p.plastic);
+    const debris     = pick(p.SOIL_CONTAMINATION_debris,  p.contamination_debris,  p.debris);
+
+    const contaminationNotes = pick(
+      p.SOIL_CONTAMINATION_comments,
+      p.contamination_other_en, p.contamination_other_orig,
+      p.observations_en, p.observations_orig,
+      p.notes
+    );
+
+    // metals: old blob OR canonical fields
+    const metalsRaw = pick(
+      p.METALS_info,
+      p.metals_info_en, p.metals_info_orig,
+      p.elemental_concentrations_en, p.elemental_concentrations_orig
+    );
+
     // Clean & format metals (oxide-free, 2 sig figs, <br> separators)
-    const metals = cleanMetalsInfo(p.METALS_info);
+    const metals = cleanMetalsInfo(metalsRaw);
 
     const rows = [
-      ['<i class="bi bi-calendar"></i> ' + T('date',{},'Date'),         formatDate(p.collectedAt)],
-      ['<i class="bi bi-qr-code-scan"></i> ' + T('qr',{},'QR code'),    p.QR_qrCode],
-      ['<i class="bi bi-droplet-half"></i> ' + T('ph',{},'pH'),         p.PH_ph],
-      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter',{},'Soil organic matter'),      p.SOIL_COLOR_color],
-      ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture',{},'Texture'), p.SOIL_TEXTURE_texture],
-      ['<i class="bi bi-diagram-3"></i> ' + T('structure',{},'Structure'), p.SOIL_STRUCTURE_structure],
-      ['<i class="bi bi-bug"></i> ' + T('earthworms',{},'Earthworms'),  fmtInt(p.SOIL_DIVER_earthworms)],
-      ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'),        fmtInt(p.SOIL_CONTAMINATION_plastic)],
-      ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'),       fmtInt(p.SOIL_CONTAMINATION_debris)],
-      ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), p.SOIL_CONTAMINATION_comments],
-      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'),          metals],
+      ['<i class="bi bi-calendar"></i> ' + T('date',{},'Date'), formatDate(dateIso)],
+      ['<i class="bi bi-qr-code-scan"></i> ' + T('qr',{},'QR code'), qrLike],
+      ['<i class="bi bi-droplet-half"></i> ' + T('ph',{},'pH'), phVal],
+      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter',{},'Soil organic matter'), soilColor],
+      ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture',{},'Texture'), texture],
+      ['<i class="bi bi-diagram-3"></i> ' + T('structure',{},'Structure'), structure],
+      ['<i class="bi bi-bug"></i> ' + T('earthworms',{},'Earthworms'), fmtInt(earthworms)],
+      ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'), fmtInt(plastic)],
+      ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'), fmtInt(debris)],
+      ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), contaminationNotes],
+      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'), metals],
     ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
 
     const tableHtml = `<table class="table table-sm popup-table mb-2">${
       rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")
     }</table>`;
+
+    const PUBLIC_MODE = !!(window.ECHOREPO_CFG || {}).public_mode;
 
     const bestPhoto = pickPhotoFromProps(p);
     let photoHtml = "";
@@ -378,22 +829,36 @@
         </div>`;
     }
 
+    let piechartHtml = "";
+    if (p.piechart_url) {
+      piechartHtml = `
+        <div class="popup-piechart mt-2">
+          <a href="${p.piechart_url}" target="_blank" rel="noopener">
+            <img
+              src="${p.piechart_url}"
+              alt="${p.piechart_caption || 'Biodiversity pie chart'}"
+              style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:contain;border:1px solid #ddd;border-radius:6px;">
+          </a>
+          ${p.piechart_caption ? `<div class="small text-muted mt-1">${p.piechart_caption}</div>` : ""}
+        </div>`;
+    }
+
     let exportHtml = "";
-    if (p.sampleId) {
+    if (!PUBLIC_MODE && sampleId) {
       exportHtml = `<div class="mt-2">
         <a class="btn btn-sm btn-outline-primary"
-          href="/download/sample_csv?sampleId=${encodeURIComponent(p.sampleId)}"
+          href="/download/sample_csv?sampleId=${encodeURIComponent(sampleId)}"
           target="_blank" rel="noopener">
           <i class="bi bi-filetype-csv"></i> ${T('export',{},'Export')}
         </a>
       </div>`;
     }
 
-    // Scrollable body
     return `<div class="popup-card">
               <div class="popup-scroll">
                 ${tableHtml}
                 ${photoHtml}
+                ${piechartHtml}
               </div>
               ${exportHtml}
             </div>`;
@@ -412,8 +877,7 @@
   let twoToggleControl=null;
 
   // Selection state
-  const drawnItems = new L.FeatureGroup().addTo(map);
-  let selectionLayers=[], selectionRows=[];
+  const drawnItems = new L.FeatureGroup([], { pane: 'selectionPane' }).addTo(map);  let selectionLayers=[], selectionRows=[];
   let selectionButtonEl=null, clearButtonEl=null;
 
   // Filter state (UI elements in page)
@@ -427,6 +891,45 @@
   let activePhMax = null;
   let filteredRows = [];
 
+  // ---- Restore filters from URL (Optional D) ----
+  (function restoreFiltersFromURL() {
+    const qs = new URLSearchParams(window.location.search);
+
+    if (qs.has('country')) {
+      activeCountry = qs.get('country');
+    }
+
+    if (qs.has('ph_min')) {
+      const v = parseFloat(qs.get('ph_min'));
+      if (Number.isFinite(v)) activePhMin = v;
+    }
+
+    if (qs.has('ph_max')) {
+      const v = parseFloat(qs.get('ph_max'));
+      if (Number.isFinite(v)) activePhMax = v;
+    }
+  })();
+
+  const countryEl = document.getElementById('countryFilter');
+  countryEl?.addEventListener('change', () => {
+    activeCountry = countryEl.value || null;
+    updateFiltered();
+    updateURLFromFilters();
+
+    if (activeCountry) {
+      const b = getBoundsForCountry(activeCountry);
+      if (b) {
+        map.fitBounds(b, {
+          padding: [40, 40],
+          maxZoom: 6
+        });
+      }
+    }
+    if (!activeCountry) {
+      map.setView([50, 10], 5);
+    }
+  });
+
   function inRangeGiven(ph, min, max){
     if (!Number.isFinite(ph)) return (min == null && max == null);
     if (min != null && ph < min) return false;
@@ -434,7 +937,12 @@
     return true;
   }
   function passesCurrentFilter(props){
+    const ts = props.timestamp_utc || props.collectedAt;
+    if (!inDateRange(ts)) return false;
+
     const ph = getPhFromProps(props || {});
+    if (activeCountry && props.country_code !== activeCountry) return false;
+
     return inRangeGiven(ph, activePhMin, activePhMax);
   }
 
@@ -461,6 +969,8 @@
     const otherStyle={radius:1,weight:0,opacity:0,fillOpacity:0,interactive:false};
     const mkUser=(_f,latlng)=>L.circleMarker(latlng,userStyle);
     const mkOther=(_f,latlng)=>L.circleMarker(latlng,otherStyle);
+    const cfg = window.ECHOREPO_CFG || {};
+    const PUBLIC_MODE = !!cfg.public_mode;
 
     function makeLayer(gj, mk, isOwner, bucket){
       return L.geoJSON(gj,{
@@ -469,19 +979,76 @@
           const props = f.properties || {};
           const ph    = getPhFromProps(props);
           const clr   = phColor(ph);
-          const ring  = L.circle(marker.getLatLng(),{
-            radius:JITTER_M, color:clr, weight:1, opacity:0.9,
-            fillColor:clr, fillOpacity:0.35
+          const ring = L.circle(marker.getLatLng(), {
+            radius: JITTER_M,
+            color: clr,
+            weight: 2,
+            opacity: 0.95,
+            fill: true,
+            fillColor: clr,
+            fillOpacity: 0.18
           });
+
+          const centerDot = L.circleMarker(marker.getLatLng(), {
+            radius: 4,
+            color: clr,
+            weight: 1,
+            opacity: 1,
+            fillColor: clr,
+            fillOpacity: 1
+          });
+
+          if (isOwner) {
+            userCluster.addLayer(centerDot);
+          } else {
+            othersCluster.addLayer(centerDot);
+          }
+          centerDot.__props = props;
+          centerDot.__owner = !!isOwner;
+          centerDot.feature = f;
+
+          ring.__dot = centerDot;
           ring.__props = props;
           ring.__owner = !!isOwner;
 
-          // Bind popup
-          ring.bindPopup(
+          // Bind popup only to the dot
+          centerDot.bindPopup(
             formatPopup(f, isOwner),
             { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
           );
+
+          // When the popup opens, fetch image and replace popup content
+          ring.on("popupopen", async (e) => {
+            const p = f.properties || {};
+            const sid = getPreferredSampleCode(p);
+            const photoId = p.sampleId || p.sample_id || p.QR_qrCode;
+            const chartId = p.QR_qrCode || p.qr_code || p.qr || p.sampleId || p.sample_id;
+
+            if (!sid) return;
+
+            if (!p.__img_loaded) {
+              p.__img_loaded = true;
+              const img = await fetchSampleImage(photoId);
+              if (img) {
+                p.image_url = img.url;
+                p.image_description_en = img.desc || "";
+              }
+            }
+
+            if (!p.__pie_loaded) {
+              p.__pie_loaded = true;
+              const pie = await fetchSamplePiechart(chartId, "16S", "Genus");
+              if (pie) {
+                p.piechart_url = pie.url;
+                p.piechart_caption = pie.desc || "";
+              }
+            }
+
+            e.popup.setContent(formatPopup(f, isOwner));
+          });
+
           ring.addTo(map);
+          centerDot.addTo(map);
           bucket.push(ring);
 
           // 👇 Index by sample id (with fallbacks)
@@ -501,17 +1068,21 @@
     othersLayer = makeLayer(othersGJ, mkOther, false, otherRings);
 
     // Initial clusters (unfiltered = all)
-    userCluster.addLayer(userLayer);
-    othersCluster.addLayer(othersLayer);
     map.addLayer(userCluster);
     map.addLayer(othersCluster);
-
-    addTwoToggleControl();
+    if (!PUBLIC_MODE) {
+      addTwoToggleControl();
+    }
     addSelectionControl();
     addLegends();
 
     // Initialize filter counts/UI using default (no filter)
     updateFiltered();
+
+    map.off('moveend zoomend'); // clear previous
+    map.on('moveend zoomend', () => {
+      updateURLFromView();
+    });
   }
 
   // ---- Rebuild clusters to reflect current filter ----
@@ -522,23 +1093,16 @@
     const newUser   = L.markerClusterGroup();
     const newOthers = L.markerClusterGroup();
 
-    const invisible = { radius:1, weight:0, opacity:0, fillOpacity:0, interactive:false };
-
-    function addFilteredMarkers(gj, targetGroup){
-      (gj?.features||[]).forEach(f=>{
-        const coords = f?.geometry?.coordinates || [];
-        const lon = coords[0], lat = coords[1];
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-        const props = f.properties || {};
-        if (!passesCurrentFilter(props)) return;
-        const m = L.circleMarker([lat, lon], invisible);
-        m.feature = f;
-        targetGroup.addLayer(m);
-      });
+    function addFilteredDots(rings, targetGroup) {
+      for (const r of rings) {
+        const props = r.__props || {};
+        if (!passesCurrentFilter(props)) continue;
+        if (r.__dot) targetGroup.addLayer(r.__dot);
+      }
     }
 
-    addFilteredMarkers(userGJ, newUser);
-    addFilteredMarkers(othersGJ, newOthers);
+    addFilteredDots(userRings, newUser);
+    addFilteredDots(otherRings, newOthers);
 
     userCluster = newUser;
     othersCluster = newOthers;
@@ -549,22 +1113,26 @@
   }
 
   // ---- Show/hide rings based on current filter + toggles ----
-  function applyFilterToRings(){
-    const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
+  function applyFilterToRings() {
+    const state = twoToggleControl ? twoToggleControl._getState() : { user: true, others: true };
+
     function process(rings, includeGroup){
       for (const r of rings){
+        const d = r.__dot;
         const shouldShow = includeGroup && passesCurrentFilter(r.__props || {});
+
         if (shouldShow){
           if (!map.hasLayer(r)) r.addTo(map);
+          if (d && !map.hasLayer(d)) d.addTo(map);
         } else {
           if (map.hasLayer(r)) map.removeLayer(r);
+          if (d && map.hasLayer(d)) map.removeLayer(d);
         }
       }
     }
-    process(userRings,  state.user);
+    process(userRings, state.user);
     process(otherRings, state.others);
   }
-
   // ---- Two checkboxes (toggle clusters + rings together) ----
   function addTwoToggleControl(){
     const state={user:true, others:true};
@@ -656,11 +1224,40 @@
       L.DomEvent.disableClickPropagation(div);
       selectionButtonEl=div.querySelector('#btnExportSel');
       clearButtonEl=div.querySelector('#btnClearSel');
-      selectionButtonEl.addEventListener('click',()=>{
-        if(!selectionRows.length) return;
-        const csv=toCsv(selectionRows); if(!csv) return;
-        downloadCsv('echorepo_selection.csv', csv);
+      selectionButtonEl.addEventListener('click', () => {
+        if (!selectionRows.length) return;
+
+        // Compute bounding box of selected points
+        // We take min/max of lon and lat from selectionRows
+        let minLon = Infinity, minLat = Infinity;
+        let maxLon = -Infinity, maxLat = -Infinity;
+        selectionRows.forEach(r => {
+          const lon = parseFloat(r.lon ?? r.GPS_long ?? r.longitude ?? r.lng);
+          const lat = parseFloat(r.lat ?? r.GPS_lat ?? r.latitude ?? r.lat);
+          if (!isNaN(lon) && !isNaN(lat)) {
+            minLon = Math.min(minLon, lon);
+            minLat = Math.min(minLat, lat);
+            maxLon = Math.max(maxLon, lon);
+            maxLat = Math.max(maxLat, lat);
+          }
+        });
+
+        if (!isFinite(minLon)) return;
+
+        const bbox = [
+          minLon, minLat,
+          maxLon, maxLat
+        ].join(',');
+
+        // Construct URL to the search ZIP endpoint
+        // It will include samples, sample_images, sample_parameters
+        const url = `/search?format=zip&bbox=${encodeURIComponent(bbox)}`;
+
+        // Trigger the download in the browser
+        window.location = url;
+
       });
+
       clearButtonEl.addEventListener('click', clearSelections);
       return div;
     };
@@ -668,9 +1265,26 @@
 
     applyLeafletDrawTranslations();
 
-    const RECT_STYLE = { color:'#0d6efd', weight:2, opacity:1, fill:true, fillOpacity:0.18 };
+    const RECT_STYLE = {
+      pane: 'selectionPane',
+      color: '#0d6efd',
+      weight: 2,
+      opacity: 1,
+      fill: true,
+      fillColor: '#0d6efd',
+      fillOpacity: 0.18
+    };
     const drawControl = new L.Control.Draw({
-      draw: { polygon:false, polyline:false, circle:false, marker:false, circlemarker:false, rectangle:{ shapeOptions: RECT_STYLE } },
+      draw: {
+        polygon: false,
+        polyline: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+        rectangle: {
+          shapeOptions: RECT_STYLE
+        }
+      },
       edit: false
     });
     map.addControl(drawControl);
@@ -683,9 +1297,9 @@
     map.on(L.Draw.Event.CREATED, (e) => {
       const layer = e.layer;
       if (layer.setStyle) layer.setStyle(RECT_STYLE);
+      drawnItems.addLayer(layer);
       if (layer.bringToFront) layer.bringToFront();
       selectionLayers.push(layer);
-      drawnItems.addLayer(layer);
       updateSelectionCount();
     });
   }
@@ -719,32 +1333,59 @@
     selectionRows = collectRowsWithinAll();
     const n = selectionRows.length;
     selectionButtonEl.disabled = n===0;
-    selectionButtonEl.textContent = `${T('export',{},'Export')} (${n})`;
+      selectionButtonEl.textContent = `${T('export',{},'Export')} (${n})`;
     clearButtonEl.disabled = selectionLayers.length===0;
   }
 
   // ---- Filter by pH & export ----
-  function collectRowsFiltered(phMin, phMax){
-    const active = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
-    const rows=[], seen=new Set();
-    function inRange(ph){ return inRangeGiven(ph, phMin, phMax); }
-    function scan(layer, include){
-      if(!include||!layer) return;
-      layer.eachLayer(m=>{
-        const ll=m.getLatLng(); if(!ll) return;
-        const f=m.feature||{}; const props={...(f.properties||{})};
-        const ph = getPhFromProps(props);
-        if(!inRange(ph)) return;
-        Object.keys(props).forEach(k=>{ if(SHOULD_DROP(k)) delete props[k]; });
-        props[LAT_KEY]=ll.lat; props[LON_KEY]=ll.lng;
-        const key=props.sampleId||props.QR_qrCode||`${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
-        if(seen.has(key)) return; seen.add(key); rows.push(props);
+  function collectRowsFiltered(phMin, phMax, dateFrom, dateTo) {
+    const active = twoToggleControl
+      ? twoToggleControl._getState()
+      : { user: true, others: true };
+
+    const rows = [];
+    const seen = new Set();
+
+    function scan(layer, include) {
+      if (!include || !layer) return;
+
+      layer.eachLayer(m => {
+        const ll = m.getLatLng();
+        if (!ll) return;
+
+        const f = m.feature || {};
+        const props = { ...(f.properties || {}) };
+
+        // ---- SINGLE source of truth for filtering ----
+        if (!passesCurrentFilter(props)) return;
+
+        // ---- Clean props ----
+        Object.keys(props).forEach(k => {
+          if (SHOULD_DROP(k)) delete props[k];
+        });
+
+        // ---- Ensure coordinates ----
+        props[LAT_KEY] = ll.lat;
+        props[LON_KEY] = ll.lng;
+
+        const key =
+          props.sampleId ||
+          props.QR_qrCode ||
+          `${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
+
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        rows.push(props);
       });
     }
+
     scan(userLayer,   active.user);
     scan(othersLayer, active.others);
+
     return rows;
   }
+
 
   function updateFilteredCountsLabelOnly(){
     if(!btnExportFiltered) return;
@@ -753,30 +1394,65 @@
     btnExportFiltered.textContent = T('exportFiltered', { n }, `Export filtered (${n})`);
   }
 
-  function updateFiltered(){
-    if(!btnExportFiltered) return;
-
+  function updateFiltered() {
+    // ---- pH ----
     const minV = phMinEl ? parseFloat(phMinEl.value) : NaN;
     const maxV = phMaxEl ? parseFloat(phMaxEl.value) : NaN;
 
     activePhMin = Number.isFinite(minV) ? minV : null;
     activePhMax = Number.isFinite(maxV) ? maxV : null;
 
+    // ---- Date range ----
+    activeDateFrom = dateFromEl?.value || null;
+    activeDateTo   = dateToEl?.value || null;
+
+    // ---- Apply to map ----
     applyFilterToRings();
     rebuildClustersForFilter();
 
-    filteredRows = collectRowsFiltered(activePhMin, activePhMax);
-    updateFilteredCountsLabelOnly();
+    // ---- Collect filtered rows ----
+    filteredRows = collectRowsFiltered(
+      activePhMin,
+      activePhMax,
+      activeDateFrom,
+      activeDateTo
+    );
+
+    // ---- UI updates (guarded) ----
+    if (btnExportFiltered) {
+      updateFilteredCountsLabelOnly();
+    }
+
     updateSelectionCount();
   }
 
-  btnApplyFilter?.addEventListener('click', updateFiltered);
-  btnExportFiltered?.addEventListener('click', ()=>{
-    if(!filteredRows.length) return;
-    const csv = toCsv(filteredRows);
-    if(!csv) return;
-    downloadCsv('echorepo_filtered.csv', csv);
-  });
+    btnApplyFilter?.addEventListener('click', () => {
+      updateFiltered();
+      updateURLFromFilters();
+    });
+    btnExportFiltered?.addEventListener('click', () => {
+      const cfg = window.ECHOREPO_CFG || {};
+      const PUBLIC_MODE = !!cfg.public_mode;
+
+      if (PUBLIC_MODE) {
+        alert(T('signInToExport', {}, 'Please sign in to export data.'));
+        return;
+      }
+
+      if (!filteredRows.length) return;
+
+      const params = new URLSearchParams();
+      params.set('format', 'zip');
+
+      if (activePhMin != null) params.set('ph_min', activePhMin);
+      if (activePhMax != null) params.set('ph_max', activePhMax);
+      if (activeCountry)       params.set('country', activeCountry);
+      if (activeDateFrom)      params.set('date_from', activeDateFrom);
+      if (activeDateTo)        params.set('date_to', activeDateTo);
+
+      window.location.href = `/search?${params.toString()}`;
+    });
+
   [phMinEl, phMaxEl].forEach(el=> el?.addEventListener('keydown', (e)=>{
     if(e.key==='Enter'){ e.preventDefault(); updateFiltered(); }
   }));
@@ -822,27 +1498,74 @@
     }; phLegend.addTo(map);
   }
 
-  // ---- Boot ----
-  Promise.all([
-    fetch('/i18n/labels?ts=' + Date.now(), { credentials:'same-origin' }).then(r => r.json()),
-    fetch('/api/user_geojson',   { credentials:'same-origin' }).then(r=>r.json()),
-    fetch('/api/others_geojson', { credentials:'same-origin' }).then(r=>r.json())
-  ]).then(([i18n, u, o])=>{
-    // Normalize whether server returns {labels, by_msgid} or a flat {key:text} map
-    const payload = (i18n && (i18n.labels || i18n.by_msgid)) ? i18n : { labels: i18n, by_msgid: {} };
-    window.I18N = {
-      labels:  payload.labels  || {},
-      by_msgid: payload.by_msgid || {}
-    };
+// ---- Boot ----
+(function boot(){
+  const cfg = (window.ECHOREPO_CFG || {});
+  const PUBLIC_MODE = !!cfg.public_mode;
 
-    userGJ = u;
-    othersGJ = o;
+  const userUrl   = cfg.geojson_user_url;   // optional (string) OR null to disable
+  const othersUrl = cfg.geojson_others_url; // optional (string)
+
+  // fetch JSON safely (never throws)
+  const safeJson = (url) =>
+    fetch(url, { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null);
+
+  const i18nReq = safeJson('/i18n/labels?ts=' + Date.now());
+
+  // In public mode: do NOT request /api/user_geojson at all.
+  const userReq =
+    (!PUBLIC_MODE && userUrl !== null)
+      ? safeJson(userUrl || '/api/user_geojson')
+      : Promise.resolve(null);
+
+  // In public mode: load others from configured public endpoint if provided.
+  const othersReq =
+    (othersUrl)
+      ? safeJson(othersUrl)
+      : (PUBLIC_MODE ? Promise.resolve(null) : safeJson('/api/others_geojson'));
+
+  Promise.all([i18nReq, userReq, othersReq]).then(([i18n, u, o]) => {
+    // normalize i18n payload
+    const payload = (i18n && (i18n.labels || i18n.by_msgid))
+      ? i18n
+      : { labels: (i18n || {}), by_msgid: {} };
+
+    window.I18N = window.I18N || { labels: {}, by_msgid: {} };
+
+    if (payload.labels && Object.keys(payload.labels).length) {
+      Object.assign(window.I18N.labels, payload.labels);
+    }
+
+    if (payload.by_msgid && Object.keys(payload.by_msgid).length) {
+      Object.assign(window.I18N.by_msgid, payload.by_msgid);
+    }
+
+    // ALWAYS give valid GeoJSON
+    userGJ   = u || { type: "FeatureCollection", features: [] };
+    othersGJ = o || { type: "FeatureCollection", features: [] };
 
     computeAllHeaders();
     buildLayers();
-  }).catch(err=>{
+
+    // ✅ 1. Populate country selector from FULL dataset
+    populateCountryFilter();
+
+    // ✅ 2. Restore filters from URL (sets activeCountry / activePhMin / activePhMax)
+    initFiltersFromUrl();
+
+    // ✅ 3. Sync restored values into inputs
+    syncFiltersToUI();
+
+    // ✅ 4. Apply filters to map + counts
+    updateFiltered();
+
+    // ✅ 5. Apply i18n to dynamic texts
+    refreshI18NTexts();
+  }).catch(err => {
     console.warn('Init failed:', err);
-    mapDiv.style.display='none';
   });
+})();
 
 })();

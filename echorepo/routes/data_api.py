@@ -1,25 +1,31 @@
 # echorepo/routes/data_api.py
 from __future__ import annotations
 
-import csv, io, os, re, sqlite3, math, time, json
+import csv
+import io
+import json
+import math
+import os
+import re
+import sqlite3
+import time
+import zipfile
 from datetime import datetime
-from typing import List, Dict, Any, Optional, Tuple
-import os 
-from echorepo.routes.storage import _get_minio_client 
+from typing import Any
 
-import requests           # pip install requests
-import jwt                # pip install PyJWT
-from flask import Blueprint, current_app, request, jsonify, Response, abort, g
+import jwt  # pip install PyJWT
+import requests  # pip install requests
+from flask import Blueprint, Response, abort, current_app, g, jsonify, request
+from psycopg2.extras import RealDictCursor
 
-from psycopg2.extras import RealDictCursor          
-from echorepo.services.db import get_pg_conn        
-import zipfile 
+from echorepo.routes.storage import _get_minio_client
+from echorepo.services.db import get_pg_conn
 
 data_api = Blueprint("data_api", __name__)
 
-# -----------------------------------------------------------------------------  
-# Canonical table schemas (Postgres)  
-# -----------------------------------------------------------------------------  
+# -----------------------------------------------------------------------------
+# Canonical table schemas (Postgres)
+# -----------------------------------------------------------------------------
 
 CANONICAL_SAMPLE_COLS = [
     "sample_id",
@@ -82,6 +88,7 @@ CANONICAL_PARAM_COLS = [
 # Config helpers
 # -----------------------------------------------------------------------------
 
+
 def get_db_path() -> str:
     # Prefer Flask config, then ENV, then a sane default (your repo layout)
     return (
@@ -90,9 +97,11 @@ def get_db_path() -> str:
         or os.path.join(current_app.root_path, "..", "..", "data", "db", "data.db")
     )
 
+
 def quote_ident(name: str) -> str:
     # Minimal identifier quoting for SQLite
     return '"' + name.replace('"', '""') + '"'
+
 
 def get_sample_table(conn: sqlite3.Connection) -> str:
     """
@@ -123,9 +132,11 @@ def get_sample_table(conn: sqlite3.Connection) -> str:
         return tables[0]
     raise RuntimeError("No tables found in SQLite database")
 
+
 # -----------------------------------------------------------------------------
 # OIDC (Keycloak) helpers
 # -----------------------------------------------------------------------------
+
 
 def oidc_cfg():
     """Cache OIDC well-known + JWKS for 5 minutes."""
@@ -150,6 +161,7 @@ def oidc_cfg():
     }
     return g._oidc_cfg
 
+
 def verify_bearer():
     """Return decoded claims if Authorization: Bearer <JWT> is valid; else None."""
     auth = request.headers.get("Authorization", "")
@@ -161,8 +173,11 @@ def verify_bearer():
         return None
     try:
         # pick key by kid
-        keys = {k.get("kid"): jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(k))
-                for k in cfg["jwks"]["keys"] if k.get("kid")}
+        keys = {
+            k.get("kid"): jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(k))
+            for k in cfg["jwks"]["keys"]
+            if k.get("kid")
+        }
         header = jwt.get_unverified_header(token)
         key = keys.get(header.get("kid"))
         if not key:
@@ -183,7 +198,9 @@ def verify_bearer():
         client_id = cfg.get("client_id")
         if client_id:
             aud_claim = claims.get("aud")
-            aud_set = set(aud_claim if isinstance(aud_claim, list) else [aud_claim] if aud_claim else [])
+            aud_set = set(
+                aud_claim if isinstance(aud_claim, list) else [aud_claim] if aud_claim else []
+            )
             if aud and aud not in aud_set and claims.get("azp") != client_id:
                 return None
             if not aud and claims.get("azp") != client_id and client_id not in aud_set:
@@ -193,9 +210,11 @@ def verify_bearer():
     except Exception:
         return None
 
+
 # -----------------------------------------------------------------------------
 # DB connection per request
 # -----------------------------------------------------------------------------
+
 
 def get_conn() -> sqlite3.Connection:
     if "sqlite_conn" not in g:
@@ -207,17 +226,20 @@ def get_conn() -> sqlite3.Connection:
         g.sqlite_conn = conn
     return g.sqlite_conn
 
+
 @data_api.teardown_app_request
 def _close_conn(exc):
     conn = g.pop("sqlite_conn", None)
     if conn is not None:
         conn.close()
 
+
 # -----------------------------------------------------------------------------
 # Parsing & helpers
 # -----------------------------------------------------------------------------
 
-def parse_iso8601(s: str) -> Optional[str]:
+
+def parse_iso8601(s: str) -> str | None:
     if not s:
         return None
     s = s.strip()
@@ -229,38 +251,43 @@ def parse_iso8601(s: str) -> Optional[str]:
             continue
     return s  # fallback—SQLite can still compare ISO-like strings
 
-def parse_bbox(s: str) -> Optional[Tuple[float,float,float,float]]:
+
+def parse_bbox(s: str) -> tuple[float, float, float, float] | None:
     # west,south,east,north  (lon_min, lat_min, lon_max, lat_max)
     if not s:
         return None
     try:
-        west, south, east, north = [float(x) for x in s.split(",")]
+        west, south, east, north = (float(x) for x in s.split(","))
         return (west, south, east, north)
     except Exception:
         return None
 
-def parse_within(s: str) -> Optional[Tuple[float,float,float]]:
+
+def parse_within(s: str) -> tuple[float, float, float] | None:
     # lat,lon,r_km
     if not s:
         return None
     try:
-        lat, lon, r_km = [float(x) for x in s.split(",")]
+        lat, lon, r_km = (float(x) for x in s.split(","))
         return (lat, lon, r_km)
     except Exception:
         return None
 
+
 def approx_deg_for_km_lat(km: float) -> float:
     return km / 111.32
 
+
 def approx_deg_for_km_lon(km: float, at_lat: float) -> float:
     return km / (111.32 * max(0.1, math.cos(math.radians(at_lat))))
+
 
 # -----------------------------------------------------------------------------
 # Field policy (PII + *_state suppression)
 # -----------------------------------------------------------------------------
 
-PII_FIELDS = {"email", "userId"}         # always excluded
-EXCLUDED_SUFFIXES = ("_state",)          # exclude any column ending with these
+PII_FIELDS = {"email", "userId"}  # always excluded
+EXCLUDED_SUFFIXES = ("_state",)  # exclude any column ending with these
 
 # oxide detectors (legacy endpoints only)
 OXIDE_TOKEN_RE = re.compile(r"[A-Z][a-z]?\d*")
@@ -274,11 +301,12 @@ def _looks_like_oxide(label: str) -> bool:
     """
     if not label:
         return False
-    s = re.sub(r"\(.*?\)", "", str(label))        # strip "(%)", "(mg/kg)", etc.
-    tokens = OXIDE_TOKEN_RE.findall(s)            # e.g. ['Si', 'O2'] or ['Fe2', 'O3']
+    s = re.sub(r"\(.*?\)", "", str(label))  # strip "(%)", "(mg/kg)", etc.
+    tokens = OXIDE_TOKEN_RE.findall(s)  # e.g. ['Si', 'O2'] or ['Fe2', 'O3']
     if len(tokens) < 2:
         return False
-    return any(t.startswith("O") for t in tokens) # one token is Oxygen
+    return any(t.startswith("O") for t in tokens)  # one token is Oxygen
+
 
 def _is_oxide_field(name: str) -> bool:
     """
@@ -300,9 +328,12 @@ def is_excluded_field(name: str) -> bool:
         return True
     return _is_oxide_field(name)
 
+
 DEFAULT_FIELDS = [
-    "sampleId", "collectedAt",
-    "GPS_long", "GPS_lat",
+    "sampleId",
+    "collectedAt",
+    "GPS_long",
+    "GPS_lat",
     "PH_ph",
     "SOIL_TEXTURE_texture",
     "SOIL_STRUCTURE_structure",
@@ -313,6 +344,7 @@ DEFAULT_FIELDS = [
 # -----------------------------------------------------------------------------
 # Auth
 # -----------------------------------------------------------------------------
+
 
 def require_api_auth():
     """
@@ -340,6 +372,7 @@ def require_api_auth():
 
     try:
         from flask_login import current_user
+
         if getattr(current_user, "is_authenticated", False):
             return
     except Exception:
@@ -347,11 +380,13 @@ def require_api_auth():
 
     abort(401, description="Missing or invalid credentials")
 
+
 # -----------------------------------------------------------------------------
 # Responses
 # -----------------------------------------------------------------------------
 
-def to_geojson(rows: List[sqlite3.Row], lon_col: str, lat_col: str) -> Response:
+
+def to_geojson(rows: list[sqlite3.Row], lon_col: str, lat_col: str) -> Response:
     feats = []
     for r in rows:
         d = dict(r)
@@ -363,29 +398,39 @@ def to_geojson(rows: List[sqlite3.Row], lon_col: str, lat_col: str) -> Response:
         if lon is None or lat is None:
             continue
         props = {k: v for k, v in d.items() if k not in (lon_col, lat_col)}
-        feats.append({
-            "type": "Feature",
-            "geometry": {"type": "Point", "coordinates": [lon, lat]},
-            "properties": props,
-        })
+        feats.append(
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "properties": props,
+            }
+        )
     return jsonify({"type": "FeatureCollection", "features": feats})
 
-def stream_csv(rows_iter, fields: List[str]) -> Response:
+
+def stream_csv(rows_iter, fields: list[str]) -> Response:
     def generate():
         output = io.StringIO()
         writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
-        yield output.getvalue(); output.seek(0); output.truncate(0)
+        yield output.getvalue()
+        output.seek(0)
+        output.truncate(0)
         for r in rows_iter:
             writer.writerow(dict(r))
-            yield output.getvalue(); output.seek(0); output.truncate(0)
+            yield output.getvalue()
+            output.seek(0)
+            output.truncate(0)
+
     return Response(generate(), mimetype="text/csv")
+
 
 # -----------------------------------------------------------------------------
 # Canonical filters builder (Postgres) – reused by /canonical/* endpoints
 # -----------------------------------------------------------------------------
 
-def _canonical_where_from_request(alias: str = "") -> tuple[str, List[Any], Dict[str, Any]]:
+
+def _canonical_where_from_request(alias: str = "") -> tuple[str, list[Any], dict[str, Any]]:
     """
     Build a WHERE clause + params for canonical Postgres tables, based on
     query params in the current request.
@@ -401,14 +446,14 @@ def _canonical_where_from_request(alias: str = "") -> tuple[str, List[Any], Dict
     """
     prefix = f"{alias}." if alias else ""
 
-    where: List[str] = []
-    params: List[Any] = []
+    where: list[str] = []
+    params: list[Any] = []
 
     # --- time window ---
     raw_from = (request.args.get("from") or "").strip()
-    raw_to   = (request.args.get("to") or "").strip()
-    from_s   = parse_iso8601(raw_from) if raw_from else None
-    to_s     = parse_iso8601(raw_to) if raw_to else None
+    raw_to = (request.args.get("to") or "").strip()
+    from_s = parse_iso8601(raw_from) if raw_from else None
+    to_s = parse_iso8601(raw_to) if raw_to else None
 
     if from_s:
         where.append(f"{prefix}timestamp_utc >= %s")
@@ -443,7 +488,10 @@ def _canonical_where_from_request(alias: str = "") -> tuple[str, List[Any], Dict
     if raw_within:
         within = parse_within(raw_within) if raw_within else None
         if not within:
-            abort(400, description=f"Invalid within='{raw_within}', expected lat[e.g. 42],lon[e.g. 2],radius[e.g. 20]")
+            abort(
+                400,
+                description=f"Invalid within='{raw_within}', expected lat[e.g. 42],lon[e.g. 2],radius[e.g. 20]",
+            )
 
     if within:
         lat0, lon0, r_km = within
@@ -462,32 +510,24 @@ def _canonical_where_from_request(alias: str = "") -> tuple[str, List[Any], Dict
     }
     return where_sql, params, filter_meta
 
-def _upload_canonical_to_minio(samples_path, params_path, images_path):
+
+# in echorepo/routes/data_api.py, near other MinIO helpers
+
+
+def _upload_canonical_zip_to_minio(zip_bytes: bytes, version_date: str):
     """
-    Upload canonical CSVs to MinIO under:
-      canonical/<YYYY-MM-DD>/{file}
-      canonical/latest/{file}
+    Upload canonical all.zip to MinIO under:
+      canonical/<version_date>/all.zip
+      canonical/latest/all.zip
     """
     mclient = _get_minio_client()
     if mclient is None:
-        current_app.logger.warning("No MinIO client, skipping canonical upload")
+        current_app.logger.warning("No MinIO client, skipping canonical ZIP upload")
         return
 
     bucket = (
-        current_app.config.get("MINIO_BUCKET")
-        or os.getenv("MINIO_BUCKET")
-        or "echorepo-uploads"
+        current_app.config.get("MINIO_BUCKET") or os.getenv("MINIO_BUCKET") or "echorepo-uploads"
     )
-
-    today = datetime.utcnow().date().isoformat()
-    version_prefix = f"canonical/{today}/"
-    latest_prefix = "canonical/latest/"
-
-    files = {
-        "samples.csv": samples_path,
-        "sample_parameters.csv": params_path,
-        "sample_images.csv": images_path,
-    }
 
     # Make sure bucket exists
     try:
@@ -497,22 +537,79 @@ def _upload_canonical_to_minio(samples_path, params_path, images_path):
         current_app.logger.error(f"Error ensuring MinIO bucket {bucket}: {e}")
         return
 
-    for name, path in files.items():
+    from io import BytesIO
+
+    data = BytesIO(zip_bytes)
+    size = len(zip_bytes)
+
+    for prefix in (f"canonical/{version_date}/", "canonical/latest/"):
+        obj_name = prefix + "all.zip"
         try:
-            # versioned copy
-            mclient.fput_object(bucket, version_prefix + name, path)
-            # latest copy
-            mclient.fput_object(bucket, latest_prefix + name, path)
+            data.seek(0)
+            mclient.put_object(
+                bucket,
+                obj_name,
+                data,
+                length=size,
+                content_type="application/zip",
+            )
         except Exception as e:
-            current_app.logger.error(f"Error uploading {name} to MinIO: {e}")
+            current_app.logger.error(f"Error uploading {obj_name} to MinIO: {e}")
+
+
+def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str | None = None):
+    """
+    Upload canonical all.zip to MinIO under:
+      canonical/<YYYY-MM-DD>/all.zip
+      canonical/latest/all.zip
+    """
+    mclient = _get_minio_client()
+    if mclient is None:
+        current_app.logger.warning("No MinIO client, skipping all.zip upload")
+        return
+
+    bucket = (
+        current_app.config.get("MINIO_BUCKET") or os.getenv("MINIO_BUCKET") or "echorepo-uploads"
+    )
+
+    if not version_date:
+        version_date = datetime.utcnow().date().isoformat()
+
+    version_prefix = f"canonical/{version_date}/"
+    latest_prefix = "canonical/latest/"
+
+    try:
+        if not mclient.bucket_exists(bucket):
+            mclient.make_bucket(bucket)
+    except Exception as e:
+        current_app.logger.error(f"Error ensuring MinIO bucket {bucket}: {e}")
+        return
+
+    from io import BytesIO
+
+    for prefix in (version_prefix, latest_prefix):
+        obj_name = prefix + "all.zip"
+        try:
+            mclient.put_object(
+                bucket,
+                obj_name,
+                BytesIO(zip_bytes),
+                length=len(zip_bytes),
+                content_type="application/zip",
+            )
+        except Exception as e:
+            current_app.logger.error(f"Error uploading {obj_name} to MinIO: {e}")
+
 
 # -----------------------------------------------------------------------------
 # Endpoints
 # -----------------------------------------------------------------------------
 
+
 @data_api.get("/ping")
 def ping():
     return jsonify({"ok": True})
+
 
 @data_api.get("/samples")
 def samples():
@@ -534,13 +631,17 @@ def samples():
     offset = max(0, int(request.args.get("offset", 0)))
 
     from_s = parse_iso8601(request.args.get("from", ""))
-    to_s   = parse_iso8601(request.args.get("to", ""))
-    bbox   = parse_bbox(request.args.get("bbox", ""))
+    to_s = parse_iso8601(request.args.get("to", ""))
+    bbox = parse_bbox(request.args.get("bbox", ""))
     within = parse_within(request.args.get("within", ""))
 
     # ---------- Fields (requested → sanitized → excluded stripped) ----------
     fields_param = request.args.get("fields", "")
-    requested_fields = [f.strip() for f in fields_param.split(",") if f.strip()] if fields_param else DEFAULT_FIELDS[:]
+    requested_fields = (
+        [f.strip() for f in fields_param.split(",") if f.strip()]
+        if fields_param
+        else DEFAULT_FIELDS[:]
+    )
 
     conn = get_conn()
     table = get_sample_table(conn)
@@ -562,14 +663,17 @@ def samples():
     # ---------- Order (must not be excluded) ----------
     order = (request.args.get("order") or "collectedAt").strip()
     if order not in cols or is_excluded_field(order):
-        order = "collectedAt" if "collectedAt" in cols and not is_excluded_field("collectedAt") \
+        order = (
+            "collectedAt"
+            if "collectedAt" in cols and not is_excluded_field("collectedAt")
             else (next((c for c in cols if not is_excluded_field(c)), "rowid"))
+        )
     direction = (request.args.get("dir") or "desc").lower()
     direction = "desc" if direction not in ("asc", "desc") else direction
 
     # ---------- WHERE ----------
     where = []
-    params: List[Any] = []
+    params: list[Any] = []
 
     if from_s:
         where.append(f"{quote_ident('collectedAt')} >= ?")
@@ -603,7 +707,9 @@ def samples():
 
     # count (best-effort)
     try:
-        cnt = conn.execute(f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}", params).fetchone()[0]
+        cnt = conn.execute(
+            f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}", params
+        ).fetchone()[0]
     except Exception:
         cnt = len(rows)
 
@@ -611,10 +717,19 @@ def samples():
         return stream_csv(iter(rows), fields)
     if fmt == "geojson":
         return to_geojson(rows, "GPS_long", "GPS_lat")
-    return jsonify({
-        "meta": {"count": cnt, "limit": limit, "offset": offset, "order": order, "dir": direction},
-        "data": [dict(r) for r in rows],
-    })
+    return jsonify(
+        {
+            "meta": {
+                "count": cnt,
+                "limit": limit,
+                "offset": offset,
+                "order": order,
+                "dir": direction,
+            },
+            "data": [dict(r) for r in rows],
+        }
+    )
+
 
 @data_api.get("/samples/count")
 def samples_count():
@@ -623,7 +738,7 @@ def samples_count():
     table = get_sample_table(conn)
 
     from_s = parse_iso8601(request.args.get("from", ""))
-    to_s   = parse_iso8601(request.args.get("to", ""))
+    to_s = parse_iso8601(request.args.get("to", ""))
 
     where = []
     params = []
@@ -635,8 +750,11 @@ def samples_count():
         params.append(to_s)
 
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
-    cnt = conn.execute(f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}", params).fetchone()[0]
+    cnt = conn.execute(f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}", params).fetchone()[
+        0
+    ]
     return jsonify({"count": cnt})
+
 
 # -------------------------------------------
 # ---------- lab enrichment upload ----------
@@ -646,18 +764,18 @@ def samples_count():
 OXIDE_TO_METAL: dict[str, tuple[str, float]] = {
     "MN2O3": ("Mn", 0.696),
     "AL2O3": ("Al", 0.529),
-    "CAO":   ("Ca", 0.715),
+    "CAO": ("Ca", 0.715),
     "FE2O3": ("Fe", 0.699),
-    "MGO":   ("Mg", 0.603),
-    "SIO2":  ("Si", 0.467),
-    "P2O5":  ("P", 0.436),
-    "TIO2":  ("Ti", 0.599),
-    "K2O":   ("K", 0.83),
-    "SO3":   ("S", 0.40),
+    "MGO": ("Mg", 0.603),
+    "SIO2": ("Si", 0.467),
+    "P2O5": ("P", 0.436),
+    "TIO2": ("Ti", 0.599),
+    "K2O": ("K", 0.83),
+    "SO3": ("S", 0.40),
 }
 
 
-def _oxide_to_metal(param: str, value: Any) -> Optional[tuple[str, float]]:
+def _oxide_to_metal(param: str, value: Any) -> tuple[str, float] | None:
     """
     If param is an oxide (e.g. 'K2O') and value is numeric,
     return (metal_param, converted_value). Otherwise None.
@@ -696,6 +814,7 @@ def _normalize_qr(raw: str) -> str:
         raw = raw[:4] + "-" + raw[4:]
     return raw
 
+
 def _ensure_lab_enrichment(conn: sqlite3.Connection):
     # use the same schema as the web upload route
     conn.execute(
@@ -712,6 +831,74 @@ def _ensure_lab_enrichment(conn: sqlite3.Connection):
         )
         """
     )
+
+
+# data_api.py
+
+
+def build_canonical_all_zip_bytes(
+    where_sql: str = "",
+    params: list[Any] | None = None,
+) -> bytes:
+    """
+    Build the canonical all.zip (samples, sample_images, sample_parameters)
+    and return it as raw bytes. Optionally takes WHERE + params to reuse
+    the same logic with filters.
+    """
+    if params is None:
+        params = []
+
+    mem = io.BytesIO()
+
+    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+
+        def _write_query_to_zip(zip_name: str, cols: list[str], sql: str, sql_params: list[Any]):
+            with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(sql, sql_params)
+                rows = cur.fetchall()
+
+            fields = cols[:] if cols else (list(rows[0].keys()) if rows else [])
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+            writer.writeheader()
+            for r in rows:
+                writer.writerow(r)
+            zf.writestr(zip_name, buf.getvalue())
+
+        # 1) samples
+        sample_cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
+        sql_samples = f"""
+            SELECT {sample_cols_sql}
+            FROM samples s
+            {where_sql}
+            ORDER BY s.timestamp_utc DESC, s.sample_id
+        """
+        _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
+
+        # 2) sample_images
+        img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
+        sql_imgs = f"""
+            SELECT {img_cols_sql}
+            FROM sample_images i
+            JOIN samples s ON s.sample_id = i.sample_id
+            {where_sql}
+            ORDER BY i.sample_id, i.image_id
+        """
+        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
+
+        # 3) sample_parameters
+        param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
+        sql_params = f"""
+            SELECT {param_cols_sql}
+            FROM sample_parameters p
+            JOIN samples s ON s.sample_id = p.sample_id
+            {where_sql}
+            ORDER BY p.sample_id, p.parameter_code
+        """
+        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
+
+    return mem.getvalue()
+
 
 @data_api.post("/lab-enrichment")
 def lab_enrichment_upload():
@@ -755,9 +942,9 @@ def lab_enrichment_upload():
         except ImportError:
             abort(400, description="pandas is required to read XLSX/CSV uploads")
 
-        if filename.endswith(".xlsx") or (
-            request.content_type or ""
-        ).startswith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+        if filename.endswith(".xlsx") or (request.content_type or "").startswith(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ):
             df = pd.read_excel(f)
         else:
             # CSV — try comma, then tab
@@ -777,6 +964,7 @@ def lab_enrichment_upload():
             # raw CSV in body
             text = request.get_data(as_text=True)
             import csv as _csv
+
             reader = _csv.DictReader(text.splitlines())
             rows = list(reader)
 
@@ -794,13 +982,16 @@ def lab_enrichment_upload():
             # ---------- 3) assume JSON ----------
             payload = request.get_json(silent=True)
             if not payload:
-                abort(400, description="Expected JSON array/object, CSV, XLSX, or multipart/form-data with file=")
+                abort(
+                    400,
+                    description="Expected JSON array/object, CSV, XLSX, or multipart/form-data with file=",
+                )
 
             if isinstance(payload, dict) and "rows" in payload:
                 rows = payload["rows"]
             else:
                 rows = payload
-            
+
             g._analytics_extra = {
                 "upload_type": "lab_enrichment_api",
                 "payload_keys": list(payload.keys())[:10],  # only keys, not full data
@@ -818,7 +1009,6 @@ def lab_enrichment_upload():
         uploader_id = request.headers.get("X-User-Id") or "api"
 
     inserted = 0
-    updated = 0
     skipped = 0
 
     cur = conn.cursor()
@@ -901,11 +1091,14 @@ def lab_enrichment_upload():
 
     conn.commit()
 
-    return jsonify({
-        "ok": True,
-        "processed": inserted,
-        "skipped": skipped,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "processed": inserted,
+            "skipped": skipped,
+        }
+    )
+
 
 @data_api.get("/canonical/samples")
 def canonical_samples():
@@ -923,7 +1116,8 @@ def canonical_samples():
       - format         (json|csv|geojson; default json)
       - api_key / Bearer / session as in require_api_auth()
     """
-    require_api_auth()
+    if not (current_app.config.get("CANONICAL_PUBLIC") or os.getenv("CANONICAL_PUBLIC") == "1"):
+        require_api_auth()
 
     fmt = (request.args.get("format") or "json").lower()
     limit = max(1, min(int(request.args.get("limit", 100)), 1000))
@@ -1003,6 +1197,7 @@ def canonical_samples():
         }
     )
 
+
 @data_api.get("/canonical/samples/count")
 def canonical_samples_count():
     """Count canonical samples in Postgres, with same filters as /canonical/samples."""
@@ -1019,6 +1214,7 @@ def canonical_samples_count():
     g._analytics_extra = meta
 
     return jsonify({"count": count})
+
 
 @data_api.get("/canonical/sample_images")
 def canonical_sample_images():
@@ -1050,7 +1246,7 @@ def canonical_sample_images():
         fields = CANONICAL_IMAGE_COLS[:]
 
     where = []
-    params: List[Any] = []
+    params: list[Any] = []
 
     sample_id = request.args.get("sample_id")
     if sample_id:
@@ -1063,7 +1259,7 @@ def canonical_sample_images():
         params.append(country.upper())
 
     from_s = parse_iso8601(request.args.get("from", ""))
-    to_s   = parse_iso8601(request.args.get("to", ""))
+    to_s = parse_iso8601(request.args.get("to", ""))
     if from_s:
         where.append("timestamp_utc >= %s")
         params.append(from_s)
@@ -1113,6 +1309,7 @@ def canonical_sample_images():
         }
     )
 
+
 @data_api.get("/canonical/sample_parameters")
 def canonical_sample_parameters():
     """
@@ -1143,7 +1340,7 @@ def canonical_sample_parameters():
         fields = CANONICAL_PARAM_COLS[:]
 
     where = []
-    params: List[Any] = []
+    params: list[Any] = []
 
     sample_id = request.args.get("sample_id")
     if sample_id:
@@ -1202,6 +1399,7 @@ def canonical_sample_parameters():
         }
     )
 
+
 @data_api.get("/canonical/all.zip")
 def canonical_all_zip():
     """
@@ -1227,59 +1425,13 @@ def canonical_all_zip():
     # WHERE over samples aliased as "s"
     where_sql, params, filter_meta = _canonical_where_from_request(alias="s")
 
-    mem = io.BytesIO()
+    # --- build ZIP bytes using your helper ---
+    zip_bytes = build_canonical_all_zip_bytes(where_sql=where_sql, params=params)
 
-    def _write_query_to_zip(zip_name: str, cols: List[str], sql: str, sql_params: List[Any]):
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(sql, sql_params)
-            rows = cur.fetchall()
-
-        if cols:
-            fields = cols[:]  # canonical order
-        else:
-            fields = list(rows[0].keys()) if rows else []
-
-        buf = io.StringIO()
-        writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
-        writer.writeheader()
-        for r in rows:
-            writer.writerow(r)
-        zf.writestr(zip_name, buf.getvalue())
-
-    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        # 1) samples.csv (from samples s)
-        sample_cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
-        sql_samples = f"""
-            SELECT {sample_cols_sql}
-            FROM samples s
-            {where_sql}
-            ORDER BY s.timestamp_utc DESC, s.sample_id
-        """
-        _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
-
-        # 2) sample_images.csv (images i joined to filtered samples s)
-        img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
-        sql_imgs = f"""
-            SELECT {img_cols_sql}
-            FROM sample_images i
-            JOIN samples s ON s.sample_id = i.sample_id
-            {where_sql}
-            ORDER BY i.sample_id, i.image_id
-        """
-        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
-
-        # 3) sample_parameters.csv (parameters p joined to filtered samples s)
-        param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
-        sql_params = f"""
-            SELECT {param_cols_sql}
-            FROM sample_parameters p
-            JOIN samples s ON s.sample_id = p.sample_id
-            {where_sql}
-            ORDER BY p.sample_id, p.parameter_code
-        """
-        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
-
-    mem.seek(0)
+    # --- if this is the FULL canonical dataset, snapshot to MinIO ---
+    if not where_sql.strip():
+        version_date = datetime.utcnow().date().isoformat()
+        _upload_canonical_all_zip_to_minio(zip_bytes, version_date=version_date)
 
     # Analytics: mark dataset + filters + api endpoint
     meta = {
@@ -1290,9 +1442,44 @@ def canonical_all_zip():
     g._analytics_extra = meta
 
     return Response(
-        mem.getvalue(),
+        zip_bytes,
         mimetype="application/zip",
         headers={
             "Content-Disposition": 'attachment; filename="canonical_all.zip"',
+        },
+    )
+
+
+@data_api.get("/canonical/snapshot/all.zip")
+def canonical_snapshot_all_zip():
+    """
+    Build the full canonical all.zip (no filters),
+    upload it to MinIO as canonical/<YYYY-MM-DD>/all.zip and canonical/latest/all.zip,
+    and also return it in the response.
+
+    Auth: API key / Bearer / session via require_api_auth().
+    """
+    require_api_auth()
+
+    # Full dataset snapshot – no WHERE clause
+    zip_bytes = build_canonical_all_zip_bytes(where_sql="", params=[])
+
+    version_date = datetime.utcnow().date().isoformat()
+
+    # Upload to MinIO for later dated access
+    _upload_canonical_zip_to_minio(zip_bytes, version_date)
+
+    # Optional analytics
+    g._analytics_extra = {
+        "dataset": "canonical_all",
+        "api_name": "canonical_snapshot_all_zip",
+        "version_date": version_date,
+    }
+
+    return Response(
+        zip_bytes,
+        mimetype="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="canonical_{version_date}.zip"',
         },
     )
