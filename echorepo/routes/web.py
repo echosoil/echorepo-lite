@@ -2424,25 +2424,156 @@ def _import_metals_file_bytes(data: bytes, filename: str, uploader_id: str):
 
 
 def _import_biodiversity_xlsx_bytes(xlsx_bytes: bytes, filename: str, uploader_id: str):
-    """
-    Uses the 'no melt, chunked inserts' version you already switched to,
-    but reading from bytes and sheet 'clean_phylum' (case-insensitive).
-    """
-    # --- load the intended sheet ---
-    xls = pd.ExcelFile(io.BytesIO(xlsx_bytes), engine="openpyxl")
-    sheets = {s.strip().lower(): s for s in xls.sheet_names}
-    sheet = sheets.get("clean_phylum")
-    if not sheet:
-        abort(400, description="Biodiversity XLSX detected but sheet 'clean_phylum' not found")
+    log = logging.getLogger(__name__)
 
-    df = pd.read_excel(xls, sheet_name=sheet, dtype=str)
+    try:
+        xls = pd.ExcelFile(io.BytesIO(xlsx_bytes), engine="openpyxl")
+        sheets = {s.strip().lower(): s for s in xls.sheet_names}
+        sheet = sheets.get("clean_phylum")
+        if not sheet:
+            abort(400, description="Sheet 'clean_phylum' not found in XLSX")
+        df = pd.read_excel(xls, sheet_name=sheet, dtype=str)
+    except Exception as e:
+        abort(400, description=f"Cannot read biodiversity XLSX: {e}")
+
     if df is None or df.empty:
-        abort(400, description="Uploaded file has no rows")
-    df = df.dropna(axis=1, how="all")
+        abort(400, description="Uploaded biodiversity file has no rows")
 
-    # ... then paste your current fast importer here (column-by-column + chunked PG upserts)
-    # (I won’t repeat it here to keep this message readable; use the one you already adopted.)
-    #
-    # IMPORTANT: read from df (already loaded) and insert into sample_otu_counts.
-    #
-    raise NotImplementedError("Paste your current fast OTU importer body here.")
+    df = df.dropna(axis=1, how="all")
+    log.warning(
+        "BIOUPLOAD(auto): loaded sheet=%s rows=%d cols=%d file=%s",
+        sheet,
+        len(df),
+        len(df.columns),
+        filename,
+    )
+
+    otu_col = None
+    for cand in ("OTU ID", "OTU_ID", "OTU", "otu_id", "otu"):
+        if cand in df.columns:
+            otu_col = cand
+            break
+    if not otu_col:
+        otu_col = df.columns[0]
+
+    sample_pat = re.compile(r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$", re.IGNORECASE)
+    sample_cols = [c for c in df.columns if c != otu_col and sample_pat.match(str(c).strip())]
+
+    if not sample_cols:
+        abort(400, description="No OTU sample columns found (expected 'AAUU-9633-16S'/'...-ITS').")
+
+    taxa_cols = [c for c in df.columns if c not in ([otu_col] + sample_cols)]
+    clean_taxa_cols = []
+    for c in taxa_cols:
+        s = df[c]
+        if s.notna().any() and (s.astype(str).str.strip() != "").any():
+            clean_taxa_cols.append(c)
+    taxa_cols = clean_taxa_cols
+    has_taxa = bool(taxa_cols)
+
+    otu_ids = df[otu_col].fillna("").astype(str).str.strip().tolist()
+
+    if has_taxa:
+        taxa_json_by_row = []
+        taxa_df = df[taxa_cols].fillna("")
+        for _, rr in taxa_df.iterrows():
+            d = {}
+            for c in taxa_cols:
+                v = str(rr.get(c) or "").strip()
+                if v:
+                    d[str(c)] = v
+            taxa_json_by_row.append(json.dumps(d, ensure_ascii=False) if d else None)
+    else:
+        taxa_json_by_row = [None] * len(df)
+
+    def _to_float(v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        if not s or s.lower() in {"nan", "none", "null"}:
+            return None
+        try:
+            return float(s.replace(",", "."))
+        except Exception:
+            return None
+
+    upsert_sql = """
+      INSERT INTO sample_otu_counts
+        (sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file)
+      VALUES
+        (%s, %s, %s, %s, %s::jsonb, now(), %s, %s)
+      ON CONFLICT (sample_id, marker, otu_id) DO UPDATE SET
+        count       = EXCLUDED.count,
+        taxa        = COALESCE(EXCLUDED.taxa, sample_otu_counts.taxa),
+        uploaded_at = now(),
+        uploaded_by = EXCLUDED.uploaded_by,
+        source_file = EXCLUDED.source_file
+    """
+
+    chunk = 20000
+    total_rows = 0
+    batch = []
+
+    try:
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+              CREATE TABLE IF NOT EXISTS sample_otu_counts (
+                sample_id TEXT NOT NULL,
+                marker TEXT NOT NULL,
+                otu_id TEXT NOT NULL,
+                count DOUBLE PRECISION,
+                taxa JSONB,
+                uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                uploaded_by TEXT,
+                source_file TEXT,
+                PRIMARY KEY (sample_id, marker, otu_id)
+              )
+            """)
+            conn.commit()
+
+            for col in sample_cols:
+                sample_id, marker = str(col).strip().rsplit("-", 1)
+                sample_id = sample_id.strip().upper()
+                marker = marker.strip().upper()
+
+                vals = df[col].tolist()
+                for i, v in enumerate(vals):
+                    otu_id = otu_ids[i]
+                    if not otu_id:
+                        continue
+
+                    count = _to_float(v)
+                    if count is None or count == 0:
+                        continue
+
+                    batch.append(
+                        (
+                            sample_id,
+                            marker,
+                            otu_id,
+                            float(count),
+                            taxa_json_by_row[i],
+                            uploader_id,
+                            filename,
+                        )
+                    )
+
+                    if len(batch) >= chunk:
+                        cur.executemany(upsert_sql, batch)
+                        conn.commit()
+                        total_rows += len(batch)
+                        log.warning("BIOUPLOAD(auto): inserted %d rows so far...", total_rows)
+                        batch.clear()
+
+            if batch:
+                cur.executemany(upsert_sql, batch)
+                conn.commit()
+                total_rows += len(batch)
+
+    except Exception as e:
+        abort(500, description=f"Postgres biodiversity import failed: {e}")
+
+    if total_rows == 0:
+        abort(400, description="No non-zero OTU counts found to import (all empty/zero?).")
+
+    log.warning("BIOUPLOAD(auto): done, rows_inserted=%d", total_rows)
