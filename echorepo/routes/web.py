@@ -2277,18 +2277,32 @@ def lab_import_auto():
     kc_profile = (session.get("kc") or {}).get("profile") or {}
     uploader_id = kc_profile.get("id") or kc_profile.get("sub") or session.get("user") or "unknown"
 
+    # XLSX can be either biodiversity OR metals
     if filename.lower().endswith(".xlsx"):
-        inserted = _import_biodiversity_xlsx_streaming(data, filename, uploader_id)
+        if _looks_like_biodiversity_xlsx(data):
+            inserted = _import_biodiversity_xlsx_streaming(data, filename, uploader_id)
 
+            g._analytics_extra = {
+                "upload_type": "biodiversity_otu_xlsx",
+                "filename": filename,
+                "rows_inserted": inserted,
+            }
+            return redirect(url_for("web.home"))
+
+        # otherwise treat XLSX as normal lab/metals file
+        _import_metals_file_bytes(data, filename, uploader_id)
         g._analytics_extra = {
-            "upload_type": "biodiversity_otu_xlsx",
+            "upload_type": "lab_xlsx",
             "filename": filename,
-            "rows_inserted": inserted,
         }
         return redirect(url_for("web.home"))
 
-    # fallback to your normal metals importer
+    # non-XLSX fallback: CSV/TSV metals importer
     _import_metals_file_bytes(data, filename, uploader_id)
+    g._analytics_extra = {
+        "upload_type": "lab_csv",
+        "filename": filename,
+    }
     return redirect(url_for("web.home"))
 
 
