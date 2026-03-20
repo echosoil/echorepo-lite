@@ -965,7 +965,7 @@
 
             if (!p.__pie_loaded && chartId) {
               p.__pie_loaded = true;
-              const pie = await fetchSamplePiechart(chartId, "16S", "Order");
+              const pie = await fetchSamplePiechart(chartId, "16S", "Family");
               if (pie) {
                 p.piechart_url = pie.url;
                 p.piechart_caption = pie.desc || "";
