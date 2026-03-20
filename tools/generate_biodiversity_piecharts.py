@@ -175,10 +175,10 @@ def extract_taxon_label(row: pd.Series, level: str) -> str:
         fallback_map = {
             "Kingdom": "A",
             "Phylum": "B",
-            "Class": "C",
-            "Order": "D",
-            "Family": "E",
-            "Genus": "F",
+            "Order": "C",
+            "Family": "D",
+            "Genus": "E",
+            "Genus2": "F",
         }
         alt = fallback_map.get(level)
         if alt and taxa.get(alt):
@@ -237,7 +237,7 @@ def make_piechart_for_sample(
 
 def main():
     marker = os.getenv("BIODIV_MARKER", "16S")
-    level = os.getenv("BIODIV_LEVEL", "Order")
+    level = os.getenv("BIODIV_LEVEL", "Family")
     out_dir = PROJECT_ROOT / "data" / "biodiversity_piecharts" / marker / level
     out_dir.mkdir(parents=True, exist_ok=True)
 
