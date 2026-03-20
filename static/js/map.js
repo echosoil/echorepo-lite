@@ -776,19 +776,42 @@
     }
 
     let piechartHtml = "";
-    if (p.piechart_url) {
-      piechartHtml = `
-        <div class="popup-piechart mt-2">
-          <a href="${p.piechart_url}" target="_blank" rel="noopener">
-            <img
-              src="${p.piechart_url}"
-              alt="${p.piechart_caption || 'Biodiversity pie chart'}"
-              style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:contain;border:1px solid #ddd;border-radius:6px;">
-          </a>
-          ${p.piechart_caption ? `<div class="small text-muted mt-1">${p.piechart_caption}</div>` : ""}
-        </div>`;
-    }
 
+    if (p.piechart_16s_url || p.piechart_its_url) {
+      piechartHtml = `<div class="popup-piecharts mt-2">`;
+
+      if (p.piechart_16s_url) {
+        piechartHtml += `
+          <div class="popup-piechart mb-2">
+            <a href="${p.piechart_16s_url}" target="_blank" rel="noopener">
+              <img
+                src="${p.piechart_16s_url}"
+                alt="${p.piechart_16s_caption || '16S pie chart'}"
+                style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:contain;border:1px solid #ddd;border-radius:6px;">
+            </a>
+            <div class="small text-muted mt-1">
+              ${p.piechart_16s_caption || "16S · Family"}
+            </div>
+          </div>`;
+      }
+
+      if (p.piechart_its_url) {
+        piechartHtml += `
+          <div class="popup-piechart mb-2">
+            <a href="${p.piechart_its_url}" target="_blank" rel="noopener">
+              <img
+                src="${p.piechart_its_url}"
+                alt="${p.piechart_its_caption || 'ITS pie chart'}"
+                style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:contain;border:1px solid #ddd;border-radius:6px;">
+            </a>
+            <div class="small text-muted mt-1">
+              ${p.piechart_its_caption || "ITS · Family"}
+            </div>
+          </div>`;
+      }
+
+      piechartHtml += `</div>`;
+    }
     let exportHtml = "";
     if (!PUBLIC_MODE && sampleId) {
       exportHtml = `<div class="mt-2">
@@ -946,7 +969,7 @@
             { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
           );
 
-          // When popup opens, lazy-load image + piechart
+          // When popup opens, lazy-load image + BOTH piecharts
           ring.on("popupopen", async (e) => {
             const p = f.properties || {};
             const photoId = p.sampleId || p.sample_id || p.QR_qrCode;
@@ -963,18 +986,26 @@
               }
             }
 
-            if (!p.__pie_loaded && chartId) {
-              p.__pie_loaded = true;
-              const pie = await fetchSamplePiechart(chartId, "16S", "Family");
-              if (pie) {
-                p.piechart_url = pie.url;
-                p.piechart_caption = pie.desc || "";
+            if (!p.__pie16_loaded && chartId) {
+              p.__pie16_loaded = true;
+              const pie16 = await fetchSamplePiechart(chartId, "16S", "Family");
+              if (pie16) {
+                p.piechart_16s_url = pie16.url;
+                p.piechart_16s_caption = pie16.desc || "16S · Family";
+              }
+            }
+
+            if (!p.__pieITS_loaded && chartId) {
+              p.__pieITS_loaded = true;
+              const pieITS = await fetchSamplePiechart(chartId, "ITS", "Family");
+              if (pieITS) {
+                p.piechart_its_url = pieITS.url;
+                p.piechart_its_caption = pieITS.desc || "ITS · Family";
               }
             }
 
             e.popup.setContent(formatPopup(f, isOwner));
           });
-
           ring.addTo(map);
           bucket.push(ring);
 
