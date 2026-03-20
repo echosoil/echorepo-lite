@@ -175,10 +175,10 @@ def extract_taxon_label(row: pd.Series, level: str) -> str:
         fallback_map = {
             "Kingdom": "A",
             "Phylum": "B",
-            "Class": "C",
-            "Order": "D",
-            "Family": "E",
-            "Genus": "F",
+            "Order": "C",
+            "Family": "D",
+            "Genus": "E",
+            "Genus2": "F",
         }
         alt = fallback_map.get(level)
         if alt and taxa.get(alt):
