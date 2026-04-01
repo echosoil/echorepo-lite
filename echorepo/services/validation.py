@@ -22,7 +22,7 @@ def _load_country_shapes():
     shp_path = getattr(
         settings,
         "COUNTRY_SHP_PATH",
-        "data/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp",
+        "/data/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp",
     )
 
     r = shapefile.Reader(shp_path)
@@ -177,7 +177,7 @@ def annotate_country_mismatches(
             actual_cc[ridx] = _point_country(lt, ln)
 
     df2["actual_cc"] = actual_cc
-
+    
     # ---- Planned countries by QR (always a set) ----
     qr_to_planned = load_qr_to_planned(settings.PLANNED_XLSX)  # {qr: set('DK','SE',...)}
 
@@ -200,6 +200,31 @@ def annotate_country_mismatches(
 
     # Start false
     df2["planned_match"] = False
+
+    # DEBUG: show key columns for a sample of rows, including some with TEST-0001 in the QR code
+    debug_cols = [qr_col, lat_col, lon_col]
+    print('----------------TEST-0001----------------')
+    debug_path = Path("/data/country_mismatch_debug.txt")
+    with debug_path.open("a", encoding="utf-8") as f:
+        f.write("\n=== annotate_country_mismatches ===\n")
+        f.write(df2[debug_cols].head(20).to_string())
+        f.write("\n")
+    print(df2[debug_cols].head(20).to_string())
+
+    tmp = df2[[qr_col, lat_col, lon_col]].copy()
+    tmp["actual_cc_debug"] = df2["actual_cc"]
+    tmp["planned_iso2_debug"] = df2["planned_iso2"]
+    tmp["planned_set_debug"] = df2["planned_iso2_set"].apply(lambda s: sorted(list(s)) if isinstance(s, set) else s)
+    tmp["planned_match_debug"] = df2["planned_match"]
+
+    with debug_path.open("a", encoding="utf-8") as f:
+        f.write("\n=== annotate_country_mismatches ===\n")
+        f.write(tmp.loc[tmp[qr_col].astype(str).str.contains("TEST-0001", na=False)].to_string())
+        f.write("\n")
+
+    print(tmp.loc[tmp[qr_col].astype(str).str.contains("TEST-0001", na=False)].to_string())
+    # END DEBUG
+    
     # Evaluate only where both sides exist; use a row-wise boolean, but the result is a Series
     mask_eval = has_planned & has_actual
     
