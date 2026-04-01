@@ -768,4 +768,67 @@
     }
   })();
   </script>
+  <script>
+  (function normalizeElementalConcentrations(){
+    const table = document.querySelector('#tableWrap table');
+    if (!table) return;
+
+    let headerCells = [];
+    if (table.tHead && table.tHead.rows.length) {
+      headerCells = Array.from(table.tHead.rows[table.tHead.rows.length - 1].cells || []);
+    } else {
+      const firstRow = table.querySelector('tr');
+      if (firstRow) headerCells = Array.from(firstRow.querySelectorAll('th,td'));
+    }
+    if (!headerCells.length) return;
+
+    function norm(s) {
+      return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    const targetNames = [
+      'elemental concentrations',
+      'metals info',
+      'metals_info_orig'
+    ];
+
+    const colIdx = headerCells.findIndex(cell => targetNames.includes(norm(cell.textContent)));
+    if (colIdx < 0) return;
+
+    const body = table.tBodies && table.tBodies[0];
+    if (!body) return;
+
+    Array.from(body.rows).forEach(tr => {
+      const td = tr.cells[colIdx];
+      if (!td) return;
+
+      const block = td.querySelector('.metals-block');
+      const el = block || td;
+
+      const original = el.textContent || '';
+      if (!original.trim()) return;
+
+      const updated = original
+        .split('\n')
+        .map(line => {
+          const trimmed = line.trim();
+
+          // Match lines like:
+          // Cd=0 mg/kg
+          // Cd = 0 mg/kg
+          // Cd=0.0 %
+          const m = trimmed.match(/^([^=]+?)\s*=\s*0(?:[.,]0+)?\s*(mg\/kg|%)\s*$/i);
+          if (m) {
+            return `${m[1].trim()}=Not available`;
+          }
+          return line;
+        })
+        .join('\n');
+
+      if (updated !== original) {
+        el.textContent = updated;
+      }
+    });
+  })();
+  </script>
 {% endblock %}
