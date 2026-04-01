@@ -1123,6 +1123,7 @@ def build_samples_df(
                 "metals_info_orig": metals_info_orig,
                 "collected_by": r.get("userId"),
                 "qa_status": r.get("QA_state") or "",
+                "organic_carbon_pct": r.get("SOIL_COLOR_color"),
             }
         )
 
@@ -1156,7 +1157,7 @@ def build_samples_df(
                 "country_code": pr["country"],
                 "location_accuracy_m": MAX_JITTER_METERS,
                 "ph": pr["ph"],
-                "organic_carbon_pct": None,
+                "organic_carbon_pct": pr["organic_carbon_pct"],
                 "earthworms_count": pr["earthworms_count"],
                 "contamination_debris": pr["contamination_debris"],
                 "contamination_plastic": pr["contamination_plastic"],
