@@ -926,6 +926,65 @@ def download_canonical_sample_parameters():
     )
 
 
+@web_bp.route("/download/canonical/sample_biodiversity.csv")
+@login_required
+def download_canonical_sample_biodiversity():
+    g._analytics_extra = {
+        "dataset": "canonical_sample_biodiversity",
+        "file_name": "sample_biodiversity.csv",
+        "kind": "canonical_export",
+    }
+
+    sql = """
+        SELECT
+            sample_id,
+            marker,
+            otu_id,
+            count,
+            taxa,
+            uploaded_at,
+            uploaded_by,
+            source_file
+        FROM sample_otu_counts
+        ORDER BY sample_id, marker, otu_id
+    """
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    if not rows:
+        abort(404, description="No biodiversity rows found in database")
+
+    df = pd.DataFrame(rows)
+
+    buf_txt = io.StringIO()
+    df.to_csv(buf_txt, index=False)
+    body = buf_txt.getvalue()
+
+    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    base_url = request.url_root.rstrip("/")
+
+    header = [
+        "# ECHOrepo Canonical Dataset",
+        "# File: sample_biodiversity.csv",
+        f"# Generated at: {generated_at}",
+        f"# Downloaded from: {base_url}/download/canonical/sample_biodiversity.csv",
+        "# Description: Biodiversity OTU abundance data per sample.",
+        "",
+    ]
+    csv_text = "\n".join(header) + body
+
+    data = csv_text.encode("utf-8")
+    buf = BytesIO(data)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="sample_biodiversity.csv",
+        mimetype="text/csv",
+    )
+
+
 @web_bp.route("/download/canonical/all.zip")
 @login_required
 def download_canonical_zip():
@@ -1014,6 +1073,40 @@ def download_canonical_zip():
 
         csv_contents["sample_parameters.csv"] = csv_params
         zf.writestr("sample_parameters.csv", csv_params)
+
+        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT
+                    sample_id,
+                    marker,
+                    otu_id,
+                    count,
+                    taxa,
+                    uploaded_at,
+                    uploaded_by,
+                    source_file
+                FROM sample_otu_counts
+                ORDER BY sample_id, marker, otu_id
+            """)
+            df_biodiv = pd.DataFrame(cur.fetchall())
+
+        buf4 = io.StringIO()
+        df_biodiv.to_csv(buf4, index=False)
+        body_biodiv = buf4.getvalue()
+
+        header_biodiv = [
+            "# ECHOrepo Canonical Dataset",
+            "# File: sample_biodiversity.csv",
+            f"# Version date: {version_date}",
+            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_biodiversity.csv",
+            f"# Latest canonical: {base_url}/download/canonical/sample_biodiversity.csv",
+            "# Description: Biodiversity OTU abundance data per sample.",
+            "",
+        ]
+        csv_biodiv = "\n".join(header_biodiv) + body_biodiv
+
+        csv_contents["sample_biodiversity.csv"] = csv_biodiv
+        zf.writestr("sample_biodiversity.csv", csv_biodiv)
 
     _upload_canonical_csvs_to_minio(csv_contents, version_date)
 
@@ -1653,6 +1746,10 @@ def search_samples():
                         "sample_parameters_filtered.csv",
                         "sample_id,country_code,parameter_code,parameter_name,value,uom,analysis_method,analysis_date,lab_id,created_by,licence,parameter_uri\n",
                     )
+                    zf.writestr(
+                        "sample_biodiversity_filtered.csv",
+                        "sample_id,marker,otu_id,count,taxa,uploaded_at,uploaded_by,source_file\n",
+                    )
                 mem.seek(0)
                 return send_file(
                     mem,
@@ -1684,6 +1781,16 @@ def search_samples():
             """
             cur.execute(sql_params, (sample_ids,))
             params_rows = cur.fetchall()
+
+            # 4) fetch biodiversity data for those sample_ids (if any)
+            sql_biodiv = """
+                SELECT sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file
+                FROM sample_otu_counts
+                WHERE sample_id = ANY(%s)
+                ORDER BY sample_id, marker, otu_id
+            """
+            cur.execute(sql_biodiv, (sample_ids,))
+            biodiv_rows = cur.fetchall()
 
         # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
         def _row_is_oxide(t):
@@ -1788,6 +1895,35 @@ def search_samples():
                 w3.writerow(r)
             zf.writestr("sample_parameters_filtered.csv", out3.getvalue())
 
+            out4 = io.StringIO()
+
+            out4.write("# ECHOrepo Filtered Dataset\n")
+            out4.write("# Source table: sample_otu_counts (filtered subset)\n")
+            out4.write(f"# Download full dataset snapshot: {snapshot_url}\n")
+            out4.write(f"# Generated at: {generated}\n")
+            out4.write(f"# Query: {query_string}\n")
+            out4.write(
+                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+            )
+            out4.write("\n")
+
+            w4 = csv.writer(out4)
+            w4.writerow(
+                [
+                    "sample_id",
+                    "marker",
+                    "otu_id",
+                    "count",
+                    "taxa",
+                    "uploaded_at",
+                    "uploaded_by",
+                    "source_file",
+                ]
+            )
+            for r in biodiv_rows:
+                w4.writerow(r)
+
+            zf.writestr("sample_biodiversity_filtered.csv", out4.getvalue())
         mem.seek(0)
         return send_file(
             mem,
