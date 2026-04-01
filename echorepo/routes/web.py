@@ -1538,6 +1538,11 @@ def lab_upload_post():
 def search_samples():
     q = request.args.get("q", "").strip()
 
+    base = base_labels()
+    i18n = {
+        "labels": build_i18n_labels(base),
+        "by_msgid": {},
+    }
     # ----- read filters from querystring -----
     criteria = {
         "sample_id": (request.args.get("sample_id") or "").strip(),
@@ -1830,6 +1835,7 @@ def search_samples():
         page=page,
         total_pages=total_pages,
         total_rows=total_rows,
+        I18N=i18n,
     )
 
 

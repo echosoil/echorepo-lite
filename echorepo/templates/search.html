@@ -15,19 +15,6 @@
       <label class="form-label" for="country_code">{{ _('Country') }}</label>
       <select id="country_code" name="country_code" class="form-select">
         <option value="">{{ _('Any country') }}</option>
-        <option value="CZ" {% if criteria.country_code == 'CZ' %}selected{% endif %}>{{ _('Czechia') }}</option>
-        <option value="DE" {% if criteria.country_code == 'DE' %}selected{% endif %}>{{ _('Germany') }}</option>
-        <option value="ES" {% if criteria.country_code == 'ES' %}selected{% endif %}>{{ _('Spain') }}</option>
-        <option value="FI" {% if criteria.country_code == 'FI' %}selected{% endif %}>{{ _('Finland') }}</option>
-        <option value="FR" {% if criteria.country_code == 'FR' %}selected{% endif %}>{{ _('France') }}</option>
-        <option value="GB" {% if criteria.country_code == 'GB' %}selected{% endif %}>{{ _('United Kingdom') }}</option>
-        <option value="GR" {% if criteria.country_code == 'GR' %}selected{% endif %}>{{ _('Greece') }}</option>
-        <option value="IT" {% if criteria.country_code == 'IT' %}selected{% endif %}>{{ _('Italy') }}</option>
-        <option value="NL" {% if criteria.country_code == 'NL' %}selected{% endif %}>{{ _('Netherlands') }}</option>
-        <option value="PL" {% if criteria.country_code == 'PL' %}selected{% endif %}>{{ _('Poland') }}</option>
-        <option value="PT" {% if criteria.country_code == 'PT' %}selected{% endif %}>{{ _('Portugal') }}</option>
-        <option value="RO" {% if criteria.country_code == 'RO' %}selected{% endif %}>{{ _('Romania') }}</option>
-        <option value="SK" {% if criteria.country_code == 'SK' %}selected{% endif %}>{{ _('Slovakia') }}</option>
       </select>
     </div>
 
@@ -182,4 +169,66 @@
     white-space: nowrap;
   }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function populateSearchCountries(){
+  const sel = document.getElementById('country_code');
+  if (!sel) return;
+
+  const selected = {{ (criteria.country_code or '') | tojson }};
+  const lang = document.documentElement.lang || "{{ current_locale|default('en') }}";
+
+  function makeRegionNames(lang) {
+    try {
+      return new Intl.DisplayNames([lang], { type: 'region' });
+    } catch (e) {
+      return null;
+    }
+  }
+
+  const regionNames = makeRegionNames(lang);
+
+  function countryLabel(code) {
+    if (!code) return '';
+    try {
+      return (regionNames && regionNames.of(code)) || code;
+    } catch (e) {
+      return code;
+    }
+  }
+
+  fetch('/public/others_geojson', { credentials: 'same-origin' })
+    .then(r => {
+      if (!r.ok) throw new Error('Failed to load country data');
+      return r.json();
+    })
+    .then(geojson => {
+      const countries = new Set();
+
+      for (const f of (geojson.features || [])) {
+        const p = f.properties || {};
+        if (p.country_code) {
+          countries.add(String(p.country_code).toUpperCase());
+        }
+      }
+
+      const sortedCodes = Array.from(countries).sort((a, b) =>
+        countryLabel(a).localeCompare(countryLabel(b), lang)
+      );
+
+      for (const code of sortedCodes) {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = countryLabel(code);
+        if (code === selected) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    })
+    .catch(err => {
+      console.warn('Could not populate search country list:', err);
+    });
+})();
+</script>
 {% endblock %}
