@@ -312,6 +312,11 @@
           </a>
         </li>
         <li>
+          <a class="dropdown-item" href="{{ url_for('web.download_canonical_sample_biodiversity') }}">
+            <i class="bi bi-filetype-csv me-1"></i> {{ _('sample_biodiversity.csv') }}
+          </a>
+        </li>
+        <li>
           <a class="dropdown-item" href="{{ url_for('web.download_canonical_zip') }}">
             <i class="bi bi-file-zip me-1"></i> {{ _('All canonical (zip)') }}
           </a>
