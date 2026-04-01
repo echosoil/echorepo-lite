@@ -11,7 +11,7 @@ from .geo import pick_lat_lon_cols
 def _format_metals_block(s: str) -> str:
     if s is None or (isinstance(s, float) and pd.isna(s)):
         return ""
-    # --- normalize separators to real newlines first
+
     txt = str(s)
     txt = (
         txt.replace("\r\n", "\n")
@@ -45,6 +45,17 @@ def _format_metals_block(s: str) -> str:
             val_disp = m.group(1).strip()
             val_len_key = val_disp.replace(",", ".")
             unit = m.group(2).strip()
+
+            # Treat numeric zero as "Not available"
+            try:
+                numeric_value = float(val_len_key)
+            except Exception:
+                numeric_value = None
+
+            if numeric_value == 0:
+                val_disp = "Not available"
+                val_len_key = val_disp
+                unit = ""
         else:
             val_disp = rhs
             val_len_key = val_disp
@@ -61,7 +72,6 @@ def _format_metals_block(s: str) -> str:
         val_pad = val_disp.rjust(val_w) if val_w else val_disp
         out_lines.append(f"{name_pad}  = {val_pad}" + (f" {unit}" if unit else ""))
 
-    # Escape HTML, then replace newlines with <br> so pandas can't turn them into "\n"
     safe = html.escape("\n".join(out_lines)).replace("\n", "<br>")
     return f'<div class="metals-block">{safe}</div>'
 
