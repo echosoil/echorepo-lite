@@ -83,6 +83,16 @@ CANONICAL_PARAM_COLS = [
     "parameter_uri",
 ]
 
+CANONICAL_BIODIV_COLS = [
+    "sample_id",
+    "marker",
+    "otu_id",
+    "count",
+    "taxa",
+    "uploaded_at",
+    "uploaded_by",
+    "source_file",
+]
 
 # -----------------------------------------------------------------------------
 # Config helpers
@@ -897,6 +907,27 @@ def build_canonical_all_zip_bytes(
         """
         _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
 
+        biodiv_cols = [
+            "sample_id",
+            "marker",
+            "otu_id",
+            "count",
+            "taxa",
+            "uploaded_at",
+            "uploaded_by",
+            "source_file",
+        ]
+        biodiv_cols_sql = ", ".join(f"b.{c}" for c in biodiv_cols)
+
+        sql_biodiv = f"""
+            SELECT {biodiv_cols_sql}
+            FROM sample_otu_counts b
+            JOIN samples s ON s.sample_id = b.sample_id
+            {where_sql}
+            ORDER BY b.sample_id, b.marker, b.otu_id
+        """
+        _write_query_to_zip("sample_biodiversity.csv", biodiv_cols, sql_biodiv, params)
+
     return mem.getvalue()
 
 
@@ -1383,6 +1414,80 @@ def canonical_sample_parameters():
         "api_name": "canonical_sample_parameters",
         "format": fmt,
     }
+
+    if fmt == "csv":
+        return stream_csv(iter(rows), fields=fields)
+
+    return jsonify(
+        {
+            "meta": {
+                "count": total,
+                "limit": limit,
+                "offset": offset,
+                "fields": fields,
+            },
+            "data": rows,
+        }
+    )
+
+
+@data_api.get("/canonical/sample_biodiversity")
+def canonical_sample_biodiversity():
+    require_api_auth()
+
+    fmt = (request.args.get("format") or "json").lower()
+    limit = max(1, min(int(request.args.get("limit", 100)), 1000))
+    offset = max(0, int(request.args.get("offset", 0)))
+
+    fields_param = (request.args.get("fields") or "").strip()
+    if fields_param:
+        requested = [f.strip() for f in fields_param.split(",") if f.strip()]
+        fields = [f for f in requested if f in CANONICAL_BIODIV_COLS]
+    else:
+        fields = CANONICAL_BIODIV_COLS[:]
+
+    if not fields:
+        fields = CANONICAL_BIODIV_COLS[:]
+
+    where = []
+    params: list[Any] = []
+
+    sample_id = request.args.get("sample_id")
+    if sample_id:
+        where.append("sample_id = %s")
+        params.append(sample_id.strip())
+
+    marker = request.args.get("marker")
+    if marker:
+        where.append("marker = %s")
+        params.append(marker.strip().upper())
+
+    otu_id = request.args.get("otu_id")
+    if otu_id:
+        where.append("otu_id = %s")
+        params.append(otu_id.strip())
+
+    where_sql = "WHERE " + " AND ".join(where) if where else ""
+    cols_sql = ", ".join(fields)
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"""
+            SELECT {cols_sql}
+            FROM sample_otu_counts
+            {where_sql}
+            ORDER BY sample_id, marker, otu_id
+            LIMIT %s OFFSET %s
+            """,
+            params + [limit, offset],
+        )
+        rows = cur.fetchall()
+
+        cur.execute(
+            f"SELECT COUNT(*) AS c FROM sample_otu_counts {where_sql}",
+            params,
+        )
+        total = cur.fetchone()["c"]
 
     if fmt == "csv":
         return stream_csv(iter(rows), fields=fields)
