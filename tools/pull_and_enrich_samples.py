@@ -1123,7 +1123,7 @@ def build_samples_df(
                 "metals_info_orig": metals_info_orig,
                 "collected_by": r.get("userId"),
                 "qa_status": r.get("QA_state") or "",
-                "organic_carbon_pct": r.get("SOIL_COLOR_color"),
+                "organic_carbon_pct": _pct_to_float(r.get("SOIL_COLOR_color")),
             }
         )
 
@@ -1195,6 +1195,14 @@ def build_samples_df(
 
     return pd.DataFrame(rows)
 
+def _pct_to_float(v):
+    if v in (None, "", "nan"):
+        return None
+    try:
+        s = str(v).strip().replace("%", "").replace(",", ".")
+        return float(s) if s else None
+    except Exception:
+        return None
 
 def _to_float_num(v):
     if v is None:
