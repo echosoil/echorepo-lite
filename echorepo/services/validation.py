@@ -1,13 +1,73 @@
 # echorepo/services/validation.py
 import numpy as np
 import pandas as pd
-import reverse_geocoder as rg
+from pathlib import Path
+
+import shapefile
+from shapely.geometry import Point
+from shapely.geometry import shape as shp_shape
 
 from ..config import settings
 from .planned import load_qr_to_planned
 
 # --- helpers ---------------------------------------------------------------
+_COUNTRY_SHAPES = None
 
+
+def _load_country_shapes():
+    global _COUNTRY_SHAPES
+    if _COUNTRY_SHAPES is not None:
+        return _COUNTRY_SHAPES
+
+    shp_path = getattr(
+        settings,
+        "COUNTRY_SHP_PATH",
+        "data/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp",
+    )
+
+    r = shapefile.Reader(shp_path)
+    field_names = [f[0] for f in r.fields[1:]]
+    iso_idx = field_names.index("ISO_A2") if "ISO_A2" in field_names else None
+
+    shapes = {}
+    for sr in r.shapeRecords():
+        geom = shp_shape(sr.shape.__geo_interface__)
+        rec = sr.record
+        iso2 = rec[iso_idx] if iso_idx is not None else ""
+        if iso2 and iso2 != "-99":
+            shapes[iso2] = geom
+
+    _COUNTRY_SHAPES = shapes
+    return _COUNTRY_SHAPES
+
+def _point_country(lat: float, lon: float) -> str | None:
+    shapes = _load_country_shapes()
+    pt = Point(lon, lat)
+    for iso2, geom in shapes.items():
+        if geom.covers(pt):
+            return iso2
+    return None
+
+def _km_to_deg_lat(km: float) -> float:
+    return km / 111.32
+
+def _within_planned_country_tolerance(lat: float, lon: float, planned_set: set[str], km: float) -> bool:
+    if not planned_set:
+        return False
+
+    shapes = _load_country_shapes()
+    pt = Point(lon, lat)
+    tol_deg = _km_to_deg_lat(km)
+
+    for cc in planned_set:
+        geom = shapes.get(cc)
+        if geom is None:
+            continue
+        if geom.covers(pt):
+            return True
+        if geom.buffer(tol_deg).covers(pt):
+            return True
+    return False
 
 def _clean_coords(df: pd.DataFrame, lat_col: str, lon_col: str):
     """Return (lat_f, lon_f, valid_mask) with floats and world-bounds mask."""
@@ -110,25 +170,11 @@ def annotate_country_mismatches(
     actual_cc = [None] * len(df2)
 
     if mask_valid.any():
-        coords = list(zip(lat_f[mask_valid].to_numpy(), lon_f[mask_valid].to_numpy()))
         idxs = np.flatnonzero(mask_valid.values)
-        # chunk to be safe on big inputs
-        CHUNK = 5000
-        for i in range(0, len(coords), CHUNK):
-            chunk = coords[i : i + CHUNK]
-            chunk_idx = idxs[i : i + CHUNK]
-            try:
-                res = rg.search(chunk, mode=1)
-                for ridx, r in zip(chunk_idx, res):
-                    actual_cc[ridx] = r.get("cc") or None
-            except Exception:
-                # Ultra defensive fallback
-                for (lt, ln), ridx in zip(chunk, chunk_idx):
-                    try:
-                        r1 = rg.search([(lt, ln)], mode=1)
-                        actual_cc[ridx] = r1[0].get("cc") or None
-                    except Exception:
-                        actual_cc[ridx] = None
+        for ridx in idxs:
+            lt = float(lat_f.iloc[ridx])
+            ln = float(lon_f.iloc[ridx])
+            actual_cc[ridx] = _point_country(lt, ln)
 
     df2["actual_cc"] = actual_cc
 
@@ -156,9 +202,32 @@ def annotate_country_mismatches(
     df2["planned_match"] = False
     # Evaluate only where both sides exist; use a row-wise boolean, but the result is a Series
     mask_eval = has_planned & has_actual
+    
+    BORDER_TOLERANCE_KM = getattr(settings, "COUNTRY_BORDER_TOLERANCE_KM", 10.0)
+
+    def _row_match(r):
+        if not r["planned_iso2_set"]:
+            return False
+        if pd.isna(r["actual_cc"]):
+            return False
+
+        if r["actual_cc"] in r["planned_iso2_set"]:
+            return True
+
+        try:
+            lt = float(str(r[lat_col]).replace(",", "."))
+            ln = float(str(r[lon_col]).replace(",", "."))
+        except Exception:
+            return False
+
+        return _within_planned_country_tolerance(
+            lt,
+            ln,
+            r["planned_iso2_set"],
+            BORDER_TOLERANCE_KM,
+        )
+
     df2.loc[mask_eval, "planned_match"] = (
-        df2.loc[mask_eval]
-        .apply(lambda r: r["actual_cc"] in r["planned_iso2_set"], axis=1)
-        .astype(bool)
+        df2.loc[mask_eval].apply(_row_match, axis=1).astype(bool)
     )
     return df2
