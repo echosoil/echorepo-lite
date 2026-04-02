@@ -930,6 +930,73 @@ def build_canonical_all_zip_bytes(
 
     return mem.getvalue()
 
+def build_canonical_zenodo_bundle_zip_bytes(
+    where_sql: str = "",
+    params: list[Any] | None = None,
+) -> bytes:
+    """
+    Build a Zenodo-oriented ZIP bundle containing only:
+      - sample_images.csv
+      - sample_parameters.csv
+      - sample_biodiversity.csv
+
+    Filters are applied through JOIN to samples aliased as 's', so the same
+    sample-level filters as /canonical/all.zip can be reused.
+    """
+    if params is None:
+        params = []
+
+    mem = io.BytesIO()
+
+    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+
+        def _write_query_to_zip(zip_name: str, cols: list[str], sql: str, sql_params: list[Any]):
+            with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(sql, sql_params)
+                rows = cur.fetchall()
+
+            fields = cols[:] if cols else (list(rows[0].keys()) if rows else [])
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+            writer.writeheader()
+            for r in rows:
+                writer.writerow(r)
+            zf.writestr(zip_name, buf.getvalue())
+
+        # 1) sample_images.csv
+        img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
+        sql_imgs = f"""
+            SELECT {img_cols_sql}
+            FROM sample_images i
+            JOIN samples s ON s.sample_id = i.sample_id
+            {where_sql}
+            ORDER BY i.sample_id, i.image_id
+        """
+        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
+
+        # 2) sample_parameters.csv
+        param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
+        sql_params = f"""
+            SELECT {param_cols_sql}
+            FROM sample_parameters p
+            JOIN samples s ON s.sample_id = p.sample_id
+            {where_sql}
+            ORDER BY p.sample_id, p.parameter_code
+        """
+        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
+
+        # 3) sample_biodiversity.csv
+        biodiv_cols_sql = ", ".join(f"b.{c}" for c in CANONICAL_BIODIV_COLS)
+        sql_biodiv = f"""
+            SELECT {biodiv_cols_sql}
+            FROM sample_otu_counts b
+            JOIN samples s ON s.sample_id = b.sample_id
+            {where_sql}
+            ORDER BY b.sample_id, b.marker, b.otu_id
+        """
+        _write_query_to_zip("sample_biodiversity.csv", CANONICAL_BIODIV_COLS, sql_biodiv, params)
+
+    return mem.getvalue()
 
 @data_api.post("/lab-enrichment")
 def lab_enrichment_upload():
@@ -1502,6 +1569,47 @@ def canonical_sample_biodiversity():
             },
             "data": rows,
         }
+    )
+
+
+@data_api.get("/canonical/zenodo_bundle.zip")
+def canonical_zenodo_bundle_zip():
+    """
+    GET /api/v1/canonical/zenodo_bundle.zip
+
+    Returns a ZIP file containing only:
+      - sample_images.csv
+      - sample_parameters.csv
+      - sample_biodiversity.csv
+
+    Filters are the same as /api/v1/canonical/all.zip and are applied through
+    the samples table aliased as 's':
+
+      - from, to
+      - country / country_code
+      - bbox
+      - within
+
+    Auth: API key, bearer token, or logged-in session.
+    """
+    require_api_auth()
+
+    where_sql, params, filter_meta = _canonical_where_from_request(alias="s")
+
+    zip_bytes = build_canonical_zenodo_bundle_zip_bytes(where_sql=where_sql, params=params)
+
+    g._analytics_extra = {
+        "dataset": "canonical_zenodo_bundle",
+        "api_name": "canonical_zenodo_bundle_zip",
+        **{k: v for k, v in filter_meta.items() if v is not None},
+    }
+
+    return Response(
+        zip_bytes,
+        mimetype="application/zip",
+        headers={
+            "Content-Disposition": 'attachment; filename="canonical_zenodo_bundle.zip"',
+        },
     )
 
 
