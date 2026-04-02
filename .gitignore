@@ -67,7 +67,9 @@ instance/
 # ── Environment files / secrets ───────────────────────────────────────────────
 .env
 .env.*
+.env_zenodo
 !.env.example
+!.env_zenodo.example
 keys/*
 !keys/.gitkeep
 scripts/LOCAL_*
