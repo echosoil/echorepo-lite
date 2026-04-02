@@ -972,7 +972,7 @@ def build_canonical_zenodo_bundle_zip_bytes(
             {where_sql}
             ORDER BY i.sample_id, i.image_id
         """
-        _write_query_to_zip("sample_images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
+        _write_query_to_zip("images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
 
         # 2) sample_parameters.csv
         param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
@@ -983,7 +983,7 @@ def build_canonical_zenodo_bundle_zip_bytes(
             {where_sql}
             ORDER BY p.sample_id, p.parameter_code
         """
-        _write_query_to_zip("sample_parameters.csv", CANONICAL_PARAM_COLS, sql_params, params)
+        _write_query_to_zip("elementary_concentrations.csv", CANONICAL_PARAM_COLS, sql_params, params)
 
         # 3) sample_biodiversity.csv
         biodiv_cols_sql = ", ".join(f"b.{c}" for c in CANONICAL_BIODIV_COLS)
@@ -994,7 +994,7 @@ def build_canonical_zenodo_bundle_zip_bytes(
             {where_sql}
             ORDER BY b.sample_id, b.marker, b.otu_id
         """
-        _write_query_to_zip("sample_biodiversity.csv", CANONICAL_BIODIV_COLS, sql_biodiv, params)
+        _write_query_to_zip("biodiversity.csv", CANONICAL_BIODIV_COLS, sql_biodiv, params)
 
     return mem.getvalue()
 
