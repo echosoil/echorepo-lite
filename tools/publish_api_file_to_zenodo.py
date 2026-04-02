@@ -355,7 +355,7 @@ def main() -> int:
         "--upload-name",
         help="Uploaded filename for Zenodo; defaults to downloaded filename or wrapper ZIP name",
     )
-    parser.add_argument("--log-file", default="zenodo_sync_log.csv")
+    parser.add_argument("--log-file", default="data/zenodo_sync_log.csv")
     args = parser.parse_args()
 
     file_env = load_simple_env_file(args.env_file)
