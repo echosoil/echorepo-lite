@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('ECHOrepo — Zenodo Publications') }}{% endblock %}
+
+{% block content %}
+<section class="py-4">
+  <div class="card-elevated p-4 mb-4">
+    <h1 class="h3 mb-3">{{ _('Published datasets on Zenodo') }}</h1>
+    <p class="text-muted mb-0">
+      {{ _('This page lists ECHOrepo datasets published on Zenodo, with DOI links and suggested references.') }}
+    </p>
+  </div>
+
+  {% if publications %}
+  <div class="row g-4">
+    {% for pub in publications %}
+    <div class="col-12">
+      <div class="card-elevated p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+          <div>
+            <h2 class="h5 mb-2">
+              {% if pub.zenodo_html %}
+              <a href="{{ pub.zenodo_html }}" target="_blank" rel="noopener">
+                {{ pub.title or _('Untitled dataset') }}
+              </a>
+              {% else %}
+              {{ pub.title or _('Untitled dataset') }}
+              {% endif %}
+            </h2>
+
+            <div class="small text-muted mb-2">
+              {{ _('Published at') }}: {{ pub.run_at_utc }}
+              {% if pub.sandbox == "1" %}
+              <span class="badge text-bg-warning ms-2">sandbox</span>
+              {% else %}
+              <span class="badge text-bg-success ms-2">production</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="text-md-end">
+            {% if pub.version_doi %}
+            <div><strong>{{ _('Version DOI') }}:</strong>
+              <a href="https://doi.org/{{ pub.version_doi }}" target="_blank" rel="noopener">
+                {{ pub.version_doi }}
+              </a>
+            </div>
+            {% endif %}
+            {% if pub.concept_doi %}
+            <div><strong>{{ _('Concept DOI') }}:</strong>
+              <a href="https://doi.org/{{ pub.concept_doi }}" target="_blank" rel="noopener">
+                {{ pub.concept_doi }}
+              </a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row g-3 small">
+          <div class="col-md-6">
+            <div><strong>{{ _('API path') }}:</strong> {{ pub.api_path or '—' }}</div>
+            <div><strong>{{ _('Uploaded file') }}:</strong> {{ pub.upload_filename or '—' }}</div>
+            <div><strong>{{ _('Deposition ID') }}:</strong> {{ pub.deposition_id or '—' }}</div>
+            <div><strong>{{ _('Concept record ID') }}:</strong> {{ pub.conceptrecid or '—' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div><strong>{{ _('Download source') }}:</strong>
+              {% if pub.download_url %}
+              <a href="{{ pub.download_url }}" target="_blank" rel="noopener">{{ _('source URL') }}</a>
+              {% else %}
+              —
+              {% endif %}
+            </div>
+            <div><strong>{{ _('Filters') }}:</strong> <code>{{ pub.filters_json or '{}' }}</code></div>
+            <div><strong>{{ _('Zenodo page') }}:</strong>
+              {% if pub.zenodo_html %}
+              <a href="{{ pub.zenodo_html }}" target="_blank" rel="noopener">{{ _('record page') }}</a>
+              {% else %}
+              —
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="form-label fw-semibold">{{ _('Suggested reference') }}</label>
+          <textarea class="form-control" rows="3"
+            readonly>{% if pub.version_doi %}{{ pub.title or 'Dataset' }}. Zenodo. {{ pub.version_doi }}.{% else %}{{ pub.title or 'Dataset' }}. Zenodo.{% endif %}</textarea>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card-elevated p-4">
+    <p class="mb-0 text-muted">{{ _('No Zenodo publications have been logged yet.') }}</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
