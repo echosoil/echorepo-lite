@@ -7,6 +7,7 @@
 
 ## Routes (best-effort scan)
 
+- `/debug/whoami`  _(in echorepo/__init__.py)_
 - `/i18n/check-overrides`  _(in echorepo/__init__.py)_
 - `/i18n/debug`  _(in echorepo/__init__.py)_
 - `/i18n/labels.js`  _(in echorepo/__init__.py)_
@@ -17,6 +18,7 @@
 - `/login`  _(in echorepo/auth/routes.py)_
 - `/login`  _(in echorepo/auth/routes.py)_
 - `/logout`  _(in echorepo/auth/routes.py)_
+- `/password-reset`  _(in echorepo/auth/routes.py)_
 - `/sso/callback`  _(in echorepo/auth/routes.py)_
 - `/sso/login`  _(in echorepo/auth/routes.py)_
 - `/<lang_code>`  _(in echorepo/i18n.py)_
@@ -24,6 +26,14 @@
 - `/others_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson_debug`  _(in echorepo/routes/api.py)_
+- `/canonical/all.zip`  _(in echorepo/routes/data_api.py)_
+- `/canonical/sample_biodiversity`  _(in echorepo/routes/data_api.py)_
+- `/canonical/sample_images`  _(in echorepo/routes/data_api.py)_
+- `/canonical/sample_parameters`  _(in echorepo/routes/data_api.py)_
+- `/canonical/samples`  _(in echorepo/routes/data_api.py)_
+- `/canonical/samples/count`  _(in echorepo/routes/data_api.py)_
+- `/canonical/snapshot/all.zip`  _(in echorepo/routes/data_api.py)_
+- `/canonical/zenodo_bundle.zip`  _(in echorepo/routes/data_api.py)_
 - `/lab-enrichment`  _(in echorepo/routes/data_api.py)_
 - `/ping`  _(in echorepo/routes/data_api.py)_
 - `/samples`  _(in echorepo/routes/data_api.py)_
@@ -32,25 +42,38 @@
 - `/issues/fix-coords`  _(in echorepo/routes/errors.py)_
 - `/issues/why`  _(in echorepo/routes/errors.py)_
 - `/admin`  _(in echorepo/routes/i18n_admin.py)_
+- `/admin/manual_set`  _(in echorepo/routes/i18n_admin.py)_
 - `/admin/set`  _(in echorepo/routes/i18n_admin.py)_
 - `/labels.js`  _(in echorepo/routes/i18n_admin.py)_
 - `/set-lang/<lang_code>`  _(in echorepo/routes/lang.py)_
+- `/exports/canonical/<date>/<filename>`  _(in echorepo/routes/storage.py)_
+- `/exports/canonical/<filename>`  _(in echorepo/routes/storage.py)_
 - `/storage/<path:relpath>`  _(in echorepo/routes/storage.py)_
 - `/`  _(in echorepo/routes/web.py)_
+- `/admin/usage`  _(in echorepo/routes/web.py)_
 - `/download/all_csv`  _(in echorepo/routes/web.py)_
+- `/download/canonical/<date>/<filename>`  _(in echorepo/routes/web.py)_
 - `/download/canonical/all.zip`  _(in echorepo/routes/web.py)_
+- `/download/canonical/sample_biodiversity.csv`  _(in echorepo/routes/web.py)_
 - `/download/canonical/sample_images.csv`  _(in echorepo/routes/web.py)_
 - `/download/canonical/sample_parameters.csv`  _(in echorepo/routes/web.py)_
 - `/download/canonical/samples.csv`  _(in echorepo/routes/web.py)_
 - `/download/csv`  _(in echorepo/routes/web.py)_
 - `/download/sample_csv`  _(in echorepo/routes/web.py)_
 - `/download/xlsx`  _(in echorepo/routes/web.py)_
+- `/explore`  _(in echorepo/routes/web.py)_
 - `/i18n/labels`  _(in echorepo/routes/web.py)_
 - `/lab-import`  _(in echorepo/routes/web.py)_
+- `/lab-import-auto`  _(in echorepo/routes/web.py)_
+- `/lab-import-biodiversity`  _(in echorepo/routes/web.py)_
 - `/lab-upload`  _(in echorepo/routes/web.py)_
 - `/lab-upload`  _(in echorepo/routes/web.py)_
 - `/labels`  _(in echorepo/routes/web.py)_
+- `/my`  _(in echorepo/routes/web.py)_
 - `/privacy/accept`  _(in echorepo/routes/web.py)_
+- `/public/others_geojson`  _(in echorepo/routes/web.py)_
+- `/public/sample_image/<sample_id>`  _(in echorepo/routes/web.py)_
+- `/public/sample_piechart/<sample_id>`  _(in echorepo/routes/web.py)_
 - `/search`  _(in echorepo/routes/web.py)_
 
 ## Directory tree (depth ≤ 4)
@@ -61,10 +84,9 @@
 ├── data
 │   └── .gitkeep
 ├── docs
-│   ├── ECHOREPO_Data_API_Guide-2.html
-│   ├── ECHOREPO_Data_API_Guide-2.md
-│   ├── ECHOREPO_Data_API_Guide.html
-│   ├── ECHOREPO_Data_API_Guide.md
+│   ├── ECHOREPO_Data_API_Guide_v3.html
+│   ├── ECHOREPO_Data_API_Guide_v3.md
+│   ├── ECHOREPO_Zenodo_Sync_API_Guide_v1.md
 │   ├── translate_all.html
 │   └── translate_all.md
 ├── echorepo
@@ -75,6 +97,7 @@
 │   ├── echorepo/translations
 │   ├── echorepo/utils
 │   ├── __init__.py
+│   ├── analytics.py
 │   ├── config.py
 │   ├── extensions.py
 │   ├── i18n.py
@@ -83,9 +106,12 @@
 │   └── .gitkeep
 ├── scripts
 │   ├── .gitkeep
+│   ├── compile_translations.sh
 │   ├── feature.sh
 │   ├── make_release.sh
-│   └── translate_all.sh
+│   ├── publish_zenodo_bundle.sh
+│   ├── translate_all.sh
+│   └── update_zenodo_bundle.sh
 ├── static
 │   ├── static/css
 │   ├── static/fonts
@@ -95,21 +121,28 @@
 ├── storage
 │   └── .gitkeep
 ├── tools
+│   ├── tools/sql
 │   ├── auto_translate.py
+│   ├── check_lab_enrichment_qrs.py
 │   ├── create_indexes.py
-│   ├── create_lab_enrichment.sql
 │   ├── find_default_coords.py
 │   ├── firebase_kc_sync.py
+│   ├── generate_biodiversity_piecharts.py
 │   ├── i18n_override.py
 │   ├── make_repo_overview.py
+│   ├── publish_api_file_to_zenodo.py
 │   ├── pull_and_enrich_samples.py
 │   ├── refresh_sqlite.py
 │   ├── run_sql.py
+│   ├── run_sql_pg.py
 │   └── translate_pg_en.py
 ├── .env.example
+├── .env_zenodo.example
 ├── .gitignore
+├── .pre-commit-config.yaml
 ├── Dockerfile
 ├── Dockerfile.i18n
+├── Makefile
 ├── REPO_OVERVIEW.md
 ├── babel.cfg
 ├── docker-compose.dev.yml
@@ -117,10 +150,14 @@
 ├── docker-compose.storage.yml
 ├── docker-compose.yml
 ├── project_paths.py
+├── pyproject.toml
+├── requirements-dev.txt
 ├── requirements.txt
 ├── run.py
 ├── start_dev.sh
 ├── start_prod.sh
+├── start_translate_containers.sh
 ├── stop_dev.sh
-└── stop_prod.sh
+├── stop_prod.sh
+└── stop_translate_containers.sh
 ```
