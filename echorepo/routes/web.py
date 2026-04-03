@@ -81,7 +81,7 @@ except Exception:
     ]
 
 # Zenodo sync log path (can also be set via env var)
-ZENODO_LOG_DEFAULT = os.getenv("ZENODO_LOG_FILE", "data/zenodo_sync_log.csv")
+ZENODO_LOG_DEFAULT = os.getenv("ZENODO_LOG_FILE", "/data/zenodo_sync_log.csv")
 
 # constants for privacy acceptance
 PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
@@ -91,6 +91,7 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 web_bp = Blueprint("web", __name__)
 
 # --- Remove oxides helpers ------------------------------------------------
+
 
 def _looks_like_oxide(label: str) -> bool:
     """
