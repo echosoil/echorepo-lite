@@ -105,6 +105,25 @@ def normalize_endpoint_path(api_path: str) -> str:
         api_path = "/" + api_path
     return api_path
 
+def normalize_grant_id(raw: str) -> str:
+    raw = raw.strip()
+    if "::" in raw:
+        return raw
+    return f"10.13039/501100000780::{raw}"
+
+def parse_subject(raw: str) -> dict[str, str]:
+    parts = [p.strip() for p in raw.split("|")]
+    if len(parts) < 2:
+        raise ValueError(
+            f"Invalid subject spec {raw!r}. Expected 'term|identifier|scheme'"
+        )
+    subject = {
+        "term": parts[0],
+        "identifier": parts[1],
+    }
+    if len(parts) >= 3 and parts[2]:
+        subject["scheme"] = parts[2]
+    return subject
 
 def infer_download_name_from_path(api_path: str, fallback: str = "downloaded_file") -> str:
     name = api_path.rstrip("/").split("/")[-1]
@@ -235,8 +254,21 @@ def parse_creator(raw: str) -> dict[str, str]:
         creator["orcid"] = parts[2]
     return creator
 
+def parse_keywords(values: list[str] | None) -> list[str]:
+    if not values:
+        return []
+
+    out: list[str] = []
+    for raw in values:
+        for part in raw.split(","):
+            kw = part.strip()
+            if kw and kw not in out:
+                out.append(kw)
+    return out
 
 def build_metadata(args: argparse.Namespace) -> dict[str, Any]:
+    keywords = parse_keywords(args.keyword)
+
     md: dict[str, Any] = {
         "title": args.title,
         "upload_type": "dataset",
@@ -244,13 +276,28 @@ def build_metadata(args: argparse.Namespace) -> dict[str, Any]:
         "creators": [parse_creator(c) for c in args.creator],
         "access_right": args.access_right,
         "license": args.license,
-        "keywords": args.keyword or [],
         "prereserve_doi": True,
     }
+
+    # Optional fields that we only include if specified, to avoid overwriting existing metadata on new version drafts
     if args.version:
         md["version"] = args.version
+
     if args.communities:
         md["communities"] = [{"identifier": x} for x in args.communities]
+
+    if args.grant:
+        md["grants"] = [{"id": normalize_grant_id(g)} for g in args.grant]
+
+    if args.subject:
+        md["subjects"] = [parse_subject(s) for s in args.subject]
+
+    if args.copyright:
+        md["notes"] = (
+            f"{md.get('notes', '').strip()}\n\nCopyright: {args.copyright}".strip()
+        )
+    if keywords:
+        md["keywords"] = keywords
     return md
 
 
@@ -322,7 +369,11 @@ def main() -> int:
     parser.add_argument("--title", required=True)
     parser.add_argument("--description", required=True)
     parser.add_argument("--creator", action="append", required=True)
-    parser.add_argument("--keyword", action="append")
+    parser.add_argument(
+        "--keyword",
+        action="append",
+        help="Keyword(s), either repeatable or comma-separated, e.g. --keyword soil --keyword biodiversity or --keyword 'soil,biodiversity'",
+    )
     parser.add_argument("--communities", nargs="*")
     parser.add_argument("--license", default="CC-BY-4.0")
     parser.add_argument("--access-right", default="open")
@@ -356,6 +407,15 @@ def main() -> int:
         help="Uploaded filename for Zenodo; defaults to downloaded filename or wrapper ZIP name",
     )
     parser.add_argument("--log-file", default="data/zenodo_sync_log.csv")
+
+    parser.add_argument("--grant", action="append",
+                        help="Repeatable Zenodo grant id. Example: 101112869 or 10.13039/501100000780::101112869")
+
+    parser.add_argument("--subject", action="append",
+                        help='Repeatable subject as "term|identifier|scheme", e.g. "Soil science|http://id.loc.gov/...|url"')
+
+    parser.add_argument("--copyright",
+                        help="Optional copyright statement; stored in Zenodo notes/description, not as a native Zenodo field")
     args = parser.parse_args()
 
     file_env = load_simple_env_file(args.env_file)

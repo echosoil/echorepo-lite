@@ -9,6 +9,7 @@ import sqlite3
 import zipfile  # kept in case you later want to build ZIPs locally
 from datetime import date, datetime, timedelta
 from io import BytesIO
+from pathlib import Path
 
 import pandas as pd
 from flask import (
@@ -78,6 +79,9 @@ except Exception:
         "qa_status",
         "licence",
     ]
+
+# Zenodo sync log path (can also be set via env var)
+ZENODO_LOG_DEFAULT = os.getenv("ZENODO_LOG_FILE", "/data/zenodo_sync_log.csv")
 
 # constants for privacy acceptance
 PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
@@ -2908,4 +2912,38 @@ def public_sample_piechart(sample_id: str):
             "image_url": image_url,
             "caption": f"{marker} · {level}",
         }
+    )
+
+
+def _read_zenodo_publications(log_path: str) -> list[dict]:
+    p = Path(log_path)
+    if not p.exists():
+        return []
+
+    rows: list[dict] = []
+    with p.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if (row.get("status") or "").strip().lower() != "ok":
+                continue
+            if not (row.get("version_doi") or row.get("zenodo_html")):
+                continue
+            rows.append(row)
+
+    # newest first
+    rows.sort(key=lambda r: r.get("run_at_utc", ""), reverse=True)
+    return rows
+
+
+@web_bp.get("/publications/zenodo", endpoint="zenodo_publications")
+def zenodo_publications():
+    publications = _read_zenodo_publications(ZENODO_LOG_DEFAULT)
+
+    # If you want only production records on the public page:
+    # publications = [p for p in publications if p.get("sandbox") != "1"]
+
+    return render_template(
+        "zenodo_publications.html",
+        publications=publications,
+        current_locale=str(get_locale() or "en"),
     )
