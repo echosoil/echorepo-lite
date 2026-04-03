@@ -1,52 +1,42 @@
-# Zenodo sync for API-downloaded files
+# Publishing API-downloaded files to Zenodo
 
-This document explains how to use `publish_api_file_to_zenodo.py`.
+This document describes how to use the current Zenodo publishing script:
 
-The script downloads a file from an authenticated ECHOREPO API endpoint and publishes that file to Zenodo, either as a brand-new record or as a new version of an existing record.
+```text
+tools/publish_api_file_to_zenodo.py
+```
 
-It is designed to work with `zenodo_bundle.zip`, but it is not limited to that endpoint.
+It is based on the current script code, the shell wrappers that load `.env_zenodo`, and the current optional metadata fields implemented in the script.
 
 ---
 
 ## What the script does
 
-`publish_api_file_to_zenodo.py` performs these steps:
+The script:
 
-1. Downloads a file from an API endpoint under your ECHOREPO API base URL.
-2. Optionally wraps the downloaded file into a new ZIP file.
-3. Creates a new Zenodo deposition, or creates a new version draft of an existing deposition.
-4. Uploads the chosen file to Zenodo.
-5. Publishes the deposition.
-6. Appends a line to a CSV log file with DOI and deposition information.
+1. Loads configuration from command-line arguments, environment variables, and an optional `.env_zenodo` file.
+2. Downloads a file from an authenticated API endpoint under your ECHOREPO API base URL.
+3. Optionally wraps the downloaded file into a new ZIP file.
+4. Creates a new Zenodo deposition, or creates a new version draft of an existing deposition.
+5. Updates Zenodo metadata.
+6. Uploads the file to the Zenodo bucket.
+7. Publishes the deposition.
+8. Appends a row to a CSV log file.
 
----
+This script supports both:
+- first publication of a dataset
+- updates/new versions of an existing Zenodo dataset
 
-## Typical use cases
-
-You can use the script for:
-
-- publishing `/canonical/zenodo_bundle.zip` to Zenodo
-- publishing `/canonical/all.zip` to Zenodo
-- publishing another authenticated API export endpoint
-- creating first-time Zenodo datasets
-- publishing later updates as new versions
-- keeping a local CSV log of DOI history
-
----
-
-## Script file
-
-```text
-publish_api_file_to_zenodo.py
-```
+If `--existing-deposition-id` is omitted, a new deposition is created.  
+If `--existing-deposition-id` is provided, a new version draft is created from that deposition.
 
 ---
 
 ## Requirements
 
-The script requires Python 3 and the `requests` package.
+The script requires Python 3 and `requests`.
 
-Install `requests` if needed:
+Install if needed:
 
 ```bash
 pip install requests
@@ -54,71 +44,141 @@ pip install requests
 
 ---
 
+## Files involved
+
+Typical related files in the repository:
+
+```text
+tools/publish_api_file_to_zenodo.py
+scripts/publish_zenodo_bundle.sh
+scripts/update_zenodo_bundle.sh
+.env_zenodo
+.env_zenodo.example
+```
+
+---
+
 ## Authentication
 
-The script needs credentials for two systems:
+The script needs credentials for two systems.
 
-### 1. ECHOREPO API authentication
+### 1. Zenodo
 
-Use one of these:
+Set:
+
+- `ACCESS_TOKEN`
+
+This is your Zenodo personal access token.
+
+### 2. ECHOREPO API
+
+Use one of:
 
 - `ECHOREPO_API_KEY`
 - `ECHOREPO_BEARER_TOKEN`
 
-### 2. Zenodo authentication
-
-Use:
-
-- `ACCESS_TOKEN`
-
-This is your Zenodo access token.
+The script prefers API key if both are provided.
 
 ---
 
-## `.env_zenodo` file
+## `.env_zenodo`
 
-A minimal example:
-
-```env
-ACCESS_TOKEN=your_zenodo_sandbox_token
-ZENODO_SANDBOX=true
-ECHOREPO_API_KEY=your_echorepo_api_key
-```
-
-You can also use a bearer token instead of an API key:
+Example:
 
 ```env
-ACCESS_TOKEN=your_zenodo_sandbox_token
+ACCESS_TOKEN=myaccesstoken
 ZENODO_SANDBOX=true
-ECHOREPO_BEARER_TOKEN=your_bearer_token
+ECHOREPO_API_KEY=myapikey
+ZENODO_API_BASE=https://echorepo.quanta-labs.com/api/v1
+ZENODO_API_PATH=/canonical/zenodo_bundle.zip
+ZENODO_LOG_FILE=data/zenodo_sync_log.csv
+ZENODO_DEPOSITION_ID=123456
+ZENODO_TITLE="My Dataset Title"
+ZENODO_DESCRIPTION="My Dataset Description"
+ZENODO_CREATOR="My Dataset Creator|My Organization|My ORCID"
+ZENODO_GRANT=123456789
+ZENODO_COPYRIGHT="© 2026 My Soil Project"
+ZENODO_KEYWORD="soil,biodiversity,citizen-science"
+ZENODO_SUBJECT="Soil science|http://id.loc.gov/authorities/subjects/sh85124022|url"
 ```
+
+### Notes
+
+- `ZENODO_SANDBOX=true` is used by the shell wrapper to pass `--sandbox`.
+- `ZENODO_CREATOR` should use:
+  ```text
+  Name|Affiliation|ORCID
+  ```
+- `ZENODO_KEYWORD` may be comma-separated.
+- `ZENODO_SUBJECT` should use:
+  ```text
+  term|identifier|scheme
+  ```
 
 ---
 
-## Basic command structure
+## How configuration is resolved
+
+The Python script resolves values in this order:
+
+1. command-line argument
+2. real environment variable
+3. value in `.env_zenodo`
+4. built-in default, if any
+
+The shell wrapper separately loads `.env_zenodo` into the shell using:
 
 ```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/zenodo_bundle.zip \
-  --title "ECHOREPO Zenodo bundle" \
-  --description "ECHOREPO export bundle for Zenodo" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
+set -a
+source .env_zenodo
+set +a
 ```
+
+That means shell expressions like:
+
+```bash
+"${ZENODO_API_BASE:-https://echorepo.quanta-labs.com/api/v1}"
+```
+
+work correctly because `.env_zenodo` is sourced before calling Python.
 
 ---
 
-## Main arguments
+## Main command-line arguments
 
-### Required
+### Core arguments
+
+- `--env-file`  
+  Path to env file. Default:
+  ```text
+  .env_zenodo
+  ```
+
+- `--sandbox`  
+  Use Zenodo sandbox instead of production.
 
 - `--api-base`  
-  Base URL of your API, for example:
-
+  API base URL, for example:
   ```text
   https://echorepo.quanta-labs.com/api/v1
   ```
+
+- `--api-path`  
+  Path relative to `--api-base`. Default:
+  ```text
+  /canonical/zenodo_bundle.zip
+  ```
+
+- `--existing-deposition-id`  
+  Optional. If provided, the script creates a new version draft instead of a brand-new deposition.
+
+- `--log-file`  
+  Path to the CSV log file. Default:
+  ```text
+  data/zenodo_sync_log.csv
+  ```
+
+### Metadata arguments
 
 - `--title`  
   Zenodo record title.
@@ -127,105 +187,72 @@ python3 publish_api_file_to_zenodo.py \
   Zenodo record description.
 
 - `--creator`  
-  Repeatable argument. Format:
-
+  Repeatable. Format:
   ```text
-  "Family, Given|Affiliation|ORCID"
+  Name|Affiliation|ORCID
   ```
-
   ORCID is optional.
 
-Examples:
-
-```bash
---creator "Osychenko, Oleg|Quanta Systems, S.L."
---creator "Doe, John|University X|0000-0000-0000-0000"
-```
-
----
-
-### Common optional arguments
-
-- `--sandbox`  
-  Use Zenodo sandbox instead of production Zenodo.
-
-- `--api-path`  
-  API path to download from. Default:
-
-  ```text
-  /canonical/zenodo_bundle.zip
+- `--keyword`  
+  Repeatable or comma-separated. Examples:
+  ```bash
+  --keyword soil --keyword biodiversity
+  ```
+  or
+  ```bash
+  --keyword "soil,biodiversity,citizen-science"
   ```
 
-- `--existing-deposition-id`  
-  If given, the script creates a new version of that existing Zenodo record.
+- `--grant`  
+  Repeatable grant ID. Accepts either:
+  ```text
+  101112869
+  ```
+  or full form:
+  ```text
+  10.13039/501100000780::101112869
+  ```
 
-- `--keyword`  
-  Repeatable Zenodo keyword.
+  If the short form is used, the script normalizes it to:
+  ```text
+  10.13039/501100000780::<ID>
+  ```
+
+- `--subject`  
+  Repeatable subject in the form:
+  ```text
+  term|identifier|scheme
+  ```
+
+  Example:
+  ```text
+  Soil science|http://id.loc.gov/authorities/subjects/sh85124022|url
+  ```
+
+- `--copyright`  
+  Optional copyright statement. Stored in Zenodo metadata as `notes`, not as a separate native Zenodo field.
+
+- `--communities`  
+  Optional list of Zenodo community identifiers.
 
 - `--license`  
   Defaults to:
-
   ```text
   CC-BY-4.0
   ```
 
 - `--access-right`  
   Defaults to:
-
   ```text
   open
   ```
 
 - `--version`  
-  Optional version string for Zenodo metadata.
+  Optional version string.
 
-- `--communities`  
-  Optional list of Zenodo community identifiers.
+### Download filter arguments
 
-- `--log-file`  
-  Path to the CSV log file. Default:
-
-  ```text
-  zenodo_sync_log.csv
-  ```
-
----
-
-## Download endpoint configuration
-
-The script does not hard-code the endpoint anymore.
-
-Use:
-
-```bash
---api-path /canonical/zenodo_bundle.zip
-```
-
-or:
-
-```bash
---api-path /canonical/all.zip
-```
-
-or any other authenticated API file endpoint.
-
-The full URL used by the script is:
-
-```text
-<api-base><api-path>
-```
-
-Example:
-
-```text
-https://echorepo.quanta-labs.com/api/v1/canonical/zenodo_bundle.zip
-```
-
----
-
-## Filters
-
-The script supports the following built-in query parameters:
+These are passed as query parameters to the API endpoint:
 
 - `--from-date`
 - `--to-date`
@@ -234,349 +261,266 @@ The script supports the following built-in query parameters:
 - `--bbox`
 - `--within`
 
-These are sent as query parameters to the API endpoint.
+### Extra query parameters
 
-### Example: country filter
+- `--extra-param key=value`  
+  Repeatable. Use this for endpoint-specific query parameters not covered by the built-in filter options.
 
-```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/zenodo_bundle.zip \
-  --country ES \
-  --title "ECHOREPO Spain bundle" \
-  --description "Filtered Spanish bundle" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
+### File handling arguments
+
+- `--download-name`  
+  Override local temporary filename of the downloaded file.
+
+- `--wrap-in-zip`  
+  Wrap the downloaded file into a new ZIP before uploading to Zenodo.
+
+- `--zip-member-name`  
+  Filename to use inside the wrapper ZIP.
+
+- `--upload-name`  
+  Rename the uploaded file before sending it to Zenodo.
+
+---
+
+## Metadata mapping to Zenodo
+
+The script builds Zenodo metadata like this.
+
+### Always included
+
+- `title`
+- `upload_type=dataset`
+- `description`
+- `creators`
+- `access_right`
+- `license`
+- `prereserve_doi=true`
+
+### Included only if specified
+
+- `version`
+- `communities`
+- `grants`
+- `subjects`
+- `notes` for copyright
+- `keywords`
+
+This design avoids overwriting existing draft metadata unnecessarily during a new-version update.
+
+---
+
+## Creator format
+
+Creators are parsed from:
+
+```text
+Name|Affiliation|ORCID
 ```
 
-### Example: date range filter
+Examples:
 
 ```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/zenodo_bundle.zip \
-  --from-date 2025-01-01 \
-  --to-date 2025-12-31 \
-  --title "ECHOREPO 2025 bundle" \
-  --description "Filtered 2025 bundle" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
+--creator "Osychenko, Oleg|Quanta Systems, S.L.|0000-0003-3468-6824"
 ```
 
-### Example: bounding box
+or without ORCID:
 
 ```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/zenodo_bundle.zip \
-  --bbox "-2,35,5,45" \
-  --title "ECHOREPO bbox bundle" \
-  --description "Geographic subset" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
+--creator "Osychenko, Oleg|Quanta Systems, S.L."
 ```
 
-### Example: radius filter
+The script sends these fields to Zenodo:
+
+- `name`
+- `affiliation`
+- `orcid`
+
+It does not send creator roles.
+
+---
+
+## Keywords
+
+Keywords can be supplied either as repeated arguments or as a comma-separated list.
+
+### Repeated form
 
 ```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/zenodo_bundle.zip \
-  --within "41.39,2.17,50" \
-  --title "ECHOREPO local bundle" \
-  --description "Subset within 50 km" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
+--keyword soil --keyword biodiversity --keyword citizen-science
+```
+
+### Comma-separated form
+
+```bash
+--keyword "soil,biodiversity,citizen-science"
+```
+
+### Mixed form
+
+```bash
+--keyword "soil,biodiversity" --keyword citizen-science
+```
+
+The script splits commas, trims whitespace, and removes duplicates while preserving order.
+
+---
+
+## Grants
+
+Grant IDs can be given in two forms.
+
+### Short form
+
+```bash
+--grant 101112869
+```
+
+This becomes:
+
+```text
+10.13039/501100000780::101112869
+```
+
+### Full form
+
+```bash
+--grant 10.13039/501100000780::101112869
+```
+
+This is sent unchanged.
+
+This is useful for European Commission / Horizon Europe grants.
+
+---
+
+## Subjects
+
+Subjects must be structured as:
+
+```text
+term|identifier|scheme
+```
+
+Example:
+
+```bash
+--subject "Soil science|http://id.loc.gov/authorities/subjects/sh85124022|url"
+```
+
+The script sends this as:
+
+```json
+{
+  "term": "Soil science",
+  "identifier": "http://id.loc.gov/authorities/subjects/sh85124022",
+  "scheme": "url"
+}
 ```
 
 ---
 
-## Extra query parameters
+## Copyright
 
-For endpoints that need different parameters, use:
+Copyright is optional.
+
+Example:
+
+```bash
+--copyright "© 2026 ECHO Horizon Project"
+```
+
+The script stores this in Zenodo metadata under `notes`, like:
+
+```text
+Copyright: © 2026 ECHO Horizon Project
+```
+
+---
+
+## Downloading from API endpoints
+
+The script downloads from:
+
+```text
+<api-base><api-path>
+```
+
+Examples:
+
+```text
+https://echorepo.quanta-labs.com/api/v1/canonical/zenodo_bundle.zip
+https://echorepo.quanta-labs.com/api/v1/canonical/all.zip
+```
+
+The endpoint must return a file with HTTP 200.
+
+---
+
+## Built-in API filters
+
+The script can send these query parameters:
+
+- `from`
+- `to`
+- `country`
+- `country_code`
+- `bbox`
+- `within`
+
+Example:
+
+```bash
+python3 tools/publish_api_file_to_zenodo.py \
+  --sandbox \
+  --api-base https://echorepo.quanta-labs.com/api/v1 \
+  --api-path /canonical/zenodo_bundle.zip \
+  --country ES \
+  --from-date 2025-01-01 \
+  --to-date 2025-12-31 \
+  --title "ECHOREPO Spain 2025 bundle" \
+  --description "Filtered ECHOREPO export bundle" \
+  --creator "Osychenko, Oleg|Quanta Systems, S.L.|0000-0003-3468-6824"
+```
+
+---
+
+## Using `--extra-param`
+
+For API endpoints that need custom query parameters:
 
 ```bash
 --extra-param key=value
 ```
 
-This option is repeatable.
-
 Example:
 
 ```bash
-python3 publish_api_file_to_zenodo.py \
+python3 tools/publish_api_file_to_zenodo.py \
   --sandbox \
   --api-base https://echorepo.quanta-labs.com/api/v1 \
   --api-path /some/other/export \
   --extra-param marker=16S \
   --extra-param sample_id=ABCD-1234 \
   --title "Custom export" \
-  --description "Custom API export" \
+  --description "Custom export for Zenodo" \
   --creator "Osychenko, Oleg|Quanta Systems, S.L."
 ```
 
 ---
 
-## Downloaded file name and uploaded file name
+## Wrapping the downloaded file in ZIP
 
-### Downloaded file name
+If `--wrap-in-zip` is used, the downloaded file is placed inside a new ZIP archive before upload.
 
-By default, the local filename is inferred from `--api-path`.
-
-Example:
-
-```text
-/canonical/zenodo_bundle.zip -> zenodo_bundle.zip
-```
-
-You can override it:
-
-```bash
---download-name my_local_file.zip
-```
-
-### Uploaded file name
-
-By default, the uploaded Zenodo filename is the same as the downloaded file name, unless wrapping is used.
-
-You can override it with:
-
-```bash
---upload-name release_package.zip
-```
-
----
-
-## Optional wrapping into a new ZIP
-
-Sometimes the API endpoint already returns a ZIP file, but you may still want to upload a wrapper ZIP containing that file.
-
-Use:
-
-```bash
---wrap-in-zip
-```
-
-This creates a new ZIP file and places the downloaded file inside it.
-
-### Optional ZIP member name
-
-Use:
-
-```bash
---zip-member-name canonical_zenodo_bundle.zip
-```
-
-This controls the filename inside the wrapper ZIP.
+This is useful if:
+- the endpoint returns a non-ZIP file
+- you want a predictable packaged artifact
+- you want a custom outer ZIP filename
 
 ### Example
 
 ```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/zenodo_bundle.zip \
-  --wrap-in-zip \
-  --zip-member-name canonical_zenodo_bundle.zip \
-  --upload-name echorepo_release_package.zip \
-  --title "ECHOREPO wrapped bundle" \
-  --description "Wrapped bundle for Zenodo" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
-```
-
-This produces:
-
-- downloaded file: `zenodo_bundle.zip`
-- uploaded file: `echorepo_release_package.zip`
-- ZIP member inside wrapper: `canonical_zenodo_bundle.zip`
-
----
-
-## Creating a brand-new Zenodo record
-
-If you do **not** pass `--existing-deposition-id`, the script creates a new deposition.
-
-Example:
-
-```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/zenodo_bundle.zip \
-  --title "ECHOREPO Zenodo bundle" \
-  --description "Initial Zenodo publication" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
-```
-
----
-
-## Publishing a new version of an existing Zenodo record
-
-Use:
-
-```bash
---existing-deposition-id 123456
-```
-
-Example:
-
-```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --existing-deposition-id 123456 \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/zenodo_bundle.zip \
-  --title "ECHOREPO Zenodo bundle" \
-  --description "Updated Zenodo publication" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
-```
-
-### Important
-
-`--existing-deposition-id` must be the Zenodo **deposition ID** of the latest published version, not just the concept DOI and not only the concept record id.
-
-You can get this from:
-
-- the JSON output of a previous successful run
-- the CSV log file generated by the script
-
----
-
-## Output printed by the script
-
-On success, the script prints JSON like this:
-
-```json
-{
-  "ok": true,
-  "sandbox": true,
-  "api_download_url": "https://echorepo.quanta-labs.com/api/v1/canonical/zenodo_bundle.zip",
-  "api_path": "/canonical/zenodo_bundle.zip",
-  "deposition_id": "123456",
-  "record_id": "123456",
-  "conceptrecid": "123450",
-  "version_doi": "10.5072/zenodo.123456",
-  "concept_doi": "10.5072/zenodo.123450",
-  "prereserved_doi": "10.5072/zenodo.123456",
-  "zenodo_html": "https://sandbox.zenodo.org/records/123456",
-  "log_file": "zenodo_sync_log.csv",
-  "filters": {},
-  "downloaded_filename": "zenodo_bundle.zip",
-  "upload_filename": "zenodo_bundle.zip",
-  "wrapped_in_zip": false,
-  "zip_member_name": "",
-  "downloaded_size_bytes": "12345",
-  "upload_size_bytes": "12345"
-}
-```
-
----
-
-## Log file
-
-By default, the script appends to:
-
-```text
-zenodo_sync_log.csv
-```
-
-You can override this:
-
-```bash
---log-file /path/to/zenodo_sync_log.csv
-```
-
-### Logged columns
-
-The log contains:
-
-- run timestamp
-- status
-- error message, if any
-- API base
-- API path
-- full download URL
-- serialized filters
-- existing deposition id used for versioning
-- resulting deposition id
-- record id
-- concept record id
-- version DOI
-- concept DOI
-- pre-reserved DOI
-- Zenodo HTML record URL
-- latest draft HTML URL
-- Zenodo bucket URL
-- downloaded file name and size
-- uploaded file name and size
-- whether wrapping-in-zip was used
-- ZIP member name
-- sandbox flag
-- title
-
-This file is useful for:
-- tracking DOI history
-- finding the deposition id to use for the next version
-- auditing what exactly was uploaded
-
----
-
-## Reusing the script for other API endpoints
-
-This script is reusable as long as the endpoint:
-
-- is reachable under `--api-base + --api-path`
-- returns a downloadable file with HTTP 200
-- accepts your API key or bearer token
-- returns content that Zenodo can store as a file
-
-Examples of reusable endpoints:
-
-```bash
---api-path /canonical/zenodo_bundle.zip
---api-path /canonical/all.zip
---api-path /canonical/snapshot/all.zip
-```
-
-You can also use custom query parameters with `--extra-param`.
-
----
-
-## Example: publish `/canonical/all.zip`
-
-```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/all.zip \
-  --title "ECHOREPO canonical all.zip" \
-  --description "Full canonical ZIP export" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
-```
-
----
-
-## Example: publish filtered `/canonical/all.zip`
-
-```bash
-python3 publish_api_file_to_zenodo.py \
-  --sandbox \
-  --api-base https://echorepo.quanta-labs.com/api/v1 \
-  --api-path /canonical/all.zip \
-  --country ES \
-  --from-date 2025-01-01 \
-  --to-date 2025-12-31 \
-  --title "ECHOREPO canonical Spain 2025" \
-  --description "Filtered canonical ZIP export for Spain in 2025" \
-  --creator "Osychenko, Oleg|Quanta Systems, S.L."
-```
-
----
-
-## Example: publish a non-ZIP endpoint, wrapped into ZIP
-
-```bash
-python3 publish_api_file_to_zenodo.py \
+python3 tools/publish_api_file_to_zenodo.py \
   --sandbox \
   --api-base https://echorepo.quanta-labs.com/api/v1 \
   --api-path /some/report.csv \
@@ -591,77 +535,259 @@ python3 publish_api_file_to_zenodo.py \
 
 ---
 
-## Common failure cases
+## Publishing a brand-new Zenodo record
 
-### `ERROR: missing Zenodo access token`
+If `--existing-deposition-id` is not provided, the script creates a new Zenodo deposition.
 
-You did not provide `ACCESS_TOKEN` through:
+Example:
 
-- `--zenodo-access-token`
-- environment variable
-- `.env_zenodo`
+```bash
+python3 tools/publish_api_file_to_zenodo.py \
+  --sandbox \
+  --api-base https://echorepo.quanta-labs.com/api/v1 \
+  --api-path /canonical/zenodo_bundle.zip \
+  --log-file data/zenodo_sync_log.csv \
+  --title "ECHOREPO Soil Dataset: elementary concentrations, biodiversity, images" \
+  --description "ECHOREPO export bundle for Zenodo" \
+  --creator "Osychenko, Oleg|Quanta Systems, S.L.|0000-0003-3468-6824" \
+  --grant 101112869 \
+  --copyright "© 2026 ECHO Horizon Project" \
+  --keyword "soil,biodiversity,citizen-science" \
+  --subject "Soil science|http://id.loc.gov/authorities/subjects/sh85124022|url"
+```
 
-### `ERROR: missing ECHOREPO API credentials`
+---
 
-You did not provide either:
+## Updating an existing Zenodo record
 
-- `ECHOREPO_API_KEY`
-- `ECHOREPO_BEARER_TOKEN`
+If `--existing-deposition-id` is provided, the script creates a new version draft from that deposition.
 
-### HTTP 401 during API download
+Example:
 
-Your API credentials are invalid, missing, or not accepted by the endpoint.
+```bash
+python3 tools/publish_api_file_to_zenodo.py \
+  --sandbox \
+  --api-base https://echorepo.quanta-labs.com/api/v1 \
+  --api-path /canonical/zenodo_bundle.zip \
+  --existing-deposition-id 483391 \
+  --log-file data/zenodo_sync_log.csv \
+  --title "ECHOREPO Soil Dataset: elementary concentrations, biodiversity, images" \
+  --description "ECHOREPO export bundle for Zenodo" \
+  --creator "Osychenko, Oleg|Quanta Systems, S.L.|0000-0003-3468-6824" \
+  --grant 101112869 \
+  --copyright "© 2026 ECHO Horizon Project" \
+  --keyword "soil,biodiversity,citizen-science" \
+  --subject "Soil science|http://id.loc.gov/authorities/subjects/sh85124022|url"
+```
 
-### HTTP 404 during API download
+---
 
-The path in `--api-path` is wrong, or the route is not deployed.
+## Shell wrapper scripts
+
+You mentioned shell wrappers for publish and update. They are nearly identical, except the update wrapper adds:
+
+```bash
+--existing-deposition-id "${ZENODO_DEPOSITION_ID:-483391}"
+```
+
+### Typical update wrapper
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+set -a
+source .env_zenodo
+set +a
+
+python3 tools/publish_api_file_to_zenodo.py \
+  --sandbox \
+  --api-base "${ZENODO_API_BASE:-https://echorepo.quanta-labs.com/api/v1}" \
+  --api-path "${ZENODO_API_PATH:-/canonical/zenodo_bundle.zip}" \
+  --existing-deposition-id "${ZENODO_DEPOSITION_ID:-483391}" \
+  --log-file "${ZENODO_LOG_FILE:-data/zenodo_sync_log.csv}" \
+  --title "${ZENODO_TITLE:-ECHOREPO Zenodo bundle publication}" \
+  --description "${ZENODO_DESCRIPTION:-ECHOREPO export bundle for Zenodo}" \
+  --creator "${ZENODO_CREATOR:-Osychenko, Oleg|Quanta Systems, S.L.}" \
+  --grant "${ZENODO_GRANT:-101112869}" \
+  --copyright "${ZENODO_COPYRIGHT:-© 2026 ECHO Horizon Project}" \
+  --keyword "${ZENODO_KEYWORD:-soil, biodiversity, citizen-science}" \
+  --subject "${ZENODO_SUBJECT:-Soil science|http://id.loc.gov/authorities/subjects/sh85124022|url}"
+```
+
+### Important note
+
+The shell wrapper uses `source .env_zenodo`, so environment variables from that file are available to shell expansions like `${ZENODO_TITLE:-...}`.
+
+Without `source .env_zenodo`, shell-side defaults would always win unless those variables were already exported in the shell environment.
+
+---
+
+## Output printed by the script
+
+On success, the script prints a JSON summary to stdout.
+
+Typical fields include:
+
+- `ok`
+- `sandbox`
+- `api_download_url`
+- `api_path`
+- `deposition_id`
+- `record_id`
+- `conceptrecid`
+- `version_doi`
+- `concept_doi`
+- `prereserved_doi`
+- `zenodo_html`
+- `log_file`
+- `filters`
+- `downloaded_filename`
+- `upload_filename`
+- `wrapped_in_zip`
+- `zip_member_name`
+- `downloaded_size_bytes`
+- `upload_size_bytes`
+
+This output is useful for:
+- checking what happened immediately
+- grabbing the deposition ID for future updates
+- logging in CI or shell scripts
+
+---
+
+## CSV log file
+
+The script appends one row per run to the CSV log file.
+
+Default:
+
+```text
+data/zenodo_sync_log.csv
+```
+
+Logged columns:
+
+- `run_at_utc`
+- `status`
+- `message`
+- `api_base`
+- `api_path`
+- `download_url`
+- `filters_json`
+- `existing_deposition_id`
+- `deposition_id`
+- `record_id`
+- `conceptrecid`
+- `version_doi`
+- `concept_doi`
+- `prereserved_doi`
+- `zenodo_html`
+- `latest_draft_html`
+- `bucket_url`
+- `downloaded_filename`
+- `downloaded_size_bytes`
+- `upload_filename`
+- `upload_size_bytes`
+- `wrapped_in_zip`
+- `zip_member_name`
+- `sandbox`
+- `title`
+
+This log is useful for:
+- DOI tracking
+- finding the deposition ID for later updates
+- auditing uploads
+- checking which filters were used
+
+---
+
+## Error handling
+
+If an error occurs, the script:
+
+1. appends an `error` row to the CSV log
+2. prints the error message to stderr
+3. exits with nonzero code
+
+Common failure cases:
+
+### Missing Zenodo access token
+```text
+ERROR: missing Zenodo access token
+```
+
+### Missing ECHOREPO credentials
+```text
+ERROR: missing ECHOREPO API credentials
+```
+
+### Invalid `--extra-param`
+If a value does not contain `=`.
+
+### Invalid `--subject`
+If it does not contain at least `term|identifier`.
+
+### API file download fails
+If the endpoint returns non-200.
+
+### Zenodo create/update/publish fails
+If Zenodo returns an unexpected status code.
 
 ### Downloaded file is empty
-
-The endpoint returned a zero-byte file.
-
-### Zenodo new version action fails
-
-The supplied `--existing-deposition-id` is not valid for versioning, or it is not the expected published deposition.
+If the API returns a zero-byte file.
 
 ---
 
-## Recommended workflow
+## Practical workflow
 
-For a stable operational workflow:
+Recommended workflow:
 
-1. Make sure the API endpoint works with `curl`.
-2. Test the script with `--sandbox`.
-3. Confirm that the resulting deposition is correct.
-4. Use the CSV log to keep track of:
-   - deposition id
-   - concept DOI
-   - version DOI
-5. Reuse the logged deposition id for later versions.
+1. Test the API endpoint with `curl`.
+2. Test publication in Zenodo sandbox.
+3. Confirm metadata in Zenodo UI.
+4. Check the generated JSON output and CSV log.
+5. Use the logged `deposition_id` for later updates.
+6. Only then switch to production Zenodo.
 
 ---
 
-## Quick `curl` tests before using the script
+## Quick API test with `curl`
 
-### Test API endpoint
+Example:
 
 ```bash
 curl -L \
-  -H "X-API-Key: $YOUR_API_KEY" \
+  -H "X-API-Key: $ECHOREPO_API_KEY" \
   "https://echorepo.quanta-labs.com/api/v1/canonical/zenodo_bundle.zip" \
   -o test_bundle.zip
 ```
 
-### Test filtered API endpoint
+Filtered example:
 
 ```bash
 curl -L \
-  -H "X-API-Key: $YOUR_API_KEY" \
+  -H "X-API-Key: $ECHOREPO_API_KEY" \
   "https://echorepo.quanta-labs.com/api/v1/canonical/zenodo_bundle.zip?country=ES&from=2025-01-01&to=2025-12-31" \
   -o test_bundle_es_2025.zip
 ```
 
-If these work, the script should also work with the same endpoint.
+---
+
+## Metadata confirmed from Zenodo API
+
+For your current payloads, the deposited metadata has been confirmed to use these fields:
+
+- `creators`
+- `keywords`
+- `subjects`
+- `grants`
+- `license`
+- `notes`
+
+Notably:
+- copyright is stored in `notes`
+- creator role is not currently used by this script
 
 ---
 
@@ -669,10 +795,9 @@ If these work, the script should also work with the same endpoint.
 
 `publish_api_file_to_zenodo.py` is a reusable publication helper that:
 
-- downloads any authenticated API file endpoint
-- optionally wraps it into a ZIP
-- uploads it to Zenodo
-- publishes it
-- logs DOI and deposition history locally
-
-It is suitable for `zenodo_bundle.zip`, but it can also be reused for other export endpoints in ECHOREPO.
+- downloads an authenticated API file
+- optionally wraps it in ZIP
+- publishes it to Zenodo
+- supports both first publication and updates
+- supports optional metadata for grants, keywords, subjects, and copyright
+- logs all runs to a CSV file
