@@ -6,13 +6,15 @@ import pandas as pd
 from ..config import settings
 from .geo import pick_lat_lon_cols
 
-
 # ---- Format "METALS_info" into aligned monospace block ----
 def _format_metals_block(s: str) -> str:
     if s is None or (isinstance(s, float) and pd.isna(s)):
         return ""
 
-    txt = str(s)
+    txt = str(s).strip()
+    if txt in {"", "0", "0.0", "nan", "NaN", "None", "null"}:
+        return ""
+
     txt = (
         txt.replace("\r\n", "\n")
         .replace("\r", "\n")
@@ -29,16 +31,20 @@ def _format_metals_block(s: str) -> str:
 
     rows = []
     for ln in lines_raw:
+        # skip placeholder / junk lines entirely
+        if ln in {"0", "0.0", "nan", "NaN", "None", "null"}:
+            continue
+
         if "=" in ln or ":" in ln:
             name, rhs = re.split(r"[:=]", ln, maxsplit=1)
             name, rhs = name.strip(), rhs.strip()
         else:
-            parts = ln.split(None, 1)
-            if len(parts) == 2:
-                name, rhs = parts[0].strip(), parts[1].strip()
-            else:
-                rows.append((ln.strip(), "", "", 0))
-                continue
+            # If there is no explicit separator, ignore it.
+            # This avoids rendering junk like "0  ="
+            continue
+
+        if not name or name in {"0", "0.0"}:
+            continue
 
         m = re.match(r"\s*([+-]?\d+(?:[.,]\d+)?)(.*)$", rhs)
         if m:
@@ -46,22 +52,26 @@ def _format_metals_block(s: str) -> str:
             val_len_key = val_disp.replace(",", ".")
             unit = m.group(2).strip()
 
-            # Treat numeric zero as "Not available"
             try:
                 numeric_value = float(val_len_key)
             except Exception:
                 numeric_value = None
 
             if numeric_value == 0:
-                val_disp = "Not available"
-                val_len_key = val_disp
-                unit = ""
+                # skip zero-valued fake entries entirely
+                continue
         else:
-            val_disp = rhs
+            val_disp = rhs.strip()
             val_len_key = val_disp
             unit = ""
 
+            if val_disp in {"", "0", "0.0", "nan", "NaN", "None", "null"}:
+                continue
+
         rows.append((name, val_disp, unit, len(val_len_key)))
+
+    if not rows:
+        return ""
 
     name_w = max((len(r[0]) for r in rows), default=0)
     val_w = max((r[3] for r in rows), default=0)
@@ -74,8 +84,7 @@ def _format_metals_block(s: str) -> str:
 
     safe = html.escape("\n".join(out_lines)).replace("\n", "<br>")
     return f'<div class="metals-block">{safe}</div>'
-
-
+    
 def strip_orig_cols(df: pd.DataFrame) -> pd.DataFrame:
     if not settings.HIDE_ORIG_COLS:
         return df

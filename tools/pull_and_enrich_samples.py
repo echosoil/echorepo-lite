@@ -1617,6 +1617,27 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
         # children first
         cur.execute("TRUNCATE sample_parameters;")
 
+        # delete stale sample_images first, because they reference samples
+        cur.execute("""
+            DELETE FROM sample_images i
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM sample_images_stage_raw st
+                WHERE TRIM(st.sample_id) = i.sample_id
+                AND NULLIF(TRIM(st.image_id), '')::integer = i.image_id
+            );
+        """)
+
+        # now safe to delete stale samples
+        cur.execute("""
+            DELETE FROM samples s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM samples_stage_raw st
+                WHERE TRIM(st.sample_id) = s.sample_id
+            );
+        """)
+
         # --- samples: upsert on sample_id, do NOT touch *_en on conflict ---
         cur.execute("""
         INSERT INTO samples (
@@ -1637,85 +1658,79 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
             NULLIF(TRIM(ph), '')::double precision,
             NULLIF(TRIM(organic_carbon_pct), '')::double precision,
             NULLIF(TRIM(earthworms_count), '')::integer,
-
             NULLIF(TRIM(contamination_debris), '')::integer,
             NULLIF(TRIM(contamination_plastic), '')::integer,
             NULLIF(TRIM(contamination_other_orig), ''),
-            NULLIF(TRIM(contamination_other_en), ''),   -- always NULL/empty from canonical
+            NULLIF(TRIM(contamination_other_en), ''),
             NULLIF(TRIM(pollutants_count), '')::integer,
-
             NULLIF(TRIM(soil_structure_orig), ''),
-            NULLIF(TRIM(soil_structure_en), ''),        -- always NULL/empty from canonical
+            NULLIF(TRIM(soil_structure_en), ''),
             NULLIF(TRIM(soil_texture_orig), ''),
-            NULLIF(TRIM(soil_texture_en), ''),          -- always NULL/empty from canonical
+            NULLIF(TRIM(soil_texture_en), ''),
             NULLIF(TRIM(observations_orig), ''),
-            NULLIF(TRIM(observations_en), ''),          -- always NULL/empty from canonical
+            NULLIF(TRIM(observations_en), ''),
             NULLIF(TRIM(metals_info_orig), ''),
-            NULLIF(TRIM(metals_info_en), ''),           -- always NULL/empty from canonical
-
+            NULLIF(TRIM(metals_info_en), ''),
             NULLIF(TRIM(collected_by), ''),
             NULLIF(TRIM(data_source), ''),
             NULLIF(TRIM(qa_status), ''),
             NULLIF(TRIM(licence), '')
         FROM samples_stage_raw
         ON CONFLICT (sample_id) DO UPDATE SET
-            -- DO NOT SET *_en here → we keep existing translations
-            timestamp_utc          = EXCLUDED.timestamp_utc,
-            lat                    = EXCLUDED.lat,
-            lon                    = EXCLUDED.lon,
-            country_code           = EXCLUDED.country_code,
-            location_accuracy_m    = EXCLUDED.location_accuracy_m,
-            ph                     = EXCLUDED.ph,
-            organic_carbon_pct     = EXCLUDED.organic_carbon_pct,
-            earthworms_count       = EXCLUDED.earthworms_count,
-            contamination_debris   = EXCLUDED.contamination_debris,
-            contamination_plastic  = EXCLUDED.contamination_plastic,
+            timestamp_utc            = EXCLUDED.timestamp_utc,
+            lat                      = EXCLUDED.lat,
+            lon                      = EXCLUDED.lon,
+            country_code             = EXCLUDED.country_code,
+            location_accuracy_m      = EXCLUDED.location_accuracy_m,
+            ph                       = EXCLUDED.ph,
+            organic_carbon_pct       = EXCLUDED.organic_carbon_pct,
+            earthworms_count         = EXCLUDED.earthworms_count,
+            contamination_debris     = EXCLUDED.contamination_debris,
+            contamination_plastic    = EXCLUDED.contamination_plastic,
             contamination_other_orig = EXCLUDED.contamination_other_orig,
-            pollutants_count       = EXCLUDED.pollutants_count,
-            soil_structure_orig    = EXCLUDED.soil_structure_orig,
-            soil_texture_orig      = EXCLUDED.soil_texture_orig,
-            observations_orig      = EXCLUDED.observations_orig,
-            metals_info_orig       = EXCLUDED.metals_info_orig,
-            collected_by           = EXCLUDED.collected_by,
-            data_source            = EXCLUDED.data_source,
-            qa_status              = EXCLUDED.qa_status,
-            licence                = EXCLUDED.licence;
+            pollutants_count         = EXCLUDED.pollutants_count,
+            soil_structure_orig      = EXCLUDED.soil_structure_orig,
+            soil_texture_orig        = EXCLUDED.soil_texture_orig,
+            observations_orig        = EXCLUDED.observations_orig,
+            metals_info_orig         = EXCLUDED.metals_info_orig,
+            collected_by             = EXCLUDED.collected_by,
+            data_source              = EXCLUDED.data_source,
+            qa_status                = EXCLUDED.qa_status,
+            licence                  = EXCLUDED.licence;
         """)
 
         # --- sample_images: upsert on (sample_id, image_id), keep *_en ---
         cur.execute("""
             INSERT INTO sample_images (
-              sample_id,
-              country_code,
-              image_id,
-              image_url,
-              image_description_orig,
-              image_description_en,
-              collected_by,
-              timestamp_utc,
-              licence
+            sample_id,
+            country_code,
+            image_id,
+            image_url,
+            image_description_orig,
+            image_description_en,
+            collected_by,
+            timestamp_utc,
+            licence
             )
             SELECT
-              TRIM(sample_id),
-              NULLIF(TRIM(country_code), ''),
-              NULLIF(TRIM(image_id), '')::integer,
-              NULLIF(TRIM(image_url), ''),
-              NULLIF(TRIM(image_description_orig), ''),
-              NULLIF(TRIM(image_description_en), ''),  -- always NULL/empty from canonical
-              NULLIF(TRIM(collected_by), ''),
-              NULLIF(TRIM(timestamp_utc), '')::timestamptz,
-              NULLIF(TRIM(licence), '')
+            TRIM(sample_id),
+            NULLIF(TRIM(country_code), ''),
+            NULLIF(TRIM(image_id), '')::integer,
+            NULLIF(TRIM(image_url), ''),
+            NULLIF(TRIM(image_description_orig), ''),
+            NULLIF(TRIM(image_description_en), ''),
+            NULLIF(TRIM(collected_by), ''),
+            NULLIF(TRIM(timestamp_utc), '')::timestamptz,
+            NULLIF(TRIM(licence), '')
             FROM sample_images_stage_raw
             ON CONFLICT (sample_id, image_id) DO UPDATE SET
-              country_code           = EXCLUDED.country_code,
-              image_url              = EXCLUDED.image_url,
-              image_description_orig = EXCLUDED.image_description_orig,
-              -- keep existing image_description_en
-              collected_by           = EXCLUDED.collected_by,
-              timestamp_utc          = EXCLUDED.timestamp_utc,
-              licence                = EXCLUDED.licence;
+            country_code           = EXCLUDED.country_code,
+            image_url              = EXCLUDED.image_url,
+            image_description_orig = EXCLUDED.image_description_orig,
+            collected_by           = EXCLUDED.collected_by,
+            timestamp_utc          = EXCLUDED.timestamp_utc,
+            licence                = EXCLUDED.licence;
         """)
-
         # --- sample_parameters: still refresh from scratch (no translations here) ---
         cur.execute("""
             INSERT INTO sample_parameters (
