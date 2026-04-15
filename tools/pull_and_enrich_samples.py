@@ -146,7 +146,7 @@ def _load_mirror_done() -> set[str]:
     done = set()
     with path.open("r", encoding="utf-8") as f:
         for line in f:
-            line = line.strip()
+            line = str(line).strip()
             if line:
                 done.add(line)
     return done
@@ -503,7 +503,7 @@ def _ts_to_iso_loose(v):
 
 
 def _safe_part(s: str) -> str:
-    s = (s or "").strip()
+    s = str(s or "").strip()
     return re.sub(r"[^A-Za-z0-9_.-]", "_", s) or "x"
 
 
@@ -814,7 +814,7 @@ def fetch_uid_to_email(max_retries: int = 5) -> dict:
             page = auth.list_users()
             while page:
                 for user in page.users:
-                    mapping[user.uid] = (user.email or "").strip()
+                    mapping[user.uid] = str(user.email or "").strip()
                 page = page.get_next_page()
 
             print(f"[INFO] Retrieved {len(mapping)} users from Firebase Auth.")
@@ -1097,13 +1097,13 @@ def build_samples_df(
         # contamination fields
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
         cont_plastic = r.get("SOIL_CONTAMINATION_plastic") or 0
-        cont_other_orig = (r.get("SOIL_CONTAMINATION_comments") or "").strip()
+        cont_other_orig = str(r.get("SOIL_CONTAMINATION_comments") or "").strip()
 
         # translatable fields (orig only)
-        soil_structure_orig = (r.get("SOIL_STRUCTURE_structure") or "").strip()
-        soil_texture_orig = (r.get("SOIL_TEXTURE_texture") or "").strip()
-        observations_orig = (r.get("SOIL_DIVER_observations") or "").strip()
-        metals_info_orig = (r.get("METALS_info") or "").strip()
+        soil_structure_orig = str(r.get("SOIL_STRUCTURE_structure") or "").strip()
+        soil_texture_orig = str(r.get("SOIL_TEXTURE_texture") or "").strip()
+        observations_orig = str(r.get("SOIL_DIVER_observations") or "").strip()
+        metals_info_orig = str(r.get("METALS_info") or "").strip()
 
         pre_rows.append(
             {
@@ -1243,7 +1243,7 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
             ):
                 continue
 
-            comment_orig = (r.get(comment_col) or "").strip()
+            comment_orig = str(r.get(comment_col) or "").strip()
 
             img_rows.append(
                 {

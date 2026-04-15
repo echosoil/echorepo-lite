@@ -366,8 +366,9 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     )
 
     sep = "&" if "?" in base else "?"
-    return f"{base}{sep}l={sosci_lang}&r={user_id}"
-
+    # uncomment to add sosci_lang option 
+    # return f"{base}{sep}l={sosci_lang}&r={user_id}"
+    return f"{base}{sep}r={user_id}"
 
 # --------------------------------------------------------------------------
 # labels for front-end
