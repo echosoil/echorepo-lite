@@ -261,6 +261,21 @@ def _merge_metals_cols(df: pd.DataFrame, html: bool = False) -> pd.DataFrame:
 
     return df
 
+def _emptyish(v) -> bool:
+    if v is None:
+        return True
+    s = str(v).strip()
+    return s in {"", "0", "0.0", "nan", "NaN", "None", "null"}
+
+def _pick_metals(row):
+    primary = row.get("METALS_info")
+    fallback = row.get("lab_METALS_info")
+
+    if _emptyish(primary) and not _emptyish(fallback):
+        return fallback
+    if _emptyish(primary):
+        return ""
+    return primary
 
 def query_user_df(user_key: str) -> pd.DataFrame:
     user_col = settings.USER_KEY_COLUMN
@@ -297,12 +312,15 @@ def query_user_df(user_key: str) -> pd.DataFrame:
         """
         df = pd.read_sql_query(q, conn, params=(user_key, user_key))
 
+    df["METALS_info"] = df.apply(_pick_metals, axis=1)
+    
+    # DEBUG: show the raw query results for a known test QR code, to help debug any issues with the join or metals merging
     probe = df[df["QR_qrCode"].astype(str).eq("TEST-0001")].copy()
     print("QUERY_USER_DF TEST-0001 raw:", flush=True)
     if not probe.empty:
         cols = [c for c in ["sampleId", "QR_qrCode", "METALS_info", "lab_METALS_info"] if c in probe.columns]
         print(probe[cols].to_dict("records"), flush=True)
-        
+
     df = _merge_metals_cols(df, html=True)
     return df
 
