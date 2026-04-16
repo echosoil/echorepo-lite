@@ -1178,6 +1178,9 @@ def home():
 
     # user data (samples)
     df = query_user_df(user_key)
+    print("HOME DEBUG columns:", list(df.columns), flush=True)
+    if not df.empty:
+        print("HOME DEBUG sampleId/QR rows:", df[["sampleId", "QR_qrCode"]].head(10).to_dict("records"), flush=True)
 
     # decide survey visibility from canonical lab rows, not from samples DF
     has_lab_results = _user_has_lab_results(df) or _user_has_metals_legacy(df)
