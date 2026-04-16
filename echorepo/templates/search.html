@@ -69,7 +69,9 @@
       <table class="table table-sm table-hover mb-0 sample-table">
         <thead class="table-light">
           <tr>
-            <th>{{ _('Map') }}</th>
+            <th class="text-center" title="Map">
+              <i class="bi bi-geo-alt-fill"></i>
+            </th>
             <th>{{ _('Sample / QR') }}</th>
             <th>{{ _('Timestamp') }}</th>
             <th>{{ _('Country') }}</th>
@@ -86,7 +88,7 @@
             <td>
               {% if r.lat is not none and r.lon is not none %}
               <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"
-                href="{{ url_for('web.home') }}?lat={{ r.lat }}&lng={{ r.lon }}&z=13" title="{{ _('Show on map') }}">
+                href="{{ url_for('web.home') }}?lat={{ r.lat }}&lng={{ r.lon }}&z=15" title="{{ _('Show on map') }}">
                 <i class="bi bi-geo-alt"></i>
               </a>
               {% endif %}
