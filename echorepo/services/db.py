@@ -311,15 +311,9 @@ def query_user_df(user_key: str) -> pd.DataFrame:
            OR s.userId = ?
         """
         df = pd.read_sql_query(q, conn, params=(user_key, user_key))
-
+        
+    # post-merge pick: if METALS_info is empty-ish, but lab_METALS_info has something, take that
     df["METALS_info"] = df.apply(_pick_metals, axis=1)
-    
-    # DEBUG: show the raw query results for a known test QR code, to help debug any issues with the join or metals merging
-    probe = df[df["QR_qrCode"].astype(str).eq("TEST-0001")].copy()
-    print("QUERY_USER_DF TEST-0001 raw:", flush=True)
-    if not probe.empty:
-        cols = [c for c in ["sampleId", "QR_qrCode", "METALS_info", "lab_METALS_info"] if c in probe.columns]
-        print(probe[cols].to_dict("records"), flush=True)
 
     df = _merge_metals_cols(df, html=True)
     return df
