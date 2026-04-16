@@ -1178,31 +1178,6 @@ def home():
 
     # user data (samples)
     df = query_user_df(user_key)
-
-    # DEBUG: print columns and some sampleId/QR rows to verify we have the right data for the user
-    print("HOME DEBUG columns:", list(df.columns), flush=True)
-    if not df.empty:
-        print("HOME DEBUG sampleId/QR rows:", df[["sampleId", "QR_qrCode"]].head(10).to_dict("records"), flush=True)
-
-    probe = df[
-        df["QR_qrCode"].astype(str).eq("TEST-0001")
-        | df["sampleId"].astype(str).eq("TEST-0001")
-    ].copy()
-
-    print("TEST-0001 rows in HOME DEBUG:", len(probe), flush=True)
-
-    if not probe.empty:
-        cols_to_show = [
-            "sampleId",
-            "QR_qrCode",
-            "METALS_state",
-            "METALS_info",
-            "userId",
-        ]
-        for c in cols_to_show:
-            if c in probe.columns:
-                print(f"{c} => {probe[c].tolist()}", flush=True)
-    # End of DEBUG prints
                 
     # decide survey visibility from canonical lab rows, not from samples DF
     has_lab_results = _user_has_lab_results(df) or _user_has_metals_legacy(df)
