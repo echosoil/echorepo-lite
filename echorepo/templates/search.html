@@ -44,9 +44,7 @@
     </div>
     <div class="col-md-6 d-flex align-items-end justify-content-md-end">
       {% if session.get("user") or (session.get("kc") or {}).get("profile") %}
-      <a
-        class="btn btn-outline-secondary"
-        href="{{ url_for('web.search_samples',
+      <a class="btn btn-outline-secondary" href="{{ url_for('web.search_samples',
                         sample_id=criteria.sample_id,
                         country_code=criteria.country_code,
                         ph_min=criteria.ph_min,
@@ -57,9 +55,9 @@
         <i class="bi bi-download"></i> {{ _('Export current search') }}
       </a>
       {% else %}
-        <div class="alert alert-info">
+      <div class="alert alert-info">
         {{ _('Sign in to export results as ZIP.') }}
-        </div>
+      </div>
       {% endif %}
     </div>
   </div>
@@ -71,6 +69,7 @@
       <table class="table table-sm table-hover mb-0 sample-table">
         <thead class="table-light">
           <tr>
+            <th>{{ _('Map') }}</th>
             <th>{{ _('Sample / QR') }}</th>
             <th>{{ _('Timestamp') }}</th>
             <th>{{ _('Country') }}</th>
@@ -81,25 +80,33 @@
           </tr>
         </thead>
         <tbody>
-        {% if rows %}
+          {% if rows %}
           {% for r in rows %}
-            <tr>
-              <td>{{ r.sample_id }}</td>
-              <td>{{ r.timestamp_utc }}</td>
-              <td>{{ r.country_code or '' }}</td>
-              <td>{{ r.ph if r.ph is not none else '' }}</td>
-              <td>{{ r.lat if r.lat is not none else '' }}</td>
-              <td>{{ r.lon if r.lon is not none else '' }}</td>
-              <td>{{ r.collected_by or '' }}</td>
-            </tr>
-          {% endfor %}
-        {% else %}
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">
+            <td>
+              {% if r.lat is not none and r.lon is not none %}
+              <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"
+                href="{{ url_for('web.home') }}?lat={{ r.lat }}&lng={{ r.lon }}&z=13" title="{{ _('Show on map') }}">
+                <i class="bi bi-geo-alt"></i>
+              </a>
+              {% endif %}
+            </td>
+            <td>{{ r.sample_id }}</td>
+            <td>{{ r.timestamp_utc }}</td>
+            <td>{{ r.country_code or '' }}</td>
+            <td>{{ r.ph if r.ph is not none else '' }}</td>
+            <td>{{ r.lat if r.lat is not none else '' }}</td>
+            <td>{{ r.lon if r.lon is not none else '' }}</td>
+            <td>{{ r.collected_by or '' }}</td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">
               {{ _('No results for these filters.') }}
             </td>
           </tr>
-        {% endif %}
+          {% endif %}
         </tbody>
       </table>
     </div>
@@ -113,8 +120,7 @@
     <nav>
       <ul class="pagination pagination-sm mb-0">
         <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-          <a class="page-link"
-             href="{{ url_for('web.search_samples',
+          <a class="page-link" href="{{ url_for('web.search_samples',
                               sample_id=criteria.sample_id,
                               country_code=criteria.country_code,
                               ph_min=criteria.ph_min,
@@ -125,11 +131,9 @@
         </li>
 
         {% set start = page-2 if page-2 > 1 else 1 %}
-        {% set end = page+2 if page+2 < total_pages else total_pages %}
-        {% for p in range(start, end+1) %}
-          <li class="page-item {% if p == page %}active{% endif %}">
-            <a class="page-link"
-               href="{{ url_for('web.search_samples',
+        {% set end = page+2 if page+2 < total_pages else total_pages %} {% for p in range(start, end+1) %} <li
+          class="page-item {% if p == page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('web.search_samples',
                                 sample_id=criteria.sample_id,
                                 country_code=criteria.country_code,
                                 ph_min=criteria.ph_min,
@@ -138,11 +142,10 @@
                                 date_to=criteria.date_to,
                                 page=p) }}">{{ p }}</a>
           </li>
-        {% endfor %}
+          {% endfor %}
 
-        <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-          <a class="page-link"
-             href="{{ url_for('web.search_samples',
+          <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('web.search_samples',
                               sample_id=criteria.sample_id,
                               country_code=criteria.country_code,
                               ph_min=criteria.ph_min,
@@ -150,7 +153,7 @@
                               date_from=criteria.date_from,
                               date_to=criteria.date_to,
                               page=page+1) }}">&raquo;</a>
-        </li>
+          </li>
       </ul>
     </nav>
   </div>
@@ -173,11 +176,12 @@
 
 {% block extra_js %}
 <script>
-(function populateSearchCountries(){
-  const sel = document.getElementById('country_code');
-  if (!sel) return;
+  (function populateSearchCountries() {
+    const sel = document.getElementById('country_code');
+    if (!sel) return;
 
-  const selected = {{ (criteria.country_code or '') | tojson }};
+    const selected = {{ (criteria.country_code or '') | tojson
+  }};
   const lang = document.documentElement.lang || "{{ current_locale|default('en') }}";
 
   function makeRegionNames(lang) {
@@ -229,6 +233,6 @@
     .catch(err => {
       console.warn('Could not populate search country list:', err);
     });
-})();
+}) ();
 </script>
 {% endblock %}
