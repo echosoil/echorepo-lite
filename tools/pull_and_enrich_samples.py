@@ -791,10 +791,28 @@ def fetch_samples_flat(mclient, max_stream_retries: int = 5) -> pd.DataFrame:
 
     df = pd.DataFrame(rows, dtype=object)
     if not df.empty:
-        if "collectedAt" in df.columns:
-            df = df.sort_values(by=["collectedAt"], na_position="last")
         if "QR_qrCode" in df.columns:
-            df = df.drop_duplicates(subset=["QR_qrCode"], keep="first")
+            # normalize missing QRs so they do not all collapse into one fake duplicate group
+            qr_mask = df["QR_qrCode"].notna() & (df["QR_qrCode"].astype(str).str.strip() != "")
+
+            # choose best "latest" signal
+            sort_cols = []
+            if "fs_updatedAt" in df.columns:
+                sort_cols.append("fs_updatedAt")
+            if "collectedAt" in df.columns:
+                sort_cols.append("collectedAt")
+            if "fs_createdAt" in df.columns:
+                sort_cols.append("fs_createdAt")
+
+            if sort_cols:
+                # sort oldest -> newest, then keep last
+                df = df.sort_values(by=sort_cols, na_position="last")
+
+            df_with_qr = df.loc[qr_mask].drop_duplicates(subset=["QR_qrCode"], keep="last")
+            df_without_qr = df.loc[~qr_mask]
+
+            # keep rows without QR untouched
+            df = pd.concat([df_with_qr, df_without_qr], ignore_index=True)
     return df
 
 
