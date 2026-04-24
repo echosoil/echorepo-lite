@@ -261,6 +261,21 @@ def _merge_metals_cols(df: pd.DataFrame, html: bool = False) -> pd.DataFrame:
 
     return df
 
+def _emptyish(v) -> bool:
+    if v is None:
+        return True
+    s = str(v).strip()
+    return s in {"", "0", "0.0", "nan", "NaN", "None", "null"}
+
+def _pick_metals(row):
+    primary = row.get("METALS_info")
+    fallback = row.get("lab_METALS_info")
+
+    if _emptyish(primary) and not _emptyish(fallback):
+        return fallback
+    if _emptyish(primary):
+        return ""
+    return primary
 
 def query_user_df(user_key: str) -> pd.DataFrame:
     user_col = settings.USER_KEY_COLUMN
@@ -296,6 +311,9 @@ def query_user_df(user_key: str) -> pd.DataFrame:
            OR s.userId = ?
         """
         df = pd.read_sql_query(q, conn, params=(user_key, user_key))
+        
+    # post-merge pick: if METALS_info is empty-ish, but lab_METALS_info has something, take that
+    df["METALS_info"] = df.apply(_pick_metals, axis=1)
 
     df = _merge_metals_cols(df, html=True)
     return df
