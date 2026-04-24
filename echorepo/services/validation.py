@@ -1,8 +1,7 @@
 # echorepo/services/validation.py
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-
 import shapefile
 from shapely.geometry import Point
 from shapely.geometry import shape as shp_shape
@@ -40,6 +39,7 @@ def _load_country_shapes():
     _COUNTRY_SHAPES = shapes
     return _COUNTRY_SHAPES
 
+
 def _point_country(lat: float, lon: float) -> str | None:
     shapes = _load_country_shapes()
     pt = Point(lon, lat)
@@ -48,10 +48,14 @@ def _point_country(lat: float, lon: float) -> str | None:
             return iso2
     return None
 
+
 def _km_to_deg_lat(km: float) -> float:
     return km / 111.32
 
-def _within_planned_country_tolerance(lat: float, lon: float, planned_set: set[str], km: float) -> bool:
+
+def _within_planned_country_tolerance(
+    lat: float, lon: float, planned_set: set[str], km: float
+) -> bool:
     if not planned_set:
         return False
 
@@ -68,6 +72,7 @@ def _within_planned_country_tolerance(lat: float, lon: float, planned_set: set[s
         if geom.buffer(tol_deg).covers(pt):
             return True
     return False
+
 
 def _clean_coords(df: pd.DataFrame, lat_col: str, lon_col: str):
     """Return (lat_f, lon_f, valid_mask) with floats and world-bounds mask."""
@@ -177,7 +182,7 @@ def annotate_country_mismatches(
             actual_cc[ridx] = _point_country(lt, ln)
 
     df2["actual_cc"] = actual_cc
-    
+
     # ---- Planned countries by QR (always a set) ----
     qr_to_planned = load_qr_to_planned(settings.PLANNED_XLSX)  # {qr: set('DK','SE',...)}
 
@@ -200,10 +205,10 @@ def annotate_country_mismatches(
 
     # Start false
     df2["planned_match"] = False
-    
+
     # Evaluate only where both sides exist; use a row-wise boolean, but the result is a Series
     mask_eval = has_planned & has_actual
-    
+
     BORDER_TOLERANCE_KM = getattr(settings, "COUNTRY_BORDER_TOLERANCE_KM", 10.0)
 
     def _row_match(r):
@@ -228,7 +233,5 @@ def annotate_country_mismatches(
             BORDER_TOLERANCE_KM,
         )
 
-    df2.loc[mask_eval, "planned_match"] = (
-        df2.loc[mask_eval].apply(_row_match, axis=1).astype(bool)
-    )
+    df2.loc[mask_eval, "planned_match"] = df2.loc[mask_eval].apply(_row_match, axis=1).astype(bool)
     return df2
