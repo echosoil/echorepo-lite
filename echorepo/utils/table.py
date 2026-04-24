@@ -6,6 +6,7 @@ import pandas as pd
 from ..config import settings
 from .geo import pick_lat_lon_cols
 
+
 # ---- Format "METALS_info" into aligned monospace block ----
 def _format_metals_block(s: str) -> str:
     if s is None or (isinstance(s, float) and pd.isna(s)):
@@ -84,7 +85,8 @@ def _format_metals_block(s: str) -> str:
 
     safe = html.escape("\n".join(out_lines)).replace("\n", "<br>")
     return f'<div class="metals-block">{safe}</div>'
-    
+
+
 def strip_orig_cols(df: pd.DataFrame) -> pd.DataFrame:
     if not settings.HIDE_ORIG_COLS:
         return df

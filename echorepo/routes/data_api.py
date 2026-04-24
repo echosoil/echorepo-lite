@@ -875,6 +875,16 @@ def build_canonical_all_zip_bytes(
                 writer.writerow(r)
             zf.writestr(zip_name, buf.getvalue())
 
+        # 1) samples.csv
+        sample_cols_sql = ", ".join(f"s.{c}" for c in CANONICAL_SAMPLE_COLS)
+        sql_samples = f"""
+            SELECT {sample_cols_sql}
+            FROM samples s
+            {where_sql}
+            ORDER BY s.timestamp_utc DESC, s.sample_id
+        """
+        _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
+
         # 1) samples
         sample_cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
         sql_samples = f"""
@@ -930,12 +940,14 @@ def build_canonical_all_zip_bytes(
 
     return mem.getvalue()
 
+
 def build_canonical_zenodo_bundle_zip_bytes(
     where_sql: str = "",
     params: list[Any] | None = None,
 ) -> bytes:
     """
     Build a Zenodo-oriented ZIP bundle containing only:
+      - samples.csv
       - sample_images.csv
       - sample_parameters.csv
       - sample_biodiversity.csv
@@ -963,7 +975,17 @@ def build_canonical_zenodo_bundle_zip_bytes(
                 writer.writerow(r)
             zf.writestr(zip_name, buf.getvalue())
 
-        # 1) sample_images.csv
+        # 1) samples.csv
+        sample_cols_sql = ", ".join(f"s.{c}" for c in CANONICAL_SAMPLE_COLS)
+        sql_samples = f"""
+            SELECT {sample_cols_sql}
+            FROM samples s
+            {where_sql}
+            ORDER BY s.timestamp_utc DESC, s.sample_id
+        """
+        _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
+
+        # 2) sample_images.csv
         img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
         sql_imgs = f"""
             SELECT {img_cols_sql}
@@ -974,7 +996,7 @@ def build_canonical_zenodo_bundle_zip_bytes(
         """
         _write_query_to_zip("images.csv", CANONICAL_IMAGE_COLS, sql_imgs, params)
 
-        # 2) sample_parameters.csv
+        # 3) sample_parameters.csv
         param_cols_sql = ", ".join(f"p.{c}" for c in CANONICAL_PARAM_COLS)
         sql_params = f"""
             SELECT {param_cols_sql}
@@ -983,9 +1005,11 @@ def build_canonical_zenodo_bundle_zip_bytes(
             {where_sql}
             ORDER BY p.sample_id, p.parameter_code
         """
-        _write_query_to_zip("elementary_concentrations.csv", CANONICAL_PARAM_COLS, sql_params, params)
+        _write_query_to_zip(
+            "elementary_concentrations.csv", CANONICAL_PARAM_COLS, sql_params, params
+        )
 
-        # 3) sample_biodiversity.csv
+        # 4) sample_biodiversity.csv
         biodiv_cols_sql = ", ".join(f"b.{c}" for c in CANONICAL_BIODIV_COLS)
         sql_biodiv = f"""
             SELECT {biodiv_cols_sql}
@@ -997,6 +1021,7 @@ def build_canonical_zenodo_bundle_zip_bytes(
         _write_query_to_zip("biodiversity.csv", CANONICAL_BIODIV_COLS, sql_biodiv, params)
 
     return mem.getvalue()
+
 
 @data_api.post("/lab-enrichment")
 def lab_enrichment_upload():
@@ -1578,6 +1603,7 @@ def canonical_zenodo_bundle_zip():
     GET /api/v1/canonical/zenodo_bundle.zip
 
     Returns a ZIP file containing only:
+      - samples.csv
       - sample_images.csv
       - sample_parameters.csv
       - sample_biodiversity.csv

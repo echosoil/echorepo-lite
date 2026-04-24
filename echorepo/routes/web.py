@@ -737,6 +737,7 @@ def download_canonical_samples():
         snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
         snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/samples.csv"
         snapshot_lines = [
+            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
             f"# Latest citable snapshot (samples.csv): {snapshot_csv_url}",
         ]
@@ -811,6 +812,7 @@ def download_canonical_sample_images():
         snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
         snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_images.csv"
         snapshot_lines = [
+            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
             f"# Latest citable snapshot (sample_images.csv): {snapshot_csv_url}",
         ]
@@ -889,6 +891,7 @@ def download_canonical_sample_parameters():
         snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
         snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_parameters.csv"
         snapshot_lines = [
+            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
             f"# Latest citable snapshot (sample_parameters.csv): {snapshot_csv_url}",
         ]
@@ -1806,6 +1809,7 @@ def search_samples():
             out1.write(f"# Query: {query_string}\n")
             out1.write(
                 "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             )
             out1.write("\n")
 
@@ -1831,6 +1835,7 @@ def search_samples():
             out2.write(f"# Query: {query_string}\n")
             out2.write(
                 "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             )
             out2.write("\n")
 
@@ -1896,6 +1901,7 @@ def search_samples():
             out4.write(f"# Query: {query_string}\n")
             out4.write(
                 "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             )
             out4.write("\n")
 
