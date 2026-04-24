@@ -335,18 +335,6 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     if not user_id:
         return None
 
-    sosci_map = {
-        "de": "deu",
-        "el": "gre",
-        "en": "eng",
-        "es": "spa",
-        "fi": "fin",
-        "it": "ita",
-        "pl": "pol",
-        "pt": "por",
-        "ro": "rum",
-    }
-
     current = str(get_locale() or "en")
     current_base = current.split("_", 1)[0].split("-", 1)[0].lower()
 
@@ -357,8 +345,6 @@ def _build_sosci_url(user_id: str | None) -> str | None:
         if browser:
             current_base = browser.split("-", 1)[0].lower()
 
-    sosci_lang = sosci_map.get(current_base, "eng")
-
     base = getattr(
         settings,
         "SURVEY_BASE_URL",
@@ -366,9 +352,10 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     )
 
     sep = "&" if "?" in base else "?"
-    # uncomment to add sosci_lang option 
+    # uncomment to add sosci_lang option
     # return f"{base}{sep}l={sosci_lang}&r={user_id}"
     return f"{base}{sep}r={user_id}"
+
 
 # --------------------------------------------------------------------------
 # labels for front-end
@@ -1180,11 +1167,14 @@ def home():
     df = query_user_df(user_key)
     print("HOME DEBUG columns:", list(df.columns), flush=True)
     if not df.empty:
-        print("HOME DEBUG sampleId/QR rows:", df[["sampleId", "QR_qrCode"]].head(10).to_dict("records"), flush=True)
+        print(
+            "HOME DEBUG sampleId/QR rows:",
+            df[["sampleId", "QR_qrCode"]].head(10).to_dict("records"),
+            flush=True,
+        )
 
     probe = df[
-        df["QR_qrCode"].astype(str).eq("TEST-0001")
-        | df["sampleId"].astype(str).eq("TEST-0001")
+        df["QR_qrCode"].astype(str).eq("TEST-0001") | df["sampleId"].astype(str).eq("TEST-0001")
     ].copy()
 
     print("TEST-0001 rows in HOME DEBUG:", len(probe), flush=True)
@@ -1200,7 +1190,7 @@ def home():
         for c in cols_to_show:
             if c in probe.columns:
                 print(f"{c} => {probe[c].tolist()}", flush=True)
-                
+
     # decide survey visibility from canonical lab rows, not from samples DF
     has_lab_results = _user_has_lab_results(df) or _user_has_metals_legacy(df)
 
@@ -2256,10 +2246,23 @@ def lab_import_biodiversity():
 
     # --- Read XLSX (only the sheet you want) ---
     try:
+        xls = pd.ExcelFile(file)
+        wanted_sheet = "clean_phylum"
+
+        # find matching sheet, ignoring uppercase/lowercase
+        matches = [s for s in xls.sheet_names if s.lower() == wanted_sheet.lower()]
+
+        if not matches:
+            raise ValueError(
+                f"Sheet '{wanted_sheet}' not found. Available sheets: {xls.sheet_names}"
+            )
+
+        real_sheet_name = matches[0]
+
         df = pd.read_excel(
             file,
             engine="openpyxl",
-            sheet_name="clean_phylum",
+            sheet_name=real_sheet_name,
             dtype=str,  # keep everything as text; we'll parse counts ourselves
         )
     except Exception as e:
