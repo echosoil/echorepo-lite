@@ -335,18 +335,6 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     if not user_id:
         return None
 
-    sosci_map = {
-        "de": "deu",
-        "el": "gre",
-        "en": "eng",
-        "es": "spa",
-        "fi": "fin",
-        "it": "ita",
-        "pl": "pol",
-        "pt": "por",
-        "ro": "rum",
-    }
-
     current = str(get_locale() or "en")
     current_base = current.split("_", 1)[0].split("-", 1)[0].lower()
 
@@ -357,8 +345,6 @@ def _build_sosci_url(user_id: str | None) -> str | None:
         if browser:
             current_base = browser.split("-", 1)[0].lower()
 
-    sosci_lang = sosci_map.get(current_base, "eng")
-
     base = getattr(
         settings,
         "SURVEY_BASE_URL",
@@ -366,9 +352,10 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     )
 
     sep = "&" if "?" in base else "?"
-    # uncomment to add sosci_lang option 
+    # uncomment to add sosci_lang option
     # return f"{base}{sep}l={sosci_lang}&r={user_id}"
     return f"{base}{sep}r={user_id}"
+
 
 # --------------------------------------------------------------------------
 # labels for front-end
@@ -750,6 +737,7 @@ def download_canonical_samples():
         snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
         snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/samples.csv"
         snapshot_lines = [
+            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
             f"# Latest citable snapshot (samples.csv): {snapshot_csv_url}",
         ]
@@ -824,6 +812,7 @@ def download_canonical_sample_images():
         snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
         snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_images.csv"
         snapshot_lines = [
+            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
             f"# Latest citable snapshot (sample_images.csv): {snapshot_csv_url}",
         ]
@@ -902,6 +891,7 @@ def download_canonical_sample_parameters():
         snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
         snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_parameters.csv"
         snapshot_lines = [
+            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
             f"# Latest citable snapshot (sample_parameters.csv): {snapshot_csv_url}",
         ]
@@ -1179,31 +1169,6 @@ def home():
     # user data (samples)
     df = query_user_df(user_key)
 
-    # DEBUG: print columns and some sampleId/QR rows to verify we have the right data for the user
-    print("HOME DEBUG columns:", list(df.columns), flush=True)
-    if not df.empty:
-        print("HOME DEBUG sampleId/QR rows:", df[["sampleId", "QR_qrCode"]].head(10).to_dict("records"), flush=True)
-
-    probe = df[
-        df["QR_qrCode"].astype(str).eq("TEST-0001")
-        | df["sampleId"].astype(str).eq("TEST-0001")
-    ].copy()
-
-    print("TEST-0001 rows in HOME DEBUG:", len(probe), flush=True)
-
-    if not probe.empty:
-        cols_to_show = [
-            "sampleId",
-            "QR_qrCode",
-            "METALS_state",
-            "METALS_info",
-            "userId",
-        ]
-        for c in cols_to_show:
-            if c in probe.columns:
-                print(f"{c} => {probe[c].tolist()}", flush=True)
-    # End of DEBUG prints
-                
     # decide survey visibility from canonical lab rows, not from samples DF
     has_lab_results = _user_has_lab_results(df) or _user_has_metals_legacy(df)
 
@@ -1844,6 +1809,7 @@ def search_samples():
             out1.write(f"# Query: {query_string}\n")
             out1.write(
                 "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             )
             out1.write("\n")
 
@@ -1869,6 +1835,7 @@ def search_samples():
             out2.write(f"# Query: {query_string}\n")
             out2.write(
                 "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             )
             out2.write("\n")
 
@@ -1934,6 +1901,7 @@ def search_samples():
             out4.write(f"# Query: {query_string}\n")
             out4.write(
                 "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
+                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
             )
             out4.write("\n")
 
@@ -2259,10 +2227,23 @@ def lab_import_biodiversity():
 
     # --- Read XLSX (only the sheet you want) ---
     try:
+        xls = pd.ExcelFile(file)
+        wanted_sheet = "clean_phylum"
+
+        # find matching sheet, ignoring uppercase/lowercase
+        matches = [s for s in xls.sheet_names if s.lower() == wanted_sheet.lower()]
+
+        if not matches:
+            raise ValueError(
+                f"Sheet '{wanted_sheet}' not found. Available sheets: {xls.sheet_names}"
+            )
+
+        real_sheet_name = matches[0]
+
         df = pd.read_excel(
             file,
             engine="openpyxl",
-            sheet_name="clean_phylum",
+            sheet_name=real_sheet_name,
             dtype=str,  # keep everything as text; we'll parse counts ourselves
         )
     except Exception as e:

@@ -1213,6 +1213,7 @@ def build_samples_df(
 
     return pd.DataFrame(rows)
 
+
 def _pct_to_float(v):
     if v in (None, "", "nan"):
         return None
@@ -1221,6 +1222,7 @@ def _pct_to_float(v):
         return float(s) if s else None
     except Exception:
         return None
+
 
 def _to_float_num(v):
     if v is None:

@@ -105,18 +105,18 @@ def normalize_endpoint_path(api_path: str) -> str:
         api_path = "/" + api_path
     return api_path
 
+
 def normalize_grant_id(raw: str) -> str:
     raw = raw.strip()
     if "::" in raw:
         return raw
     return f"10.13039/501100000780::{raw}"
 
+
 def parse_subject(raw: str) -> dict[str, str]:
     parts = [p.strip() for p in raw.split("|")]
     if len(parts) < 2:
-        raise ValueError(
-            f"Invalid subject spec {raw!r}. Expected 'term|identifier|scheme'"
-        )
+        raise ValueError(f"Invalid subject spec {raw!r}. Expected 'term|identifier|scheme'")
     subject = {
         "term": parts[0],
         "identifier": parts[1],
@@ -124,6 +124,7 @@ def parse_subject(raw: str) -> dict[str, str]:
     if len(parts) >= 3 and parts[2]:
         subject["scheme"] = parts[2]
     return subject
+
 
 def infer_download_name_from_path(api_path: str, fallback: str = "downloaded_file") -> str:
     name = api_path.rstrip("/").split("/")[-1]
@@ -152,7 +153,9 @@ def download_api_file(
     }
 
 
-def maybe_wrap_in_zip(input_path: Path, output_zip_path: Path, member_name: str | None = None) -> dict[str, Any]:
+def maybe_wrap_in_zip(
+    input_path: Path, output_zip_path: Path, member_name: str | None = None
+) -> dict[str, Any]:
     member = member_name or input_path.name
     with zipfile.ZipFile(output_zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.write(input_path, arcname=member)
@@ -254,6 +257,7 @@ def parse_creator(raw: str) -> dict[str, str]:
         creator["orcid"] = parts[2]
     return creator
 
+
 def parse_keywords(values: list[str] | None) -> list[str]:
     if not values:
         return []
@@ -265,6 +269,7 @@ def parse_keywords(values: list[str] | None) -> list[str]:
             if kw and kw not in out:
                 out.append(kw)
     return out
+
 
 def build_metadata(args: argparse.Namespace) -> dict[str, Any]:
     keywords = parse_keywords(args.keyword)
@@ -293,9 +298,7 @@ def build_metadata(args: argparse.Namespace) -> dict[str, Any]:
         md["subjects"] = [parse_subject(s) for s in args.subject]
 
     if args.copyright:
-        md["notes"] = (
-            f"{md.get('notes', '').strip()}\n\nCopyright: {args.copyright}".strip()
-        )
+        md["notes"] = f"{md.get('notes', '').strip()}\n\nCopyright: {args.copyright}".strip()
     if keywords:
         md["keywords"] = keywords
     return md
@@ -408,14 +411,22 @@ def main() -> int:
     )
     parser.add_argument("--log-file", default="data/zenodo_sync_log.csv")
 
-    parser.add_argument("--grant", action="append",
-                        help="Repeatable Zenodo grant id. Example: 101112869 or 10.13039/501100000780::101112869")
+    parser.add_argument(
+        "--grant",
+        action="append",
+        help="Repeatable Zenodo grant id. Example: 101112869 or 10.13039/501100000780::101112869",
+    )
 
-    parser.add_argument("--subject", action="append",
-                        help='Repeatable subject as "term|identifier|scheme", e.g. "Soil science|http://id.loc.gov/...|url"')
+    parser.add_argument(
+        "--subject",
+        action="append",
+        help='Repeatable subject as "term|identifier|scheme", e.g. "Soil science|http://id.loc.gov/...|url"',
+    )
 
-    parser.add_argument("--copyright",
-                        help="Optional copyright statement; stored in Zenodo notes/description, not as a native Zenodo field")
+    parser.add_argument(
+        "--copyright",
+        help="Optional copyright statement; stored in Zenodo notes/description, not as a native Zenodo field",
+    )
     args = parser.parse_args()
 
     file_env = load_simple_env_file(args.env_file)

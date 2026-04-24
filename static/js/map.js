@@ -277,14 +277,72 @@
   // Inject CSS once for scrollable popups
   (function ensurePopupCSS(){
     if (document.getElementById('echoPopupCSS')) return;
+
     const style = document.createElement('style');
     style.id = 'echoPopupCSS';
     style.textContent = `
-      .leaflet-popup.echo-popup { max-width: 420px; }
-      .leaflet-popup-content { margin: 8px 12px; }
-      .leaflet-popup-content .popup-scroll { max-height: 260px; overflow: auto; }
-      .leaflet-popup-content .popup-table th { white-space: nowrap; vertical-align: top; padding-right: .5rem; }
-      .leaflet-popup-content .popup-table td { word-break: break-word; }
+      .leaflet-popup.echo-popup {
+        max-width: 420px;
+      }
+
+      .leaflet-popup-content {
+        margin: 8px 12px;
+      }
+
+      .leaflet-popup-content .popup-scroll {
+        max-height: 360px;
+        overflow: auto;
+      }
+
+      .leaflet-popup-content .popup-table th {
+        white-space: nowrap;
+        vertical-align: top;
+        padding-right: .5rem;
+      }
+
+      .leaflet-popup-content .popup-table td {
+        word-break: break-word;
+      }
+
+      /* biodiversity section */
+      .leaflet-popup-content .popup-biodiversity {
+        margin-top: 0.75rem;
+      }
+
+      .leaflet-popup-content .popup-bio-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+
+      .leaflet-popup-content .popup-bio-item {
+        min-width: 0;
+      }
+
+      .leaflet-popup-content .popup-bio-item img {
+        width: 100%;
+        height: 105px;
+        object-fit: contain;
+        display: block;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background: #fff;
+      }
+
+      .leaflet-popup-content .popup-bio-item .small {
+        line-height: 1.15;
+        white-space: normal;
+      }
+
+      /* optional: make sample photo look neat too */
+      .leaflet-popup-content .popup-photo img {
+        width: 100%;
+        height: auto;
+        max-height: 180px;
+        display: block;
+        object-fit: cover;
+        border-radius: 6px;
+      }
     `;
     document.head.appendChild(style);
   })();
@@ -593,6 +651,69 @@
     }
   }
 
+  async function fetchBacterialGuildplot(sampleId) {
+    if (!sampleId) return null;
+
+    const url =
+      `/storage/biodiversity/guildplots/bacteria/${encodeURIComponent(sampleId)}.png`;
+
+    try {
+      let r = await fetch(url, {
+        method: "HEAD",
+        credentials: "same-origin"
+      });
+
+      if (r.status === 405) {
+        r = await fetch(url, {
+          method: "GET",
+          credentials: "same-origin"
+        });
+      }
+
+      if (!r.ok) return null;
+
+      return {
+        url,
+        desc: "Bacterial ecological guilds"
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async function fetchFungalGuildplot(sampleId) {
+    if (!sampleId) return null;
+
+    const url =
+      `/storage/biodiversity/guildplots/fungi/${encodeURIComponent(sampleId)}.png`;
+
+    try {
+      // Prefer HEAD so we do not download the image just to check existence.
+      let r = await fetch(url, {
+        method: "HEAD",
+        credentials: "same-origin"
+      });
+
+      // Some Flask/static routes may not support HEAD, so fallback to GET.
+      if (r.status === 405) {
+        r = await fetch(url, {
+          method: "GET",
+          credentials: "same-origin"
+        });
+      }
+
+      if (!r.ok) return null;
+
+      return {
+        url,
+        desc: "Fungal ecological guilds"
+      };
+    } catch {
+      return null;
+    }
+  }
+
+
   async function fetchSamplePiechart(sampleId, marker = "16S", level = "Genus") {
     if (!sampleId) return null;
     try {
@@ -775,42 +896,67 @@
         </div>`;
     }
 
-    let piechartHtml = "";
 
-    if (p.piechart_16s_url || p.piechart_its_url) {
-      piechartHtml = `<div class="popup-piecharts mt-2">`;
+    let biodiversityHtml = "";
 
-      if (p.piechart_16s_url) {
-        piechartHtml += `
-          <div class="popup-piechart mb-2">
-            <a href="${p.piechart_16s_url}" target="_blank" rel="noopener">
-              <img
-                src="${p.piechart_16s_url}"
-                alt="${p.piechart_16s_caption || '16S pie chart'}"
-                style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:contain;border:1px solid #ddd;border-radius:6px;">
-            </a>
-            <div class="small text-muted mt-1">
-              ${p.piechart_16s_caption || "16S · Family"}
-            </div>
-          </div>`;
-      }
+    const bioItems = [
+      p.piechart_16s_url
+        ? {
+            url: p.piechart_16s_url,
+            caption: p.piechart_16s_caption || "16S · Family",
+            alt: "16S taxonomic pie chart"
+          }
+        : null,
 
-      if (p.piechart_its_url) {
-        piechartHtml += `
-          <div class="popup-piechart mb-2">
-            <a href="${p.piechart_its_url}" target="_blank" rel="noopener">
-              <img
-                src="${p.piechart_its_url}"
-                alt="${p.piechart_its_caption || 'ITS pie chart'}"
-                style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:contain;border:1px solid #ddd;border-radius:6px;">
-            </a>
-            <div class="small text-muted mt-1">
-              ${p.piechart_its_caption || "ITS · Family"}
-            </div>
-          </div>`;
-      }
+      p.piechart_its_url
+        ? {
+            url: p.piechart_its_url,
+            caption: p.piechart_its_caption || "ITS · Family",
+            alt: "ITS taxonomic pie chart"
+          }
+        : null,
 
-      piechartHtml += `</div>`;
+      p.fungal_guildplot_url
+        ? {
+            url: p.fungal_guildplot_url,
+            caption: p.fungal_guildplot_caption || "Fungal ecological guilds",
+            alt: "Fungal ecological guilds"
+          }
+        : null,
+
+      p.bacterial_guildplot_url
+        ? {
+            url: p.bacterial_guildplot_url,
+            caption: p.bacterial_guildplot_caption || "Bacterial ecological guilds",
+            alt: "Bacterial ecological guilds"
+          }
+        : null
+    ].filter(Boolean);
+
+    if (bioItems.length) {
+      biodiversityHtml = `
+        <div class="popup-biodiversity mt-3">
+          <div class="small fw-semibold mb-2">
+            ${T('biodiversityCharts', {}, 'Biodiversity charts')}
+          </div>
+
+          <div class="popup-bio-grid">
+            ${bioItems.map(item => `
+              <div class="popup-bio-item">
+                <a href="${item.url}" target="_blank" rel="noopener">
+                  <img
+                    src="${item.url}"
+                    alt="${item.alt}"
+                    loading="lazy"
+                    decoding="async">
+                </a>
+                <div class="small text-muted mt-1">
+                  ${item.caption}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>`;
     }
     let exportHtml = "";
     if (!PUBLIC_MODE && sampleId) {
@@ -827,7 +973,7 @@
               <div class="popup-scroll">
                 ${tableHtml}
                 ${photoHtml}
-                ${piechartHtml}
+                ${biodiversityHtml}
               </div>
               ${exportHtml}
             </div>`;
@@ -1001,6 +1147,22 @@
               if (pieITS) {
                 p.piechart_its_url = pieITS.url;
                 p.piechart_its_caption = pieITS.desc || "ITS · Family";
+              }
+            }
+
+            if (!p.__guild_loaded && chartId) {
+              p.__guild_loaded = true;
+
+              const fungalGuild = await fetchFungalGuildplot(chartId);
+              if (fungalGuild) {
+                p.fungal_guildplot_url = fungalGuild.url;
+                p.fungal_guildplot_caption = fungalGuild.desc || "Fungal ecological guilds";
+              }
+
+              const bacterialGuild = await fetchBacterialGuildplot(chartId);
+              if (bacterialGuild) {
+                p.bacterial_guildplot_url = bacterialGuild.url;
+                p.bacterial_guildplot_caption = bacterialGuild.desc || "Bacterial ecological guilds";
               }
             }
 
