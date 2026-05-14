@@ -16,6 +16,8 @@ Steps:
   7) (optional) upsert canonical data into Postgres.
 """
 
+import hashlib
+import json
 import io
 import math
 import os
@@ -212,6 +214,18 @@ if ExifTags is not None:
 else:
     ORIENTATION_TAG = None
 
+# EXIF handling
+STRIP_IMAGE_EXIF = os.getenv("STRIP_IMAGE_EXIF", "1") == "1"
+SAVE_EXIF_SIDECAR = os.getenv("SAVE_EXIF_SIDECAR", "1") == "1"
+
+# Used only to make sidecar filenames hard to guess.
+# Prefer setting EXIF_SIDECAR_SALT explicitly in .env.
+EXIF_SIDECAR_SALT = (
+    os.getenv("EXIF_SIDECAR_SALT")
+    or os.getenv("MINIO_SECRET_KEY")
+    or os.getenv("MINIO_ROOT_PASSWORD")
+    or "echorepo-dev-exif-salt"
+)
 
 # ---------------------------------------------------------------------------
 # Firebase init
@@ -514,21 +528,127 @@ def _guess_ext_from_firebase_url(url: str) -> str:
         return "." + last.rsplit(".", 1)[-1]
     return ".bin"
 
+def _json_safe_exif_value(v):
+    """
+    Convert EXIF values to JSON-safe values.
+    Keeps useful metadata but avoids bytes/object serialization errors.
+    """
+    if v is None or isinstance(v, str | int | float | bool):
+        return v
 
-def _compress_and_fix_orientation(raw_bytes: bytes, max_bytes: int = MAX_IMAGE_BYTES) -> bytes:
+    if isinstance(v, bytes):
+        return {
+            "__type": "bytes",
+            "hex": v.hex(),
+        }
+
+    if isinstance(v, tuple | list):
+        return [_json_safe_exif_value(x) for x in v]
+
+    if isinstance(v, dict):
+        return {str(k): _json_safe_exif_value(val) for k, val in v.items()}
+
+    # Pillow IFDRational and other EXIF objects
+    try:
+        return float(v)
+    except Exception:
+        return str(v)
+
+
+def _extract_exif_sidecar(img, object_name: str, raw_bytes: bytes) -> dict | None:
+    """
+    Extract original EXIF metadata to a JSON-serializable dict.
+    This is for private/internal sidecar storage, not for public display.
+    """
+    if img is None or not hasattr(img, "getexif"):
+        return None
+
+    try:
+        exif = img.getexif()
+    except Exception:
+        return None
+
+    if not exif or len(exif) == 0:
+        return None
+
+    out = {
+        "schema": "echorepo-image-exif-sidecar-v1",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "image_object_name": object_name,
+        "original_sha256": hashlib.sha256(raw_bytes).hexdigest(),
+        "exif": {},
+    }
+
+    # Main EXIF tags
+    for tag_id, value in exif.items():
+        tag_name = ExifTags.TAGS.get(tag_id, str(tag_id)) if ExifTags is not None else str(tag_id)
+
+        # GPSInfo is usually nested; we decode it below separately where possible.
+        if tag_name == "GPSInfo":
+            continue
+
+        out["exif"][tag_name] = _json_safe_exif_value(value)
+
+    # Decode GPSInfo if present
+    try:
+        gps_ifd = exif.get_ifd(ExifTags.IFD.GPSInfo)
+        if gps_ifd:
+            gps = {}
+            for tag_id, value in gps_ifd.items():
+                tag_name = ExifTags.GPSTAGS.get(tag_id, str(tag_id))
+                gps[tag_name] = _json_safe_exif_value(value)
+            out["exif"]["GPSInfo"] = gps
+    except Exception:
+        # If Pillow version does not support get_ifd, keep going.
+        pass
+
+    return out
+
+
+def _exif_sidecar_object_name(image_object_name: str) -> str:
+    """
+    Store sidecar next to the image but with a hashed component.
+
+    Example:
+      user/sample/photo.jpg
+      user/sample/photo.jpg.exif.a1b2c3....json
+    """
+    digest = hashlib.sha256(
+        f"{EXIF_SIDECAR_SALT}:{image_object_name}".encode("utf-8")
+    ).hexdigest()[:32]
+    return f"{image_object_name}.exif.{digest}.json"
+
+def _compress_and_fix_orientation(
+    raw_bytes: bytes,
+    object_name: str = "",
+    max_bytes: int = MAX_IMAGE_BYTES,
+) -> tuple[bytes, dict | None]:
     """
     Use Pillow to:
-      - respect EXIF orientation (rotate pixels, then set orientation=1)
-      - compress to JPEG under max_bytes if needed
-    If Pillow not available or anything fails, raw_bytes are returned.
+      - read original EXIF
+      - save original EXIF into a sidecar dict
+      - apply EXIF orientation to pixels
+      - strip EXIF from the public image
+      - compress/downscale to max_bytes if needed
+
+    Returns:
+      (public_image_bytes_without_exif, exif_sidecar_dict_or_none)
     """
     if Image is None:
-        return raw_bytes
+        return raw_bytes, None
 
     try:
         img = Image.open(io.BytesIO(raw_bytes))
     except Exception:
-        return raw_bytes
+        return raw_bytes, None
+
+    # Extract metadata BEFORE modifying the image
+    sidecar = None
+    if SAVE_EXIF_SIDECAR:
+        try:
+            sidecar = _extract_exif_sidecar(img, object_name=object_name, raw_bytes=raw_bytes)
+        except Exception:
+            sidecar = None
 
     exif = None
     orientation = None
@@ -542,62 +662,67 @@ def _compress_and_fix_orientation(raw_bytes: bytes, max_bytes: int = MAX_IMAGE_B
         if ORIENTATION_TAG is not None:
             orientation = exif.get(ORIENTATION_TAG, None)
         else:
-            orientation = exif.get(274, None)  # 274 is Orientation in many exif libs
+            orientation = exif.get(274, None)
 
+    has_exif = exif is not None and len(exif) > 0
     needs_rotation = orientation not in (None, 1)
 
-    # If no rotation is needed and already small enough, keep original bytes
-    if not needs_rotation and len(raw_bytes) <= max_bytes:
-        return raw_bytes
+    # If no EXIF exists, no rotation is needed, and the image is already small,
+    # keep original bytes.
+    #
+    # But if EXIF exists and STRIP_IMAGE_EXIF=1, we must re-save it to strip EXIF.
+    if not has_exif and not needs_rotation and len(raw_bytes) <= max_bytes:
+        return raw_bytes, sidecar
 
-    # Apply EXIF rotation to pixels if needed
+    # Apply EXIF orientation to pixels
     if needs_rotation and ImageOps is not None:
         try:
             img = ImageOps.exif_transpose(img)
-            if exif is not None and ORIENTATION_TAG is not None:
-                exif[ORIENTATION_TAG] = 1
         except Exception:
-            # if transpose fails, just ignore and keep unrotated
             pass
-
-    exif_bytes = exif.tobytes() if exif is not None and len(exif) > 0 else None
 
     def _save_with_quality(im, quality: int) -> bytes:
         buf = io.BytesIO()
+
+        # JPEG cannot store alpha
         im_to_save = im.convert("RGB") if im.mode not in ("RGB", "L") else im
+
         kwargs = {
             "format": "JPEG",
             "quality": quality,
             "optimize": True,
         }
-        if exif_bytes is not None:
-            kwargs["exif"] = exif_bytes
+
+        # IMPORTANT:
+        # Do NOT pass exif=... here.
+        # This is what strips camera/GPS/private metadata from the public image.
+
         im_to_save.save(buf, **kwargs)
         return buf.getvalue()
 
-    # 1) try several qualities at original size
+    # Try several qualities at original size
     for quality in (90, 80, 70, 60, 50, 40):
         out = _save_with_quality(img, quality)
         if len(out) <= max_bytes:
-            return out
+            return out, sidecar
 
-    # 2) if still too big, downscale stepwise
+    # Downscale if still too large
     width, height = img.size
     current = img
-    last_out = _save_with_quality(current, 50)  # fallback
+    last_out = _save_with_quality(current, 50)
 
     while width > 300 and height > 300:
         width = int(width * 0.85)
         height = int(height * 0.85)
         current = current.resize((width, height), Image.LANCZOS)
+
         for quality in (70, 60, 50):
             out = _save_with_quality(current, quality)
             if len(out) <= max_bytes:
-                return out
+                return out, sidecar
             last_out = out
 
-    return last_out
-
+    return last_out, sidecar
 
 # ----- Minio helpers ---------------------------------------------------------------------------
 def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str, mclient) -> str:
@@ -637,13 +762,18 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
             print(f"[WARN] could not download {url}: {e}")
         return url
 
-    # Fix orientation + compress
+    # Fix orientation + compress + strip public EXIF
     try:
-        data_fixed = _compress_and_fix_orientation(data, MAX_IMAGE_BYTES)
+        data_fixed, exif_sidecar = _compress_and_fix_orientation(
+            data,
+            object_name=object_name,
+            max_bytes=MAX_IMAGE_BYTES,
+        )
     except Exception as e:
         if MIRROR_VERBOSE:
             print(f"[WARN] compression/orientation failed for {url}: {e}")
         data_fixed = data
+        exif_sidecar = None
 
     # Upload to MinIO (overwrite if necessary)
     try:
@@ -655,7 +785,12 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
             length=len(data_fixed),
             content_type="image/jpeg",
         )
+
+        # Store original EXIF separately, not inside the public image.
+        _upload_exif_sidecar_to_minio(mclient, object_name, exif_sidecar)
+
         _mark_mirror_done(object_name)
+        
         if MIRROR_VERBOSE:
             action = "overwrote" if MIRROR_OVERWRITE_EXISTING else "uploaded"
             print(f"[INFO] {action} {object_name} ({len(data_fixed) / 1024 / 1024:.2f} MB)")
@@ -665,6 +800,35 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
             print(f"[WARN] could not upload to MinIO {object_name}: {e}")
         return url
 
+def _upload_exif_sidecar_to_minio(mclient, image_object_name: str, sidecar: dict | None) -> None:
+    """
+    Upload original EXIF as a JSON sidecar with a hashed filename.
+
+    The public image is stripped of EXIF.
+    The sidecar is only for internal recovery/debug/research use.
+    """
+    if mclient is None or not sidecar or not SAVE_EXIF_SIDECAR:
+        return
+
+    sidecar_object_name = _exif_sidecar_object_name(image_object_name)
+
+    try:
+        data = json.dumps(sidecar, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
+
+        mclient.put_object(
+            MINIO_BUCKET,
+            sidecar_object_name,
+            data=io.BytesIO(data),
+            length=len(data),
+            content_type="application/json",
+        )
+
+        if MIRROR_VERBOSE:
+            print(f"[OK] uploaded EXIF sidecar to MinIO: {sidecar_object_name}")
+
+    except Exception as e:
+        if MIRROR_VERBOSE:
+            print(f"[WARN] could not upload EXIF sidecar for {image_object_name}: {e}")
 
 # ---------------------------------------------------------------------------
 # 1. Firestore -> flattened rows
