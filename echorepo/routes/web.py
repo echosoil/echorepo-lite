@@ -1508,6 +1508,11 @@ def lab_import():
 
     conn = sqlite3.connect(db_path)
     _ensure_lab_enrichment(conn)
+    
+    # Purge existing lab enrichment data before importing new data
+    conn.execute("DELETE FROM lab_enrichment;")
+    conn.commit()
+
     cur = conn.cursor()
     cur.execute(
         """

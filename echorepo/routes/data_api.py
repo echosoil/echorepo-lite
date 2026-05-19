@@ -1052,6 +1052,10 @@ def lab_enrichment_upload():
     conn = get_conn()
     _ensure_lab_enrichment(conn)
 
+    # A new elementary-concentrations upload replaces the previous one entirely.
+    conn.execute("DELETE FROM lab_enrichment;")
+    conn.commit()
+    
     rows = None
 
     # ---------- 1) multipart/form-data with file= ----------
