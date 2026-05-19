@@ -94,6 +94,58 @@ def _local_path_to_abs(maybe_path: str) -> str:
         return str(alt)
     return str(PROJECT_ROOT / p)
 
+# helper: clean numeric-ish values to int, safely
+def _clean_int_val(v):
+    """
+    Convert numeric-ish input to int, safely.
+
+    Returns None for:
+      - None
+      - empty / whitespace strings
+      - NA-like strings
+      - NaN values
+      - non-numeric text
+
+    Examples:
+      "2"    -> 2
+      "2.0"  -> 2
+      "2,0"  -> 2
+      3      -> 3
+      3.0    -> 3
+      "0"    -> 0
+      None   -> None
+      ""     -> None
+    """
+    if v is None:
+        return None
+
+    # Handle pandas / numpy NaN-like values
+    try:
+        if pd.isna(v):
+            return None
+    except Exception:
+        pass
+
+    s = str(v).strip()
+    if not s:
+        return None
+
+    s_norm = s.lower()
+    if s_norm in {"na", "n/a", "nan", "null", "none", "-"}:
+        return None
+
+    # Support comma decimal separator
+    s = s.replace(",", ".")
+
+    try:
+        n = float(s)
+    except (TypeError, ValueError):
+        return None
+
+    if math.isnan(n) or math.isinf(n):
+        return None
+
+    return int(n)
 
 USERS_CSV = _local_path_to_abs(os.getenv("USERS_CSV", "/data/users.csv"))
 PLANNED_XLSX = _local_path_to_abs(os.getenv("PLANNED_XLSX", "/data/utils/planned.xlsx"))
@@ -1345,14 +1397,9 @@ def build_samples_df(
                 "contamination_plastic": pr["contamination_plastic"],
                 "contamination_other_orig": pr["contamination_other_orig"],
                 "contamination_other_en": "",  # will be filled later in Postgres
-                "pollutants_count": sum(
-                    1
-                    for v in (
-                        pr["contamination_debris"],
-                        pr["contamination_plastic"],
-                        pr["contamination_other_orig"],
-                    )
-                    if v not in (0, "", None, False)
+                "pollutants_count": (
+                    (_clean_int_val(pr["contamination_debris"]) or 0)
+                    + (_clean_int_val(pr["contamination_plastic"]) or 0)
                 ),
                 "soil_structure_orig": pr["soil_structure_orig"],
                 "soil_structure_en": "",  # will be filled later
