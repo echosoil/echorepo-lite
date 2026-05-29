@@ -123,37 +123,25 @@
     const sel = document.getElementById('countryFilter');
     if (!sel) return;
 
-    const countries = new Set();
-
-    for (const ring of window.__echomapIndex.values()) {
-      const p = ring.__props || {};
-      if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(p)) continue;
-
-      if (p.country_code) {
-        countries.add(String(p.country_code).toUpperCase());
-      }
-    }
-
     const counts = {};
 
     for (const ring of window.__echomapIndex.values()) {
       const p = ring.__props || {};
       if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(p)) continue;
 
-      if (!p.country_code) continue;
-      const cc = String(p.country_code).toUpperCase();
+      const cc = p.country_code ? String(p.country_code).toUpperCase() : null;
+      if (!cc) continue;
+
       counts[cc] = (counts[cc] || 0) + 1;
     }
 
-    [...countries].sort().forEach(cc => {
+    Object.keys(counts).sort().forEach(cc => {
       const opt = document.createElement('option');
       opt.value = cc;
-      // Get localized country name if possible
-      const label =
-        countryNames?.of(cc) ||
-        cc;
 
+      const label = countryNames?.of(cc) || cc;
       opt.textContent = `${label} (${counts[cc]})`;
+
       sel.appendChild(opt);
     });
   }
@@ -526,6 +514,10 @@
 
     function draw() {
       clear();
+      if (map.getZoom() < 6) {
+        clear();
+        return;
+      }
       const size = map.getSize();
       const pad = 6, tick = 6, font = 11;
 
@@ -1024,8 +1016,16 @@
   let ALL_HEADERS = null, userGJ, othersGJ;
 
   // Cluster groups (will be rebuilt on filter)
-  let userCluster = L.markerClusterGroup();
-  let othersCluster = L.markerClusterGroup();
+  const CLUSTER_OPTS = {
+    chunkedLoading: true,
+    chunkInterval: 50,
+    chunkDelay: 25,
+    removeOutsideVisibleBounds: true,
+    disableClusteringAtZoom: 13
+  };
+
+  let userCluster = L.markerClusterGroup(CLUSTER_OPTS);
+  let othersCluster = L.markerClusterGroup(CLUSTER_OPTS);
 
   // Rings & base layers
   const userRings = [], otherRings = [];
@@ -1147,7 +1147,12 @@
     if (!inDateRange(ts)) return false;
 
     const ph = getPhFromProps(props || {});
-    if (activeCountry && props.country_code !== activeCountry) return false;
+    if (
+      activeCountry &&
+      String(props.country_code || '').toUpperCase() !== String(activeCountry).toUpperCase()
+    ) {
+      return false;
+    }
 
     return inRangeGiven(ph, activePhMin, activePhMax);
   }
@@ -1171,10 +1176,24 @@
 
   // ---- Build layers (rings + base invisible markers for selection) ----
   function buildLayers() {
-    const userStyle = { radius: 1, weight: 0, opacity: 0, fillOpacity: 0, interactive: false };
-    const otherStyle = { radius: 1, weight: 0, opacity: 0, fillOpacity: 0, interactive: false };
-    const mkUser = (_f, latlng) => L.circleMarker(latlng, userStyle);
-    const mkOther = (_f, latlng) => L.circleMarker(latlng, otherStyle);
+    const invisibleIcon = L.divIcon({
+      className: 'echo-invisible-marker',
+      html: '',
+      iconSize: [1, 1],
+      iconAnchor: [0, 0]
+    });
+
+    const mkUser = (_f, latlng) => L.marker(latlng, {
+      icon: invisibleIcon,
+      opacity: 0,
+      interactive: false
+    });
+
+    const mkOther = (_f, latlng) => L.marker(latlng, {
+      icon: invisibleIcon,
+      opacity: 0,
+      interactive: false
+    });
     const cfg = window.ECHOREPO_CFG || {};
     const PUBLIC_MODE = !!cfg.public_mode;
 
@@ -1210,25 +1229,12 @@
             const photoId = p.sampleId || p.sample_id || p.QR_qrCode;
             const chartId = p.QR_qrCode || p.qr_code || p.qr || p.sampleId || p.sample_id;
 
-            if (!p.__popup_base_loaded) {
-              p.__popup_base_loaded = true;
-              e.popup.setContent(formatPopup(f, isOwner));
-            }
-
-            if (!photoId && !chartId) return;
-
-            // keep your existing lazy-load image / piechart / guildplot logic here...
-
+            // Render immediately with already-known fields.
             e.popup.setContent(formatPopup(f, isOwner));
-          });
-
-          // When popup opens, lazy-load image + BOTH piecharts
-          ring.on("popupopen", async (e) => {
-            const p = f.properties || {};
-            const photoId = p.sampleId || p.sample_id || p.QR_qrCode;
-            const chartId = p.QR_qrCode || p.qr_code || p.qr || p.sampleId || p.sample_id;
 
             if (!photoId && !chartId) return;
+
+            let changed = false;
 
             if (!p.__img_loaded && photoId) {
               p.__img_loaded = true;
@@ -1236,6 +1242,7 @@
               if (img) {
                 p.image_url = img.url;
                 p.image_description_en = img.desc || "";
+                changed = true;
               }
             }
 
@@ -1245,6 +1252,7 @@
               if (pie16) {
                 p.piechart_16s_url = pie16.url;
                 p.piechart_16s_caption = pie16.desc || "16S · Family";
+                changed = true;
               }
             }
 
@@ -1254,28 +1262,35 @@
               if (pieITS) {
                 p.piechart_its_url = pieITS.url;
                 p.piechart_its_caption = pieITS.desc || "ITS · Family";
+                changed = true;
               }
             }
 
             if (!p.__guild_loaded && chartId) {
               p.__guild_loaded = true;
 
-              const fungalGuild = await fetchFungalGuildplot(chartId);
+              const [fungalGuild, bacterialGuild] = await Promise.all([
+                fetchFungalGuildplot(chartId),
+                fetchBacterialGuildplot(chartId)
+              ]);
+
               if (fungalGuild) {
                 p.fungal_guildplot_url = fungalGuild.url;
                 p.fungal_guildplot_caption = fungalGuild.desc || "Fungal ecological guilds";
+                changed = true;
               }
 
-              const bacterialGuild = await fetchBacterialGuildplot(chartId);
               if (bacterialGuild) {
                 p.bacterial_guildplot_url = bacterialGuild.url;
                 p.bacterial_guildplot_caption = bacterialGuild.desc || "Bacterial ecological guilds";
+                changed = true;
               }
             }
 
-            e.popup.setContent(formatPopup(f, isOwner));
+            if (changed) {
+              e.popup.setContent(formatPopup(f, isOwner));
+            }
           });
-
           bucket.push(ring);
 
           if (shouldShowRingsAtCurrentZoom() && passesCurrentFilter(props)) {
@@ -1321,9 +1336,6 @@
     addSelectionControl();
     addLegends();
 
-    // Initialize filter counts/UI using default (no filter)
-    updateFiltered();
-
   }
 
   map.on('zoomend', refreshRingsVisibilityByZoom);
@@ -1333,8 +1345,8 @@
     if (map.hasLayer(userCluster)) map.removeLayer(userCluster);
     if (map.hasLayer(othersCluster)) map.removeLayer(othersCluster);
 
-    const newUser = L.markerClusterGroup();
-    const newOthers = L.markerClusterGroup();
+    const newUser = L.markerClusterGroup(CLUSTER_OPTS);
+    const newOthers = L.markerClusterGroup(CLUSTER_OPTS);
 
     function addFilteredMarkers(layer, include, targetGroup) {
       if (!include || !layer) return;
@@ -1614,6 +1626,24 @@
     return rows;
   }
 
+  let lastFilterSignature = null;
+
+  function getFilterSignature() {
+    const state = twoToggleControl
+      ? twoToggleControl._getState()
+      : { user: true, others: true };
+
+    return JSON.stringify({
+      country: activeCountry || '',
+      dateFrom: activeDateFrom || '',
+      dateTo: activeDateTo || '',
+      phMin: activePhMin,
+      phMax: activePhMax,
+      user: !!state.user,
+      others: !!state.others,
+      hideWrong: !!HIDE_WRONG_COORDINATES
+    });
+  }
 
   function updateFilteredCountsLabelOnly() {
     if (!btnExportFiltered) return;
@@ -1623,34 +1653,33 @@
   }
 
   function updateFiltered() {
-    // ---- pH ----
     const minV = phMinEl ? parseFloat(phMinEl.value) : NaN;
     const maxV = phMaxEl ? parseFloat(phMaxEl.value) : NaN;
 
     activePhMin = Number.isFinite(minV) ? minV : null;
     activePhMax = Number.isFinite(maxV) ? maxV : null;
 
-    // ---- Date range ----
     activeDateFrom = dateFromEl?.value || null;
     activeDateTo = dateToEl?.value || null;
 
-    // ---- Apply to map ----
+    const sig = getFilterSignature();
+
     applyFilterToRings();
-    rebuildClustersForFilter();
 
-    // ---- Collect filtered rows ----
-    filteredRows = collectRowsFiltered(
-      activePhMin,
-      activePhMax,
-      activeDateFrom,
-      activeDateTo
-    );
+    if (sig !== lastFilterSignature) {
+      rebuildClustersForFilter();
 
-    // ---- UI updates (guarded) ----
-    if (btnExportFiltered) {
-      updateFilteredCountsLabelOnly();
+      filteredRows = collectRowsFiltered(
+        activePhMin,
+        activePhMax,
+        activeDateFrom,
+        activeDateTo
+      );
+
+      lastFilterSignature = sig;
     }
 
+    updateFilteredCountsLabelOnly();
     updateSelectionCount();
   }
 
@@ -1686,20 +1715,6 @@
   }));
 
   // ---- CSV helpers ----
-  function toCsv(rows) {
-    if (!rows.length) return "";
-    const headers = ALL_HEADERS || Object.keys(rows[0]);
-    const esc = (v) => { if (v == null) return ""; const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-    const lines = [headers.map(esc).join(",")];
-    for (const r of rows) lines.push(headers.map(h => esc(r[h])).join(","));
-    return lines.join("\n");
-  }
-  function downloadCsv(filename, csv) {
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
-  }
-
   function addLegends() {
     const legend = L.control({ position: 'bottomleft' });
     legend.onAdd = function () {
@@ -1775,22 +1790,16 @@
       othersGJ = o || { type: "FeatureCollection", features: [] };
 
       computeAllHeaders();
-      buildLayers();
 
-      // ✅ 1. Populate country selector from FULL dataset
-      populateCountryFilter();
-
-      // ✅ 2. Restore filters from URL (sets activeCountry / activePhMin / activePhMax)
       initFiltersFromUrl();
 
-      // ✅ 3. Sync restored values into inputs
+      buildLayers();
+      populateCountryFilter();
       syncFiltersToUI();
 
-      // ✅ 4. Apply filters to map + counts
       updateFiltered();
-
-      // ✅ 5. Apply i18n to dynamic texts
       refreshI18NTexts();
+
     }).catch(err => {
       console.warn('Init failed:', err);
     });
