@@ -428,14 +428,42 @@
     return out.join("<br>");
   }
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // ---- Base map layers ----
+  const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
     updateWhenZooming: false,
     updateWhenIdle: true,
     detectRetina: true,
     className: 'tiles-no-seams'
-  }).addTo(map);
+  });
+
+  const satelliteLayer = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri',
+      updateWhenZooming: false,
+      updateWhenIdle: true,
+      detectRetina: true
+    }
+  );
+
+  // Default base layer
+  streetLayer.addTo(map);
+
+  // Leaflet base-layer switcher
+  L.control.layers(
+    {
+      [T('streetMap', {}, 'Street map')]: streetLayer,
+      [T('satellite', {}, 'Satellite')]: satelliteLayer
+    },
+    null,
+    {
+      position: 'topright',
+      collapsed: true
+    }
+  ).addTo(map);
 
   /** ─────────────────────────────────────────────────────────────
    *  Degree rulers (left: latitude, bottom: longitude) — ticks only
