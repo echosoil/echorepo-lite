@@ -135,6 +135,7 @@ MIRROR_PROGRESS_FILE = os.getenv(
 DEFAULT_LICENCE = os.getenv("DEFAULT_LICENCE", "CC-BY-4.0")
 DEFAULT_LAB_ID = os.getenv("DEFAULT_LAB_ID", "ECHO-LAB-1")
 
+FILTER_WRONG_COORDINATES = os.getenv("FILTER_WRONG_COORDINATES", "0") == "1"
 
 def _load_mirror_done() -> set[str]:
     """
@@ -2173,8 +2174,14 @@ def main():
         coord_bad_path,
     )
 
-    # From this point onward, only valid-coordinate rows are used.
-    df_enriched = df_filtered
+    # Keep the wrong_coordinates flag in the main output.
+    # Optionally drop wrong-coordinate rows only if FILTER_WRONG_COORDINATES=1.
+    if FILTER_WRONG_COORDINATES:
+        print("[coords] FILTER_WRONG_COORDINATES=1 -> dropping wrong-coordinate rows")
+        df_enriched = df_filtered
+    else:
+        print("[coords] FILTER_WRONG_COORDINATES=0 -> keeping all rows, only flagging them")
+        df_enriched = df_annotated
 
     # This is the ONLY write of OUTPUT_CSV.
     write_csv_atomic(df_enriched, OUTPUT_CSV)

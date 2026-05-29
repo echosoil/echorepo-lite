@@ -12,6 +12,10 @@
   const SHOULD_DROP = (k) => /_orig$/i.test(k);
   const JITTER_M = Number(cfg.jitter_m) || 1000;
 
+  // If true, samples flagged by pull_and_enrich as wrong_coordinates
+  // are kept in the data but hidden from the map, clusters, selection and export.
+  const HIDE_WRONG_COORDINATES = cfg.hide_wrong_coordinates !== false;
+
   const map = L.map('map', {
     minZoom: 4,
     maxZoom: 15,
@@ -30,7 +34,7 @@
 
     const lat = parseFloat(params.get('lat'));
     const lng = parseFloat(params.get('lng'));
-    const z   = parseInt(params.get('z'), 10);
+    const z = parseInt(params.get('z'), 10);
 
     if (Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(z)) {
       initialView = { lat, lng, z };
@@ -96,10 +100,10 @@
 
   let activeCountry = null;
   let activeDateFrom = null; // YYYY-MM-DD
-  let activeDateTo   = null; // YYYY-MM-DD
+  let activeDateTo = null; // YYYY-MM-DD
 
   const dateFromEl = document.getElementById('dateFrom');
-  const dateToEl   = document.getElementById('dateTo');
+  const dateToEl = document.getElementById('dateTo');
 
   function inDateRange(ts) {
     // If no date filter is active, do not exclude rows with missing dates
@@ -123,6 +127,8 @@
 
     for (const ring of window.__echomapIndex.values()) {
       const p = ring.__props || {};
+      if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(p)) continue;
+
       if (p.country_code) {
         countries.add(String(p.country_code).toUpperCase());
       }
@@ -132,6 +138,8 @@
 
     for (const ring of window.__echomapIndex.values()) {
       const p = ring.__props || {};
+      if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(p)) continue;
+
       if (!p.country_code) continue;
       const cc = String(p.country_code).toUpperCase();
       counts[cc] = (counts[cc] || 0) + 1;
@@ -209,6 +217,7 @@
 
     for (const ring of window.__echomapIndex.values()) {
       const p = ring.__props || {};
+      if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(p)) continue;
       if (p.country_code !== countryCode) continue;
 
       const ll = ring.getLatLng?.();
@@ -239,7 +248,7 @@
 
     // ---- date range ----
     activeDateFrom = params.get('date_from') || null;
-    activeDateTo   = params.get('date_to')   || null;
+    activeDateTo = params.get('date_to') || null;
   }
 
   function syncFiltersToUI() {
@@ -247,7 +256,7 @@
     if (phMaxEl) phMaxEl.value = activePhMax ?? '';
 
     if (dateFromEl) dateFromEl.value = activeDateFrom ?? '';
-    if (dateToEl)   dateToEl.value   = activeDateTo   ?? '';
+    if (dateToEl) dateToEl.value = activeDateTo ?? '';
 
     const sel = document.getElementById('countryFilter');
     if (sel) sel.value = activeCountry ?? '';
@@ -256,14 +265,18 @@
   // 👇 Expose map + global index + "show" helper
   window.__echomap = map;
   window.__echomapIndex = new Map();
-  window.__echomapShow = function(sampleId, opts) {
+  window.__echomapShow = function (sampleId, opts) {
     const id = String(sampleId || '');
     const ring = window.__echomapIndex.get(id);
     if (!ring) return false;
 
+    if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(ring.__props || {})) {
+      return false;
+    }
+
     // make sure it's visible
     if (!map.hasLayer(ring) && ring.addTo) {
-      try { ring.addTo(map); } catch (_) {}
+      try { ring.addTo(map); } catch (_) { }
     }
 
     const ll = ring.getLatLng ? ring.getLatLng() : null;
@@ -276,7 +289,7 @@
   };
 
   // Inject CSS once for scrollable popups
-  (function ensurePopupCSS(){
+  (function ensurePopupCSS() {
     if (document.getElementById('echoPopupCSS')) return;
 
     const style = document.createElement('style');
@@ -372,13 +385,13 @@
           rect._endLabelText =
             T('releaseToFinish', {}, 'Release mouse to finish drawing.');
         }
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
 
   // --- Metals cleaner: drop oxides + round to 2 sig figs ---
-  const OXIDES = new Set(["MN2O3","AL2O3","CAO","FE2O3","MGO","SIO2","P2O5","TIO2","K2O", "SO3"]);
+  const OXIDES = new Set(["MN2O3", "AL2O3", "CAO", "FE2O3", "MGO", "SIO2", "P2O5", "TIO2", "K2O", "SO3"]);
 
   function roundSigStr(n, sig = 2) {
     const v = Number(n);
@@ -402,12 +415,12 @@
   }
 
   /** Accepts "PARAM=VAL [UNIT]" separated by ";" or "<br>" */
-  function cleanMetalsInfo(raw){
+  function cleanMetalsInfo(raw) {
     if (raw == null) return "";
     const pieces = String(raw).split(/(?:<br\s*\/?>|;)/i)
       .map(s => s.trim()).filter(Boolean);
     const out = [];
-    for (const tok of pieces){
+    for (const tok of pieces) {
       const [left, ...rest] = tok.split("=");
       const name = (left || "").replace(/\s+/g, "").toUpperCase();
       if (!left) continue;
@@ -601,54 +614,54 @@
   })();
   // ── end rulers ──
 
-  function parsePh(val){
-    if (val==null) return NaN;
-    const s=String(val).replace(',', '.').toLowerCase();
-    const m=s.match(/(\d+(?:\.\d+)?)/);
-    if(!m) return NaN;
-    let v=parseFloat(m[1]);
-    if(!Number.isFinite(v)) return NaN;
+  function parsePh(val) {
+    if (val == null) return NaN;
+    const s = String(val).replace(',', '.').toLowerCase();
+    const m = s.match(/(\d+(?:\.\d+)?)/);
+    if (!m) return NaN;
+    let v = parseFloat(m[1]);
+    if (!Number.isFinite(v)) return NaN;
     return Math.min(14, Math.max(0, v));
   }
-  function getPhFromProps(props){
-    if(!props) return NaN;
-    for (const k of ["PH_ph","ph","pH","ph_value","PH_value"]) {
-      if (k in props) { const v=parsePh(props[k]); if(Number.isFinite(v)) return v; }
+  function getPhFromProps(props) {
+    if (!props) return NaN;
+    for (const k of ["PH_ph", "ph", "pH", "ph_value", "PH_value"]) {
+      if (k in props) { const v = parsePh(props[k]); if (Number.isFinite(v)) return v; }
     }
-    for (const [k,v] of Object.entries(props)) {
-      const kl=k.toLowerCase(); if(kl.startsWith("photo")) continue;
-      if(/\bph\b/.test(kl)){ const n=parsePh(v); if(Number.isFinite(n)) return n; }
+    for (const [k, v] of Object.entries(props)) {
+      const kl = k.toLowerCase(); if (kl.startsWith("photo")) continue;
+      if (/\bph\b/.test(kl)) { const n = parsePh(v); if (Number.isFinite(n)) return n; }
     }
     return NaN;
   }
-  function phColor(phLike){
-    const v=typeof phLike==="number"?phLike:parsePh(phLike);
-    if(isNaN(v)) return "#999";
-    if(v<5.5) return "#d73027";
-    if(v<6.5) return "#fc8d59";
-    if(v<7.5) return "#fee08b";
-    if(v<8.5) return "#91bfdb";
+  function phColor(phLike) {
+    const v = typeof phLike === "number" ? phLike : parsePh(phLike);
+    if (isNaN(v)) return "#999";
+    if (v < 5.5) return "#d73027";
+    if (v < 6.5) return "#fc8d59";
+    if (v < 7.5) return "#fee08b";
+    if (v < 8.5) return "#91bfdb";
     return "#4575b4";
   }
-  function fmtInt(v){ const n=Number(v); if(Number.isFinite(n)) return String(Math.trunc(n)); return (v===0||v==="0")?"0":(v??"—"); }
-  function formatDate(iso){
-    if(!iso) return "—";
-    const d=new Date(iso);
-    if(isNaN(d)) return iso;
-    return d.toLocaleDateString(UI_LANG,{year:'numeric',month:'short',day:'2-digit'});
+  function fmtInt(v) { const n = Number(v); if (Number.isFinite(n)) return String(Math.trunc(n)); return (v === 0 || v === "0") ? "0" : (v ?? "—"); }
+  function formatDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString(UI_LANG, { year: 'numeric', month: 'short', day: '2-digit' });
   }
 
   function T(key, vars = {}, defaultText) {
     const I = window.I18N || {};
-    const labels  = I.labels  || {};
+    const labels = I.labels || {};
     const byMsgid = I.by_msgid || {};
 
     let raw =
       (key != null && Object.prototype.hasOwnProperty.call(labels, key))
         ? labels[key]
         : (defaultText != null && Object.prototype.hasOwnProperty.call(byMsgid, defaultText))
-            ? byMsgid[defaultText]
-            : (defaultText != null ? defaultText : key);
+          ? byMsgid[defaultText]
+          : (defaultText != null ? defaultText : key);
 
     let out = String(raw);
 
@@ -805,7 +818,7 @@
       const url = String(v).trim();
       if (!url) continue;
 
-      const opt  = String(props[`PHOTO_photos_${idx}_option`] || "").toLowerCase();
+      const opt = String(props[`PHOTO_photos_${idx}_option`] || "").toLowerCase();
       const desc = String(props[`PHOTO_photos_${idx}_description`] || "").trim();
       items.push({ idx, url, opt, desc });
     }
@@ -827,7 +840,7 @@
 
 
 
-  function formatPopup(f, isOwnerLayer){
+  function formatPopup(f, isOwnerLayer) {
     const p = f.properties || {};
     const fmt = (v) => (v == null || (typeof v === "string" && v.trim() === "")) ? "—" : v;
 
@@ -847,8 +860,8 @@
 
     // ---- normalize common fields (old UI schema OR canonical schema) ----
     const sampleId = pick(p.sampleId, p.sample_id, p.Sample, p.QR_qrCode);
-    const dateIso  = pick(p.collectedAt, p.timestamp_utc, p.date, p.collected_at);
-    const qrLike   = pick(p.QR_qrCode, p.qr_code, p.qr, sampleId);
+    const dateIso = pick(p.collectedAt, p.timestamp_utc, p.date, p.collected_at);
+    const qrLike = pick(p.QR_qrCode, p.qr_code, p.qr, sampleId);
 
     const phVal = pick(p.PH_ph, p.ph, p.pH, p.PH_value, p.ph_value);
 
@@ -869,8 +882,8 @@
     );
 
     const earthworms = pick(p.SOIL_DIVER_earthworms, p.earthworms_count, p.earthworms);
-    const plastic    = pick(p.SOIL_CONTAMINATION_plastic, p.contamination_plastic, p.plastic);
-    const debris     = pick(p.SOIL_CONTAMINATION_debris,  p.contamination_debris,  p.debris);
+    const plastic = pick(p.SOIL_CONTAMINATION_plastic, p.contamination_plastic, p.plastic);
+    const debris = pick(p.SOIL_CONTAMINATION_debris, p.contamination_debris, p.debris);
 
     const contaminationNotes = pick(
       p.SOIL_CONTAMINATION_comments,
@@ -890,22 +903,21 @@
     const metals = cleanMetalsInfo(metalsRaw);
 
     const rows = [
-      ['<i class="bi bi-calendar"></i> ' + T('date',{},'Date'), formatDate(dateIso)],
-      ['<i class="bi bi-qr-code-scan"></i> ' + T('qr',{},'QR code'), qrLike],
-      ['<i class="bi bi-droplet-half"></i> ' + T('ph',{},'pH'), phVal],
-      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter',{},'Soil organic matter'), soilColor],
-      ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture',{},'Texture'), texture],
-      ['<i class="bi bi-diagram-3"></i> ' + T('structure',{},'Structure'), structure],
-      ['<i class="bi bi-bug"></i> ' + T('earthworms',{},'Earthworms'), fmtInt(earthworms)],
-      ['<i class="bi bi-bag"></i> ' + T('plastic',{},'Plastic'), fmtInt(plastic)],
-      ['<i class="bi bi-bricks"></i> ' + T('debris',{},'Debris'), fmtInt(debris)],
-      ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination',{},'Contamination'), contaminationNotes],
-      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations',{},'Elemental concentrations'), metals],
+      ['<i class="bi bi-calendar"></i> ' + T('date', {}, 'Date'), formatDate(dateIso)],
+      ['<i class="bi bi-qr-code-scan"></i> ' + T('qr', {}, 'QR code'), qrLike],
+      ['<i class="bi bi-droplet-half"></i> ' + T('ph', {}, 'pH'), phVal],
+      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter', {}, 'Soil organic matter'), soilColor],
+      ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture', {}, 'Texture'), texture],
+      ['<i class="bi bi-diagram-3"></i> ' + T('structure', {}, 'Structure'), structure],
+      ['<i class="bi bi-bug"></i> ' + T('earthworms', {}, 'Earthworms'), fmtInt(earthworms)],
+      ['<i class="bi bi-bag"></i> ' + T('plastic', {}, 'Plastic'), fmtInt(plastic)],
+      ['<i class="bi bi-bricks"></i> ' + T('debris', {}, 'Debris'), fmtInt(debris)],
+      ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination', {}, 'Contamination'), contaminationNotes],
+      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations', {}, 'Elemental concentrations'), metals],
     ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
 
-    const tableHtml = `<table class="table table-sm popup-table mb-2">${
-      rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")
-    }</table>`;
+    const tableHtml = `<table class="table table-sm popup-table mb-2">${rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")
+      }</table>`;
 
     const PUBLIC_MODE = !!(window.ECHOREPO_CFG || {}).public_mode;
 
@@ -931,34 +943,34 @@
     const bioItems = [
       p.piechart_16s_url
         ? {
-            url: p.piechart_16s_url,
-            caption: p.piechart_16s_caption || "16S · Family",
-            alt: "16S taxonomic pie chart"
-          }
+          url: p.piechart_16s_url,
+          caption: p.piechart_16s_caption || "16S · Family",
+          alt: "16S taxonomic pie chart"
+        }
         : null,
 
       p.piechart_its_url
         ? {
-            url: p.piechart_its_url,
-            caption: p.piechart_its_caption || "ITS · Family",
-            alt: "ITS taxonomic pie chart"
-          }
+          url: p.piechart_its_url,
+          caption: p.piechart_its_caption || "ITS · Family",
+          alt: "ITS taxonomic pie chart"
+        }
         : null,
 
       p.fungal_guildplot_url
         ? {
-            url: p.fungal_guildplot_url,
-            caption: p.fungal_guildplot_caption || "Fungal ecological guilds",
-            alt: "Fungal ecological guilds"
-          }
+          url: p.fungal_guildplot_url,
+          caption: p.fungal_guildplot_caption || "Fungal ecological guilds",
+          alt: "Fungal ecological guilds"
+        }
         : null,
 
       p.bacterial_guildplot_url
         ? {
-            url: p.bacterial_guildplot_url,
-            caption: p.bacterial_guildplot_caption || "Bacterial ecological guilds",
-            alt: "Bacterial ecological guilds"
-          }
+          url: p.bacterial_guildplot_url,
+          caption: p.bacterial_guildplot_caption || "Bacterial ecological guilds",
+          alt: "Bacterial ecological guilds"
+        }
         : null
     ].filter(Boolean);
 
@@ -993,7 +1005,7 @@
         <a class="btn btn-sm btn-outline-primary"
           href="/download/sample_csv?sampleId=${encodeURIComponent(sampleId)}"
           target="_blank" rel="noopener">
-          <i class="bi bi-filetype-csv"></i> ${T('export',{},'Export')}
+          <i class="bi bi-filetype-csv"></i> ${T('export', {}, 'Export')}
         </a>
       </div>`;
     }
@@ -1009,21 +1021,21 @@
   }
 
   // ---- State ----
-  let ALL_HEADERS=null, userGJ, othersGJ;
+  let ALL_HEADERS = null, userGJ, othersGJ;
 
   // Cluster groups (will be rebuilt on filter)
-  let userCluster   = L.markerClusterGroup();
+  let userCluster = L.markerClusterGroup();
   let othersCluster = L.markerClusterGroup();
 
   // Rings & base layers
-  const userRings=[], otherRings=[];
+  const userRings = [], otherRings = [];
   let userLayer, othersLayer;
-  let twoToggleControl=null;
+  let twoToggleControl = null;
 
   // Selection state
   const drawnItems = new L.FeatureGroup([], { pane: 'selectionPane' }).addTo(map);
   let selectionLayers = [], selectionRows = [];
-  let selectionButtonEl=null, clearButtonEl=null;
+  let selectionButtonEl = null, clearButtonEl = null;
 
   // Filter state (UI elements in page)
   const phMinEl = document.getElementById('phMin');
@@ -1106,13 +1118,31 @@
     }
   });
 
-  function inRangeGiven(ph, min, max){
+  function inRangeGiven(ph, min, max) {
     if (!Number.isFinite(ph)) return (min == null && max == null);
     if (min != null && ph < min) return false;
     if (max != null && ph > max) return false;
     return true;
   }
-  function passesCurrentFilter(props){
+  function isTruthyFlag(v) {
+    if (v === true) return true;
+    if (v === 1) return true;
+
+    const s = String(v ?? '').trim().toLowerCase();
+    return ['true', '1', 'yes', 'y'].includes(s);
+  }
+
+  function hasWrongCoordinates(props) {
+    props = props || {};
+    return isTruthyFlag(props.wrong_coordinates);
+  }
+
+  function passesCurrentFilter(props) {
+    props = props || {};
+
+    // Hide bad-coordinate samples globally when configured.
+    if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props)) return false;
+
     const ts = props.timestamp_utc || props.collectedAt;
     if (!inDateRange(ts)) return false;
 
@@ -1122,39 +1152,39 @@
     return inRangeGiven(ph, activePhMin, activePhMax);
   }
 
-  function computeAllHeaders(){
-    const preferred=[
-      "sampleId","collectedAt","QR_qrCode","PH_ph",
-      "SOIL_COLOR_color","SOIL_TEXTURE_texture","SOIL_STRUCTURE_structure",
-      "SOIL_DIVER_earthworms","SOIL_CONTAMINATION_plastic","SOIL_CONTAMINATION_debris",
-      "SOIL_CONTAMINATION_comments","METALS_info"
+  function computeAllHeaders() {
+    const preferred = [
+      "sampleId", "collectedAt", "QR_qrCode", "PH_ph",
+      "SOIL_COLOR_color", "SOIL_TEXTURE_texture", "SOIL_STRUCTURE_structure",
+      "SOIL_DIVER_earthworms", "SOIL_CONTAMINATION_plastic", "SOIL_CONTAMINATION_debris",
+      "SOIL_CONTAMINATION_comments", "METALS_info"
     ];
-    const set=new Set(preferred);
-    const add=(gj)=>(gj?.features||[]).forEach(f=>{
-      const p=f.properties||{};
-      Object.keys(p).forEach(k=>{ if(!SHOULD_DROP(k)) set.add(k); });
+    const set = new Set(preferred);
+    const add = (gj) => (gj?.features || []).forEach(f => {
+      const p = f.properties || {};
+      Object.keys(p).forEach(k => { if (!SHOULD_DROP(k)) set.add(k); });
     });
     add(userGJ); add(othersGJ);
     set.add(LAT_KEY); set.add(LON_KEY);
-    const rest=[...set].filter(k=>!preferred.includes(k)).sort(); ALL_HEADERS=[...preferred,...rest];
+    const rest = [...set].filter(k => !preferred.includes(k)).sort(); ALL_HEADERS = [...preferred, ...rest];
   }
 
   // ---- Build layers (rings + base invisible markers for selection) ----
-  function buildLayers(){
-    const userStyle={radius:1,weight:0,opacity:0,fillOpacity:0,interactive:false};
-    const otherStyle={radius:1,weight:0,opacity:0,fillOpacity:0,interactive:false};
-    const mkUser=(_f,latlng)=>L.circleMarker(latlng,userStyle);
-    const mkOther=(_f,latlng)=>L.circleMarker(latlng,otherStyle);
+  function buildLayers() {
+    const userStyle = { radius: 1, weight: 0, opacity: 0, fillOpacity: 0, interactive: false };
+    const otherStyle = { radius: 1, weight: 0, opacity: 0, fillOpacity: 0, interactive: false };
+    const mkUser = (_f, latlng) => L.circleMarker(latlng, userStyle);
+    const mkOther = (_f, latlng) => L.circleMarker(latlng, otherStyle);
     const cfg = window.ECHOREPO_CFG || {};
     const PUBLIC_MODE = !!cfg.public_mode;
 
-    function makeLayer(gj, mk, isOwner, bucket){
-      return L.geoJSON(gj,{
-        pointToLayer:(_f,latlng)=>mk(_f,latlng),
-        onEachFeature:(f,marker)=>{
+    function makeLayer(gj, mk, isOwner, bucket) {
+      return L.geoJSON(gj, {
+        pointToLayer: (_f, latlng) => mk(_f, latlng),
+        onEachFeature: (f, marker) => {
           const props = f.properties || {};
-          const ph    = getPhFromProps(props);
-          const clr   = phColor(ph);
+          const ph = getPhFromProps(props);
+          const clr = phColor(ph);
           const ring = L.circle(marker.getLatLng(), {
             radius: JITTER_M,
             color: clr,
@@ -1172,7 +1202,7 @@
           // popup goes on the ring
           ring.bindPopup(
             T('loading', {}, 'Loading...'),
-            { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
+            { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20, 20] }
           );
 
           ring.on("popupopen", async (e) => {
@@ -1257,10 +1287,12 @@
           marker.__owner = !!isOwner;
           marker.feature = f;
 
-          if (isOwner) {
-            userCluster.addLayer(marker);
-          } else {
-            othersCluster.addLayer(marker);
+          if (passesCurrentFilter(props)) {
+            if (isOwner) {
+              userCluster.addLayer(marker);
+            } else {
+              othersCluster.addLayer(marker);
+            }
           }
 
           // index by sample id
@@ -1277,7 +1309,7 @@
       });
     }
 
-    userLayer   = makeLayer(userGJ, mkUser,  true,  userRings);
+    userLayer = makeLayer(userGJ, mkUser, true, userRings);
     othersLayer = makeLayer(othersGJ, mkOther, false, otherRings);
 
     // Initial clusters (unfiltered = all)
@@ -1297,7 +1329,7 @@
   map.on('zoomend', refreshRingsVisibilityByZoom);
 
   // ---- Rebuild clusters to reflect current filter ----
-  function rebuildClustersForFilter(){
+  function rebuildClustersForFilter() {
     if (map.hasLayer(userCluster)) map.removeLayer(userCluster);
     if (map.hasLayer(othersCluster)) map.removeLayer(othersCluster);
 
@@ -1314,7 +1346,7 @@
       });
     }
 
-    const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
+    const state = twoToggleControl ? twoToggleControl._getState() : { user: true, others: true };
 
     addFilteredMarkers(userLayer, state.user, newUser);
     addFilteredMarkers(othersLayer, state.others, newOthers);
@@ -1326,29 +1358,29 @@
     if (state.others) map.addLayer(othersCluster);
   }
   // ---- Show/hide rings based on current filter + toggles ----
-  function applyFilterToRings(){
-      refreshRingsVisibilityByZoom();
+  function applyFilterToRings() {
+    refreshRingsVisibilityByZoom();
   }
   // ---- Two checkboxes (toggle clusters + rings together) ----
-  function addTwoToggleControl(){
-    const state={user:true, others:true};
+  function addTwoToggleControl() {
+    const state = { user: true, others: true };
 
-    function sync(){
-      if(state.user){ if(!map.hasLayer(userCluster)) map.addLayer(userCluster); }
-      else          { if(map.hasLayer(userCluster))  map.removeLayer(userCluster); }
-      if(state.others){ if(!map.hasLayer(othersCluster)) map.addLayer(othersCluster); }
-      else            { if(map.hasLayer(othersCluster))  map.removeLayer(othersCluster); }
+    function sync() {
+      if (state.user) { if (!map.hasLayer(userCluster)) map.addLayer(userCluster); }
+      else { if (map.hasLayer(userCluster)) map.removeLayer(userCluster); }
+      if (state.others) { if (!map.hasLayer(othersCluster)) map.addLayer(othersCluster); }
+      else { if (map.hasLayer(othersCluster)) map.removeLayer(othersCluster); }
 
       applyFilterToRings();
       updateSelectionCount();
       updateFilteredCountsLabelOnly();
     }
 
-    const ctl=L.control({position:'topleft'});
-    ctl.onAdd=function(){
-      const div=L.DomUtil.create('div','leaflet-control leaflet-bar p-2');
-      div.style.background='white'; div.style.borderRadius='8px'; div.style.lineHeight='1.1';
-      div.innerHTML=`
+    const ctl = L.control({ position: 'topleft' });
+    ctl.onAdd = function () {
+      const div = L.DomUtil.create('div', 'leaflet-control leaflet-bar p-2');
+      div.style.background = 'white'; div.style.borderRadius = '8px'; div.style.lineHeight = '1.1';
+      div.innerHTML = `
         <div class="form-check" style="margin:.1rem 0;">
           <input class="form-check-input" type="checkbox" id="togUser" checked>
           <label class="form-check-label" for="togUser">${T('yourSamples', {}, 'Your samples')}</label>
@@ -1358,10 +1390,10 @@
           <label class="form-check-label" for="togOther">${T('otherSamples', {}, 'Other samples')}</label>
         </div>`;
       L.DomEvent.disableClickPropagation(div);
-      const cUser=div.querySelector('#togUser'), cOther=div.querySelector('#togOther');
-      cUser.addEventListener('change',()=>{state.user=!!cUser.checked; sync();});
-      cOther.addEventListener('change',()=>{state.others=!!cOther.checked; sync();});
-      div._getState=()=>({...state}); twoToggleControl=div; return div;
+      const cUser = div.querySelector('#togUser'), cOther = div.querySelector('#togOther');
+      cUser.addEventListener('change', () => { state.user = !!cUser.checked; sync(); });
+      cOther.addEventListener('change', () => { state.others = !!cOther.checked; sync(); });
+      div._getState = () => ({ ...state }); twoToggleControl = div; return div;
     };
     ctl.addTo(map); sync();
   }
@@ -1377,11 +1409,11 @@
       }
       if (tb.actions) {
         tb.actions.title = T('cancelDrawing', {}, 'Cancel drawing');
-        tb.actions.text  = T('cancel', {}, 'Cancel');
+        tb.actions.text = T('cancel', {}, 'Cancel');
       }
       if (tb.undo) {
         tb.undo.title = T('deleteLastPoint', {}, 'Delete last point drawn');
-        tb.undo.text  = T('deleteLastPoint', {}, 'Delete last point');
+        tb.undo.text = T('deleteLastPoint', {}, 'Delete last point');
       }
     }
 
@@ -1389,37 +1421,37 @@
       const h = L.drawLocal.draw.handlers;
 
       const startText = T('drawRectangleHint', {}, 'Click and drag to draw a rectangle.');
-      const endText   = T('releaseToFinish',  {}, 'Release mouse to finish drawing.');
+      const endText = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
 
       if (h.rectangle && h.rectangle.tooltip) {
         h.rectangle.tooltip.start = startText;
-        h.rectangle.tooltip.end   = endText;
+        h.rectangle.tooltip.end = endText;
       }
       if (h.simpleshape && h.simpleshape.tooltip) {
         h.simpleshape.tooltip.start = startText;
-        h.simpleshape.tooltip.end   = endText;
+        h.simpleshape.tooltip.end = endText;
       }
     }
   }
 
   // ---- Selection (rectangle multi-select) ----
-  function addSelectionControl(){
-    const ctl=L.control({position:'topright'});
-    ctl.onAdd=function(){
-      const div=L.DomUtil.create('div','leaflet-control leaflet-bar p-2');
-      div.style.background='white'; div.style.borderRadius='8px'; div.style.lineHeight='1';
-      div.innerHTML=`
+  function addSelectionControl() {
+    const ctl = L.control({ position: 'topright' });
+    ctl.onAdd = function () {
+      const div = L.DomUtil.create('div', 'leaflet-control leaflet-bar p-2');
+      div.style.background = 'white'; div.style.borderRadius = '8px'; div.style.lineHeight = '1';
+      div.innerHTML = `
         <div class="d-flex gap-2 align-items-center">
-          <button type="button" class="btn btn-sm btn-primary" id="btnExportSel" disabled title="${T('export',{},'Export')}">
-            ${T('export',{},'Export')} (0)
+          <button type="button" class="btn btn-sm btn-primary" id="btnExportSel" disabled title="${T('export', {}, 'Export')}">
+            ${T('export', {}, 'Export')} (0)
           </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearSel" disabled title="${T('clear',{},'Clear')}">
-            ${T('clear',{},'Clear')}
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearSel" disabled title="${T('clear', {}, 'Clear')}">
+            ${T('clear', {}, 'Clear')}
           </button>
         </div>`;
       L.DomEvent.disableClickPropagation(div);
-      selectionButtonEl=div.querySelector('#btnExportSel');
-      clearButtonEl=div.querySelector('#btnClearSel');
+      selectionButtonEl = div.querySelector('#btnExportSel');
+      clearButtonEl = div.querySelector('#btnClearSel');
       selectionButtonEl.addEventListener('click', () => {
         if (!selectionRows.length) return;
 
@@ -1487,7 +1519,7 @@
     window.__echodraw = drawControl;
 
     const rectHandler = drawControl._toolbars.draw._modes.rectangle.handler;
-    const endText   = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
+    const endText = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
     rectHandler._endLabelText = endText;
 
     map.on(L.Draw.Event.CREATED, (e) => {
@@ -1499,38 +1531,38 @@
       updateSelectionCount();
     });
   }
-  function clearSelections(){ drawnItems.clearLayers(); selectionLayers=[]; selectionRows=[]; updateSelectionCount(); }
+  function clearSelections() { drawnItems.clearLayers(); selectionLayers = []; selectionRows = []; updateSelectionCount(); }
 
-  function collectRowsWithinAll(){
-    if(!selectionLayers.length) return [];
-    const active = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
-    const rows=[], seen=new Set();
-    const inAny=(ll)=>selectionLayers.some(r=>r.getBounds().contains(ll));
+  function collectRowsWithinAll() {
+    if (!selectionLayers.length) return [];
+    const active = twoToggleControl ? twoToggleControl._getState() : { user: true, others: true };
+    const rows = [], seen = new Set();
+    const inAny = (ll) => selectionLayers.some(r => r.getBounds().contains(ll));
 
-    function scan(layer, include){
-      if(!include||!layer) return;
-      layer.eachLayer(m=>{
-        const ll=m.getLatLng(); if(!ll) return;
-        if(!inAny(ll)) return;
-        const f=m.feature||{}; const props={...(f.properties||{})};
+    function scan(layer, include) {
+      if (!include || !layer) return;
+      layer.eachLayer(m => {
+        const ll = m.getLatLng(); if (!ll) return;
+        if (!inAny(ll)) return;
+        const f = m.feature || {}; const props = { ...(f.properties || {}) };
         if (!passesCurrentFilter(props)) return;
-        Object.keys(props).forEach(k=>{ if(SHOULD_DROP(k)) delete props[k]; });
-        props[LAT_KEY]=ll.lat; props[LON_KEY]=ll.lng;
-        const key=props.sampleId||props.QR_qrCode||`${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
-        if(seen.has(key)) return; seen.add(key); rows.push(props);
+        Object.keys(props).forEach(k => { if (SHOULD_DROP(k)) delete props[k]; });
+        props[LAT_KEY] = ll.lat; props[LON_KEY] = ll.lng;
+        const key = props.sampleId || props.QR_qrCode || `${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
+        if (seen.has(key)) return; seen.add(key); rows.push(props);
       });
     }
-    scan(userLayer,   active.user);
+    scan(userLayer, active.user);
     scan(othersLayer, active.others);
     return rows;
   }
-  function updateSelectionCount(){
-    if(!selectionButtonEl||!clearButtonEl) return;
+  function updateSelectionCount() {
+    if (!selectionButtonEl || !clearButtonEl) return;
     selectionRows = collectRowsWithinAll();
     const n = selectionRows.length;
-    selectionButtonEl.disabled = n===0;
-      selectionButtonEl.textContent = `${T('export',{},'Export')} (${n})`;
-    clearButtonEl.disabled = selectionLayers.length===0;
+    selectionButtonEl.disabled = n === 0;
+    selectionButtonEl.textContent = `${T('export', {}, 'Export')} (${n})`;
+    clearButtonEl.disabled = selectionLayers.length === 0;
   }
 
   // ---- Filter by pH & export ----
@@ -1576,17 +1608,17 @@
       });
     }
 
-    scan(userLayer,   active.user);
+    scan(userLayer, active.user);
     scan(othersLayer, active.others);
 
     return rows;
   }
 
 
-  function updateFilteredCountsLabelOnly(){
-    if(!btnExportFiltered) return;
+  function updateFilteredCountsLabelOnly() {
+    if (!btnExportFiltered) return;
     const n = filteredRows.length || 0;
-    btnExportFiltered.disabled = n===0;
+    btnExportFiltered.disabled = n === 0;
     btnExportFiltered.textContent = T('exportFiltered', { n }, `Export filtered (${n})`);
   }
 
@@ -1600,7 +1632,7 @@
 
     // ---- Date range ----
     activeDateFrom = dateFromEl?.value || null;
-    activeDateTo   = dateToEl?.value || null;
+    activeDateTo = dateToEl?.value || null;
 
     // ---- Apply to map ----
     applyFilterToRings();
@@ -1622,68 +1654,68 @@
     updateSelectionCount();
   }
 
-    btnApplyFilter?.addEventListener('click', () => {
-      updateFiltered();
-      updateURLFromFilters();
-    });
-    btnExportFiltered?.addEventListener('click', () => {
-      const cfg = window.ECHOREPO_CFG || {};
-      const PUBLIC_MODE = !!cfg.public_mode;
+  btnApplyFilter?.addEventListener('click', () => {
+    updateFiltered();
+    updateURLFromFilters();
+  });
+  btnExportFiltered?.addEventListener('click', () => {
+    const cfg = window.ECHOREPO_CFG || {};
+    const PUBLIC_MODE = !!cfg.public_mode;
 
-      if (PUBLIC_MODE) {
-        alert(T('signInToExport', {}, 'Please sign in to export data.'));
-        return;
-      }
+    if (PUBLIC_MODE) {
+      alert(T('signInToExport', {}, 'Please sign in to export data.'));
+      return;
+    }
 
-      if (!filteredRows.length) return;
+    if (!filteredRows.length) return;
 
-      const params = new URLSearchParams();
-      params.set('format', 'zip');
+    const params = new URLSearchParams();
+    params.set('format', 'zip');
 
-      if (activePhMin != null) params.set('ph_min', activePhMin);
-      if (activePhMax != null) params.set('ph_max', activePhMax);
-      if (activeCountry)       params.set('country', activeCountry);
-      if (activeDateFrom)      params.set('date_from', activeDateFrom);
-      if (activeDateTo)        params.set('date_to', activeDateTo);
+    if (activePhMin != null) params.set('ph_min', activePhMin);
+    if (activePhMax != null) params.set('ph_max', activePhMax);
+    if (activeCountry) params.set('country', activeCountry);
+    if (activeDateFrom) params.set('date_from', activeDateFrom);
+    if (activeDateTo) params.set('date_to', activeDateTo);
 
-      window.location.href = `/search?${params.toString()}`;
-    });
+    window.location.href = `/search?${params.toString()}`;
+  });
 
-  [phMinEl, phMaxEl].forEach(el=> el?.addEventListener('keydown', (e)=>{
-    if(e.key==='Enter'){ e.preventDefault(); updateFiltered(); }
+  [phMinEl, phMaxEl].forEach(el => el?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); updateFiltered(); }
   }));
 
   // ---- CSV helpers ----
-  function toCsv(rows){
-    if(!rows.length) return "";
-    const headers=ALL_HEADERS||Object.keys(rows[0]);
-    const esc=(v)=>{ if(v==null) return ""; const s=String(v); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; };
-    const lines=[headers.map(esc).join(",")];
-    for(const r of rows) lines.push(headers.map(h=>esc(r[h])).join(","));
+  function toCsv(rows) {
+    if (!rows.length) return "";
+    const headers = ALL_HEADERS || Object.keys(rows[0]);
+    const esc = (v) => { if (v == null) return ""; const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const lines = [headers.map(esc).join(",")];
+    for (const r of rows) lines.push(headers.map(h => esc(r[h])).join(","));
     return lines.join("\n");
   }
-  function downloadCsv(filename, csv){
-    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}), url=URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click();
-    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },0);
+  function downloadCsv(filename, csv) {
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
   }
 
-  function addLegends(){
-    const legend=L.control({position:'bottomleft'});
-    legend.onAdd=function(){
-      const div=L.DomUtil.create('div','leaflet-control leaflet-bar p-2');
-      div.style.background='white'; div.style.borderRadius='8px'; div.style.lineHeight='1.1';
-      div.innerHTML=`<div style="display:flex;align-items:center;gap:.4rem;margin:.2rem 0;">
+  function addLegends() {
+    const legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'leaflet-control leaflet-bar p-2');
+      div.style.background = 'white'; div.style.borderRadius = '8px'; div.style.lineHeight = '1.1';
+      div.innerHTML = `<div style="display:flex;align-items:center;gap:.4rem;margin:.2rem 0;">
         <svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="#333" fill="none"/></svg>
-        <span>${T('privacyRadius', { km: Math.round(JITTER_M/1000) }, 'Privacy radius (~±{km} km)')}</span></div>`;
+        <span>${T('privacyRadius', { km: Math.round(JITTER_M / 1000) }, 'Privacy radius (~±{km} km)')}</span></div>`;
       return div;
     }; legend.addTo(map);
 
-    const phLegend=L.control({position:'bottomright'});
-    phLegend.onAdd=function(){
-      const div=L.DomUtil.create('div','leaflet-control leaflet-bar p-2');
-      div.style.background='white'; div.style.borderRadius='8px'; div.style.lineHeight='1.2';
-      div.innerHTML=`
+    const phLegend = L.control({ position: 'bottomright' });
+    phLegend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'leaflet-control leaflet-bar p-2');
+      div.style.background = 'white'; div.style.borderRadius = '8px'; div.style.lineHeight = '1.2';
+      div.innerHTML = `
         <div class="fw-semibold mb-1">${T('soilPh', {}, 'Soil pH')}</div>
         <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#d73027;">●</span> ${T('acid', {}, 'Acidic (≤5.5)')}</div>
         <div style="display:flex;align-items:center;gap:.4rem;"><span style="color:#fc8d59;">●</span> ${T('slightlyAcid', {}, 'Slightly acidic (5.5–6.5)')}</div>
@@ -1694,74 +1726,74 @@
     }; phLegend.addTo(map);
   }
 
-// ---- Boot ----
-(function boot(){
-  const cfg = (window.ECHOREPO_CFG || {});
-  const PUBLIC_MODE = !!cfg.public_mode;
+  // ---- Boot ----
+  (function boot() {
+    const cfg = (window.ECHOREPO_CFG || {});
+    const PUBLIC_MODE = !!cfg.public_mode;
 
-  const userUrl   = cfg.geojson_user_url;   // optional (string) OR null to disable
-  const othersUrl = cfg.geojson_others_url; // optional (string)
+    const userUrl = cfg.geojson_user_url;   // optional (string) OR null to disable
+    const othersUrl = cfg.geojson_others_url; // optional (string)
 
-  // fetch JSON safely (never throws)
-  const safeJson = (url) =>
-    fetch(url, { credentials: 'same-origin' })
-      .then(r => r.ok ? r.json() : null)
-      .catch(() => null);
+    // fetch JSON safely (never throws)
+    const safeJson = (url) =>
+      fetch(url, { credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
 
-  const i18nReq = safeJson('/i18n/labels?ts=' + Date.now());
+    const i18nReq = safeJson('/i18n/labels?ts=' + Date.now());
 
-  // In public mode: do NOT request /api/user_geojson at all.
-  const userReq =
-    (!PUBLIC_MODE && userUrl !== null)
-      ? safeJson(userUrl || '/api/user_geojson')
-      : Promise.resolve(null);
+    // In public mode: do NOT request /api/user_geojson at all.
+    const userReq =
+      (!PUBLIC_MODE && userUrl !== null)
+        ? safeJson(userUrl || '/api/user_geojson')
+        : Promise.resolve(null);
 
-  // In public mode: load others from configured public endpoint if provided.
-  const othersReq =
-    (othersUrl)
-      ? safeJson(othersUrl)
-      : (PUBLIC_MODE ? Promise.resolve(null) : safeJson('/api/others_geojson'));
+    // In public mode: load others from configured public endpoint if provided.
+    const othersReq =
+      (othersUrl)
+        ? safeJson(othersUrl)
+        : (PUBLIC_MODE ? Promise.resolve(null) : safeJson('/api/others_geojson'));
 
-  Promise.all([i18nReq, userReq, othersReq]).then(([i18n, u, o]) => {
-    // normalize i18n payload
-    const payload = (i18n && (i18n.labels || i18n.by_msgid))
-      ? i18n
-      : { labels: (i18n || {}), by_msgid: {} };
+    Promise.all([i18nReq, userReq, othersReq]).then(([i18n, u, o]) => {
+      // normalize i18n payload
+      const payload = (i18n && (i18n.labels || i18n.by_msgid))
+        ? i18n
+        : { labels: (i18n || {}), by_msgid: {} };
 
-    window.I18N = window.I18N || { labels: {}, by_msgid: {} };
+      window.I18N = window.I18N || { labels: {}, by_msgid: {} };
 
-    if (payload.labels && Object.keys(payload.labels).length) {
-      Object.assign(window.I18N.labels, payload.labels);
-    }
+      if (payload.labels && Object.keys(payload.labels).length) {
+        Object.assign(window.I18N.labels, payload.labels);
+      }
 
-    if (payload.by_msgid && Object.keys(payload.by_msgid).length) {
-      Object.assign(window.I18N.by_msgid, payload.by_msgid);
-    }
+      if (payload.by_msgid && Object.keys(payload.by_msgid).length) {
+        Object.assign(window.I18N.by_msgid, payload.by_msgid);
+      }
 
-    // ALWAYS give valid GeoJSON
-    userGJ   = u || { type: "FeatureCollection", features: [] };
-    othersGJ = o || { type: "FeatureCollection", features: [] };
+      // ALWAYS give valid GeoJSON
+      userGJ = u || { type: "FeatureCollection", features: [] };
+      othersGJ = o || { type: "FeatureCollection", features: [] };
 
-    computeAllHeaders();
-    buildLayers();
+      computeAllHeaders();
+      buildLayers();
 
-    // ✅ 1. Populate country selector from FULL dataset
-    populateCountryFilter();
+      // ✅ 1. Populate country selector from FULL dataset
+      populateCountryFilter();
 
-    // ✅ 2. Restore filters from URL (sets activeCountry / activePhMin / activePhMax)
-    initFiltersFromUrl();
+      // ✅ 2. Restore filters from URL (sets activeCountry / activePhMin / activePhMax)
+      initFiltersFromUrl();
 
-    // ✅ 3. Sync restored values into inputs
-    syncFiltersToUI();
+      // ✅ 3. Sync restored values into inputs
+      syncFiltersToUI();
 
-    // ✅ 4. Apply filters to map + counts
-    updateFiltered();
+      // ✅ 4. Apply filters to map + counts
+      updateFiltered();
 
-    // ✅ 5. Apply i18n to dynamic texts
-    refreshI18NTexts();
-  }).catch(err => {
-    console.warn('Init failed:', err);
-  });
-})();
+      // ✅ 5. Apply i18n to dynamic texts
+      refreshI18NTexts();
+    }).catch(err => {
+      console.warn('Init failed:', err);
+    });
+  })();
 
 })();
