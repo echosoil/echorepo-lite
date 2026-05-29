@@ -94,59 +94,6 @@ def _local_path_to_abs(maybe_path: str) -> str:
         return str(alt)
     return str(PROJECT_ROOT / p)
 
-# helper: clean numeric-ish values to int, safely
-def _clean_int_val(v):
-    """
-    Convert numeric-ish input to int, safely.
-
-    Returns None for:
-      - None
-      - empty / whitespace strings
-      - NA-like strings
-      - NaN values
-      - non-numeric text
-
-    Examples:
-      "2"    -> 2
-      "2.0"  -> 2
-      "2,0"  -> 2
-      3      -> 3
-      3.0    -> 3
-      "0"    -> 0
-      None   -> None
-      ""     -> None
-    """
-    if v is None:
-        return None
-
-    # Handle pandas / numpy NaN-like values
-    try:
-        if pd.isna(v):
-            return None
-    except Exception:
-        pass
-
-    s = str(v).strip()
-    if not s:
-        return None
-
-    s_norm = s.lower()
-    if s_norm in {"na", "n/a", "nan", "null", "none", "-"}:
-        return None
-
-    # Support comma decimal separator
-    s = s.replace(",", ".")
-
-    try:
-        n = float(s)
-    except (TypeError, ValueError):
-        return None
-
-    if math.isnan(n) or math.isinf(n):
-        return None
-
-    return int(n)
-
 USERS_CSV = _local_path_to_abs(os.getenv("USERS_CSV", "/data/users.csv"))
 PLANNED_XLSX = _local_path_to_abs(os.getenv("PLANNED_XLSX", "/data/utils/planned.xlsx"))
 INPUT_CSV = _local_path_to_abs(os.getenv("INPUT_CSV", "/data/echorepo_samples.csv"))
@@ -214,7 +161,7 @@ def _mark_mirror_done(object_name: str) -> None:
     Append an object_name to the progress file and in-memory set.
     Safe to call multiple times; duplicates in file are harmless.
     """
-    if object_name in _MIRROR_DONE_OBJECTS:
+    if object_name in _MIRROR_DONE_OBJECTS and not MIRROR_OVERWRITE_EXISTING:
         return
     _MIRROR_DONE_OBJECTS.add(object_name)
     path = Path(MIRROR_PROGRESS_FILE)
@@ -343,16 +290,37 @@ BAD_NUM = {"", " ", "-", "NA", "N/A", "null", "None"}
 
 
 def _clean_int_val(v):
+    """
+    Convert numeric-ish input to int, safely.
+    """
     if v is None:
         return None
-    s = str(v).strip().replace(",", ".")
-    if s in BAD_NUM:
-        return None
+
     try:
-        # this handles "256.0", "12.00", "5"
-        return int(float(s))
-    except ValueError:
+        if pd.isna(v):
+            return None
+    except Exception:
+        pass
+
+    s = str(v).strip()
+    if not s:
         return None
+
+    s_norm = s.lower()
+    if s_norm in {"na", "n/a", "nan", "null", "none", "-"}:
+        return None
+
+    s = s.replace(",", ".")
+
+    try:
+        n = float(s)
+    except (TypeError, ValueError):
+        return None
+
+    if math.isnan(n) or math.isinf(n):
+        return None
+
+    return int(n)
 
 
 def _clean_float_val(v):
@@ -1425,6 +1393,134 @@ def build_samples_df(
     return pd.DataFrame(rows)
 
 
+def annotate_and_filter_wrong_coordinates(
+    df: pd.DataFrame,
+    planned_map: dict[str, set[str]],
+    qr_col: str = "QR_qrCode",
+    lat_col: str = "GPS_lat",
+    lon_col: str = "GPS_long",
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Add coordinate validation columns and return:
+
+      - filtered_df: rows where wrong_coordinates is False
+      - annotated_df: all rows with validation columns
+
+    wrong_coordinates=True when:
+      - coordinates are invalid/out of range, OR
+      - coordinates are the default/sentinel coordinates, OR
+      - planned country exists for QR and actual country is not in planned set
+
+    If there is no planned country for a QR, we do NOT mark it as wrong.
+    That avoids dropping samples only because the planned.xlsx file is incomplete.
+    """
+    if df is None or df.empty:
+        return df, df
+
+    out = df.copy()
+
+    if qr_col not in out.columns:
+        print(f"[coords] QR column {qr_col!r} not found; skipping coordinate filtering")
+        out["wrong_coordinates"] = False
+        out["actual_cc"] = ""
+        out["planned_iso2"] = ""
+        out["coordinate_check_reason"] = "missing_qr_column"
+        return out, out
+
+    if lat_col not in out.columns or lon_col not in out.columns:
+        print(f"[coords] lat/lon columns {lat_col!r}/{lon_col!r} not found; skipping coordinate filtering")
+        out["wrong_coordinates"] = False
+        out["actual_cc"] = ""
+        out["planned_iso2"] = ""
+        out["coordinate_check_reason"] = "missing_lat_lon_columns"
+        return out, out
+
+    lat_s = out[lat_col].astype(str).str.replace(",", ".", regex=False).str.strip()
+    lon_s = out[lon_col].astype(str).str.replace(",", ".", regex=False).str.strip()
+
+    lat_f = pd.to_numeric(lat_s, errors="coerce")
+    lon_f = pd.to_numeric(lon_s, errors="coerce")
+
+    valid_mask = (
+        lat_f.notna()
+        & lon_f.notna()
+        & lat_f.between(-90.0, 90.0)
+        & lon_f.between(-180.0, 180.0)
+    )
+
+    # Your app sentinel/default coordinates
+    default_mask = (lat_f == 46.5) & (lon_f == 11.35)
+
+    actual_cc = []
+    for lt, ln, valid, is_default in zip(lat_f, lon_f, valid_mask, default_mask, strict=False):
+        if not valid or is_default:
+            actual_cc.append("")
+            continue
+        try:
+            actual_cc.append(latlon_to_country_code(float(lt), float(ln)) or "")
+        except Exception:
+            actual_cc.append("")
+
+    out["actual_cc"] = actual_cc
+
+    def _planned_set(q):
+        q_norm = norm_qr_for_id(q)
+        if not q_norm:
+            return set()
+        return planned_map.get(q_norm, set())
+
+    planned_sets = out[qr_col].map(_planned_set)
+    planned_sets = planned_sets.apply(lambda v: v if isinstance(v, set) else set())
+
+    out["planned_iso2"] = planned_sets.apply(lambda s: ",".join(sorted(s)) if s else "")
+
+    reasons = []
+    wrong = []
+
+    for i, row in out.iterrows():
+        planned = planned_sets.loc[i]
+        cc = str(row.get("actual_cc") or "").strip()
+
+        if bool(default_mask.loc[i]):
+            wrong.append(True)
+            reasons.append("default_coordinates")
+            continue
+
+        if not bool(valid_mask.loc[i]):
+            wrong.append(True)
+            reasons.append("invalid_coordinates")
+            continue
+
+        if not cc:
+            wrong.append(True)
+            reasons.append("country_not_found")
+            continue
+
+        if planned and cc not in planned:
+            wrong.append(True)
+            reasons.append("country_mismatch")
+            continue
+
+        if not planned:
+            wrong.append(False)
+            reasons.append("no_planned_country_for_qr")
+            continue
+
+        wrong.append(False)
+        reasons.append("ok")
+
+    out["wrong_coordinates"] = wrong
+    out["coordinate_check_reason"] = reasons
+
+    filtered = out[out["wrong_coordinates"] != True].copy()
+
+    print(
+        "[coords] coordinate check: "
+        f"total={len(out)}, wrong={int(out['wrong_coordinates'].sum())}, kept={len(filtered)}"
+    )
+
+    return filtered, out
+
 def _pct_to_float(v):
     if v in (None, "", "nan"):
         return None
@@ -2024,7 +2120,7 @@ def main():
     # 1) fetch from Firestore
     df_raw = fetch_samples_flat(minio_client)
 
-    # normalize timestamps
+    # normalize timestamps in raw data
     for col in ("collectedAt", "fs_createdAt", "fs_updatedAt"):
         if col in df_raw.columns:
             df_raw[col] = df_raw[col].apply(_ts_to_iso_loose)
@@ -2033,6 +2129,7 @@ def main():
 
     # 2) enrich with emails
     uid_to_email = fetch_uid_to_email()
+
     df_enriched = df_raw.copy()
     if not df_enriched.empty:
         if "userId" not in df_enriched.columns:
@@ -2044,16 +2141,8 @@ def main():
         if col in df_enriched.columns:
             df_enriched[col] = df_enriched[col].apply(_ts_to_iso_loose)
 
-    write_csv_atomic(df_enriched, OUTPUT_CSV)
-
-    # 3) users.csv
-    df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
-    write_csv_atomic(df_users, USERS_CSV)
-
-    # 4) refresh sqlite from OUTPUT_CSV, preserve lab_enrichment
-    refreshed_db_path = refresh_sqlite_from_csv(OUTPUT_CSV, SQLITE_PATH)
-
-    # 5) load planned QR -> country map
+    # Load planned QR -> country map before writing OUTPUT_CSV,
+    # because wrong-coordinate rows should not enter downstream outputs.
     planned_map = {}
     if load_qr_to_planned is not None:
         try:
@@ -2062,7 +2151,38 @@ def main():
         except Exception as e:
             print(f"[WARN] could not load planned QR countries: {e}")
 
-    # 6) build canonical export
+    # 3) users.csv
+    df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
+    write_csv_atomic(df_users, USERS_CSV)
+
+    # 3b) coordinate validation/filtering
+    df_filtered, df_annotated = annotate_and_filter_wrong_coordinates(
+        df_enriched,
+        planned_map=planned_map,
+        qr_col="QR_qrCode",
+        lat_col="GPS_lat",
+        lon_col="GPS_long",
+    )
+
+    coord_diag_path = str(PROJECT_ROOT / "data" / "coordinate_check_annotated.csv")
+    coord_bad_path = str(PROJECT_ROOT / "data" / "coordinate_check_wrong.csv")
+
+    write_csv_atomic(df_annotated, coord_diag_path)
+    write_csv_atomic(
+        df_annotated[df_annotated["wrong_coordinates"] == True].copy(),
+        coord_bad_path,
+    )
+
+    # From this point onward, only valid-coordinate rows are used.
+    df_enriched = df_filtered
+
+    # This is the ONLY write of OUTPUT_CSV.
+    write_csv_atomic(df_enriched, OUTPUT_CSV)
+
+    # 4) refresh sqlite from OUTPUT_CSV, preserve lab_enrichment
+    refreshed_db_path = refresh_sqlite_from_csv(OUTPUT_CSV, SQLITE_PATH)
+
+    # 5) build canonical export
     if not df_enriched.empty:
         canon_dir = PROJECT_ROOT / "data" / "canonical"
         canon_dir.mkdir(parents=True, exist_ok=True)
