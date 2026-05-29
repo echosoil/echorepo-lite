@@ -59,18 +59,6 @@
     _viewUrlTimer = setTimeout(updateURLFromView, 150);
   }
 
-  function getPreferredSampleCode(props) {
-    props = props || {};
-    return (
-      props.QR_qrCode ||
-      props.qr_code ||
-      props.qr ||
-      props.sampleId ||
-      props.sample_id ||
-      null
-    );
-  }
-
   map.on('moveend zoomend', updateURLFromViewDebounced);
 
   document.getElementById('btnCopyView')?.addEventListener('click', async () => {
@@ -908,7 +896,7 @@
       ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations', {}, 'Elemental concentrations'), metals],
     ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
 
-    const tableHtml = `<table class="table table-sm popup-table mb-2">${rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v)}</td></tr>`).join("")
+    const tableHtml = `<table class="table table-sm popup-table mb-2">${rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v) === "—" ? "—" : escapeHtml(fmt(v))}</td></tr>`).join("")
       }</table>`;
 
     const PUBLIC_MODE = !!(window.ECHOREPO_CFG || {}).public_mode;
@@ -1053,6 +1041,15 @@
 
   function shouldShowRingsAtCurrentZoom() {
     return map.getZoom() >= RINGS_MIN_ZOOM;
+  }
+
+  function escapeHtml(v) {
+    return String(v ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
   function refreshRingsVisibilityByZoom() {
