@@ -14,7 +14,8 @@
 
   const map = L.map('map', {
     minZoom: 4,
-    maxZoom: 15
+    maxZoom: 15,
+    preferCanvas: true
   });
 
   map.createPane('selectionPane');
@@ -1035,6 +1036,37 @@
   let activePhMax = null;
   let filteredRows = [];
 
+  // Loading accelerator helper: if user has many points, we delay ring creation until we know they are needed
+  const RINGS_MIN_ZOOM = 9;
+
+  function shouldShowRingsAtCurrentZoom() {
+    return map.getZoom() >= RINGS_MIN_ZOOM;
+  }
+
+  function refreshRingsVisibilityByZoom() {
+    const state = twoToggleControl
+      ? twoToggleControl._getState()
+      : { user: true, others: true };
+
+    function process(rings, includeGroup) {
+      for (const r of rings) {
+        const shouldShow =
+          shouldShowRingsAtCurrentZoom() &&
+          includeGroup &&
+          passesCurrentFilter(r.__props || {});
+
+        if (shouldShow) {
+          if (!map.hasLayer(r)) r.addTo(map);
+        } else {
+          if (map.hasLayer(r)) map.removeLayer(r);
+        }
+      }
+    }
+
+    process(userRings, state.user);
+    process(otherRings, state.others);
+  }
+
   // ---- Restore filters from URL (Optional D) ----
   (function restoreFiltersFromURL() {
     const qs = new URLSearchParams(window.location.search);
@@ -1139,9 +1171,26 @@
 
           // popup goes on the ring
           ring.bindPopup(
-            formatPopup(f, isOwner),
+            T('loading', {}, 'Loading...'),
             { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20,20] }
           );
+
+          ring.on("popupopen", async (e) => {
+            const p = f.properties || {};
+            const photoId = p.sampleId || p.sample_id || p.QR_qrCode;
+            const chartId = p.QR_qrCode || p.qr_code || p.qr || p.sampleId || p.sample_id;
+
+            if (!p.__popup_base_loaded) {
+              p.__popup_base_loaded = true;
+              e.popup.setContent(formatPopup(f, isOwner));
+            }
+
+            if (!photoId && !chartId) return;
+
+            // keep your existing lazy-load image / piechart / guildplot logic here...
+
+            e.popup.setContent(formatPopup(f, isOwner));
+          });
 
           // When popup opens, lazy-load image + BOTH piecharts
           ring.on("popupopen", async (e) => {
@@ -1196,8 +1245,12 @@
 
             e.popup.setContent(formatPopup(f, isOwner));
           });
-          ring.addTo(map);
+
           bucket.push(ring);
+
+          if (shouldShowRingsAtCurrentZoom() && passesCurrentFilter(props)) {
+            ring.addTo(map);
+          }
 
           // keep the invisible marker only for clustering
           marker.__props = props;
@@ -1241,6 +1294,8 @@
 
   }
 
+  map.on('zoomend', refreshRingsVisibilityByZoom);
+
   // ---- Rebuild clusters to reflect current filter ----
   function rebuildClustersForFilter(){
     if (map.hasLayer(userCluster)) map.removeLayer(userCluster);
@@ -1272,21 +1327,7 @@
   }
   // ---- Show/hide rings based on current filter + toggles ----
   function applyFilterToRings(){
-    const state = twoToggleControl ? twoToggleControl._getState() : {user:true, others:true};
-
-    function process(rings, includeGroup){
-      for (const r of rings){
-        const shouldShow = includeGroup && passesCurrentFilter(r.__props || {});
-        if (shouldShow){
-          if (!map.hasLayer(r)) r.addTo(map);
-        } else {
-          if (map.hasLayer(r)) map.removeLayer(r);
-        }
-      }
-    }
-
-    process(userRings, state.user);
-    process(otherRings, state.others);
+      refreshRingsVisibilityByZoom();
   }
   // ---- Two checkboxes (toggle clusters + rings together) ----
   function addTwoToggleControl(){
