@@ -265,11 +265,11 @@
   };
 
   // Inject CSS once for scrollable popups
-  (function ensurePopupCSS() {
-    if (document.getElementById('echoPopupCSS')) return;
+  (function ensureMapCSS() {
+    if (document.getElementById('echoMapCSS')) return;
 
     const style = document.createElement('style');
-    style.id = 'echoPopupCSS';
+    style.id = 'echoMapCSS';
     style.textContent = `
       .leaflet-popup.echo-popup {
         max-width: 420px;
@@ -294,7 +294,6 @@
         word-break: break-word;
       }
 
-      /* biodiversity section */
       .leaflet-popup-content .popup-biodiversity {
         margin-top: 0.75rem;
       }
@@ -324,7 +323,6 @@
         white-space: normal;
       }
 
-      /* optional: make sample photo look neat too */
       .leaflet-popup-content .popup-photo img {
         width: 100%;
         height: auto;
@@ -332,6 +330,39 @@
         display: block;
         object-fit: cover;
         border-radius: 6px;
+      }
+
+      .echo-map-loader {
+        background: transparent;
+        box-shadow: none;
+        border: 0;
+      }
+
+      .echo-loader-box {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: white;
+        border-radius: 999px;
+        padding: 0.45rem 0.75rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .echo-spinner {
+        width: 18px;
+        height: 18px;
+        border: 3px solid rgba(0,0,0,0.15);
+        border-top-color: rgba(0,0,0,0.65);
+        border-radius: 50%;
+        animation: echo-spin 0.8s linear infinite;
+      }
+
+      @keyframes echo-spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
     `;
     document.head.appendChild(style);
@@ -1171,6 +1202,47 @@
     const rest = [...set].filter(k => !preferred.includes(k)).sort(); ALL_HEADERS = [...preferred, ...rest];
   }
 
+  let mapLoaderEl = null;
+  let mapLoadingCount = 0;
+
+  function addMapLoaderControl() {
+    const ctl = L.control({ position: 'topright' });
+
+    ctl.onAdd = function () {
+      const div = L.DomUtil.create('div', 'leaflet-control echo-map-loader');
+      div.innerHTML = `
+        <div class="echo-loader-box">
+          <div class="echo-spinner"></div>
+          <span>${T('loadingMapData', {}, 'Loading map data...')}</span>
+        </div>
+      `;
+
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.disableScrollPropagation(div);
+
+      div.style.display = 'none';
+      mapLoaderEl = div;
+
+      return div;
+    };
+
+    ctl.addTo(map);
+  }
+
+  function showMapLoader() {
+    mapLoadingCount += 1;
+    if (mapLoaderEl) {
+      mapLoaderEl.style.display = 'block';
+    }
+  }
+
+  function hideMapLoader() {
+    mapLoadingCount = Math.max(0, mapLoadingCount - 1);
+    if (mapLoadingCount === 0 && mapLoaderEl) {
+      mapLoaderEl.style.display = 'none';
+    }
+  }
+
   // ---- Build layers (rings + base invisible markers for selection) ----
   function buildLayers() {
     const invisibleIcon = L.divIcon({
@@ -1766,6 +1838,9 @@
         ? safeJson(othersUrl)
         : (PUBLIC_MODE ? Promise.resolve(null) : safeJson('/api/others_geojson'));
 
+    addMapLoaderControl();
+    showMapLoader();
+
     Promise.all([i18nReq, userReq, othersReq]).then(([i18n, u, o]) => {
       // normalize i18n payload
       const payload = (i18n && (i18n.labels || i18n.by_msgid))
@@ -1799,6 +1874,8 @@
 
     }).catch(err => {
       console.warn('Init failed:', err);
+    }).finally(() => {
+      hideMapLoader();
     });
   })();
 
