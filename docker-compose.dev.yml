@@ -7,7 +7,18 @@ services:
       - "0.0.0.0:18080:8000" # app
       - "127.0.0.1:5678:5678" # debugpy (only loopback)
     command: >
-      gunicorn -w 1 -b 0.0.0.0:8000 --timeout 900 --graceful-timeout 900 --keep-alive 5 --reload --access-logfile - --error-logfile - --log-level debug echorepo.wsgi:app
+      sh -c "python scripts/wait_for_postgres.py &&
+             python scripts/run_pg_migrations.py &&
+             gunicorn -w 1 -b 0.0.0.0:8000
+               --timeout 900
+               --graceful-timeout 900
+               --keep-alive 5
+               --reload
+               --access-logfile -
+               --error-logfile -
+               --log-level debug
+               echorepo.wsgi:app"
+
   postgres:
     ports:
       - "5433:5432"

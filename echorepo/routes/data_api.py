@@ -885,16 +885,6 @@ def build_canonical_all_zip_bytes(
         """
         _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
 
-        # 1) samples
-        sample_cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
-        sql_samples = f"""
-            SELECT {sample_cols_sql}
-            FROM samples s
-            {where_sql}
-            ORDER BY s.timestamp_utc DESC, s.sample_id
-        """
-        _write_query_to_zip("samples.csv", CANONICAL_SAMPLE_COLS, sql_samples, params)
-
         # 2) sample_images
         img_cols_sql = ", ".join(f"i.{c}" for c in CANONICAL_IMAGE_COLS)
         sql_imgs = f"""
@@ -1055,7 +1045,7 @@ def lab_enrichment_upload():
     # A new elementary-concentrations upload replaces the previous one entirely.
     conn.execute("DELETE FROM lab_enrichment;")
     conn.commit()
-    
+
     rows = None
 
     # ---------- 1) multipart/form-data with file= ----------
@@ -1597,6 +1587,135 @@ def canonical_sample_biodiversity():
                 "fields": fields,
             },
             "data": rows,
+        }
+    )
+
+
+@data_api.get("/canonical/map.geojson")
+def canonical_map_geojson():
+    """
+    Lightweight GeoJSON endpoint for the Leaflet map.
+
+    Query params:
+      - bbox=west,south,east,north
+      - from, to
+      - country / country_code
+      - within=lat,lon,r_km
+      - limit, offset
+
+    Returns map-friendly GeoJSON from canonical Postgres samples.
+    """
+
+    # Make this public only if canonical public mode is enabled;
+    # otherwise require API key / bearer / session.
+    if not (current_app.config.get("CANONICAL_PUBLIC") or os.getenv("CANONICAL_PUBLIC") == "1"):
+        require_api_auth()
+
+    limit = max(1, min(int(request.args.get("limit", 2000)), 5000))
+    offset = max(0, int(request.args.get("offset", 0)))
+
+    where_sql, params, filter_meta = _canonical_where_from_request(alias="")
+
+    fields = [
+        "sample_id",
+        "timestamp_utc",
+        "lat",
+        "lon",
+        "country_code",
+        "ph",
+        "organic_carbon_pct",
+        "earthworms_count",
+        "contamination_debris",
+        "contamination_plastic",
+        "contamination_other_en",
+        "pollutants_count",
+        "soil_structure_en",
+        "soil_texture_en",
+        "observations_en",
+        "metals_info_en",
+        "qa_status",
+        "licence",
+    ]
+
+    cols_sql = ", ".join(fields)
+
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            f"""
+            SELECT {cols_sql}
+            FROM samples
+            {where_sql}
+            ORDER BY timestamp_utc DESC NULLS LAST, sample_id
+            LIMIT %s OFFSET %s
+            """,
+            params + [limit, offset],
+        )
+        rows = cur.fetchall()
+
+        cur.execute(
+            f"SELECT COUNT(*) AS c FROM samples {where_sql}",
+            params,
+        )
+        total = cur.fetchone()["c"]
+
+    features = []
+
+    for r in rows:
+        try:
+            lon = float(r.get("lon"))
+            lat = float(r.get("lat"))
+        except Exception:
+            continue
+
+        if not math.isfinite(lon) or not math.isfinite(lat):
+            continue
+
+        props = dict(r)
+
+        # Keep lat/lon also in properties if your map export/selection code wants them.
+        # GeoJSON geometry already has them, but keeping them here is convenient.
+        props["GPS_lat"] = lat
+        props["GPS_long"] = lon
+
+        # Compatibility aliases for the current map.js popup/search/index logic.
+        props["sampleId"] = props.get("sample_id")
+        props["QR_qrCode"] = props.get("sample_id")
+        props["collectedAt"] = props.get("timestamp_utc")
+        props["PH_ph"] = props.get("ph")
+        props["SOIL_STRUCTURE_structure"] = props.get("soil_structure_en")
+        props["SOIL_TEXTURE_texture"] = props.get("soil_texture_en")
+        props["SOIL_DIVER_earthworms"] = props.get("earthworms_count")
+        props["SOIL_CONTAMINATION_plastic"] = props.get("contamination_plastic")
+        props["SOIL_CONTAMINATION_debris"] = props.get("contamination_debris")
+        props["SOIL_CONTAMINATION_comments"] = props.get("contamination_other_en")
+        props["METALS_info"] = props.get("metals_info_en")
+
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [lon, lat],
+                },
+                "properties": props,
+            }
+        )
+
+    g._analytics_extra = {
+        "api_name": "canonical_map_geojson",
+        **{k: v for k, v in filter_meta.items() if v is not None},
+    }
+
+    return jsonify(
+        {
+            "type": "FeatureCollection",
+            "features": features,
+            "meta": {
+                "count": total,
+                "returned": len(features),
+                "limit": limit,
+                "offset": offset,
+            },
         }
     )
 
