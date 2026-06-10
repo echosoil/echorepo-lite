@@ -444,7 +444,9 @@
       const num = Number(String(valPart).replace(",", "."));
       const valFmt = Number.isFinite(num) ? roundSigStr(num, 2) : valPart;
 
-      out.push(`${left.trim()}=${valFmt}${unit ? " " + unit : ""}`);
+      out.push(
+        `${escapeHtml(left.trim())}=${escapeHtml(valFmt)}${unit ? " " + escapeHtml(unit) : ""}`
+      );
     }
     return out.join("<br>");
   }
@@ -924,10 +926,21 @@
       ['<i class="bi bi-bag"></i> ' + T('plastic', {}, 'Plastic'), fmtInt(plastic)],
       ['<i class="bi bi-bricks"></i> ' + T('debris', {}, 'Debris'), fmtInt(debris)],
       ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination', {}, 'Contamination'), contaminationNotes],
-      ['<i class="bi bi-nut"></i> ' + T('elementalConcentrations', {}, 'Elemental concentrations'), metals],
+      [
+        '<i class="bi bi-nut"></i> ' + T('elementalConcentrations', {}, 'Elemental concentrations'),
+        metals,
+        true
+      ],
     ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
 
-    const tableHtml = `<table class="table table-sm popup-table mb-2">${rows.map(([k, v]) => `<tr><th>${k}</th><td>${fmt(v) === "—" ? "—" : escapeHtml(fmt(v))}</td></tr>`).join("")
+    const tableHtml = `<table class="table table-sm popup-table mb-2">${rows.map(([k, v, trustedHtml]) => {
+      const value = fmt(v);
+
+      return `<tr>
+          <th>${k}</th>
+          <td>${value === "—" ? "—" : (trustedHtml ? value : escapeHtml(value))}</td>
+        </tr>`;
+    }).join("")
       }</table>`;
 
     const PUBLIC_MODE = !!(window.ECHOREPO_CFG || {}).public_mode;
