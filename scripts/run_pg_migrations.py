@@ -11,15 +11,36 @@ def get_pg_dsn():
     if dsn:
         return dsn
 
-    host = os.getenv("POSTGRES_HOST", "db")
-    port = os.getenv("POSTGRES_PORT", "5432")
-    db = os.getenv("POSTGRES_DB", "echorepo")
-    user = os.getenv("POSTGRES_USER", "echorepo")
-    password = os.getenv("POSTGRES_PASSWORD", "")
+    host = (
+        os.getenv("POSTGRES_HOST")
+        or os.getenv("DB_HOST")
+        or os.getenv("DB_HOST_INSIDE")
+        or "postgres"
+    )
+    port = (
+        os.getenv("POSTGRES_PORT")
+        or os.getenv("DB_PORT")
+        or os.getenv("DB_PORT_INSIDE")
+        or "5432"
+    )
+    db = (
+        os.getenv("POSTGRES_DB")
+        or os.getenv("DB_NAME")
+        or "echorepo"
+    )
+    user = (
+        os.getenv("POSTGRES_USER")
+        or os.getenv("DB_USER")
+        or "echorepo"
+    )
+    password = (
+        os.getenv("POSTGRES_PASSWORD")
+        or os.getenv("DB_PASSWORD")
+        or ""
+    )
 
     return f"host={host} port={port} dbname={db} user={user} password={password}"
-
-
+    
 def ensure_migration_table(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS schema_migrations (
