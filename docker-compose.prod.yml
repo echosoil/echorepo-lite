@@ -1,21 +1,34 @@
 services:
   echorepo-lite:
-    container_name: echorepo-lite    # keep the legacy/stable name
+    container_name: echorepo-lite
     environment:
       APP_ENV: prod
+
+      # Make migration scripts use the correct Docker Compose service name
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: echorepo
+      POSTGRES_USER: echorepo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
+
+      # Also keep your app-style DB variables consistent
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: echorepo
+      DB_USER: echorepo
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
+
+      DB_HOST_INSIDE: postgres
+      DB_PORT_INSIDE: "5432"
+
     ports:
-      - "0.0.0.0:8001:8000"          # PUBLIC 8001 -> CONTAINER 8000
+      - "0.0.0.0:8001:8000"
+
     command: >
       sh -c "python scripts/wait_for_postgres.py &&
-             python scripts/run_pg_migrations.py &&
-             gunicorn -w 2 -b 0.0.0.0:8000
-               --timeout 900
-               --graceful-timeout 900
-               --keep-alive 5
-               --access-logfile -
-               --error-logfile -
-               --log-level info
-               echorepo.wsgi:app"
+      python scripts/run_pg_migrations.py &&
+      exec gunicorn -w 2 -b 0.0.0.0:8000 --timeout 900 --graceful-timeout 900 --keep-alive 5 --access-logfile - --error-logfile - --log-level info echorepo.wsgi:app"
+
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/ || exit 1"]
       interval: 10s
@@ -23,6 +36,5 @@ services:
       retries: 10
 
   postgres:
-    # prod exposes Postgres on host 5432
     ports:
       - "5432:5432"
