@@ -5,12 +5,24 @@ services:
       APP_ENV: prod
     ports:
       - "0.0.0.0:8001:8000"          # PUBLIC 8001 -> CONTAINER 8000
+    command: >
+      sh -c "python scripts/wait_for_postgres.py &&
+             python scripts/run_pg_migrations.py &&
+             gunicorn -w 2 -b 0.0.0.0:8000
+               --timeout 900
+               --graceful-timeout 900
+               --keep-alive 5
+               --access-logfile -
+               --error-logfile -
+               --log-level info
+               echorepo.wsgi:app"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/ || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 10
+
   postgres:
-    # dev can keep 5432 on host
+    # prod exposes Postgres on host 5432
     ports:
       - "5432:5432"
