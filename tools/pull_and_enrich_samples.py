@@ -1181,6 +1181,24 @@ def _restore_original_coords_from_csv(
     print(f"[sqlite] restored originals into {target}.{orig_lat_col}/{orig_lon_col} from CSV")
 
 
+def _truthy(v):
+    return str(v or "").strip().lower() in {"true", "1", "yes", "y"}
+
+
+def build_qa_status_from_row(r):
+    """
+    Convert coordinate validation flags into canonical qa_status.
+    """
+    if _truthy(r.get("wrong_coordinates")):
+        reason = str(r.get("coordinate_check_reason") or "").strip()
+
+        if reason:
+            return f"wrong_coordinates:{reason}"
+
+        return "wrong_coordinates"
+
+    return ""
+
 def refresh_sqlite_from_csv(OUTPUT_CSV: str, sqlite_path: str):
     sys.path.insert(0, str(PROJECT_ROOT))
     from echorepo.utils.load_csv import deterministic_jitter as lc_det_jitter
@@ -1325,7 +1343,7 @@ def build_samples_df(
                 "observations_orig": observations_orig,
                 "metals_info_orig": metals_info_orig,
                 "collected_by": r.get("userId"),
-                "qa_status": r.get("QA_state") or "",
+                 "qa_status": build_qa_status_from_row(r),
                 "organic_carbon_pct": _pct_to_float(r.get("SOIL_COLOR_color")),
             }
         )

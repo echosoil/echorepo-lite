@@ -194,7 +194,12 @@
     for (const ring of window.__echomapIndex.values()) {
       const p = ring.__props || {};
       if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(p)) continue;
-      if (p.country_code !== countryCode) continue;
+      if (
+        String(p.country_code || '').toUpperCase() !==
+        String(countryCode || '').toUpperCase()
+      ) {
+        continue;
+      }
 
       const ll = ring.getLatLng?.();
       if (!ll) continue;
@@ -1176,38 +1181,17 @@
   function hasWrongCoordinates(props) {
     props = props || {};
 
-    // Direct boolean/flag fields
     if (isTruthyFlag(props.wrong_coordinates)) return true;
-    if (isTruthyFlag(props.Wrong_coordinates)) return true;
-    if (isTruthyFlag(props.WRONG_COORDINATES)) return true;
-    if (isTruthyFlag(props.invalid_coordinates)) return true;
-    if (isTruthyFlag(props.bad_coordinates)) return true;
-    if (isTruthyFlag(props.coordinates_wrong)) return true;
 
-    // Status-style fields
-    const statusFields = [
-      props.qa_status,
-      props.validation_status,
-      props.coordinate_status,
-      props.coordinates_status,
-      props.location_status,
-    ];
+    const qa = String(props.qa_status || '').trim().toLowerCase();
 
-    for (const v of statusFields) {
-      const s = String(v ?? '').trim().toLowerCase();
-      if (
-        s === 'wrong_coordinates' ||
-        s === 'wrong coordinates' ||
-        s === 'bad_coordinates' ||
-        s === 'invalid_coordinates' ||
-        s.includes('wrong coordinate') ||
-        s.includes('invalid coordinate')
-      ) {
-        return true;
-      }
-    }
-
-    return false;
+    return (
+      qa === 'wrong_coordinates' ||
+      qa.startsWith('wrong_coordinates:') ||
+      qa.includes('wrong coordinate') ||
+      qa.includes('invalid coordinate') ||
+      qa.includes('bad coordinate')
+    );
   }
 
   function passesCurrentFilter(props) {
