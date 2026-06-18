@@ -12,6 +12,45 @@
   const SHOULD_DROP = (k) => /_orig$/i.test(k);
   const JITTER_M = Number(cfg.jitter_m) || 1000;
 
+  const URL_PARAMS = new URLSearchParams(window.location.search);
+
+  const SINGLE_SAMPLE_ID = (
+    URL_PARAMS.get('sample_id') ||
+    URL_PARAMS.get('sampleId') ||
+    URL_PARAMS.get('qr') ||
+    ''
+  ).trim();
+
+  const SINGLE_SAMPLE_MODE =
+    URL_PARAMS.get('single') === '1' ||
+    URL_PARAMS.get('single') === 'true';
+
+  function getSampleIdFromProps(props) {
+    props = props || {};
+
+    return String(
+      props.QR_qrCode ||
+      props.qr_code ||
+      props.qr ||
+      props.sample_id ||
+      props.sampleId ||
+      props.Sample ||
+      ''
+    ).trim();
+  }
+
+  function isRequestedSingleSample(props) {
+    if (!SINGLE_SAMPLE_MODE || !SINGLE_SAMPLE_ID) return true;
+
+    return getSampleIdFromProps(props).toUpperCase() === SINGLE_SAMPLE_ID.toUpperCase();
+  }
+  const SHOW_WRONG_IN_SINGLE =
+    SINGLE_SAMPLE_MODE &&
+    (
+      URL_PARAMS.get('show_wrong') === '1' ||
+      URL_PARAMS.get('show_wrong') === 'true'
+    );
+
   // If true, samples flagged by pull_and_enrich as wrong_coordinates
   // are kept in the data but hidden from the map, clusters, selection and export.
   const HIDE_WRONG_COORDINATES = cfg.hide_wrong_coordinates !== false;
@@ -1217,13 +1256,17 @@
   function passesCurrentFilter(props) {
     props = props || {};
 
+    // Single-sample mode from /my?sample_id=XXXX&single=1
+    if (!isRequestedSingleSample(props)) return false;
+
     // Hide bad-coordinate samples globally when configured.
-    if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props)) return false;
+    if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props) && !SHOW_WRONG_IN_SINGLE) return false;
 
     const ts = props.timestamp_utc || props.collectedAt;
     if (!inDateRange(ts)) return false;
 
     const ph = getPhFromProps(props || {});
+
     if (
       activeCountry &&
       String(props.country_code || '').toUpperCase() !== String(activeCountry).toUpperCase()
@@ -1970,6 +2013,15 @@
       updateFiltered();
       refreshI18NTexts();
 
+      if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
+        setTimeout(() => {
+          const ok = window.__echomapShow && window.__echomapShow(SINGLE_SAMPLE_ID, { zoom: 15 });
+
+          if (!ok) {
+            console.warn('Single sample not found or hidden:', SINGLE_SAMPLE_ID);
+          }
+        }, 300);
+      }
     }).catch(err => {
       console.warn('Init failed:', err);
     }).finally(() => {
