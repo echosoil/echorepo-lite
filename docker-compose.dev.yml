@@ -3,21 +3,32 @@ services:
     environment:
       APP_ENV: dev
       FLASK_DEBUG: "1"
+
+      # Make migration scripts use the correct Docker Compose service name
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: echorepo
+      POSTGRES_USER: echorepo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
+
+      # Keep app-style DB variables consistent too
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: echorepo
+      DB_USER: echorepo
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
+
+      DB_HOST_INSIDE: postgres
+      DB_PORT_INSIDE: "5432"
+
     ports:
       - "0.0.0.0:18080:8000" # app
-      - "127.0.0.1:5678:5678" # debugpy (only loopback)
+      - "127.0.0.1:5678:5678" # debugpy
+
     command: >
       sh -c "python scripts/wait_for_postgres.py &&
-             python scripts/run_pg_migrations.py &&
-             gunicorn -w 1 -b 0.0.0.0:8000
-               --timeout 900
-               --graceful-timeout 900
-               --keep-alive 5
-               --reload
-               --access-logfile -
-               --error-logfile -
-               --log-level debug
-               echorepo.wsgi:app"
+      python scripts/run_pg_migrations.py &&
+      exec gunicorn -w 1 -b 0.0.0.0:8000 --timeout 900 --graceful-timeout 900 --keep-alive 5 --reload --access-logfile - --error-logfile - --log-level debug echorepo.wsgi:app"
 
   postgres:
     ports:

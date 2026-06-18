@@ -194,7 +194,12 @@
     for (const ring of window.__echomapIndex.values()) {
       const p = ring.__props || {};
       if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(p)) continue;
-      if (p.country_code !== countryCode) continue;
+      if (
+        String(p.country_code || '').toUpperCase() !==
+        String(countryCode || '').toUpperCase()
+      ) {
+        continue;
+      }
 
       const ll = ring.getLatLng?.();
       if (!ll) continue;
@@ -1175,7 +1180,18 @@
 
   function hasWrongCoordinates(props) {
     props = props || {};
-    return isTruthyFlag(props.wrong_coordinates);
+
+    if (isTruthyFlag(props.wrong_coordinates)) return true;
+
+    const qa = String(props.qa_status || '').trim().toLowerCase();
+
+    return (
+      qa === 'wrong_coordinates' ||
+      qa.startsWith('wrong_coordinates:') ||
+      qa.includes('wrong coordinate') ||
+      qa.includes('invalid coordinate') ||
+      qa.includes('bad coordinate')
+    );
   }
 
   function passesCurrentFilter(props) {
