@@ -337,33 +337,51 @@
         border-radius: 6px;
       }
 
-      .echo-map-loader {
-        background: transparent;
-        box-shadow: none;
-        border: 0;
+      .echo-map-loader-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1200;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        background: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(2px);
+      }
+
+      .echo-map-loader-overlay.is-visible {
+        display: flex;
       }
 
       .echo-loader-box {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: white;
-        border-radius: 999px;
-        padding: 0.45rem 0.75rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.18);
-        font-size: 0.875rem;
-        font-weight: 500;
+        min-width: 280px;
+        max-width: 90%;
+        padding: 1.35rem 1.6rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+        text-align: center;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #263128;
       }
 
       .echo-spinner {
-        width: 18px;
-        height: 18px;
-        border: 3px solid rgba(0,0,0,0.15);
-        border-top-color: rgba(0,0,0,0.65);
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 0.85rem auto;
+        border: 6px solid rgba(0,0,0,0.13);
+        border-top-color: rgba(0,0,0,0.68);
         border-radius: 50%;
         animation: echo-spin 0.8s linear infinite;
       }
 
+      .echo-loader-subtext {
+        margin-top: 0.35rem;
+        font-size: 0.85rem;
+        font-weight: 400;
+        color: #6c757d;
+      }
       @keyframes echo-spin {
         to {
           transform: rotate(360deg);
@@ -1234,44 +1252,82 @@
   }
 
   let mapLoaderEl = null;
+  let mapLoaderTextEl = null;
+  let mapLoaderSubtextEl = null;
   let mapLoadingCount = 0;
+  let mapLoaderStartedAt = null;
 
   function addMapLoaderControl() {
-    const ctl = L.control({ position: 'topright' });
+    if (mapLoaderEl) return;
 
-    ctl.onAdd = function () {
-      const div = L.DomUtil.create('div', 'leaflet-control echo-map-loader');
-      div.innerHTML = `
-        <div class="echo-loader-box">
-          <div class="echo-spinner"></div>
-          <span>${T('loadingMapData', {}, 'Loading map data...')}</span>
-        </div>
-      `;
+    const container = map.getContainer();
 
-      L.DomEvent.disableClickPropagation(div);
-      L.DomEvent.disableScrollPropagation(div);
+    if (getComputedStyle(container).position === 'static') {
+      container.style.position = 'relative';
+    }
 
-      div.style.display = 'none';
-      mapLoaderEl = div;
+    const div = document.createElement('div');
+    div.className = 'echo-map-loader-overlay';
+    div.innerHTML = `
+      <div class="echo-loader-box">
+        <div class="echo-spinner"></div>
+        <div class="echo-loader-text">${T('loadingMapData', {}, 'Loading map data...')}</div>
+        <div class="echo-loader-subtext">${T('pleaseWait', {}, 'Please wait')}</div>
+      </div>
+    `;
 
-      return div;
-    };
+    mapLoaderEl = div;
+    mapLoaderTextEl = div.querySelector('.echo-loader-text');
+    mapLoaderSubtextEl = div.querySelector('.echo-loader-subtext');
 
-    ctl.addTo(map);
+    container.appendChild(div);
   }
 
-  function showMapLoader() {
+  function showMapLoader(text, subtext) {
     mapLoadingCount += 1;
-    if (mapLoaderEl) {
-      mapLoaderEl.style.display = 'block';
+    addMapLoaderControl();
+
+    if (!mapLoaderEl) return;
+
+    mapLoaderStartedAt = Date.now();
+
+    if (mapLoaderTextEl) {
+      mapLoaderTextEl.textContent = text || T('loadingMapData', {}, 'Loading map data...');
+    }
+
+    if (mapLoaderSubtextEl) {
+      mapLoaderSubtextEl.textContent = subtext || T('pleaseWait', {}, 'Please wait');
+    }
+
+    mapLoaderEl.classList.add('is-visible');
+  }
+
+  function updateMapLoader(text, subtext) {
+    addMapLoaderControl();
+
+    if (mapLoaderTextEl && text) {
+      mapLoaderTextEl.textContent = text;
+    }
+
+    if (mapLoaderSubtextEl && subtext) {
+      mapLoaderSubtextEl.textContent = subtext;
     }
   }
 
   function hideMapLoader() {
     mapLoadingCount = Math.max(0, mapLoadingCount - 1);
-    if (mapLoadingCount === 0 && mapLoaderEl) {
-      mapLoaderEl.style.display = 'none';
-    }
+
+    if (mapLoadingCount !== 0 || !mapLoaderEl) return;
+
+    const elapsed = mapLoaderStartedAt ? Date.now() - mapLoaderStartedAt : 0;
+    const minVisibleMs = 350;
+    const delay = Math.max(0, minVisibleMs - elapsed);
+
+    setTimeout(() => {
+      if (mapLoadingCount === 0 && mapLoaderEl) {
+        mapLoaderEl.classList.remove('is-visible');
+      }
+    }, delay);
   }
 
   // ---- Build layers (rings + base invisible markers for selection) ----
@@ -1870,10 +1926,21 @@
         : (PUBLIC_MODE ? Promise.resolve(null) : safeJson('/api/others_geojson'));
 
     addMapLoaderControl();
-    showMapLoader();
+    showMapLoader(
+      T('loadingMapData', {}, 'Loading map data...'),
+      T('preparingMap', {}, 'Preparing map')
+    );
+
+    updateMapLoader(
+      T('loadingSamples', {}, 'Loading samples...'),
+      T('fetchingMapPoints', {}, 'Fetching map points')
+    );
 
     Promise.all([i18nReq, userReq, othersReq]).then(([i18n, u, o]) => {
-      // normalize i18n payload
+      updateMapLoader(
+        T('renderingMarkers', {}, 'Rendering markers...'),
+        T('buildingClusters', {}, 'Building clusters and popups')
+      );      // normalize i18n payload
       const payload = (i18n && (i18n.labels || i18n.by_msgid))
         ? i18n
         : { labels: (i18n || {}), by_msgid: {} };
