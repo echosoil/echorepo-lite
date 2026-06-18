@@ -29,11 +29,7 @@ services:
       python scripts/run_pg_migrations.py &&
       exec gunicorn -w 2 -b 0.0.0.0:8000 --timeout 900 --graceful-timeout 900 --keep-alive 5 --access-logfile - --error-logfile - --log-level info echorepo.wsgi:app"
 
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/ >/dev/null || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
+    healthcheck:sudo truncate -s 0 /var/lib/docker/containers/*/*-json.log
 
   postgres:
     ports:
