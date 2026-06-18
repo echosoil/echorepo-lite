@@ -2136,7 +2136,8 @@ def public_others_geojson():
         contamination_other_en, contamination_other_orig,
         observations_en, observations_orig,
         metals_info_en, metals_info_orig,
-        location_accuracy_m
+        location_accuracy_m,
+        qa_status
     FROM samples
     WHERE lat IS NOT NULL AND lon IS NOT NULL
     ORDER BY timestamp_utc DESC
@@ -2184,6 +2185,9 @@ def public_others_geojson():
                     "metals_info_orig": r.get("metals_info_orig"),
                     # optional
                     "location_accuracy_m": r.get("location_accuracy_m"),
+                    "qa_status": r.get("qa_status"),
+                    "wrong_coordinates": bool(
+                        str(r.get("qa_status") or "").strip().lower().startswith("wrong_coordinates")
                 },
             }
         )
