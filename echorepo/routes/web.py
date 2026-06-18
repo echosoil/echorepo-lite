@@ -2187,7 +2187,7 @@ def public_others_geojson():
                     "location_accuracy_m": r.get("location_accuracy_m"),
                     "qa_status": r.get("qa_status"),
                     "wrong_coordinates": bool(
-                        str(r.get("qa_status") or "").strip().lower().startswith("wrong_coordinates")
+                        str(r.get("qa_status") or "").strip().lower().startswith("wrong_coordinates"))
                 },
             }
         )
