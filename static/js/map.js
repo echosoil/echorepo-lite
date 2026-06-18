@@ -1190,7 +1190,9 @@
       qa.startsWith('wrong_coordinates:') ||
       qa.includes('wrong coordinate') ||
       qa.includes('invalid coordinate') ||
-      qa.includes('bad coordinate')
+      qa.includes('bad coordinate') ||
+      qa.includes('default_coordinates') ||
+      qa.includes('default coordinates')
     );
   }
 
