@@ -40,6 +40,11 @@ from firebase_admin import auth, credentials, firestore
 from shapely.geometry import Point
 from shapely.geometry import shape as shp_shape
 
+try:
+    import reverse_geocoder as rg
+except Exception:
+    rg = None
+
 # ---------------------------------------------------------------------------
 # 0. load env and basic paths
 # ---------------------------------------------------------------------------
@@ -83,6 +88,14 @@ from echorepo.utils.load_csv import (
     deterministic_jitter as lc_det_jitter,
 )
 
+# parse helper for .env interpretation of booleans (1/0, true/false, yes/no, on/off)
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+
+    if value is None:
+        return default
+
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
 
 # helper to convert local or absolute paths to project-root-relative paths
 def _local_path_to_abs(maybe_path: str) -> str:
@@ -135,7 +148,120 @@ MIRROR_PROGRESS_FILE = os.getenv(
 DEFAULT_LICENCE = os.getenv("DEFAULT_LICENCE", "CC-BY-4.0")
 DEFAULT_LAB_ID = os.getenv("DEFAULT_LAB_ID", "ECHO-LAB-1")
 
-FILTER_WRONG_COORDINATES = os.getenv("FILTER_WRONG_COORDINATES", "0") == "1"
+FILTER_WRONG_COORDINATES = env_bool("FILTER_WRONG_COORDINATES", True)
+
+# Reverse decoder for country code (offline fallback)
+ALLOW_SINGLE_PLANNED_COUNTRY_FALLBACK = env_bool("ALLOW_SINGLE_PLANNED_COUNTRY_FALLBACK", True)
+
+COUNTRY_LOOKUP_TOLERANCE_DEG = float(
+    os.getenv("COUNTRY_LOOKUP_TOLERANCE_DEG", "0.10")
+)
+COUNTRY_NEAREST_BLACKLIST = {
+    x.strip().upper()
+    for x in os.getenv("COUNTRY_NEAREST_BLACKLIST", "").split(",")
+    if x.strip()
+}
+
+def reverse_geocoder_country_code(lat, lon):
+    """
+    Offline nearest-place fallback country lookup.
+
+    This is useful when the Natural Earth polygon method fails because of
+    polygon simplification, ISO-field issues, or geometry quirks.
+    """
+    if rg is None:
+        return ""
+
+    lat = _coord_to_float(lat)
+    lon = _coord_to_float(lon)
+
+    if lat is None or lon is None:
+        return ""
+
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        return ""
+
+    try:
+        res = rg.search([(lat, lon)], mode=1)
+        if res:
+            return str(res[0].get("cc") or "").strip().upper()
+    except Exception:
+        return ""
+
+    return ""
+
+
+def resolve_country_for_sample(
+    lat,
+    lon,
+    planned_set=None,
+    sample_id="",
+    allow_planned_fallback=True,
+):
+    """
+    Resolve the country for a sample.
+
+    Priority:
+      1. Natural Earth polygon lookup from original coordinates
+      2. reverse_geocoder fallback from original coordinates
+      3. planned country only if there is exactly one planned country
+
+    Returns:
+      {
+        "country_code": "SE",
+        "country_source": "shapefile" | "reverse_geocoder" | "planned_single_fallback" | "",
+        "country_lookup_note": ""
+      }
+    """
+    planned_set = planned_set or set()
+
+    lat_f = _coord_to_float(lat)
+    lon_f = _coord_to_float(lon)
+
+    if lat_f is None or lon_f is None:
+        return {
+            "country_code": "",
+            "country_source": "",
+            "country_lookup_note": "invalid_or_missing_coordinates",
+        }
+
+    # 1) Main method: shapefile polygons
+    cc = latlon_to_country_code(lat_f, lon_f)
+    if cc:
+        return {
+            "country_code": cc,
+            "country_source": "shapefile",
+            "country_lookup_note": "",
+        }
+
+    # 2) Fallback: reverse_geocoder
+    cc_rg = reverse_geocoder_country_code(lat_f, lon_f)
+    if cc_rg:
+        return {
+            "country_code": cc_rg,
+            "country_source": "reverse_geocoder",
+            "country_lookup_note": "shapefile_empty_reverse_geocoder_used",
+        }
+
+    # 3) Last-resort fallback: planned country only if unambiguous
+    if (
+        allow_planned_fallback
+        and ALLOW_SINGLE_PLANNED_COUNTRY_FALLBACK
+        and len(planned_set) == 1
+    ):
+        cc_planned = next(iter(planned_set))
+        return {
+            "country_code": cc_planned,
+            "country_source": "planned_single_fallback",
+            "country_lookup_note": "coordinate_country_lookup_failed_used_single_planned_country",
+        }
+
+    return {
+        "country_code": "",
+        "country_source": "",
+        "country_lookup_note": "country_lookup_failed",
+    }
+
 
 def _load_mirror_done() -> set[str]:
     """
@@ -342,41 +468,219 @@ def _clean_float_val(v):
 _COUNTRY_SHAPES = []
 
 
-def load_country_shapes_from_shp(shp_path="data/ne_50m_admin_0_countries.shp"):
-    global _COUNTRY_SHAPES
-    r = shapefile.Reader(shp_path)
-    field_names = [f[0] for f in r.fields[1:]]
+COUNTRY_SHP = os.getenv(
+    "COUNTRY_SHP",
+    str(PROJECT_ROOT / "data" / "ne_50m_admin_0_countries" / "ne_50m_admin_0_countries.shp"),
+)
+
+
+def _record_get(rec, field_names, name, default=""):
+    if name not in field_names:
+        return default
     try:
-        iso_idx = field_names.index("ISO_A2")
-    except ValueError:
-        iso_idx = None
-    shapes = []
-    for sr in r.shapeRecords():
-        geom = shp_shape(sr.shape.__geo_interface__)
-        rec = sr.record
-        if iso_idx is not None:
-            iso2 = rec[iso_idx]
-        else:
-            iso2 = rec.get("ISO_A2", "") if hasattr(rec, "get") else ""
-        if iso2 == "-99":
-            iso2 = ""
-        shapes.append((geom, iso2))
-    _COUNTRY_SHAPES = shapes
-    return shapes
+        return rec[field_names.index(name)]
+    except Exception:
+        return default
 
 
-def latlon_to_country_code(lat, lon):
-    if lat is None or lon is None:
+def _clean_iso2(v):
+    s = str(v or "").strip().upper()
+    if s in {"", "-99", "NULL", "NONE", "NAN"}:
         return ""
-    if not _COUNTRY_SHAPES:
-        load_country_shapes_from_shp()
-    pt = Point(lon, lat)
-    for geom, iso2 in _COUNTRY_SHAPES:
-        if geom.contains(pt):
-            return iso2 or ""
+    if len(s) == 2 and s.isalpha():
+        return s
     return ""
 
 
+def _best_iso2_from_record(rec, field_names):
+    """
+    Natural Earth may have ISO_A2=-99 for countries such as France.
+    Try several fields before giving up.
+    """
+    for field in ("ISO_A2_EH", "ISO_A2", "WB_A2", "POSTAL"):
+        iso2 = _clean_iso2(_record_get(rec, field_names, field))
+        if iso2:
+            return iso2
+
+    return ""
+
+
+def load_country_shapes_from_shp(shp_path=None):
+    global _COUNTRY_SHAPES
+
+    shp_path = shp_path or COUNTRY_SHP
+    shp_path = Path(shp_path)
+
+    if not shp_path.is_absolute():
+        shp_path = PROJECT_ROOT / shp_path
+
+    print(f"[geo] loading country shapefile: {shp_path}")
+
+    r = shapefile.Reader(str(shp_path))
+    field_names = [f[0] for f in r.fields[1:]]
+
+    shapes = []
+    missing_iso = []
+
+    for sr in r.shapeRecords():
+        geom = shp_shape(sr.shape.__geo_interface__)
+        rec = sr.record
+
+        iso2 = _best_iso2_from_record(rec, field_names)
+
+        name = (
+            _record_get(rec, field_names, "ADMIN")
+            or _record_get(rec, field_names, "NAME")
+            or _record_get(rec, field_names, "NAME_EN")
+            or ""
+        )
+
+        if not iso2:
+            missing_iso.append(
+                {
+                    "name": name,
+                    "ISO_A2": _record_get(rec, field_names, "ISO_A2"),
+                    "ISO_A2_EH": _record_get(rec, field_names, "ISO_A2_EH"),
+                    "WB_A2": _record_get(rec, field_names, "WB_A2"),
+                    "POSTAL": _record_get(rec, field_names, "POSTAL"),
+                }
+            )
+
+        # Store name and raw record fields too, useful for debugging.
+        shapes.append(
+            {
+                "geom": geom,
+                "iso2": iso2,
+                "name": str(name or ""),
+                "record": rec,
+                "field_names": field_names,
+            }
+        )
+
+    _COUNTRY_SHAPES = shapes
+
+    print(f"[geo] loaded {len(_COUNTRY_SHAPES)} country polygons")
+    if missing_iso:
+        print(f"[geo] polygons without ISO2 after fallback: {len(missing_iso)}")
+        print("[geo] first missing ISO examples:")
+        for x in missing_iso[:10]:
+            print(f"  {x}")
+
+    return shapes
+
+
+def _coord_to_float(v):
+    if v is None:
+        return None
+
+    try:
+        if pd.isna(v):
+            return None
+    except Exception:
+        pass
+
+    s = str(v).strip().replace(",", ".")
+    if not s:
+        return None
+
+    try:
+        x = float(s)
+    except Exception:
+        return None
+
+    if not math.isfinite(x):
+        return None
+
+    return x
+
+
+def latlon_to_country_code(lat, lon, debug=False):
+    lat = _coord_to_float(lat)
+    lon = _coord_to_float(lon)
+
+    if lat is None or lon is None:
+        return ""
+
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        return ""
+
+    if not _COUNTRY_SHAPES:
+        load_country_shapes_from_shp()
+
+    pt = Point(lon, lat)
+
+    # 1) Exact polygon match.
+    # Do NOT apply blacklist here. If the point is actually inside a country polygon,
+    # that is stronger evidence than a nearest-neighbour fallback.
+    for item in _COUNTRY_SHAPES:
+        geom = item["geom"]
+        iso2 = item["iso2"]
+        name = item.get("name", "")
+
+        try:
+            if geom.covers(pt):
+                if debug:
+                    print("[geo-debug] exact hit:", {"name": name, "iso2": iso2})
+                return iso2 or ""
+        except Exception:
+            continue
+
+    # 2) Nearest-polygon fallback for simplified coastlines / archipelagos.
+    # Blacklist applies only here.
+    nearest = []
+
+    for item in _COUNTRY_SHAPES:
+        geom = item["geom"]
+        iso2 = str(item["iso2"] or "").strip().upper()
+        name = item.get("name", "")
+
+        if not iso2:
+            continue
+
+        if iso2 in COUNTRY_NEAREST_BLACKLIST:
+            if debug:
+                print(
+                    "[geo-debug] nearest candidate blacklisted:",
+                    {"iso2": iso2, "name": name},
+                )
+            continue
+
+        try:
+            minx, miny, maxx, maxy = geom.bounds
+
+            if lon < minx - COUNTRY_LOOKUP_TOLERANCE_DEG:
+                continue
+            if lon > maxx + COUNTRY_LOOKUP_TOLERANCE_DEG:
+                continue
+            if lat < miny - COUNTRY_LOOKUP_TOLERANCE_DEG:
+                continue
+            if lat > maxy + COUNTRY_LOOKUP_TOLERANCE_DEG:
+                continue
+
+            d = geom.distance(pt)
+            nearest.append((d, iso2, name))
+        except Exception:
+            continue
+
+    nearest.sort(key=lambda x: x[0])
+
+    if debug:
+        print("[geo-debug] no exact hit. nearest candidates after blacklist:")
+        for d, iso2, name in nearest[:10]:
+            print({"distance_deg": d, "iso2": iso2, "name": name})
+
+    if nearest:
+        d, iso2, name = nearest[0]
+        if d <= COUNTRY_LOOKUP_TOLERANCE_DEG:
+            if debug:
+                print(
+                    "[geo-debug] nearest fallback used:",
+                    {"distance_deg": d, "iso2": iso2, "name": name},
+                )
+            return iso2 or ""
+
+    return ""
+    
 # ---------------------------------------------------------------------------
 # misc helpers
 # ---------------------------------------------------------------------------
@@ -1292,28 +1596,38 @@ def build_samples_df(
         except Exception:
             lat_f = lon_f = None
 
-        # countries
-        orig_country = (
-            latlon_to_country_code(lat_f, lon_f)
-            if (lat_f is not None and lon_f is not None)
-            else ""
-        )
-        planned_country = ""
+        # planned countries are used for validation, not for assigning actual country
+        planned_countries = set()
         if qr_norm and qr_norm in planned_map:
-            s = planned_map[qr_norm]
-            planned_country = next(iter(s)) if len(s) == 1 else (sorted(s)[0] if s else "")
+            planned_countries = planned_map[qr_norm] or set()
 
-        # jitter like before
+        # Resolve actual country from ORIGINAL coordinates
+        country_info = resolve_country_for_sample(
+            lat_f,
+            lon_f,
+            planned_set=planned_countries,
+            sample_id=sample_id,
+            allow_planned_fallback=False,
+        )
+
+        orig_country = country_info["country_code"]
+        country_source = country_info["country_source"]
+        country_lookup_note = country_info["country_lookup_note"]
+
+        # jitter like before, but only for public lat/lon
         lat_j, lon_j = lat_f, lon_f
         if lat_f is not None and lon_f is not None and lc_det_jitter is not None:
             key = sample_id or r.get("userId") or str(idx)
             lat_j, lon_j = lc_det_jitter(lat_f, lon_f, key, LC_MAX_JITTER_METERS)
+
+        # Optional diagnostic only. Do NOT use this to assign country_code.
         jitter_country = (
             latlon_to_country_code(lat_j, lon_j)
             if (lat_j is not None and lon_j is not None)
             else ""
         )
-        country = jitter_country or planned_country or orig_country
+
+        country = orig_country
 
         # contamination fields
         cont_debris = r.get("SOIL_CONTAMINATION_debris") or 0
@@ -1333,6 +1647,8 @@ def build_samples_df(
                 "lat": lat_j,
                 "lon": lon_j,
                 "country": country,
+                "country_source": country_source,
+                "country_lookup_note": country_lookup_note,
                 "ph": r.get("PH_ph"),
                 "earthworms_count": r.get("SOIL_DIVER_earthworms"),
                 "contamination_debris": cont_debris,
@@ -1348,7 +1664,11 @@ def build_samples_df(
             }
         )
 
-        if not country:
+        if (
+            country_lookup_note
+            or not country
+            or (planned_countries and country and country not in planned_countries)
+        ):
             debug_missing.append(
                 {
                     "row_index": idx,
@@ -1360,12 +1680,13 @@ def build_samples_df(
                     "lon_f": lon_f,
                     "jitter_lat": lat_j,
                     "jitter_lon": lon_j,
-                    "orig_country": orig_country,
+                    "country": country,
+                    "country_source": country_source,
+                    "country_lookup_note": country_lookup_note,
                     "jitter_country": jitter_country,
-                    "planned_country": planned_country,
+                    "planned_countries": ",".join(sorted(planned_countries)) if planned_countries else "",
                 }
             )
-
     # Build final rows; *_en fields are intentionally empty
     rows = []
     for pr in pre_rows:
@@ -1404,11 +1725,11 @@ def build_samples_df(
         )
 
     if debug_missing:
-        diag_path = PROJECT_ROOT / "data" / "canonical" / "country_missing_diag.csv"
+        diag_path = PROJECT_ROOT / "data" / "canonical" / "country_resolution_diag.csv"
         os.makedirs(diag_path.parent, exist_ok=True)
         pd.DataFrame(debug_missing).to_csv(diag_path, index=False)
-        print(f"[DIAG] wrote {len(debug_missing)} rows with missing country to {diag_path}")
-
+        print(f"[DIAG] wrote {len(debug_missing)} country-resolution diagnostics to {diag_path}")    
+    
     return pd.DataFrame(rows)
 
 
@@ -1471,16 +1792,30 @@ def annotate_and_filter_wrong_coordinates(
     default_mask = (lat_f == 46.5) & (lon_f == 11.35)
 
     actual_cc = []
+    actual_cc_source = []
+    actual_cc_note = []
+
     for lt, ln, valid, is_default in zip(lat_f, lon_f, valid_mask, default_mask, strict=False):
         if not valid or is_default:
             actual_cc.append("")
+            actual_cc_source.append("")
+            actual_cc_note.append("invalid_or_default_coordinates")
             continue
-        try:
-            actual_cc.append(latlon_to_country_code(float(lt), float(ln)) or "")
-        except Exception:
-            actual_cc.append("")
+
+        info = resolve_country_for_sample(
+            lt,
+            ln,
+            planned_set=set(),
+            allow_planned_fallback=False,  # validation must be coordinate-based only
+        )
+
+        actual_cc.append(info["country_code"])
+        actual_cc_source.append(info["country_source"])
+        actual_cc_note.append(info["country_lookup_note"])
 
     out["actual_cc"] = actual_cc
+    out["actual_cc_source"] = actual_cc_source
+    out["actual_cc_note"] = actual_cc_note
 
     def _planned_set(q):
         q_norm = norm_qr_for_id(q)
@@ -2134,7 +2469,7 @@ def main():
     minio_client = init_minio()
 
     # load country polygons once
-    load_country_shapes_from_shp("data/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp")
+    load_country_shapes_from_shp()
 
     # 1) fetch from Firestore
     df_raw = fetch_samples_flat(minio_client)
