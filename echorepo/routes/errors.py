@@ -113,18 +113,101 @@ def _country_from_coords(lat, lon):
 def issues():
     user_key = session.get("user")
     df = query_user_df(user_key)
-    defaults = find_default_coord_rows(df)
-    mism = select_country_mismatches(df)
+
 
     orig_lat_col = getattr(settings, "ORIG_LAT_COL", None) or settings.LAT_COL
     orig_lon_col = getattr(settings, "ORIG_LON_COL", None) or settings.LON_COL
 
-    # minimal columns for the view
+    # Minimal columns for the view
     cols = ["sampleId", "userId", "QR_qrCode", orig_lat_col, orig_lon_col]
 
     def pick(d):
         present = [c for c in cols if c in d.columns]
         return d[present].copy()
+
+    def _truthy_series(s):
+        return (
+            s.fillna("")
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .isin({"1", "true", "yes", "y", "on"})
+        )
+
+    if df is None or df.empty:
+        default_rows = df.copy() if df is not None else []
+        mismatch_rows = df.copy() if df is not None else []
+
+        return render_template(
+            "issues.html",
+            default_rows=default_rows,
+            mismatch_rows=mismatch_rows,
+            orig_lat_col=orig_lat_col,
+            orig_lon_col=orig_lon_col,
+        )
+
+    # New pipeline logic:
+    # wrong_coordinates = algorithm says suspicious
+    # coordinate_issue_approved = human reviewer accepted it as OK
+    # wrong_coordinates_effective = still actionable
+    if "wrong_coordinates_effective" in df.columns:
+        actionable = df[_truthy_series(df["wrong_coordinates_effective"])].copy()
+
+        if "coordinate_check_reason" in actionable.columns:
+            default_rows_df = actionable[
+                actionable["coordinate_check_reason"].astype(str) == "default_coordinates"
+            ].copy()
+
+            mismatch_rows_df = actionable[
+                actionable["coordinate_check_reason"].astype(str) != "default_coordinates"
+            ].copy()
+        else:
+            default_rows_df = actionable.iloc[0:0].copy()
+            mismatch_rows_df = actionable
+
+        return render_template(
+            "issues.html",
+            default_rows=pick(default_rows_df),
+            mismatch_rows=pick(mismatch_rows_df),
+            orig_lat_col=orig_lat_col,
+            orig_lon_col=orig_lon_col,
+        )
+
+    # Intermediate fallback:
+    # If wrong_coordinates exists but wrong_coordinates_effective does not,
+    # exclude manually approved rows if coordinate_issue_approved exists.
+    if "wrong_coordinates" in df.columns:
+        wrong_mask = _truthy_series(df["wrong_coordinates"])
+
+        if "coordinate_issue_approved" in df.columns:
+            approved_mask = _truthy_series(df["coordinate_issue_approved"])
+            actionable = df[wrong_mask & ~approved_mask].copy()
+        else:
+            actionable = df[wrong_mask].copy()
+
+        if "coordinate_check_reason" in actionable.columns:
+            default_rows_df = actionable[
+                actionable["coordinate_check_reason"].astype(str) == "default_coordinates"
+            ].copy()
+
+            mismatch_rows_df = actionable[
+                actionable["coordinate_check_reason"].astype(str) != "default_coordinates"
+            ].copy()
+        else:
+            default_rows_df = actionable.iloc[0:0].copy()
+            mismatch_rows_df = actionable
+
+        return render_template(
+            "issues.html",
+            default_rows=pick(default_rows_df),
+            mismatch_rows=pick(mismatch_rows_df),
+            orig_lat_col=orig_lat_col,
+            orig_lon_col=orig_lon_col,
+        )
+
+    # Old fallback logic for older data without the new columns.
+    defaults = find_default_coord_rows(df)
+    mism = select_country_mismatches(df)
 
     return render_template(
         "issues.html",
@@ -133,6 +216,7 @@ def issues():
         orig_lat_col=orig_lat_col,
         orig_lon_col=orig_lon_col,
     )
+
 
 
 @errors_bp.post("/issues/fix-coords")
