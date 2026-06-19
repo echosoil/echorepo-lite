@@ -161,7 +161,39 @@ COUNTRY_NEAREST_BLACKLIST = {
     for x in os.getenv("COUNTRY_NEAREST_BLACKLIST", "").split(",")
     if x.strip()
 }
+COORDINATE_APPROVED_CSV = Path(
+    os.getenv(
+        "COORDINATE_APPROVED_CSV",
+        str(PROJECT_ROOT / "data" / "coordinate_check_approved.csv"),
+    )
+)
 
+def load_approved_coordinate_samples() -> set[str]:
+    path = COORDINATE_APPROVED_CSV
+
+    if not path.exists():
+        return set()
+
+    try:
+        df = pd.read_csv(path, dtype=str, keep_default_na=False)
+    except Exception:
+        return set()
+
+    if "sample_id" not in df.columns:
+        return set()
+
+    approved = set()
+    for x in df["sample_id"].tolist():
+        value = str(x or "").strip()
+        if not value:
+            continue
+        try:
+            approved.add(norm_qr_for_id(value).upper())
+        except Exception:
+            approved.add(value.upper())
+
+    return approved
+    
 def reverse_geocoder_country_code(lat, lon):
     """
     Offline nearest-place fallback country lookup.
@@ -2509,33 +2541,80 @@ def main():
     df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
     write_csv_atomic(df_users, USERS_CSV)
 
-    # 3b) coordinate validation/filtering
-    df_filtered, df_annotated = annotate_and_filter_wrong_coordinates(
-        df_enriched,
-        planned_map=planned_map,
-        qr_col="QR_qrCode",
-        lat_col="GPS_lat",
-        lon_col="GPS_long",
-    )
+# 3b) coordinate validation/filtering
+df_filtered, df_annotated = annotate_and_filter_wrong_coordinates(
+    df_enriched,
+    planned_map=planned_map,
+    qr_col="QR_qrCode",
+    lat_col="GPS_lat",
+    lon_col="GPS_long",
+)
 
-    coord_diag_path = str(PROJECT_ROOT / "data" / "coordinate_check_annotated.csv")
-    coord_bad_path = str(PROJECT_ROOT / "data" / "coordinate_check_wrong.csv")
+coord_diag_path = str(PROJECT_ROOT / "data" / "coordinate_check_annotated.csv")
+coord_bad_path = str(PROJECT_ROOT / "data" / "coordinate_check_wrong.csv")
 
+# Load manually approved coordinate issues.
+# These are samples that the algorithm marked as wrong, but a human reviewer accepted as OK.
+approved_ids = load_approved_coordinate_samples()
+
+
+def _issue_sample_id_for_row(row):
+    """
+    Return the stable ID used in coordinate_check_approved.csv.
+    Prefer QR_qrCode because this is what the coordinate issue UI displays.
+    """
+    for col in ("QR_qrCode", "sample_id", "sampleId"):
+        if col in row and str(row.get(col) or "").strip():
+            value = str(row.get(col) or "").strip()
+            try:
+                return norm_qr_for_id(value).upper()
+            except Exception:
+                return value.upper()
+    return ""
+
+
+    def _boolish(value) -> bool:
+        return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+    if not df_annotated.empty:
+        # Mark rows that have been manually approved as OK.
+        df_annotated["coordinate_issue_approved"] = df_annotated.apply(
+            lambda row: _issue_sample_id_for_row(row) in approved_ids,
+            axis=1,
+        )
+
+        # Effective wrongness = algorithm says wrong AND human has not approved it.
+        df_annotated["wrong_coordinates_effective"] = df_annotated.apply(
+            lambda row: _boolish(row.get("wrong_coordinates"))
+            and not _boolish(row.get("coordinate_issue_approved")),
+            axis=1,
+        )
+    else:
+        df_annotated["coordinate_issue_approved"] = []
+        df_annotated["wrong_coordinates_effective"] = []
+
+    # Write full diagnostic file with both raw and effective flags.
     write_csv_atomic(df_annotated, coord_diag_path)
+
+    # Write only still-actionable wrong coordinates.
+    # Manually approved rows are excluded from this file.
     write_csv_atomic(
-        df_annotated[df_annotated["wrong_coordinates"] == True].copy(),
+        df_annotated[df_annotated["wrong_coordinates_effective"] == True].copy(),
         coord_bad_path,
     )
 
-    # Keep the wrong_coordinates flag in the main output.
-    # Optionally drop wrong-coordinate rows only if FILTER_WRONG_COORDINATES=1.
+    # Keep the coordinate flags in the main output.
+    # Optionally drop only EFFECTIVE wrong-coordinate rows if FILTER_WRONG_COORDINATES=1.
     if FILTER_WRONG_COORDINATES:
-        print("[coords] FILTER_WRONG_COORDINATES=1 -> dropping wrong-coordinate rows")
-        df_enriched = df_filtered
+        print("[coords] FILTER_WRONG_COORDINATES=1 -> dropping effective wrong-coordinate rows")
+        df_enriched = df_annotated[
+            df_annotated["wrong_coordinates_effective"] != True
+        ].copy()
     else:
         print("[coords] FILTER_WRONG_COORDINATES=0 -> keeping all rows, only flagging them")
         df_enriched = df_annotated
-
+        
     # This is the ONLY write of OUTPUT_CSV.
     write_csv_atomic(df_enriched, OUTPUT_CSV)
 

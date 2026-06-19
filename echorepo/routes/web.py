@@ -605,6 +605,74 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
 
 
 # --------- Search helpers
+def _coordinate_approved_csv_path() -> Path:
+    env_path = os.getenv("COORDINATE_APPROVED_CSV")
+    if env_path:
+        return Path(env_path)
+
+    candidates = [
+        Path("/data/coordinate_check_approved.csv"),
+        Path("/app/data/coordinate_check_approved.csv"),
+        Path.cwd() / "data" / "coordinate_check_approved.csv",
+    ]
+
+    for p in candidates:
+        if p.exists():
+            return p
+
+    return Path("/data/coordinate_check_approved.csv")
+
+
+def _load_coordinate_approvals() -> pd.DataFrame:
+    path = _coordinate_approved_csv_path()
+
+    if not path.exists():
+        return pd.DataFrame(columns=["sample_id", "approved_by", "approved_at", "comment"])
+
+    try:
+        df = pd.read_csv(path, dtype=str, keep_default_na=False)
+    except Exception:
+        return pd.DataFrame(columns=["sample_id", "approved_by", "approved_at", "comment"])
+
+    if "sample_id" not in df.columns:
+        df["sample_id"] = ""
+
+    for col in ["approved_by", "approved_at", "comment"]:
+        if col not in df.columns:
+            df[col] = ""
+
+    df["sample_id"] = df["sample_id"].astype(str).str.strip().str.upper()
+    return df
+
+
+def _save_coordinate_approvals(df: pd.DataFrame) -> None:
+    path = _coordinate_approved_csv_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    keep_cols = ["sample_id", "approved_by", "approved_at", "comment"]
+    for col in keep_cols:
+        if col not in df.columns:
+            df[col] = ""
+
+    df = df[keep_cols].copy()
+    df["sample_id"] = df["sample_id"].astype(str).str.strip().str.upper()
+    df = df[df["sample_id"] != ""]
+    df = df.drop_duplicates(subset=["sample_id"], keep="last")
+
+    df.to_csv(path, index=False)
+
+
+def _current_approver_id() -> str:
+    kc_profile = (session.get("kc") or {}).get("profile") or {}
+    return (
+        kc_profile.get("email")
+        or kc_profile.get("preferred_username")
+        or kc_profile.get("id")
+        or kc_profile.get("sub")
+        or session.get("user")
+        or "unknown"
+    )
+
 def _coordinate_wrong_csv_path() -> Path:
     """
     Resolve the CSV produced by pull_and_enrich_samples.py.
@@ -1261,10 +1329,24 @@ def home():
         )
 
     # NON-EMPTY: data issues ------------------------------------------------
-    defaults = find_default_coord_rows(df)
-    mism = select_country_mismatches(df)
-    issue_count = len(defaults) + len(mism)
-
+    # Use the new pipeline-generated effective coordinate flag when available.
+    # This respects manually approved coordinate issues.
+    if "wrong_coordinates_effective" in df.columns:
+        issue_df = df[
+            df["wrong_coordinates_effective"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .isin({"1", "true", "yes", "y", "on"})
+        ].copy()
+        issue_count = len(issue_df)
+    else:
+        # Fallback for old CSV/database versions.
+        defaults = find_default_coord_rows(df)
+        mism = select_country_mismatches(df)
+        issue_count = len(defaults) + len(mism)
+        
     # HTML copy — prettify timestamp column
     df_html = df.copy()
     if "fs_createdAt" in df_html.columns:
@@ -1670,12 +1752,23 @@ def coordinate_issues():
     """
     csv_path = _coordinate_wrong_csv_path()
 
+    approvals_df = _load_coordinate_approvals()
+    approved_ids = set(
+        approvals_df["sample_id"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .tolist()
+    )
+
     criteria = {
         "sample_id": (request.args.get("sample_id") or "").strip(),
         "user_id": (request.args.get("user_id") or "").strip(),
         "reason": (request.args.get("reason") or "").strip(),
         "actual_country": (request.args.get("actual_country") or "").strip().upper(),
         "planned_country": (request.args.get("planned_country") or "").strip().upper(),
+        "show_approved": (request.args.get("show_approved") or "").strip(),
     }
 
     fmt = (request.args.get("format") or "").strip().lower()
@@ -1713,6 +1806,18 @@ def coordinate_issues():
             df["sample_display"] = df["sampleId"]
         else:
             df["sample_display"] = ""
+
+    df["approved_ok"] = (
+        df["sample_display"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .isin(approved_ids)
+    )
+
+    if criteria["show_approved"] not in {"1", "true", "yes", "on"}:
+        df = df.loc[~df["approved_ok"]].copy()
 
     if "uid_display" not in df.columns:
         if "userId" in df.columns:
@@ -1804,6 +1909,7 @@ def coordinate_issues():
             "planned_iso2",
             "wrong_coordinates",
             "coordinate_check_reason",
+            "approved_ok",
         ]
 
         cols = [c for c in preferred_cols if c in df.columns]
@@ -1843,6 +1949,62 @@ def coordinate_issues():
         file_missing=False,
         csv_path=str(csv_path),
     )
+
+@web_bp.post("/coordinate-issues/approve", endpoint="coordinate_issues_approve")
+@login_required
+def coordinate_issues_approve():
+    """
+    Mark selected coordinate issues as manually accepted/OK.
+
+    These approvals are stored separately from coordinate_check_wrong.csv so that
+    they survive future pull_and_enrich_samples.py runs.
+    """
+    sample_ids = request.form.getlist("sample_id")
+    comment = (request.form.get("comment") or "").strip()
+
+    cleaned = []
+    for sid in sample_ids:
+        sid = str(sid or "").strip().upper()
+        if sid:
+            cleaned.append(sid)
+
+    # Preserve current filters when returning to the page
+    return_args = {
+        "sample_id": request.form.get("filter_sample_id") or "",
+        "user_id": request.form.get("filter_user_id") or "",
+        "reason": request.form.get("filter_reason") or "",
+        "actual_country": request.form.get("filter_actual_country") or "",
+        "planned_country": request.form.get("filter_planned_country") or "",
+        "show_approved": request.form.get("filter_show_approved") or "",
+    }
+
+    if not cleaned:
+        return redirect(url_for("web.coordinate_issues", **return_args))
+
+    approvals_df = _load_coordinate_approvals()
+
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    approved_by = _current_approver_id()
+
+    new_rows = pd.DataFrame(
+        [
+            {
+                "sample_id": sid,
+                "approved_by": approved_by,
+                "approved_at": now,
+                "comment": comment,
+            }
+            for sid in cleaned
+        ]
+    )
+
+    approvals_df = pd.concat([approvals_df, new_rows], ignore_index=True)
+    approvals_df = approvals_df.drop_duplicates(subset=["sample_id"], keep="last")
+
+    _save_coordinate_approvals(approvals_df)
+
+    return redirect(url_for("web.coordinate_issues", **return_args))
+
 
 @web_bp.route("/search", endpoint="search_samples", methods=["GET"])
 def search_samples():
