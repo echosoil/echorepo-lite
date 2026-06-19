@@ -2,9 +2,11 @@
 {% block title %}{{ _('Coordinate issues') }}{% endblock %}
 
 {% block content %}
+
 <h2 class="h4 mb-3">{{ _('Coordinate issues') }}</h2>
 
 {% if file_missing %}
+
 <div class="alert alert-warning">
   {{ _('The coordinate issues file was not found:') }}
   <code>{{ csv_path }}</code>
@@ -18,6 +20,7 @@
       <input type="text" id="sample_id" name="sample_id" value="{{ criteria.sample_id }}" class="form-control">
     </div>
 
+    ```
     <div class="col-md-3">
       <label class="form-label" for="user_id">{{ _('User ID') }}</label>
       <input type="text" id="user_id" name="user_id" value="{{ criteria.user_id }}" class="form-control">
@@ -40,6 +43,8 @@
         <i class="bi bi-search"></i> {{ _('Search') }}
       </button>
     </div>
+    ```
+
   </div>
 
   <div class="row g-3 mt-2">
@@ -49,148 +54,204 @@
         class="form-control" placeholder="SE">
     </div>
 
+    ```
     <div class="col-md-3">
       <label class="form-label" for="planned_country">{{ _('Planned country') }}</label>
       <input type="text" id="planned_country" name="planned_country" value="{{ criteria.planned_country }}"
         class="form-control" placeholder="SE">
     </div>
 
-    <div class="col-md-6 d-flex align-items-end justify-content-md-end">
+    <div class="col-md-3 d-flex align-items-end">
+      <div class="form-check mb-2">
+        <input class="form-check-input" type="checkbox" id="show_approved" name="show_approved" value="1" {% if
+          criteria.show_approved %}checked{% endif %}>
+        <label class="form-check-label" for="show_approved">
+          {{ _('Show approved') }}
+        </label>
+      </div>
+    </div>
+
+    <div class="col-md-3 d-flex align-items-end justify-content-md-end">
       <a class="btn btn-outline-secondary" href="{{ url_for('web.coordinate_issues',
-                    sample_id=criteria.sample_id,
-                    user_id=criteria.user_id,
-                    reason=criteria.reason,
-                    actual_country=criteria.actual_country,
-                    planned_country=criteria.planned_country,
-                    format='csv') }}">
+                sample_id=criteria.sample_id,
+                user_id=criteria.user_id,
+                reason=criteria.reason,
+                actual_country=criteria.actual_country,
+                planned_country=criteria.planned_country,
+                show_approved=criteria.show_approved,
+                format='csv') }}">
         <i class="bi bi-download"></i> {{ _('Export current results') }}
       </a>
     </div>
+    ```
+
   </div>
 </form>
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span>
-      {{ total_rows }} {{ _('coordinate issue(s)') }}
-    </span>
-    <span class="text-muted small">
-      {{ _('Source:') }} <code>{{ csv_path }}</code>
-    </span>
-  </div>
+<form method="post" action="{{ url_for('web.coordinate_issues_approve') }}">
+  <input type="hidden" name="filter_sample_id" value="{{ criteria.sample_id }}">
+  <input type="hidden" name="filter_user_id" value="{{ criteria.user_id }}">
+  <input type="hidden" name="filter_reason" value="{{ criteria.reason }}">
+  <input type="hidden" name="filter_actual_country" value="{{ criteria.actual_country }}">
+  <input type="hidden" name="filter_planned_country" value="{{ criteria.planned_country }}">
+  <input type="hidden" name="filter_show_approved" value="{{ criteria.show_approved }}">
 
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0 coordinate-issue-table">
-        <thead class="table-light">
-          <tr>
-            <th class="text-center" title="Map">
-              <i class="bi bi-geo-alt-fill"></i>
-            </th>
-            <th>{{ _('Sample / QR') }}</th>
-            <th>{{ _('User ID') }}</th>
-            <th>{{ _('Lat') }}</th>
-            <th>{{ _('Lon') }}</th>
-            <th>{{ _('Actual country') }}</th>
-            <th>{{ _('Planned country') }}</th>
-            <th>{{ _('Issue type') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if rows %}
-          {% for r in rows %}
-          <tr>
-            <td>
-              {% if r.lat_display and r.lon_display %}
-              <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"
-                href="{{ url_for('web.home') }}?sample_id={{ r.sample_display | urlencode }}&single=1&lat={{ r.lat_display }}&lng={{ r.lon_display }}&z=15"
-                title="{{ _('Show only this sample on map') }}">
-                <i class="bi bi-geo-alt"></i>
-              </a>
-              {% endif %}
-            </td>
-            <td>{{ r.sample_display }}</td>
-            <td>{{ r.uid_display }}</td>
-            <td>{{ r.lat_display }}</td>
-            <td>{{ r.lon_display }}</td>
-            <td>{{ r.actual_country_display }}</td>
-            <td>{{ r.planned_country_display }}</td>
-            <td>
-              {% if r.reason_display == 'country_mismatch' %}
-              <span class="badge text-bg-danger">{{ r.reason_display }}</span>
-              {% elif r.reason_display == 'default_coordinates' %}
-              <span class="badge text-bg-warning">{{ r.reason_display }}</span>
-              {% elif r.reason_display == 'invalid_coordinates' %}
-              <span class="badge text-bg-secondary">{{ r.reason_display }}</span>
-              {% elif r.reason_display == 'country_not_found' %}
-              <span class="badge text-bg-info">{{ r.reason_display }}</span>
-              {% else %}
-              <span class="badge text-bg-light text-dark">{{ r.reason_display }}</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-          {% else %}
-          <tr>
-            <td colspan="8" class="text-center text-muted py-4">
-              {{ _('No coordinate issues for these filters.') }}
-            </td>
-          </tr>
-          {% endif %}
-        </tbody>
-      </table>
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>
+        {{ total_rows }} {{ _('coordinate issue(s)') }}
+      </span>
+      <span class="text-muted small">
+        {{ _('Source:') }} <code>{{ csv_path }}</code>
+      </span>
     </div>
-  </div>
 
-  {% if total_pages > 1 %}
-  <div class="card-footer d-flex justify-content-between align-items-center">
-    <span class="text-muted small">
-      {{ _('Showing page') }} {{ page }} {{ _('of') }} {{ total_pages }}
-      ({{ total_rows }} {{ _('results') }})
-    </span>
+    ```
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 coordinate-issue-table">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center">{{ _('OK') }}</th>
+              <th class="text-center" title="Map">
+                <i class="bi bi-geo-alt-fill"></i>
+              </th>
+              <th>{{ _('Sample / QR') }}</th>
+              <th>{{ _('User ID') }}</th>
+              <th>{{ _('Lat') }}</th>
+              <th>{{ _('Lon') }}</th>
+              <th>{{ _('Actual country') }}</th>
+              <th>{{ _('Planned country') }}</th>
+              <th>{{ _('Issue type') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if rows %}
+            {% for r in rows %}
+            <tr>
+              <td class="text-center">
+                {% if r.approved_ok %}
+                <span class="badge text-bg-success">{{ _('Approved') }}</span>
+                {% else %}
+                <input class="form-check-input" type="checkbox" name="sample_id" value="{{ r.sample_display }}">
+                {% endif %}
+              </td>
 
-    <nav>
-      <ul class="pagination pagination-sm mb-0">
-        <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-          <a class="page-link" href="{{ url_for('web.coordinate_issues',
-                              sample_id=criteria.sample_id,
-                              user_id=criteria.user_id,
-                              reason=criteria.reason,
-                              actual_country=criteria.actual_country,
-                              planned_country=criteria.planned_country,
-                              page=page-1) }}">&laquo;</a>
-        </li>
+              <td>
+                {% if r.lat_display and r.lon_display %}
+                <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"
+                  href="{{ url_for('web.home') }}?sample_id={{ r.sample_display | urlencode }}&single=1&lat={{ r.lat_display }}&lng={{ r.lon_display }}&z=15"
+                  title="{{ _('Show only this sample on map') }}">
+                  <i class="bi bi-geo-alt"></i>
+                </a>
+                {% endif %}
+              </td>
 
-        {% set start = page-2 if page-2 > 1 else 1 %}
-        {% set end = page+2 if page+2 < total_pages else total_pages %} {% for p in range(start, end+1) %} <li
-          class="page-item {% if p == page %}active{% endif %}">
-          <a class="page-link" href="{{ url_for('web.coordinate_issues',
-                                sample_id=criteria.sample_id,
-                                user_id=criteria.user_id,
-                                reason=criteria.reason,
-                                actual_country=criteria.actual_country,
-                                planned_country=criteria.planned_country,
-                                page=p) }}">{{ p }}</a>
+              <td>{{ r.sample_display }}</td>
+              <td>{{ r.uid_display }}</td>
+              <td>{{ r.lat_display }}</td>
+              <td>{{ r.lon_display }}</td>
+              <td>{{ r.actual_country_display }}</td>
+              <td>{{ r.planned_country_display }}</td>
+
+              <td>
+                {% if r.reason_display == 'country_mismatch' %}
+                <span class="badge text-bg-danger">{{ r.reason_display }}</span>
+                {% elif r.reason_display == 'default_coordinates' %}
+                <span class="badge text-bg-warning">{{ r.reason_display }}</span>
+                {% elif r.reason_display == 'invalid_coordinates' %}
+                <span class="badge text-bg-secondary">{{ r.reason_display }}</span>
+                {% elif r.reason_display == 'country_not_found' %}
+                <span class="badge text-bg-info">{{ r.reason_display }}</span>
+                {% else %}
+                <span class="badge text-bg-light text-dark">{{ r.reason_display }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                {{ _('No coordinate issues for these filters.') }}
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-8">
+          <label class="form-label" for="comment">{{ _('Approval comment') }}</label>
+          <input type="text" id="comment" name="comment" class="form-control"
+            placeholder="{{ _('Optional: e.g. border sample, algorithm false positive') }}">
+        </div>
+        <div class="col-md-4 text-md-end">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check2-circle"></i> {{ _('Save selected as OK') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="card-footer d-flex justify-content-between align-items-center">
+      <span class="text-muted small">
+        {{ _('Showing page') }} {{ page }} {{ _('of') }} {{ total_pages }}
+        ({{ total_rows }} {{ _('results') }})
+      </span>
+
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('web.coordinate_issues',
+                            sample_id=criteria.sample_id,
+                            user_id=criteria.user_id,
+                            reason=criteria.reason,
+                            actual_country=criteria.actual_country,
+                            planned_country=criteria.planned_country,
+                            show_approved=criteria.show_approved,
+                            page=page-1) }}">&laquo;</a>
           </li>
-          {% endfor %}
 
-          <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+          {% set start = page-2 if page-2 > 1 else 1 %}
+          {% set end = page+2 if page+2 < total_pages else total_pages %} {% for p in range(start, end+1) %} <li
+            class="page-item {% if p == page %}active{% endif %}">
             <a class="page-link" href="{{ url_for('web.coordinate_issues',
                               sample_id=criteria.sample_id,
                               user_id=criteria.user_id,
                               reason=criteria.reason,
                               actual_country=criteria.actual_country,
                               planned_country=criteria.planned_country,
-                              page=page+1) }}">&raquo;</a>
-          </li>
-      </ul>
-    </nav>
+                              show_approved=criteria.show_approved,
+                              page=p) }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+
+            <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('web.coordinate_issues',
+                            sample_id=criteria.sample_id,
+                            user_id=criteria.user_id,
+                            reason=criteria.reason,
+                            actual_country=criteria.actual_country,
+                            planned_country=criteria.planned_country,
+                            show_approved=criteria.show_approved,
+                            page=page+1) }}">&raquo;</a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+    ```
+
   </div>
-  {% endif %}
-</div>
+</form>
 {% endblock %}
 
 {% block extra_css %}
+
 <style>
   .coordinate-issue-table td,
   .coordinate-issue-table th {
@@ -199,4 +260,5 @@
     white-space: nowrap;
   }
 </style>
+
 {% endblock %}
