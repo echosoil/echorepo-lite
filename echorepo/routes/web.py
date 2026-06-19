@@ -605,6 +605,39 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
 
 
 # --------- Search helpers
+def _coordinate_wrong_csv_path() -> Path:
+    """
+    Resolve the CSV produced by pull_and_enrich_samples.py.
+
+    In Docker this is usually /data/coordinate_check_wrong.csv.
+    Locally it may be PROJECT_ROOT/data/coordinate_check_wrong.csv.
+    """
+    env_path = os.getenv("COORDINATE_WRONG_CSV")
+    if env_path:
+        return Path(env_path)
+
+    candidates = [
+        Path("/data/coordinate_check_wrong.csv"),
+        Path("/app/data/coordinate_check_wrong.csv"),
+        Path(settings.PROJECT_ROOT) / "data" / "coordinate_check_wrong.csv"
+        if hasattr(settings, "PROJECT_ROOT")
+        else None,
+        Path.cwd() / "data" / "coordinate_check_wrong.csv",
+    ]
+
+    for p in candidates:
+        if p and p.exists():
+            return p
+
+    # useful fallback for error display
+    return Path("/data/coordinate_check_wrong.csv")
+
+
+def _series_contains(series: pd.Series, text: str) -> pd.Series:
+    if not text:
+        return pd.Series(True, index=series.index)
+    return series.fillna("").astype(str).str.contains(text, case=False, na=False, regex=False)
+
 def _parse_sample_id_list(raw: str) -> list[str]:
     """
     Accept:
@@ -1626,6 +1659,190 @@ def lab_upload_post():
         }
     return redirect(url_for("web.home"))
 
+@web_bp.route("/coordinate-issues", endpoint="coordinate_issues", methods=["GET"])
+@login_required
+def coordinate_issues():
+    """
+    Show coordinate validation problems from coordinate_check_wrong.csv.
+
+    This is an internal/login-only QA page because it can expose exact coordinates,
+    QR codes and user IDs.
+    """
+    csv_path = _coordinate_wrong_csv_path()
+
+    criteria = {
+        "sample_id": (request.args.get("sample_id") or "").strip(),
+        "user_id": (request.args.get("user_id") or "").strip(),
+        "reason": (request.args.get("reason") or "").strip(),
+        "actual_country": (request.args.get("actual_country") or "").strip().upper(),
+        "planned_country": (request.args.get("planned_country") or "").strip().upper(),
+    }
+
+    fmt = (request.args.get("format") or "").strip().lower()
+
+    try:
+        page = max(int(request.args.get("page", 1) or 1), 1)
+    except ValueError:
+        page = 1
+
+    per_page = 100
+
+    if not csv_path.exists():
+        return render_template(
+            "coordinate_issues.html",
+            rows=[],
+            criteria=criteria,
+            reasons=[],
+            page=1,
+            total_pages=1,
+            total_rows=0,
+            file_missing=True,
+            csv_path=str(csv_path),
+        )
+
+    df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
+
+    # Tolerant display columns. These keep the template simple even if
+    # the pipeline CSV evolves.
+    if "sample_display" not in df.columns:
+        if "QR_qrCode" in df.columns:
+            df["sample_display"] = df["QR_qrCode"]
+        elif "sample_id" in df.columns:
+            df["sample_display"] = df["sample_id"]
+        elif "sampleId" in df.columns:
+            df["sample_display"] = df["sampleId"]
+        else:
+            df["sample_display"] = ""
+
+    if "uid_display" not in df.columns:
+        if "userId" in df.columns:
+            df["uid_display"] = df["userId"]
+        elif "collected_by" in df.columns:
+            df["uid_display"] = df["collected_by"]
+        elif "user_id" in df.columns:
+            df["uid_display"] = df["user_id"]
+        else:
+            df["uid_display"] = ""
+
+    if "lat_display" not in df.columns:
+        df["lat_display"] = df["GPS_lat"] if "GPS_lat" in df.columns else ""
+
+    if "lon_display" not in df.columns:
+        df["lon_display"] = df["GPS_long"] if "GPS_long" in df.columns else ""
+
+    if "actual_country_display" not in df.columns:
+        df["actual_country_display"] = df["actual_cc"] if "actual_cc" in df.columns else ""
+
+    if "planned_country_display" not in df.columns:
+        df["planned_country_display"] = df["planned_iso2"] if "planned_iso2" in df.columns else ""
+
+    if "reason_display" not in df.columns:
+        df["reason_display"] = (
+            df["coordinate_check_reason"] if "coordinate_check_reason" in df.columns else ""
+        )
+
+    # Build reason list before filtering by reason, so the dropdown always
+    # contains all issue types in the file.
+    reasons = sorted(
+        x
+        for x in df["reason_display"].fillna("").astype(str).unique().tolist()
+        if x.strip()
+    )
+
+    # Apply filters
+    if criteria["sample_id"]:
+        q = criteria["sample_id"]
+        mask = _series_contains(df["sample_display"], q)
+
+        for extra_col in ("sampleId", "sample_id", "QR_qrCode"):
+            if extra_col in df.columns:
+                mask = mask | _series_contains(df[extra_col], q)
+
+        df = df.loc[mask].copy()
+
+    if criteria["user_id"]:
+        df = df.loc[_series_contains(df["uid_display"], criteria["user_id"])].copy()
+
+    if criteria["reason"]:
+        df = df.loc[df["reason_display"].astype(str) == criteria["reason"]].copy()
+
+    if criteria["actual_country"]:
+        df = df.loc[
+            df["actual_country_display"].astype(str).str.upper() == criteria["actual_country"]
+        ].copy()
+
+    if criteria["planned_country"]:
+        df = df.loc[
+            df["planned_country_display"]
+            .astype(str)
+            .str.upper()
+            .str.contains(criteria["planned_country"], na=False, regex=False)
+        ].copy()
+
+    # Export current filtered result
+    if fmt == "csv":
+        g._analytics_extra = {
+            "dataset": "coordinate_issues",
+            "file_name": "coordinate_issues.csv",
+            "kind": "qa_export",
+        }
+
+        preferred_cols = [
+            "sample_display",
+            "uid_display",
+            "lat_display",
+            "lon_display",
+            "actual_country_display",
+            "planned_country_display",
+            "reason_display",
+            "sampleId",
+            "QR_qrCode",
+            "userId",
+            "GPS_lat",
+            "GPS_long",
+            "actual_cc",
+            "planned_iso2",
+            "wrong_coordinates",
+            "coordinate_check_reason",
+        ]
+
+        cols = [c for c in preferred_cols if c in df.columns]
+        if not cols:
+            cols = list(df.columns)
+
+        buf = BytesIO()
+        df[cols].to_csv(buf, index=False)
+        buf.seek(0)
+
+        return send_file(
+            buf,
+            as_attachment=True,
+            download_name="coordinate_issues.csv",
+            mimetype="text/csv",
+        )
+
+    total_rows = len(df)
+    total_pages = max((total_rows + per_page - 1) // per_page, 1)
+
+    if page > total_pages:
+        page = total_pages
+
+    start = (page - 1) * per_page
+    end = start + per_page
+
+    rows = df.iloc[start:end].to_dict(orient="records")
+
+    return render_template(
+        "coordinate_issues.html",
+        rows=rows,
+        criteria=criteria,
+        reasons=reasons,
+        page=page,
+        total_pages=total_pages,
+        total_rows=total_rows,
+        file_missing=False,
+        csv_path=str(csv_path),
+    )
 
 @web_bp.route("/search", endpoint="search_samples", methods=["GET"])
 def search_samples():
