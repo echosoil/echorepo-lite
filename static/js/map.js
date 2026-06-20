@@ -1948,6 +1948,64 @@
   }
 
   let lastFilterSignature = null;
+  let globalFilteredCount = 0;
+  let countLoadSeq = 0;
+  let countLoadTimer = null;
+
+  function getGlobalCountUrl() {
+    const params = new URLSearchParams();
+
+    if (activeCountry) {
+      params.set('country_code', activeCountry);
+    }
+
+    if (activeDateFrom) {
+      params.set('from', activeDateFrom);
+    }
+
+    if (activeDateTo) {
+      params.set('to', activeDateTo);
+    }
+
+    if (activePhMin != null) {
+      params.set('ph_min', activePhMin);
+    }
+
+    if (activePhMax != null) {
+      params.set('ph_max', activePhMax);
+    }
+
+    return `/api/v1/canonical/map.count?${params.toString()}`;
+  }
+
+  async function refreshGlobalFilteredCount() {
+    const seq = ++countLoadSeq;
+
+    try {
+      const r = await fetch(getGlobalCountUrl(), {
+        credentials: 'same-origin'
+      });
+
+      if (!r.ok) {
+        throw new Error(`Count API failed: ${r.status}`);
+      }
+
+      const j = await r.json();
+
+      if (seq !== countLoadSeq) return;
+
+      globalFilteredCount = Number(j.count) || 0;
+      updateFilteredCountsLabelOnly();
+
+    } catch (err) {
+      console.warn('Could not refresh global filtered count:', err);
+    }
+  }
+
+  function scheduleGlobalFilteredCountRefresh() {
+    clearTimeout(countLoadTimer);
+    countLoadTimer = setTimeout(refreshGlobalFilteredCount, 250);
+  }
 
   function getFilterSignature() {
     const state = twoToggleControl
@@ -1968,9 +2026,12 @@
 
   function updateFilteredCountsLabelOnly() {
     if (!btnExportFiltered) return;
-    const n = filteredRows.length || 0;
+
+    const n = globalFilteredCount || 0;
+
     btnExportFiltered.disabled = n === 0;
-    btnExportFiltered.textContent = T('exportFiltered', { n }, `Export filtered (${n})`);
+    btnExportFiltered.textContent =
+      T('exportFiltered', { n }, `Export filtered (${n})`);
   }
 
   function updateFiltered() {
@@ -2002,6 +2063,7 @@
 
     updateFilteredCountsLabelOnly();
     updateSelectionCount();
+    scheduleGlobalFilteredCountRefresh();
   }
 
   btnApplyFilter?.addEventListener('click', () => {
@@ -2118,6 +2180,7 @@
 
       updateFiltered();
       refreshI18NTexts();
+      scheduleGlobalFilteredCountRefresh();
 
       if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
         setTimeout(() => {
