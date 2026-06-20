@@ -1788,34 +1788,29 @@
       selectionButtonEl.addEventListener('click', () => {
         if (!selectionRows.length) return;
 
-        // Compute bounding box of selected points
-        // We take min/max of lon and lat from selectionRows
-        let minLon = Infinity, minLat = Infinity;
-        let maxLon = -Infinity, maxLat = -Infinity;
-        selectionRows.forEach(r => {
-          const lon = parseFloat(r.lon ?? r.GPS_long ?? r.longitude ?? r.lng);
-          const lat = parseFloat(r.lat ?? r.GPS_lat ?? r.latitude ?? r.lat);
-          if (!isNaN(lon) && !isNaN(lat)) {
-            minLon = Math.min(minLon, lon);
-            minLat = Math.min(minLat, lat);
-            maxLon = Math.max(maxLon, lon);
-            maxLat = Math.max(maxLat, lat);
-          }
-        });
+        const ids = selectionRows
+          .map(r => (
+            r.sample_id ||
+            r.sampleId ||
+            r.QR_qrCode ||
+            r.qr_code ||
+            r.qr ||
+            r.Sample ||
+            ''
+          ))
+          .map(x => String(x).trim())
+          .filter(Boolean);
 
-        if (!isFinite(minLon)) return;
+        if (!ids.length) {
+          alert(T('noSamplesSelected', {}, 'No selected samples to export.'));
+          return;
+        }
 
-        const bbox = [
-          minLon, minLat,
-          maxLon, maxLat
-        ].join(',');
+        const params = new URLSearchParams();
+        params.set('format', 'zip');
+        params.set('sample_ids', ids.join(','));
 
-        // Construct URL to the search ZIP endpoint
-        // It will include samples, sample_images, sample_parameters
-        const url = `/search?format=zip&bbox=${encodeURIComponent(bbox)}`;
-
-        // Trigger the download in the browser
-        window.location = url;
+        window.location = `/search?${params.toString()}`;
 
       });
 
