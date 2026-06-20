@@ -30,6 +30,7 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+import logging
 
 import firebase_admin
 import pandas as pd
@@ -50,7 +51,14 @@ except Exception:
 # ---------------------------------------------------------------------------
 env_path = Path.cwd() / ".env"
 load_dotenv(dotenv_path=env_path)
-print(f"[INFO] Loaded environment from {env_path}")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").strip().upper()
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    format="%(levelname)s: %(message)s",
+)
+log = logging.getLogger("pull_and_enrich")
+
+log.info("Loaded environment from %s", env_path)
 
 # ---------------------------------------------------------------------------
 # Make sure 'echorepo' can be imported (project root on sys.path)
@@ -61,14 +69,13 @@ DEFAULT_ROOT = THIS_DIR.parent  # .../echorepo-lite-dev
 PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", str(DEFAULT_ROOT)))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-print(f"[INFO] Using PROJECT_ROOT={PROJECT_ROOT}")
-
+log.info("Using PROJECT_ROOT=%s", PROJECT_ROOT)
 
 # helper: QR to country code
 try:
     from echorepo.services.planned import load_qr_to_planned
 
-    print("[INFO] imported load_qr_to_planned from echorepo.services.planned")
+    log.debug("Imported load_qr_to_planned from echorepo.services.planned")
 except Exception:
     load_qr_to_planned = None  # we'll guard later
 
@@ -152,10 +159,6 @@ MINIO_BUCKET = os.getenv("MINIO_BUCKET", "echorepo-uploads")
 PUBLIC_STORAGE_BASE = os.getenv("PUBLIC_STORAGE_BASE", "/storage")
 MIRROR_VERBOSE = os.getenv("MIRROR_VERBOSE", "0") == "1"
 
-# image compression/orientation config
-MAX_IMAGE_BYTES = int(os.getenv("MAX_IMAGE_BYTES", str(3 * 1024 * 1024)))  # 3 MB
-MIRROR_OVERWRITE_EXISTING = os.getenv("MIRROR_OVERWRITE_EXISTING", "0") == "1"
-
 # Max image size (after compression) and persistent progress log
 MAX_IMAGE_BYTES = int(os.getenv("MAX_IMAGE_BYTES", str(3 * 1024 * 1024)))  # 3 MB
 MIRROR_OVERWRITE_EXISTING = os.getenv("MIRROR_OVERWRITE_EXISTING", "0") == "1"
@@ -169,7 +172,7 @@ MIRROR_PROGRESS_FILE = os.getenv(
 DEFAULT_LICENCE = os.getenv("DEFAULT_LICENCE", "CC-BY-4.0")
 DEFAULT_LAB_ID = os.getenv("DEFAULT_LAB_ID", "ECHO-LAB-1")
 
-FILTER_WRONG_COORDINATES = env_bool("FILTER_WRONG_COORDINATES", True)
+FILTER_WRONG_COORDINATES = env_bool("FILTER_WRONG_COORDINATES", False)
 
 # Reverse decoder for country code (offline fallback)
 ALLOW_SINGLE_PLANNED_COUNTRY_FALLBACK = env_bool("ALLOW_SINGLE_PLANNED_COUNTRY_FALLBACK", True)
@@ -187,6 +190,10 @@ COORDINATE_APPROVED_CSV = Path(
         os.getenv("COORDINATE_APPROVED_CSV", "data/coordinate_check_approved.csv")
     )
 )
+
+WRITE_COUNTRY_RESOLUTION_DIAG = env_bool("WRITE_COUNTRY_RESOLUTION_DIAG", False)
+WRITE_ORPHAN_PARAMETERS_DIAG = env_bool("WRITE_ORPHAN_PARAMETERS_DIAG", False)
+VERBOSE_CSV_WRITES = env_bool("VERBOSE_CSV_WRITES", False)
 
 def load_approved_coordinate_samples() -> dict[str, dict[str, str]]:
     path = COORDINATE_APPROVED_CSV
@@ -431,9 +438,10 @@ def init_firebase():
         os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
     )
     if not creds_path or not os.path.exists(creds_path):
-        print(f"[ERROR] Service account JSON not found: {creds_path}")
+        log.error("Service account JSON not found: %s", creds_path)
         sys.exit(1)
-    print(f"[INFO] Initializing Firebase with creds: {creds_path}")
+    log.info("Initializing Firebase")
+    log.debug("Firebase credentials path: %s", creds_path)
     cred = credentials.Certificate(creds_path)
     firebase_admin.initialize_app(cred, {"projectId": PROJECT_ID} if PROJECT_ID else None)
 
@@ -474,7 +482,7 @@ def init_minio():
     except Exception as e:
         print(f"[WARN] Could not ensure MinIO bucket: {e}")
         return None
-    print(f"[INFO] MinIO ready at {MINIO_ENDPOINT}, bucket={MINIO_BUCKET}")
+    log.info("MinIO ready, bucket=%s", MINIO_BUCKET)
     return client
 
 
@@ -582,8 +590,8 @@ def load_country_shapes_from_shp(shp_path=None):
     if not shp_path.is_absolute():
         shp_path = PROJECT_ROOT / shp_path
 
-    print(f"[geo] loading country shapefile: {shp_path}")
-
+    log.debug("Loading country shapefile: %s", shp_path)
+    
     r = shapefile.Reader(str(shp_path))
     field_names = [f[0] for f in r.fields[1:]]
 
@@ -627,13 +635,12 @@ def load_country_shapes_from_shp(shp_path=None):
 
     _COUNTRY_SHAPES = shapes
 
-    print(f"[geo] loaded {len(_COUNTRY_SHAPES)} country polygons")
+    log.info("Loaded %d country polygons", len(_COUNTRY_SHAPES))
     if missing_iso:
-        print(f"[geo] polygons without ISO2 after fallback: {len(missing_iso)}")
-        print("[geo] first missing ISO examples:")
+        log.debug("Country polygons without ISO2 after fallback: %s", len(missing_iso))
         for x in missing_iso[:10]:
-            print(f"  {x}")
-
+            log.debug("Missing ISO example: %s", x)
+    
     return shapes
 
 
@@ -1392,7 +1399,7 @@ def fetch_uid_to_email(max_retries: int = 5) -> dict:
                     mapping[user.uid] = str(user.email or "").strip()
                 page = page.get_next_page()
 
-            print(f"[INFO] Retrieved {len(mapping)} users from Firebase Auth.")
+            log.info("Retrieved %s Firebase Auth users", len(mapping))
             return mapping
 
         except Exception as e:
@@ -1804,12 +1811,18 @@ def build_samples_df(
             }
         )
 
-    if debug_missing:
+    if debug_missing and WRITE_COUNTRY_RESOLUTION_DIAG:
         diag_path = PROJECT_ROOT / "data" / "canonical" / "country_resolution_diag.csv"
         os.makedirs(diag_path.parent, exist_ok=True)
         pd.DataFrame(debug_missing).to_csv(diag_path, index=False)
-        print(f"[DIAG] wrote {len(debug_missing)} country-resolution diagnostics to {diag_path}")    
-    
+        log.info(
+            "Wrote %s country-resolution diagnostic rows to %s",
+            len(debug_missing),
+            diag_path,
+        )
+    elif debug_missing:
+        log.debug("Country-resolution diagnostic rows not written: %s", len(debug_missing))    
+
     return pd.DataFrame(rows)
 
 
@@ -2098,16 +2111,22 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
 # ---------------------------------------------------------------------------
 # CSV writer
 # ---------------------------------------------------------------------------
-def write_csv_atomic(df: pd.DataFrame, path: str):
+def write_csv_atomic(df: pd.DataFrame, path: str, *, verbose: bool | None = None):
     os.makedirs(os.path.dirname(path), exist_ok=True)
+
     with tempfile.NamedTemporaryFile(
         "w", delete=False, dir=os.path.dirname(path), suffix=".csv"
     ) as tmp:
         df.to_csv(tmp.name, index=False)
         tmp_path = tmp.name
-    os.replace(tmp_path, path)
-    print(f"[OK] Wrote {path} (rows: {len(df)})")
 
+    os.replace(tmp_path, path)
+
+    if verbose is None:
+        verbose = VERBOSE_CSV_WRITES
+
+    if verbose:
+        log.info("Wrote %s rows to %s", len(df), path)
 
 # ---------------------------------------------------------------------------
 # MinIO: upload canonical files
@@ -2590,9 +2609,9 @@ def main():
     if load_qr_to_planned is not None:
         try:
             planned_map = load_qr_to_planned(PLANNED_XLSX)
-            print(f"[INFO] loaded planned QR countries: {len(planned_map)} entries")
+            log.info("Loaded planned QR -> country map: %d entries", len(planned_map))
         except Exception as e:
-            print(f"[WARN] could not load planned QR countries: {e}")
+            log.warning("Could not load planned QR countries: %s", e)
 
     # 3) users.csv
     df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
@@ -2721,8 +2740,13 @@ def main():
 
         # 1a) log orphaned parameters
         orphan_params = params_df[~params_df["sample_id"].isin(valid_sample_ids)]
-        orphan_params.to_csv("data/canonical/orphan_sample_parameters.csv", index=False)
 
+        if WRITE_ORPHAN_PARAMETERS_DIAG and not orphan_params.empty:
+            orphan_path = PROJECT_ROOT / "data" / "canonical" / "orphan_sample_parameters.csv"
+            os.makedirs(orphan_path.parent, exist_ok=True)
+            orphan_params.to_csv(orphan_path, index=False)
+            log.info("Wrote %s orphan parameter rows to %s", len(orphan_params), orphan_path)
+            
         # 2) drop parameter rows that point to a non-existing sample
         if not params_df.empty:
             before = len(params_df)
