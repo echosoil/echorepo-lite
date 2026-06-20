@@ -193,7 +193,7 @@ def load_approved_coordinate_samples() -> set[str]:
             approved.add(value.upper())
 
     return approved
-    
+
 def reverse_geocoder_country_code(lat, lon):
     """
     Offline nearest-place fallback country lookup.
@@ -2541,41 +2541,38 @@ def main():
     df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
     write_csv_atomic(df_users, USERS_CSV)
 
-# 3b) coordinate validation/filtering
-df_filtered, df_annotated = annotate_and_filter_wrong_coordinates(
-    df_enriched,
-    planned_map=planned_map,
-    qr_col="QR_qrCode",
-    lat_col="GPS_lat",
-    lon_col="GPS_long",
-)
+    # 3b) coordinate validation/filtering
+    df_filtered, df_annotated = annotate_and_filter_wrong_coordinates(
+        df_enriched,
+        planned_map=planned_map,
+        qr_col="QR_qrCode",
+        lat_col="GPS_lat",
+        lon_col="GPS_long",
+    )
 
-coord_diag_path = str(PROJECT_ROOT / "data" / "coordinate_check_annotated.csv")
-coord_bad_path = str(PROJECT_ROOT / "data" / "coordinate_check_wrong.csv")
+    coord_diag_path = str(PROJECT_ROOT / "data" / "coordinate_check_annotated.csv")
+    coord_bad_path = str(PROJECT_ROOT / "data" / "coordinate_check_wrong.csv")
 
-# Load manually approved coordinate issues.
-# These are samples that the algorithm marked as wrong, but a human reviewer accepted as OK.
-approved_ids = load_approved_coordinate_samples()
+    # Load manually approved coordinate issues.
+    # These are samples that the algorithm marked as wrong, but a human reviewer accepted as OK.
+    approved_ids = load_approved_coordinate_samples()
 
-
-def _issue_sample_id_for_row(row):
-    """
-    Return the stable ID used in coordinate_check_approved.csv.
-    Prefer QR_qrCode because this is what the coordinate issue UI displays.
-    """
-    for col in ("QR_qrCode", "sample_id", "sampleId"):
-        if col in row and str(row.get(col) or "").strip():
-            value = str(row.get(col) or "").strip()
-            try:
-                return norm_qr_for_id(value).upper()
-            except Exception:
-                return value.upper()
-    return ""
-
+    def _issue_sample_id_for_row(row):
+        """
+        Return the stable ID used in coordinate_check_approved.csv.
+        Prefer QR_qrCode because this is what the coordinate issue UI displays.
+        """
+        for col in ("QR_qrCode", "sample_id", "sampleId"):
+            if col in row and str(row.get(col) or "").strip():
+                value = str(row.get(col) or "").strip()
+                try:
+                    return norm_qr_for_id(value).upper()
+                except Exception:
+                    return value.upper()
+        return ""
 
     def _boolish(value) -> bool:
         return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
-
 
     if not df_annotated.empty:
         # Mark rows that have been manually approved as OK.
@@ -2586,10 +2583,7 @@ def _issue_sample_id_for_row(row):
 
         # Effective wrongness = algorithm says wrong AND human has not approved it.
         df_annotated["wrong_coordinates_effective"] = df_annotated.apply(
-            lambda row: _boolish(row.get("wrong_coordinates"))
-            and not _boolish(row.get("coordinate_issue_approved")),
-            axis=1,
-        )
+            lambda row: _boolish(row.get("wrong_coordinates")) and not _boolish(row.get("coordinate_issue_approved")), axis=1,)
     else:
         df_annotated["coordinate_issue_approved"] = []
         df_annotated["wrong_coordinates_effective"] = []
@@ -2614,7 +2608,7 @@ def _issue_sample_id_for_row(row):
     else:
         print("[coords] FILTER_WRONG_COORDINATES=0 -> keeping all rows, only flagging them")
         df_enriched = df_annotated
-        
+
     # This is the ONLY write of OUTPUT_CSV.
     write_csv_atomic(df_enriched, OUTPUT_CSV)
 
