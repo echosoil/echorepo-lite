@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-31 13:02+0000\n"
+"POT-Creation-Date: 2026-06-20 23:17+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -16,310 +16,459 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: /work/echorepo/routes/web.py:354
+#: /work/echorepo/routes/web.py:365
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Privacyradius (~±{km} km)"
 
-#: /work/echorepo/routes/web.py:355
+#: /work/echorepo/routes/web.py:366
 msgid "Soil pH"
 msgstr "Bodem pH"
 
-#: /work/echorepo/routes/web.py:356
+#: /work/echorepo/routes/web.py:367
 msgid "Acidic (≤5.5)"
 msgstr "Zuur (≤5,5)"
 
-#: /work/echorepo/routes/web.py:357
+#: /work/echorepo/routes/web.py:368
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Een beetje zuur (-5,5)"
 
-#: /work/echorepo/routes/web.py:358
+#: /work/echorepo/routes/web.py:369
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutraal"
 
-#: /work/echorepo/routes/web.py:359
+#: /work/echorepo/routes/web.py:370
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Een beetje alkalisch (7.5"
 
-#: /work/echorepo/routes/web.py:360
+#: /work/echorepo/routes/web.py:371
 msgid "Alkaline (≥8.5)"
 msgstr "Alkaline (≥ 8,5)"
 
-#: /work/echorepo/routes/web.py:361
+#: /work/echorepo/routes/web.py:372
 msgid "Your samples"
 msgstr "Uw monsters"
 
-#: /work/echorepo/routes/web.py:362
+#: /work/echorepo/routes/web.py:373
 msgid "Other samples"
 msgstr "Andere monsters"
 
-#: /work/echorepo/routes/web.py:363
+#: /work/echorepo/routes/web.py:374
 msgid "Export"
 msgstr "Uitvoer"
 
-#: /work/echorepo/routes/web.py:364
+#: /work/echorepo/routes/web.py:375
 msgid "Clear"
 msgstr "Wissen"
 
-#: /work/echorepo/routes/web.py:365
+#: /work/echorepo/routes/web.py:376
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Gefilterd exporteren ({n})"
 
-#: /work/echorepo/routes/web.py:366 /work/echorepo/templates/explore.html:68
+#: /work/echorepo/routes/web.py:377 /work/echorepo/templates/explore.html:55
+#: /work/static/js/map.js:1023
 msgid "Date"
 msgstr "Datum"
 
-#: /work/echorepo/routes/web.py:367
+#: /work/echorepo/routes/web.py:378 /work/static/js/map.js:1024
 msgid "QR code"
 msgstr "QR-code"
 
-#: /work/echorepo/routes/web.py:368 /work/echorepo/templates/explore.html:42
-#: /work/echorepo/templates/results.html:309
-#: /work/echorepo/templates/search.html:90
+#: /work/echorepo/routes/web.py:379 /work/echorepo/templates/explore.html:37
+#: /work/echorepo/templates/results.html:361
+#: /work/echorepo/templates/search.html:78 /work/static/js/map.js:1025
 msgid "pH"
 msgstr "p H"
 
-#: /work/echorepo/routes/web.py:369
+#: /work/echorepo/routes/web.py:380
 msgid "Colour"
 msgstr "Kleur"
 
-#: /work/echorepo/routes/web.py:370
+#: /work/echorepo/routes/web.py:381 /work/static/js/map.js:1026
 msgid "Soil organic matter"
 msgstr "Bodemorganisch materiaal"
 
-#: /work/echorepo/routes/web.py:371
+#: /work/echorepo/routes/web.py:382 /work/static/js/map.js:1027
 msgid "Texture"
 msgstr "Textuur"
 
-#: /work/echorepo/routes/web.py:372
+#: /work/echorepo/routes/web.py:383 /work/static/js/map.js:1028
 msgid "Structure"
 msgstr "Structuur"
 
-#: /work/echorepo/routes/web.py:373
+#: /work/echorepo/routes/web.py:384 /work/static/js/map.js:1029
 msgid "Earthworms"
 msgstr "Aardwormen"
 
-#: /work/echorepo/routes/web.py:374
+#: /work/echorepo/routes/web.py:385 /work/static/js/map.js:1030
 msgid "Plastic"
 msgstr "Kunststof"
 
-#: /work/echorepo/routes/web.py:375
+#: /work/echorepo/routes/web.py:386 /work/static/js/map.js:1031
 msgid "Debris"
 msgstr "Afval"
 
-#: /work/echorepo/routes/web.py:376
+#: /work/echorepo/routes/web.py:387 /work/static/js/map.js:1032
 msgid "Contamination"
 msgstr "Besmetting"
 
-#: /work/echorepo/routes/web.py:377
+#: /work/echorepo/routes/web.py:388
 msgid "Metals"
 msgstr "Metaal"
 
-#: /work/echorepo/routes/web.py:378
+#: /work/echorepo/routes/web.py:389 /work/static/js/map.js:1034
 msgid "Elemental concentrations"
 msgstr "Elementaire concentraties"
 
-#: /work/echorepo/routes/web.py:379
-msgid "Draw a rectangle"
-msgstr "Teken een rechthoek"
+#: /work/echorepo/routes/web.py:390
+msgid "Draw a selection rectangle"
+msgstr "Teken een selectie rechthoek"
 
-#: /work/echorepo/routes/web.py:380
+#: /work/echorepo/routes/web.py:391 /work/static/js/map.js:1779
 msgid "Cancel drawing"
 msgstr "Tekening annuleren"
 
-#: /work/echorepo/routes/web.py:381
+#: /work/echorepo/routes/web.py:392 /work/static/js/map.js:1780
 msgid "Cancel"
 msgstr "Annuleren"
 
-#: /work/echorepo/routes/web.py:382
+#: /work/echorepo/routes/web.py:393 /work/static/js/map.js:1784
 msgid "Delete last point"
 msgstr "Laatste paragraaf schrappen"
 
-#: /work/echorepo/routes/web.py:383
-msgid "Click and drag to draw a rectangle."
-msgstr "Klik en sleep om een rechthoek te tekenen."
+#: /work/echorepo/routes/web.py:394
+msgid "Click and drag to draw a selection rectangle."
+msgstr "Klik en sleep om een selectie rechthoek te tekenen."
 
-#: /work/echorepo/routes/web.py:384
-msgid "Release mouse to finish drawing."
-msgstr "Laat de muis vrij om de tekening af te maken."
+#: /work/echorepo/routes/web.py:395 /work/static/js/map.js:1797
+msgid "Release mouse to add this rectangle to the selection."
+msgstr "Laat de muis vrij om deze rechthoek aan de selectie toe te voegen."
 
-#: /work/echorepo/services/firebase.py:51
+#: /work/echorepo/routes/web.py:396
+msgid "Selection export to a file"
+msgstr "Selectie exporteren naar een bestand"
+
+#: /work/echorepo/routes/web.py:397
+msgid "Use the selection tool"
+msgstr "Het selectiegereedschap gebruiken"
+
+#: /work/echorepo/routes/web.py:398
+msgid "to draw one or more selection areas."
+msgstr "om één of meer selectiegebieden te tekenen."
+
+#: /work/echorepo/routes/web.py:399
+msgid "Export selection"
+msgstr "Selectie exporteren"
+
+#: /work/echorepo/routes/web.py:400
+msgid "Export selected samples"
+msgstr "Geselecteerde monsters exporteren"
+
+#: /work/echorepo/routes/web.py:401
+msgid "Clear selection"
+msgstr "Selectie wissen"
+
+#: /work/echorepo/routes/web.py:402
+msgid "Clear all selection rectangles"
+msgstr "Alle selectie rechthoeken wissen"
+
+#: /work/echorepo/routes/web.py:403 /work/static/js/map.js:1772
+msgid "Draw selection rectangle"
+msgstr "Selectie rechthoek tekenen"
+
+#: /work/echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
 msgstr "Wachtwoordherstel is niet geconfigureerd voor deze site."
 
-#: /work/echorepo/services/firebase.py:60
+#: /work/echorepo/services/firebase.py:64
 msgid "Could not contact the password recovery service."
 msgstr "Kon geen contact opnemen met de wachtwoordherstelservice."
 
-#: /work/echorepo/services/firebase.py:65
+#: /work/echorepo/services/firebase.py:69
 msgid "If this address is registered, a reset link has been sent."
 msgstr "Als dit adres is geregistreerd, is er een resetlink verzonden."
 
-#: /work/echorepo/services/firebase.py:65
+#: /work/echorepo/services/firebase.py:70
 msgid "New password may take up to 30 minutes to activate in ECHOREPO."
 msgstr "Nieuw wachtwoord kan tot 30 minuten duren om te activeren in ECHOREPO."
 
-#: /work/echorepo/services/firebase.py:68
+#: /work/echorepo/services/firebase.py:74
 msgid "Password recovery is temporarily unavailable. Please contact the organisers."
 msgstr ""
 "Wachtwoordherstel is tijdelijk niet beschikbaar. Neem contact op met de "
 "organisatoren."
 
-#: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
+#: /work/echorepo/templates/base.html:7 /work/echorepo/templates/base.html:11
 msgid "ECHOrepo — EU Soil Data"
 msgstr "ECHOrepo EU Bodemgegevens"
 
-#: /work/echorepo/templates/base.html:9
+#: /work/echorepo/templates/base.html:10
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr "ECHOrepo "
 
-#: /work/echorepo/templates/base.html:12
+#: /work/echorepo/templates/base.html:14
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr ""
 "Toegang tot en download uw bodemmonsters. Deel van het door de EU "
 "gefinancierde ECHO-project."
 
-#: /work/echorepo/templates/base.html:79
+#: /work/echorepo/templates/base.html:179
 msgid "Skip to content"
 msgstr "Ga naar de inhoud"
 
-#: /work/echorepo/templates/base.html:85
+#: /work/echorepo/templates/base.html:185
 msgid "Primary"
 msgstr "Primair"
 
-#: /work/echorepo/templates/base.html:88
+#: /work/echorepo/templates/base.html:188
 msgid "ECHOrepo logo"
 msgstr "ECHOrepo logo"
 
-#: /work/echorepo/templates/base.html:93
+#: /work/echorepo/templates/base.html:194
 msgid "Toggle navigation"
 msgstr "Navigatie aan/uit"
 
-#: /work/echorepo/templates/base.html:99
+#: /work/echorepo/templates/base.html:201
 msgid "About"
 msgstr "Info"
 
-#: /work/echorepo/templates/base.html:100
+#: /work/echorepo/templates/base.html:203
 msgid "For Participants"
 msgstr "Voor deelnemers"
 
-#: /work/echorepo/templates/base.html:101
+#: /work/echorepo/templates/base.html:205
 msgid "Partners"
 msgstr "Partners"
 
-#: /work/echorepo/templates/base.html:102
+#: /work/echorepo/templates/base.html:207
 msgid "News & Events"
 msgstr "Nieuws & evenementen"
 
-#: /work/echorepo/templates/base.html:104
+#: /work/echorepo/templates/base.html:210
 msgid "Resources"
 msgstr "Middelen"
 
-#: /work/echorepo/templates/base.html:106
+#: /work/echorepo/templates/base.html:213
 msgid "Media Kit"
 msgstr "Mediakit"
 
-#: /work/echorepo/templates/base.html:107
+#: /work/echorepo/templates/base.html:215
 msgid "Publications"
 msgstr "Publicaties"
 
-#: /work/echorepo/templates/base.html:108
+#: /work/echorepo/templates/base.html:217
 msgid "Newsletter Archive"
 msgstr "Nieuwsbriefarchief"
 
-#: /work/echorepo/templates/base.html:120
+#: /work/echorepo/templates/base.html:218
+msgid "Zenodo Publications"
+msgstr "Zenodo Publicaties"
+
+#: /work/echorepo/templates/base.html:233
 msgid "Change language"
 msgstr "Taal wijzigen"
 
-#: /work/echorepo/templates/base.html:140
+#: /work/echorepo/templates/base.html:253
 msgid "Logged in as"
 msgstr "Aangemeld als"
 
-#: /work/echorepo/templates/base.html:147
+#: /work/echorepo/templates/base.html:259
 msgid "Logout"
 msgstr "Afmelden"
 
-#: /work/echorepo/templates/base.html:152
+#: /work/echorepo/templates/base.html:263
 msgid "Sign in"
 msgstr "Aanmelden"
 
-#: /work/echorepo/templates/base.html:170
+#: /work/echorepo/templates/base.html:281
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo maakt deel uit van de door de EU en de UKRI gefinancierde"
 
-#: /work/echorepo/templates/base.html:170
+#: /work/echorepo/templates/base.html:281
 msgid "project"
 msgstr "project"
 
-#: /work/echorepo/templates/base.html:172
+#: /work/echorepo/templates/base.html:283
 msgid "Need help?"
 msgstr "Hulp nodig?"
 
-#: /work/echorepo/templates/base.html:181
+#: /work/echorepo/templates/base.html:291
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "Gefinancierd door UK Research and Innovation (UKRI)"
 
-#: /work/echorepo/templates/base.html:189
+#: /work/echorepo/templates/base.html:297
 msgid "Co-funded by the European Union"
 msgstr "Mede gefinancierd door de Europese Unie"
 
-#: /work/echorepo/templates/base.html:195
+#: /work/echorepo/templates/base.html:301
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr ""
 "Gefinancierd door de Europese Unie en het Verenigd Koninkrijk Onderzoek en "
 "innovatie"
 
+#: /work/echorepo/templates/coordinate_issues.html:2
+#: /work/echorepo/templates/coordinate_issues.html:6
+msgid "Coordinate issues"
+msgstr "Coördinatieproblemen"
+
+#: /work/echorepo/templates/coordinate_issues.html:11
+msgid "The coordinate issues file was not found:"
+msgstr "Het coördinaat problemenbestand is niet gevonden:"
+
+#: /work/echorepo/templates/coordinate_issues.html:19
+#: /work/echorepo/templates/coordinate_issues.html:119
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:75
+msgid "Sample / QR"
+msgstr "Monster / QR"
+
+#: /work/echorepo/templates/coordinate_issues.html:25
+#: /work/echorepo/templates/coordinate_issues.html:120
+msgid "User ID"
+msgstr "Gebruikers-ID"
+
+#: /work/echorepo/templates/coordinate_issues.html:30
+#: /work/echorepo/templates/coordinate_issues.html:125
+msgid "Issue type"
+msgstr "Onderwerp"
+
+#: /work/echorepo/templates/coordinate_issues.html:32
+msgid "Any issue"
+msgstr "Elke kwestie"
+
+#: /work/echorepo/templates/coordinate_issues.html:43
+#: /work/echorepo/templates/explore.html:31 /work/echorepo/templates/search.html:31
+msgid "Search"
+msgstr "Zoeken"
+
+#: /work/echorepo/templates/coordinate_issues.html:52
+#: /work/echorepo/templates/coordinate_issues.html:123
+msgid "Actual country"
+msgstr "Werkelijk land"
+
+#: /work/echorepo/templates/coordinate_issues.html:59
+#: /work/echorepo/templates/coordinate_issues.html:124
+msgid "Planned country"
+msgstr "Gepland land"
+
+#: /work/echorepo/templates/coordinate_issues.html:69
+msgid "Show approved"
+msgstr "Toon goedgekeurd"
+
+#: /work/echorepo/templates/coordinate_issues.html:83
+msgid "Export current results"
+msgstr "Huidige resultaten exporteren"
+
+#: /work/echorepo/templates/coordinate_issues.html:102
+msgid "coordinate issue(s)"
+msgstr "coördinaat probleem(s)"
+
+#: /work/echorepo/templates/coordinate_issues.html:105
+msgid "Source:"
+msgstr "Bron:"
+
+#: /work/echorepo/templates/coordinate_issues.html:115
+msgid "OK"
+msgstr "OK"
+
+#: /work/echorepo/templates/coordinate_issues.html:121
+#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
+#: /work/echorepo/templates/search.html:79
+msgid "Lat"
+msgstr "Lat"
+
+#: /work/echorepo/templates/coordinate_issues.html:122
+#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
+#: /work/echorepo/templates/search.html:80
+msgid "Lon"
+msgstr "Lon"
+
+#: /work/echorepo/templates/coordinate_issues.html:134
+msgid "Approved"
+msgstr "Goedgekeurd"
+
+#: /work/echorepo/templates/coordinate_issues.html:144
+#: /work/echorepo/templates/search.html:92
+msgid "Show only this sample on map"
+msgstr "Alleen dit voorbeeld op de kaart tonen"
+
+#: /work/echorepo/templates/coordinate_issues.html:175
+msgid "No coordinate issues for these filters."
+msgstr "Geen coördinatieproblemen voor deze filters."
+
+#: /work/echorepo/templates/coordinate_issues.html:187
+msgid "Approval comment"
+msgstr "Opmerkingen over de goedkeuring"
+
+#: /work/echorepo/templates/coordinate_issues.html:189
+msgid "Optional: e.g. border sample, algorithm false positive"
+msgstr "Facultatief: bv. grensmonster, vals-positief algoritme"
+
+#: /work/echorepo/templates/coordinate_issues.html:193
+msgid "Save selected as OK"
+msgstr "Geselecteerd opslaan als OK"
+
+#: /work/echorepo/templates/coordinate_issues.html:202
+#: /work/echorepo/templates/search.html:121
+msgid "Showing page"
+msgstr "Resultaat pagina"
+
+#: /work/echorepo/templates/coordinate_issues.html:202
+#: /work/echorepo/templates/search.html:121
+msgid "of"
+msgstr "van"
+
+#: /work/echorepo/templates/coordinate_issues.html:203
+#: /work/echorepo/templates/search.html:121
+msgid "results"
+msgstr "resultaten"
+
 #: /work/echorepo/templates/explore.html:2
 msgid "ECHOrepo — Explore"
 msgstr "ECHOrepo Verkennen"
 
-#: /work/echorepo/templates/explore.html:27
+#: /work/echorepo/templates/explore.html:22
 msgid "Explore the map"
 msgstr "Verken de kaart"
 
-#: /work/echorepo/templates/explore.html:30
+#: /work/echorepo/templates/explore.html:25
 msgid "Sign in to export data and access your personal samples."
 msgstr ""
 "Meld u aan om gegevens te exporteren en toegang te krijgen tot uw "
 "persoonlijke monsters."
 
-#: /work/echorepo/templates/explore.html:36 /work/echorepo/templates/search.html:44
-msgid "Search"
-msgstr "Zoeken"
-
-#: /work/echorepo/templates/explore.html:47
-#: /work/echorepo/templates/results.html:311
+#: /work/echorepo/templates/explore.html:40
+#: /work/echorepo/templates/results.html:363
 msgid "min"
 msgstr "min"
 
-#: /work/echorepo/templates/explore.html:55
-#: /work/echorepo/templates/results.html:314
+#: /work/echorepo/templates/explore.html:45
+#: /work/echorepo/templates/results.html:366
 msgid "max"
 msgstr "max"
 
-#: /work/echorepo/templates/explore.html:60 /work/echorepo/templates/search.html:15
-#: /work/echorepo/templates/search.html:89
+#: /work/echorepo/templates/explore.html:49 /work/echorepo/templates/search.html:15
+#: /work/echorepo/templates/search.html:77
 msgid "Country"
 msgstr "Land"
 
-#: /work/echorepo/templates/explore.html:65
+#: /work/echorepo/templates/explore.html:52
 msgid "All countries"
 msgstr "Alle landen"
 
-#: /work/echorepo/templates/explore.html:86
-#: /work/echorepo/templates/results.html:316
+#: /work/echorepo/templates/explore.html:65
+#: /work/echorepo/templates/results.html:368
 msgid "Apply"
 msgstr "Toepassen"
 
-#: /work/echorepo/templates/explore.html:95
-#: /work/echorepo/templates/results.html:319
+#: /work/echorepo/templates/explore.html:70
+#: /work/echorepo/templates/results.html:371
 msgid "Export filtered (0)"
 msgstr "Gefilterd exporteren (0)"
 
-#: /work/echorepo/templates/explore.html:103
+#: /work/echorepo/templates/explore.html:76
 msgid "Copy view link"
 msgstr "Verwijzing kopiëren"
 
@@ -360,16 +509,6 @@ msgstr "Gebruiker"
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
-#: /work/echorepo/templates/search.html:91
-msgid "Lat"
-msgstr "Lat"
-
-#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
-#: /work/echorepo/templates/search.html:92
-msgid "Lon"
-msgstr "Lon"
-
 #: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:77
 msgid "Fix"
 msgstr "Repareren"
@@ -399,15 +538,23 @@ msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr "Werkelijk land (van coords) staat niet in de geplande lijst voor deze QR."
 
 #: /work/echorepo/templates/lab_upload.html:3
-#: /work/echorepo/templates/results.html:147
+#: /work/echorepo/templates/results.html:190
 msgid "Upload lab data"
 msgstr "Labgegevens uploaden"
 
-#: /work/echorepo/templates/lab_upload.html:5
-msgid "Expected columns:"
-msgstr "Verwachte kolommen:"
+#: /work/echorepo/templates/lab_upload.html:6
+msgid ""
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with "
+"sheet"
+msgstr ""
+"Upload de resultaten van metalen (CSV/XLSX) of van biodiversiteit OTU tabel "
+"(XLSX met plaat"
 
-#: /work/echorepo/templates/lab_upload.html:12
+#: /work/echorepo/templates/lab_upload.html:8
+msgid "The server will detect the format automatically."
+msgstr "De server zal het formaat automatisch detecteren."
+
+#: /work/echorepo/templates/lab_upload.html:13
 msgid "Upload"
 msgstr "Uploaden"
 
@@ -464,16 +611,16 @@ msgid "Download all samples (CSV)"
 msgstr "Alle monsters downloaden (CSV)"
 
 #: /work/echorepo/templates/results.html:13
-#: /work/echorepo/templates/results.html:151 /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/results.html:194 /work/echorepo/templates/search.html:2
 #: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Zoekmonsters"
 
-#: /work/echorepo/templates/results.html:133
+#: /work/echorepo/templates/results.html:177
 msgid "Your data"
 msgstr "Uw gegevens"
 
-#: /work/echorepo/templates/results.html:134
+#: /work/echorepo/templates/results.html:178
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
@@ -481,106 +628,120 @@ msgstr ""
 "Verken uw bodemmonsterlocaties op de kaart en exporteer of blader door de "
 "tabel."
 
-#: /work/echorepo/templates/results.html:142
+#: /work/echorepo/templates/results.html:185
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Gegevensproblemen oplossen (%(n)s)"
 
-#: /work/echorepo/templates/results.html:159
-#: /work/echorepo/templates/results.html:217
+#: /work/echorepo/templates/results.html:202
+#: /work/echorepo/templates/results.html:263
 msgid "Final survey"
 msgstr "Eindonderzoek"
 
-#: /work/echorepo/templates/results.html:161
+#: /work/echorepo/templates/results.html:204
 msgid "We sincerely thank you for your commitment to this project!"
 msgstr "Wij danken u oprecht voor uw inzet voor dit project!"
 
-#: /work/echorepo/templates/results.html:164
+#: /work/echorepo/templates/results.html:207
 msgid ""
 "This is the third and final survey in the project, following the initial ones"
-" you completed before and after soil sampling. The majority of questions are "
-"consistent with the previous surveys so that we can accurately measure "
-"changes over time and understand the impact of project participation."
+" you completed before and after\n"
+"      soil sampling. The majority of questions are consistent with the "
+"previous surveys so that we can accurately\n"
+"      measure changes over time and understand the impact of project "
+"participation."
 msgstr ""
-"Dit is de derde en laatste enquête in het project, na de eerste die je voor "
-"en na bodembemonstering hebt afgerond. De meeste vragen komen overeen met de "
-"vorige enquêtes, zodat we veranderingen in de tijd nauwkeurig kunnen meten en"
-" de impact van projectparticipatie kunnen begrijpen."
+"Dit is de derde en laatste enquête in het project, na de eerste die u voor en"
+" na hebt afgerond.\n"
+"bodembemonstering. Het merendeel van de vragen is in overeenstemming met de "
+"vorige enquêtes, zodat we nauwkeurig kunnen\n"
+"veranderingen in de tijd te meten en de impact van projectparticipatie te "
+"begrijpen."
 
-#: /work/echorepo/templates/results.html:167
+#: /work/echorepo/templates/results.html:212
 msgid ""
 "Before you start: please only complete this survey if the lab results from "
-"your soil sample(s) have already been added to the repository. If the results"
-" are pending, please check back at a later time."
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check "
+"back at a later time."
 msgstr ""
-"Voordat u start: vul dit onderzoek alleen in als het lab resultaten van uw "
-"bodemmonster(s) al zijn toegevoegd aan de repository. Als de resultaten in "
-"behandeling zijn, kijk dan later terug."
+"Voordat u begint: vul dit onderzoek alleen in als het lab resultaten heeft "
+"van uw bodemmonsters\n"
+"is toegevoegd aan het archief. Als de resultaten in behandeling zijn, kijk "
+"dan op een later tijdstip terug."
 
-#: /work/echorepo/templates/results.html:172
+#: /work/echorepo/templates/results.html:218
 msgid "Go to final survey"
 msgstr "Ga naar de laatste enquête"
 
-#: /work/echorepo/templates/results.html:181
+#: /work/echorepo/templates/results.html:223
 msgid "Data use information"
 msgstr "Informatie over gegevensgebruik"
 
-#: /work/echorepo/templates/results.html:188
+#: /work/echorepo/templates/results.html:228
 msgid "I have already completed it"
 msgstr "Ik heb het al afgemaakt"
 
-#: /work/echorepo/templates/results.html:193
+#: /work/echorepo/templates/results.html:233
 msgid "Processing survey data in the ECHO project"
 msgstr "Verwerking van enquêtegegevens in het ECHO-project"
 
-#: /work/echorepo/templates/results.html:195
+#: /work/echorepo/templates/results.html:235
 msgid ""
 "The objective of this survey data is to examine the impact of project "
-"participation on participant attitudes and motivation towards soil."
+"participation on participant\n"
+"        attitudes and motivation towards soil."
 msgstr ""
-"Het doel van deze enquêtegegevens is de impact van projectparticipatie op de "
-"attitudes van deelnemers en motivatie ten opzichte van de bodem te "
-"onderzoeken."
+"Het doel van deze enquêtegegevens is de impact van projectparticipatie op "
+"deelnemers te onderzoeken.\n"
+"houding en motivatie tegenover de bodem."
 
-#: /work/echorepo/templates/results.html:198
+#: /work/echorepo/templates/results.html:239
 msgid ""
 "Your information will only be used for scientific purposes. We do not collect"
-" names or addresses. Your details regarding age and gender are only used for "
-"statistical purposes and all details are collected and evaluated anonymously."
-" It is not possible to draw conclusions about your person at any time."
+" names or addresses. Your\n"
+"        details regarding age and gender are only used for statistical "
+"purposes and all details are collected and\n"
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
 msgstr ""
 "Uw informatie wordt alleen gebruikt voor wetenschappelijke doeleinden. We "
-"verzamelen geen namen of adressen. Uw gegevens over leeftijd en geslacht "
-"worden alleen gebruikt voor statistische doeleinden en alle details worden "
-"anoniem verzameld en geëvalueerd. Het is op geen enkel moment mogelijk om "
-"conclusies over uw persoon te trekken."
+"verzamelen geen namen of adressen. Uw\n"
+"gegevens over leeftijd en geslacht worden alleen gebruikt voor statistische "
+"doeleinden en alle details worden verzameld en\n"
+"anoniem geëvalueerd. Het is op geen enkel moment mogelijk om conclusies over "
+"uw persoon te trekken."
 
-#: /work/echorepo/templates/results.html:201
+#: /work/echorepo/templates/results.html:244
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
-"crucial role in providing valuable insights that enhance the relevance and "
-"impact of the ECHO project. Your honest responses are essential for "
-"understanding how engagement with the project influences attitudes and "
-"motivations, ensuring the project’s outcomes are meaningful and well-"
-"informed."
+"crucial role in providing valuable\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
+"        outcomes are meaningful and well-informed."
 msgstr ""
 "Het beantwoorden van elke vraag in de enquête wordt het meest gewaardeerd "
-"omdat het een cruciale rol speelt bij het verschaffen van waardevolle "
+"omdat het speelt een cruciale rol in het verstrekken van waardevolle\n"
 "inzichten die de relevantie en impact van het ECHO-project vergroten. Uw "
-"eerlijke reacties zijn essentieel om te begrijpen hoe betrokkenheid met het "
-"project invloed heeft op attitudes en motivaties, zodat de resultaten van het"
-" project zinvol en goed geïnformeerd zijn."
+"eerlijke reacties zijn essentieel voor\n"
+"begrijpen hoe betrokkenheid bij het project invloed heeft op attitudes en "
+"motivaties, het project zeker stellen\n"
+"resultaten zijn zinvol en goed geïnformeerd."
 
-#: /work/echorepo/templates/results.html:204
+#: /work/echorepo/templates/results.html:250
 msgid ""
 "The survey will take approximately 8–10 minutes to complete. Please find a "
-"quiet space where you won’t be interrupted. There are no right or wrong "
-"answers — answer spontaneously."
+"quiet space where you won’t be\n"
+"        interrupted. There are no right or wrong answers — answer "
+"spontaneously."
 msgstr ""
-"Het onderzoek duurt ongeveer 80.000 minuten. Zoek een rustige ruimte waar u "
-"niet onderbroken wordt. Er zijn geen goede of foute antwoorden."
+"Het onderzoek duurt ongeveer 80.000 minuten. Zoek een rustige plek waar je "
+"niet zal zijn\n"
+"onderbroken. Er zijn geen goede of foute antwoorden."
 
-#: /work/echorepo/templates/results.html:207
+#: /work/echorepo/templates/results.html:254
 msgid ""
 "Based on the information provided to you, please consent to participate in "
 "the survey below."
@@ -588,205 +749,299 @@ msgstr ""
 "Op basis van de aan u verstrekte informatie, stemt u ermee in om deel te "
 "nemen aan onderstaande enquête."
 
-#: /work/echorepo/templates/results.html:218
+#: /work/echorepo/templates/results.html:264
 msgid "thank you for your participation!"
 msgstr "dank u voor uw deelname!"
 
-#: /work/echorepo/templates/results.html:224
+#: /work/echorepo/templates/results.html:268
 msgid "Show details"
 msgstr "Details tonen"
 
-#: /work/echorepo/templates/results.html:230
+#: /work/echorepo/templates/results.html:272
 msgid "Dismiss"
 msgstr "Ingetrokken"
 
-#: /work/echorepo/templates/results.html:240
+#: /work/echorepo/templates/results.html:282
 msgid "No data found for"
 msgstr "Geen gegevens gevonden voor"
 
-#: /work/echorepo/templates/results.html:240
-msgid "If you recently submitted samples, try again later."
-msgstr "Als je onlangs monsters hebt ingediend, probeer het dan later nog eens."
+#: /work/echorepo/templates/results.html:282
+msgid ""
+"If you recently submitted samples, try again\n"
+"    later."
+msgstr ""
+"Als u onlangs monsters hebt ingediend, probeer het dan opnieuw\n"
+"Later."
 
-#: /work/echorepo/templates/results.html:253
+#: /work/echorepo/templates/results.html:296
 msgid "Download"
 msgstr "Downloaden"
 
-#: /work/echorepo/templates/results.html:260
+#: /work/echorepo/templates/results.html:303
 msgid "CSV (per-user)"
 msgstr "CSV (per gebruiker)"
 
-#: /work/echorepo/templates/results.html:268
+#: /work/echorepo/templates/results.html:311
 msgid "XLSX (per-user)"
 msgstr "XLSX (per gebruiker)"
 
-#: /work/echorepo/templates/results.html:275
+#: /work/echorepo/templates/results.html:320
 msgid "All samples (CSV, anonymised)"
 msgstr "Alle monsters (CSV, geanonimiseerd)"
 
-#: /work/echorepo/templates/results.html:280
+#: /work/echorepo/templates/results.html:325
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (per gebruiker)"
 
-#: /work/echorepo/templates/results.html:284
+#: /work/echorepo/templates/results.html:331
 msgid "Canonical exports"
 msgstr "Canonische uitvoer"
 
-#: /work/echorepo/templates/results.html:287
+#: /work/echorepo/templates/results.html:334
 msgid "samples.csv"
 msgstr "samples.csv"
 
-#: /work/echorepo/templates/results.html:292
+#: /work/echorepo/templates/results.html:339
 msgid "sample_images.csv"
 msgstr "sample_images.csv"
 
-#: /work/echorepo/templates/results.html:297
+#: /work/echorepo/templates/results.html:344
 msgid "sample_parameters.csv"
 msgstr "sample_parameters.csv"
 
-#: /work/echorepo/templates/results.html:302
+#: /work/echorepo/templates/results.html:349
+msgid "sample_biodiversity.csv"
+msgstr "sample biodiversity.csv"
+
+#: /work/echorepo/templates/results.html:354
 msgid "All canonical (zip)"
 msgstr "Alle canoniek (zip)"
 
-#: /work/echorepo/templates/results.html:316
+#: /work/echorepo/templates/results.html:368
 msgid "Apply pH filter"
 msgstr "PH-filter toepassen"
 
-#: /work/echorepo/templates/results.html:318
+#: /work/echorepo/templates/results.html:370
 msgid "Export rows matching current pH filter"
 msgstr "Rijen exporteren die overeenkomen met het huidige pH-filter"
 
-#: /work/echorepo/templates/results.html:346
+#: /work/echorepo/templates/results.html:391
 msgid "Privacy information"
 msgstr "Privacy-informatie"
 
-#: /work/echorepo/templates/results.html:373
+#: /work/echorepo/templates/results.html:418
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
-"my personal data for this project."
+"my personal data for\n"
+"              this project."
 msgstr ""
-"Ik heb de privacy-informatie hierboven gelezen en ik stem in met de "
-"verwerking van mijn persoonsgegevens voor dit project."
+"Ik heb de privacy informatie hierboven gelezen en ik stem in met de "
+"verwerking van mijn persoonsgegevens voor\n"
+"Dit project."
 
-#: /work/echorepo/templates/results.html:380
+#: /work/echorepo/templates/results.html:426
 msgid "Accept and continue"
 msgstr "Accepteren en voortzetten"
 
-#: /work/echorepo/templates/results.html:691
+#: /work/echorepo/templates/results.html:739
 msgid "Show on map"
 msgstr "Op kaart tonen"
 
-#: /work/echorepo/templates/results.html:695
+#: /work/echorepo/templates/results.html:743
 msgid "Could not locate this sample on the map."
 msgstr "Kon dit monster niet vinden op de kaart."
 
-#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:87
-msgid "Sample / QR"
-msgstr "Monster / QR"
-
-#: /work/echorepo/templates/search.html:17
+#: /work/echorepo/templates/search.html:17 /work/static/js/map.js:168
 msgid "Any country"
 msgstr "Elk land"
 
-#: /work/echorepo/templates/search.html:18
-msgid "Czechia"
-msgstr "Tsjechië"
-
-#: /work/echorepo/templates/search.html:19
-msgid "Germany"
-msgstr "Duitsland"
-
-#: /work/echorepo/templates/search.html:20
-msgid "Spain"
-msgstr "Spanje"
-
-#: /work/echorepo/templates/search.html:21
-msgid "Finland"
-msgstr "Finland"
-
 #: /work/echorepo/templates/search.html:22
-msgid "France"
-msgstr "Frankrijk"
-
-#: /work/echorepo/templates/search.html:23
-msgid "United Kingdom"
-msgstr "Verenigd Koninkrijk"
-
-#: /work/echorepo/templates/search.html:24
-msgid "Greece"
-msgstr "Griekenland"
-
-#: /work/echorepo/templates/search.html:25
-msgid "Italy"
-msgstr "Italië"
-
-#: /work/echorepo/templates/search.html:26
-msgid "Netherlands"
-msgstr "Nederland"
-
-#: /work/echorepo/templates/search.html:27
-msgid "Poland"
-msgstr "Polen"
-
-#: /work/echorepo/templates/search.html:28
-msgid "Portugal"
-msgstr "Portugal"
-
-#: /work/echorepo/templates/search.html:29
-msgid "Romania"
-msgstr "Roemenië"
-
-#: /work/echorepo/templates/search.html:30
-msgid "Slovakia"
-msgstr "Slowakije"
-
-#: /work/echorepo/templates/search.html:35
 msgid "pH min"
 msgstr "p H min"
 
-#: /work/echorepo/templates/search.html:39
+#: /work/echorepo/templates/search.html:26
 msgid "pH max"
 msgstr "p H max"
 
-#: /work/echorepo/templates/search.html:51
+#: /work/echorepo/templates/search.html:38
 msgid "Date from"
 msgstr "Datum"
 
-#: /work/echorepo/templates/search.html:55
+#: /work/echorepo/templates/search.html:42
 msgid "Date to"
 msgstr "Datum tot"
 
-#: /work/echorepo/templates/search.html:70
+#: /work/echorepo/templates/search.html:55
 msgid "Export current search"
 msgstr "Huidige zoekopdracht exporteren"
 
-#: /work/echorepo/templates/search.html:74
+#: /work/echorepo/templates/search.html:59
 msgid "Sign in to export results as ZIP."
 msgstr "Meld je aan om resultaten als ZIP te exporteren."
 
-#: /work/echorepo/templates/search.html:88
+#: /work/echorepo/templates/search.html:76
 msgid "Timestamp"
 msgstr "Tijdstempel"
 
-#: /work/echorepo/templates/search.html:93
+#: /work/echorepo/templates/search.html:81
 msgid "Collected by"
 msgstr "Verzameld door"
 
-#: /work/echorepo/templates/search.html:112
+#: /work/echorepo/templates/search.html:109
 msgid "No results for these filters."
 msgstr "Geen resultaten voor deze filters."
 
-#: /work/echorepo/templates/search.html:124
-msgid "Showing page"
-msgstr "Resultaat pagina"
+#: /work/echorepo/templates/zenodo_publications.html:3
+msgid "ECHOrepo — Zenodo Publications"
+msgstr "Publikaties van de Europese Gemeenschappen"
 
-#: /work/echorepo/templates/search.html:124
-msgid "of"
-msgstr "van"
+#: /work/echorepo/templates/zenodo_publications.html:8
+msgid "Published datasets on Zenodo"
+msgstr "Gepubliceerde datasets op Zenodo"
 
-#: /work/echorepo/templates/search.html:124
-msgid "results"
-msgstr "resultaten"
+#: /work/echorepo/templates/zenodo_publications.html:10
+msgid ""
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
+msgstr ""
+"Deze pagina bevat ECHOrepo datasets gepubliceerd op Zenodo, met DOI links en "
+"voorgestelde referenties."
+
+#: /work/echorepo/templates/zenodo_publications.html:24
+#: /work/echorepo/templates/zenodo_publications.html:27
+msgid "Untitled dataset"
+msgstr "Naamloze dataset"
+
+#: /work/echorepo/templates/zenodo_publications.html:32
+msgid "Published at"
+msgstr "Gepubliceerd op:"
+
+#: /work/echorepo/templates/zenodo_publications.html:43
+msgid "Version DOI"
+msgstr "Versie DOI"
+
+#: /work/echorepo/templates/zenodo_publications.html:50
+msgid "Concept DOI"
+msgstr "Concept DOI"
+
+#: /work/echorepo/templates/zenodo_publications.html:63
+msgid "API path"
+msgstr "API-pad"
+
+#: /work/echorepo/templates/zenodo_publications.html:64
+msgid "Uploaded file"
+msgstr "Geüpload bestand"
+
+#: /work/echorepo/templates/zenodo_publications.html:65
+msgid "Deposition ID"
+msgstr "Depositie-ID"
+
+#: /work/echorepo/templates/zenodo_publications.html:66
+msgid "Concept record ID"
+msgstr "ID conceptrecord"
+
+#: /work/echorepo/templates/zenodo_publications.html:69
+msgid "Download source"
+msgstr "Download bron"
+
+#: /work/echorepo/templates/zenodo_publications.html:71
+msgid "source URL"
+msgstr "bron-URL"
+
+#: /work/echorepo/templates/zenodo_publications.html:76
+msgid "Filters"
+msgstr "Filters"
+
+#: /work/echorepo/templates/zenodo_publications.html:77
+msgid "Zenodo page"
+msgstr "Zenodo pagina"
+
+#: /work/echorepo/templates/zenodo_publications.html:79
+msgid "record page"
+msgstr "pagina opnemen"
+
+#: /work/echorepo/templates/zenodo_publications.html:88
+msgid "Suggested reference"
+msgstr "Voorgestelde referentie"
+
+#: /work/echorepo/templates/zenodo_publications.html:98
+msgid "No Zenodo publications have been logged yet."
+msgstr "Er zijn nog geen publicaties van Zenodo geregistreerd."
+
+#: /work/static/js/map.js:114
+msgid "Link copied to clipboard"
+msgstr "Koppeling naar klembord gekopieerd"
+
+#: /work/static/js/map.js:117
+msgid "Copy this link:"
+msgstr "Kopieer deze verwijzing:"
+
+#: /work/static/js/map.js:487 /work/static/js/map.js:2118
+#, python-brace-format
+msgid "Export filtered (${n})"
+msgstr "Gefilterd exporteren (${n})"
+
+#: /work/static/js/map.js:497 /work/static/js/map.js:1922
+msgid "Release mouse to finish drawing."
+msgstr "Laat de muis vrij om de tekening af te maken."
+
+#: /work/static/js/map.js:585
+msgid "Street map"
+msgstr "Straatkaart"
+
+#: /work/static/js/map.js:586
+msgid "Satellite"
+msgstr "Satelliet"
+
+#: /work/static/js/map.js:1403 /work/static/js/map.js:2311
+msgid "Loading map data..."
+msgstr "Kaartgegevens worden geladen..."
+
+#: /work/static/js/map.js:1407
+msgid "Please wait"
+msgstr "Even geduld"
+
+#: /work/static/js/map.js:1570
+msgid "Loading..."
+msgstr "Laden..."
+
+#: /work/static/js/map.js:1783
+msgid "Delete last point drawn"
+msgstr "Laatste getrokken paragraaf schrappen"
+
+#: /work/static/js/map.js:1791
+msgid "Click and drag to draw a selection rectangle. You can draw more than one."
+msgstr ""
+"Klik en sleep om een selectie rechthoek te tekenen. Je kunt er meerdere "
+"tekenen."
+
+#: /work/static/js/map.js:1876
+msgid "No selected samples to export."
+msgstr "Geen geselecteerde monsters te exporteren."
+
+#: /work/static/js/map.js:2162
+msgid "Please sign in to export data."
+msgstr "Meld u aan om gegevens te exporteren."
+
+#: /work/static/js/map.js:2221
+msgid "Loading samples..."
+msgstr "Laden van monsters..."
+
+#: /work/static/js/map.js:2222
+msgid "Fetching visible map area"
+msgstr "Zichtbaar kaartgebied ophalen"
+
+#: /work/static/js/map.js:2253
+msgid "Rendering markers..."
+msgstr "Markeerders renderen..."
+
+#: /work/static/js/map.js:2254
+msgid "Building clusters and popups"
+msgstr "Clusters en popups bouwen"
+
+#: /work/static/js/map.js:2312
+msgid "Preparing map"
+msgstr "Kaart voorbereiden"
 
 #~ msgid "Export filtered (%(n)s)"
 #~ msgstr "Gefilterd exporteren (%(n)s)"
@@ -817,4 +1072,46 @@ msgstr "resultaten"
 
 #~ msgid "Sign in to export data"
 #~ msgstr "Aanmelden om gegevens te exporteren"
+
+#~ msgid "Expected columns:"
+#~ msgstr "Verwachte kolommen:"
+
+#~ msgid "Czechia"
+#~ msgstr "Tsjechië"
+
+#~ msgid "Germany"
+#~ msgstr "Duitsland"
+
+#~ msgid "Spain"
+#~ msgstr "Spanje"
+
+#~ msgid "Finland"
+#~ msgstr "Finland"
+
+#~ msgid "France"
+#~ msgstr "Frankrijk"
+
+#~ msgid "United Kingdom"
+#~ msgstr "Verenigd Koninkrijk"
+
+#~ msgid "Greece"
+#~ msgstr "Griekenland"
+
+#~ msgid "Italy"
+#~ msgstr "Italië"
+
+#~ msgid "Netherlands"
+#~ msgstr "Nederland"
+
+#~ msgid "Poland"
+#~ msgstr "Polen"
+
+#~ msgid "Portugal"
+#~ msgstr "Portugal"
+
+#~ msgid "Romania"
+#~ msgstr "Roemenië"
+
+#~ msgid "Slovakia"
+#~ msgstr "Slowakije"
 
