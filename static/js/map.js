@@ -433,6 +433,28 @@
         font-weight: 400;
         color: #6c757d;
       }
+      
+      .echo-selection-tool-symbol {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        margin: 0 3px;
+        vertical-align: -2px;
+        border: 2px solid #111;
+        background: #111;
+        border-radius: 2px;
+      }
+
+      .leaflet-control-layers-expanded {
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 0.9rem;
+      }
+
+      .leaflet-control-layers-base label {
+        margin-bottom: 3px;
+      }
+        
       @keyframes echo-spin {
         to {
           transform: rotate(360deg);
@@ -558,7 +580,7 @@
     null,
     {
       position: 'topright',
-      collapsed: true
+      collapsed: false
     }
   ).addTo(map);
 
@@ -1793,10 +1815,12 @@
           </div>
 
           <div class="small text-muted mb-2" style="line-height:1.2;">
+            ${T('selectionExportHintBefore', {}, 'Use the selection tool')}
+            <span class="echo-selection-tool-symbol" aria-hidden="true"></span>
             ${T(
-        'selectionExportHint',
+        'selectionExportHintAfter',
         {},
-        'Use the rectangle tool to draw one or more selection areas. Samples inside all rectangles are combined.'
+        'to draw one or more selection areas.'
       )}
           </div>
 
