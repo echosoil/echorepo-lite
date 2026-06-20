@@ -1373,6 +1373,88 @@
     }, delay);
   }
 
+  let currentMapLoadAbort = null;
+  let currentMapLoadSeq = 0;
+  let bboxLoadTimer = null;
+  let dynamicMapReady = false;
+
+  function getCurrentBboxParam() {
+    const b = map.getBounds();
+
+    return [
+      b.getWest(),
+      b.getSouth(),
+      b.getEast(),
+      b.getNorth()
+    ].map(x => x.toFixed(6)).join(',');
+  }
+
+  function getMapDataUrl() {
+    const params = new URLSearchParams();
+
+    params.set('limit', '10000');
+
+    if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
+      params.set('sample_id', SINGLE_SAMPLE_ID);
+
+      // Only use this if you want to allow debug display of bad coords:
+      // params.set('include_wrong', '1');
+    } else {
+      params.set('bbox', getCurrentBboxParam());
+    }
+
+    if (activeCountry) {
+      params.set('country_code', activeCountry);
+    }
+
+    if (activeDateFrom) {
+      params.set('from', activeDateFrom);
+    }
+
+    if (activeDateTo) {
+      params.set('to', activeDateTo);
+    }
+
+    return `/api/v1/canonical/map.geojson?${params.toString()}`;
+  }
+
+  function clearMapDataLayers() {
+    try {
+      if (userCluster && map.hasLayer(userCluster)) map.removeLayer(userCluster);
+      if (othersCluster && map.hasLayer(othersCluster)) map.removeLayer(othersCluster);
+    } catch (_) { }
+
+    try {
+      userCluster?.clearLayers();
+      othersCluster?.clearLayers();
+    } catch (_) { }
+
+    for (const r of userRings) {
+      try {
+        if (map.hasLayer(r)) map.removeLayer(r);
+      } catch (_) { }
+    }
+
+    for (const r of otherRings) {
+      try {
+        if (map.hasLayer(r)) map.removeLayer(r);
+      } catch (_) { }
+    }
+
+    userRings.length = 0;
+    otherRings.length = 0;
+
+    if (window.__echomapIndex) {
+      window.__echomapIndex.clear();
+    }
+
+    userLayer = null;
+    othersLayer = null;
+
+    userCluster = L.markerClusterGroup(CLUSTER_OPTS);
+    othersCluster = L.markerClusterGroup(CLUSTER_OPTS);
+  }
+
   // ---- Build layers (rings + base invisible markers for selection) ----
   function buildLayers() {
     const invisibleIcon = L.divIcon({
@@ -1529,11 +1611,16 @@
     // Initial clusters (unfiltered = all)
     map.addLayer(userCluster);
     map.addLayer(othersCluster);
-    if (!PUBLIC_MODE) {
-      addTwoToggleControl();
+    if (!dynamicMapReady) {
+      if (!PUBLIC_MODE) {
+        addTwoToggleControl();
+      }
+
+      addSelectionControl();
+      addLegends();
+
+      dynamicMapReady = true;
     }
-    addSelectionControl();
-    addLegends();
 
   }
 
@@ -1940,73 +2027,57 @@
     }; phLegend.addTo(map);
   }
 
-  // ---- Boot ----
-  (function boot() {
-    const cfg = (window.ECHOREPO_CFG || {});
-    const PUBLIC_MODE = !!cfg.public_mode;
+  async function loadSamplesForCurrentView() {
+    const seq = ++currentMapLoadSeq;
 
-    const userUrl = cfg.geojson_user_url;   // optional (string) OR null to disable
-    const othersUrl = cfg.geojson_others_url; // optional (string)
+    if (currentMapLoadAbort) {
+      currentMapLoadAbort.abort();
+    }
 
-    // fetch JSON safely (never throws)
-    const safeJson = (url) =>
-      fetch(url, { credentials: 'same-origin' })
-        .then(r => r.ok ? r.json() : null)
-        .catch(() => null);
+    currentMapLoadAbort = new AbortController();
 
-    const i18nReq = safeJson('/i18n/labels?ts=' + Date.now());
-
-    // In public mode: do NOT request /api/user_geojson at all.
-    const userReq =
-      (!PUBLIC_MODE && userUrl !== null)
-        ? safeJson(userUrl || '/api/user_geojson')
-        : Promise.resolve(null);
-
-    // In public mode: load others from configured public endpoint if provided.
-    const othersReq =
-      (othersUrl)
-        ? safeJson(othersUrl)
-        : (PUBLIC_MODE ? Promise.resolve(null) : safeJson('/api/others_geojson'));
-
-    addMapLoaderControl();
     showMapLoader(
-      T('loadingMapData', {}, 'Loading map data...'),
-      T('preparingMap', {}, 'Preparing map')
-    );
-
-    updateMapLoader(
       T('loadingSamples', {}, 'Loading samples...'),
-      T('fetchingMapPoints', {}, 'Fetching map points')
+      T('fetchingMapPoints', {}, 'Fetching visible map area')
     );
 
-    Promise.all([i18nReq, userReq, othersReq]).then(([i18n, u, o]) => {
+    try {
+      const url = getMapDataUrl();
+
+      const r = await fetch(url, {
+        credentials: 'same-origin',
+        signal: currentMapLoadAbort.signal
+      });
+
+      if (!r.ok) {
+        throw new Error(`Map API failed: ${r.status}`);
+      }
+
+      const gj = await r.json();
+
+      // Ignore late responses from previous requests.
+      if (seq !== currentMapLoadSeq) return;
+
+      userGJ = {
+        type: "FeatureCollection",
+        features: [],
+      };
+
+      othersGJ = gj || {
+        type: "FeatureCollection",
+        features: [],
+      };
+
       updateMapLoader(
         T('renderingMarkers', {}, 'Rendering markers...'),
         T('buildingClusters', {}, 'Building clusters and popups')
-      );      // normalize i18n payload
-      const payload = (i18n && (i18n.labels || i18n.by_msgid))
-        ? i18n
-        : { labels: (i18n || {}), by_msgid: {} };
+      );
 
-      window.I18N = window.I18N || { labels: {}, by_msgid: {} };
-
-      if (payload.labels && Object.keys(payload.labels).length) {
-        Object.assign(window.I18N.labels, payload.labels);
-      }
-
-      if (payload.by_msgid && Object.keys(payload.by_msgid).length) {
-        Object.assign(window.I18N.by_msgid, payload.by_msgid);
-      }
-
-      // ALWAYS give valid GeoJSON
-      userGJ = u || { type: "FeatureCollection", features: [] };
-      othersGJ = o || { type: "FeatureCollection", features: [] };
+      clearMapDataLayers();
 
       computeAllHeaders();
-
-      initFiltersFromUrl();
-
       buildLayers();
+
       populateCountryFilter();
       syncFiltersToUI();
 
@@ -2015,18 +2086,75 @@
 
       if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
         setTimeout(() => {
-          const ok = window.__echomapShow && window.__echomapShow(SINGLE_SAMPLE_ID, { zoom: 15 });
-
-          if (!ok) {
-            console.warn('Single sample not found or hidden:', SINGLE_SAMPLE_ID);
-          }
-        }, 300);
+          window.__echomapShow?.(SINGLE_SAMPLE_ID, { zoom: 15 });
+        }, 200);
       }
-    }).catch(err => {
-      console.warn('Init failed:', err);
-    }).finally(() => {
-      hideMapLoader();
-    });
-  })();
 
-})();
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.warn('Could not load map samples:', err);
+      }
+    } finally {
+      if (seq === currentMapLoadSeq) {
+        hideMapLoader();
+      }
+    }
+  }
+
+  function scheduleBboxReload() {
+    if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) return;
+
+    clearTimeout(bboxLoadTimer);
+
+    bboxLoadTimer = setTimeout(() => {
+      loadSamplesForCurrentView();
+    }, 350);
+  }
+
+  // ---- Boot ----
+  (function boot() {
+    const safeJson = (url) =>
+      fetch(url, { credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
+
+    addMapLoaderControl();
+    showMapLoader(
+      T('loadingMapData', {}, 'Loading map data...'),
+      T('preparingMap', {}, 'Preparing map')
+    );
+
+    safeJson('/i18n/labels?ts=' + Date.now())
+      .then((i18n) => {
+        const payload = (i18n && (i18n.labels || i18n.by_msgid))
+          ? i18n
+          : { labels: (i18n || {}), by_msgid: {} };
+
+        window.I18N = window.I18N || { labels: {}, by_msgid: {} };
+
+        if (payload.labels && Object.keys(payload.labels).length) {
+          Object.assign(window.I18N.labels, payload.labels);
+        }
+
+        if (payload.by_msgid && Object.keys(payload.by_msgid).length) {
+          Object.assign(window.I18N.by_msgid, payload.by_msgid);
+        }
+
+        userGJ = { type: "FeatureCollection", features: [] };
+        othersGJ = { type: "FeatureCollection", features: [] };
+
+        initFiltersFromUrl();
+        syncFiltersToUI();
+
+        return loadSamplesForCurrentView();
+      })
+      .then(() => {
+        map.on('moveend zoomend', scheduleBboxReload);
+      })
+      .catch(err => {
+        console.warn('Init failed:', err);
+      })
+      .finally(() => {
+        hideMapLoader();
+      });
+  })();
