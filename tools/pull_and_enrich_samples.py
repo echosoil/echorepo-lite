@@ -162,9 +162,8 @@ COUNTRY_NEAREST_BLACKLIST = {
     if x.strip()
 }
 COORDINATE_APPROVED_CSV = Path(
-    os.getenv(
-        "COORDINATE_APPROVED_CSV",
-        str(PROJECT_ROOT / "data" / "coordinate_check_approved.csv"),
+    _local_path_to_abs(
+        os.getenv("COORDINATE_APPROVED_CSV", "data/coordinate_check_approved.csv")
     )
 )
 
