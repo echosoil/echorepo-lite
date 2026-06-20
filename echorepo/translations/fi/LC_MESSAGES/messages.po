@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-31 13:02+0000\n"
+"POT-Creation-Date: 2026-06-20 23:17+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fi\n"
@@ -16,308 +16,457 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: /work/echorepo/routes/web.py:354
+#: /work/echorepo/routes/web.py:365
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Yksityisyyden suojasäde (~±_{km}_ km)"
 
-#: /work/echorepo/routes/web.py:355
+#: /work/echorepo/routes/web.py:366
 msgid "Soil pH"
 msgstr "Maaperän pH"
 
-#: /work/echorepo/routes/web.py:356
+#: /work/echorepo/routes/web.py:367
 msgid "Acidic (≤5.5)"
 msgstr "Hapan (≤5.5)"
 
-#: /work/echorepo/routes/web.py:357
+#: /work/echorepo/routes/web.py:368
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Hieman happoinen (5.5...6,5)"
 
-#: /work/echorepo/routes/web.py:358
+#: /work/echorepo/routes/web.py:369
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutraali (6.5"
 
-#: /work/echorepo/routes/web.py:359
+#: /work/echorepo/routes/web.py:370
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Hieman emäksinen (7.5...8.5)"
 
-#: /work/echorepo/routes/web.py:360
+#: /work/echorepo/routes/web.py:371
 msgid "Alkaline (≥8.5)"
 msgstr "Alkali (≥8.5)"
 
-#: /work/echorepo/routes/web.py:361
+#: /work/echorepo/routes/web.py:372
 msgid "Your samples"
 msgstr "Näytteet"
 
-#: /work/echorepo/routes/web.py:362
+#: /work/echorepo/routes/web.py:373
 msgid "Other samples"
 msgstr "Muut näytteet"
 
-#: /work/echorepo/routes/web.py:363
+#: /work/echorepo/routes/web.py:374
 msgid "Export"
 msgstr "Vie"
 
-#: /work/echorepo/routes/web.py:364
+#: /work/echorepo/routes/web.py:375
 msgid "Clear"
 msgstr "Tyhjennä"
 
-#: /work/echorepo/routes/web.py:365
+#: /work/echorepo/routes/web.py:376
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Vie suodatettu (__{n}_)"
 
-#: /work/echorepo/routes/web.py:366 /work/echorepo/templates/explore.html:68
+#: /work/echorepo/routes/web.py:377 /work/echorepo/templates/explore.html:55
+#: /work/static/js/map.js:1023
 msgid "Date"
 msgstr "Päivämäärä"
 
-#: /work/echorepo/routes/web.py:367
+#: /work/echorepo/routes/web.py:378 /work/static/js/map.js:1024
 msgid "QR code"
 msgstr "QR-koodi"
 
-#: /work/echorepo/routes/web.py:368 /work/echorepo/templates/explore.html:42
-#: /work/echorepo/templates/results.html:309
-#: /work/echorepo/templates/search.html:90
+#: /work/echorepo/routes/web.py:379 /work/echorepo/templates/explore.html:37
+#: /work/echorepo/templates/results.html:361
+#: /work/echorepo/templates/search.html:78 /work/static/js/map.js:1025
 msgid "pH"
 msgstr "p H"
 
-#: /work/echorepo/routes/web.py:369
+#: /work/echorepo/routes/web.py:380
 msgid "Colour"
 msgstr "Väri"
 
-#: /work/echorepo/routes/web.py:370
+#: /work/echorepo/routes/web.py:381 /work/static/js/map.js:1026
 msgid "Soil organic matter"
 msgstr "Maaperän eloperäinen aines"
 
-#: /work/echorepo/routes/web.py:371
+#: /work/echorepo/routes/web.py:382 /work/static/js/map.js:1027
 msgid "Texture"
 msgstr "Tekstuuri"
 
-#: /work/echorepo/routes/web.py:372
+#: /work/echorepo/routes/web.py:383 /work/static/js/map.js:1028
 msgid "Structure"
 msgstr "Rakenne"
 
-#: /work/echorepo/routes/web.py:373
+#: /work/echorepo/routes/web.py:384 /work/static/js/map.js:1029
 msgid "Earthworms"
 msgstr "Madot"
 
-#: /work/echorepo/routes/web.py:374
+#: /work/echorepo/routes/web.py:385 /work/static/js/map.js:1030
 msgid "Plastic"
 msgstr "Muovi"
 
-#: /work/echorepo/routes/web.py:375
+#: /work/echorepo/routes/web.py:386 /work/static/js/map.js:1031
 msgid "Debris"
 msgstr "Jätteet"
 
-#: /work/echorepo/routes/web.py:376
+#: /work/echorepo/routes/web.py:387 /work/static/js/map.js:1032
 msgid "Contamination"
 msgstr "Saastuminen"
 
-#: /work/echorepo/routes/web.py:377
+#: /work/echorepo/routes/web.py:388
 msgid "Metals"
 msgstr "Metallit"
 
-#: /work/echorepo/routes/web.py:378
+#: /work/echorepo/routes/web.py:389 /work/static/js/map.js:1034
 msgid "Elemental concentrations"
 msgstr "Alkupitoisuudet"
 
-#: /work/echorepo/routes/web.py:379
-msgid "Draw a rectangle"
-msgstr "Piirrä suorakulmio"
+#: /work/echorepo/routes/web.py:390
+msgid "Draw a selection rectangle"
+msgstr "Piirrä valintaruutu"
 
-#: /work/echorepo/routes/web.py:380
+#: /work/echorepo/routes/web.py:391 /work/static/js/map.js:1779
 msgid "Cancel drawing"
 msgstr "Peruuta piirustus"
 
-#: /work/echorepo/routes/web.py:381
+#: /work/echorepo/routes/web.py:392 /work/static/js/map.js:1780
 msgid "Cancel"
 msgstr "Peruuta"
 
-#: /work/echorepo/routes/web.py:382
+#: /work/echorepo/routes/web.py:393 /work/static/js/map.js:1784
 msgid "Delete last point"
 msgstr "Poistetaan viimeinen kohta"
 
-#: /work/echorepo/routes/web.py:383
-msgid "Click and drag to draw a rectangle."
-msgstr "Napsauta ja vedä piirtää suorakulmio."
+#: /work/echorepo/routes/web.py:394
+msgid "Click and drag to draw a selection rectangle."
+msgstr "Klikkaa ja vedä piirtää valinta suorakulmio."
 
-#: /work/echorepo/routes/web.py:384
-msgid "Release mouse to finish drawing."
-msgstr "Vapauta hiiri viimeistelläksesi piirroksen."
+#: /work/echorepo/routes/web.py:395 /work/static/js/map.js:1797
+msgid "Release mouse to add this rectangle to the selection."
+msgstr "Vapauta hiiri lisätäksesi tämän suorakulmion valintaan."
 
-#: /work/echorepo/services/firebase.py:51
+#: /work/echorepo/routes/web.py:396
+msgid "Selection export to a file"
+msgstr "Valinta vie tiedostoon"
+
+#: /work/echorepo/routes/web.py:397
+msgid "Use the selection tool"
+msgstr "Käytä valintatyökalua"
+
+#: /work/echorepo/routes/web.py:398
+msgid "to draw one or more selection areas."
+msgstr "piirtää yksi tai useampi valintaalue."
+
+#: /work/echorepo/routes/web.py:399
+msgid "Export selection"
+msgstr "Vie valinta"
+
+#: /work/echorepo/routes/web.py:400
+msgid "Export selected samples"
+msgstr "Vie valitut näytteet"
+
+#: /work/echorepo/routes/web.py:401
+msgid "Clear selection"
+msgstr "Tyhjennä valinta"
+
+#: /work/echorepo/routes/web.py:402
+msgid "Clear all selection rectangles"
+msgstr "Tyhjennä kaikki valintaruudut"
+
+#: /work/echorepo/routes/web.py:403 /work/static/js/map.js:1772
+msgid "Draw selection rectangle"
+msgstr "Piirrä valintaruutu"
+
+#: /work/echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
 msgstr "Salasanan hyödyntämistä ei ole määritetty tälle sivustolle."
 
-#: /work/echorepo/services/firebase.py:60
+#: /work/echorepo/services/firebase.py:64
 msgid "Could not contact the password recovery service."
 msgstr "Salasanan palautuspalveluun ei voitu ottaa yhteyttä."
 
-#: /work/echorepo/services/firebase.py:65
+#: /work/echorepo/services/firebase.py:69
 msgid "If this address is registered, a reset link has been sent."
 msgstr "Jos tämä osoite on rekisteröity, on lähetetty reset-linkki."
 
-#: /work/echorepo/services/firebase.py:65
+#: /work/echorepo/services/firebase.py:70
 msgid "New password may take up to 30 minutes to activate in ECHOREPO."
 msgstr "Uusi salasana voi kestää jopa 30 minuuttia aktivoida ECHOREEPO."
 
-#: /work/echorepo/services/firebase.py:68
+#: /work/echorepo/services/firebase.py:74
 msgid "Password recovery is temporarily unavailable. Please contact the organisers."
 msgstr ""
 "Salasanan palautus ei ole tilapäisesti käytettävissä. Ota yhteyttä "
 "järjestäjiin."
 
-#: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
+#: /work/echorepo/templates/base.html:7 /work/echorepo/templates/base.html:11
 msgid "ECHOrepo — EU Soil Data"
 msgstr "EU Maaperän tiedot"
 
-#: /work/echorepo/templates/base.html:9
+#: /work/echorepo/templates/base.html:10
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr "ECHOrepo "
 
-#: /work/echorepo/templates/base.html:12
+#: /work/echorepo/templates/base.html:14
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr "Lataa maanäytteet. Osa EU:n rahoittamaa ECHO-hanketta."
 
-#: /work/echorepo/templates/base.html:79
+#: /work/echorepo/templates/base.html:179
 msgid "Skip to content"
 msgstr "Siirry sisältöön"
 
-#: /work/echorepo/templates/base.html:85
+#: /work/echorepo/templates/base.html:185
 msgid "Primary"
 msgstr "Ensisijainen"
 
-#: /work/echorepo/templates/base.html:88
+#: /work/echorepo/templates/base.html:188
 msgid "ECHOrepo logo"
 msgstr "ECHOrepo-logo"
 
-#: /work/echorepo/templates/base.html:93
+#: /work/echorepo/templates/base.html:194
 msgid "Toggle navigation"
 msgstr "Vaihda navigointia"
 
-#: /work/echorepo/templates/base.html:99
+#: /work/echorepo/templates/base.html:201
 msgid "About"
 msgstr "Tietoja"
 
-#: /work/echorepo/templates/base.html:100
+#: /work/echorepo/templates/base.html:203
 msgid "For Participants"
 msgstr "Osallistujat"
 
-#: /work/echorepo/templates/base.html:101
+#: /work/echorepo/templates/base.html:205
 msgid "Partners"
 msgstr "Kumppanit"
 
-#: /work/echorepo/templates/base.html:102
+#: /work/echorepo/templates/base.html:207
 msgid "News & Events"
 msgstr "Uutiset & Tapahtumat"
 
-#: /work/echorepo/templates/base.html:104
+#: /work/echorepo/templates/base.html:210
 msgid "Resources"
 msgstr "Varat"
 
-#: /work/echorepo/templates/base.html:106
+#: /work/echorepo/templates/base.html:213
 msgid "Media Kit"
 msgstr "Mediapakkaus"
 
-#: /work/echorepo/templates/base.html:107
+#: /work/echorepo/templates/base.html:215
 msgid "Publications"
 msgstr "Julkaisut"
 
-#: /work/echorepo/templates/base.html:108
+#: /work/echorepo/templates/base.html:217
 msgid "Newsletter Archive"
 msgstr "Tiedotuslehtiarkisto"
 
-#: /work/echorepo/templates/base.html:120
+#: /work/echorepo/templates/base.html:218
+msgid "Zenodo Publications"
+msgstr "Zenodo Publications"
+
+#: /work/echorepo/templates/base.html:233
 msgid "Change language"
 msgstr "Vaihda kieltä"
 
-#: /work/echorepo/templates/base.html:140
+#: /work/echorepo/templates/base.html:253
 msgid "Logged in as"
 msgstr "Kirjautunut sisään"
 
-#: /work/echorepo/templates/base.html:147
+#: /work/echorepo/templates/base.html:259
 msgid "Logout"
 msgstr "Kirjaudu ulos"
 
-#: /work/echorepo/templates/base.html:152
+#: /work/echorepo/templates/base.html:263
 msgid "Sign in"
 msgstr "Kirjaudu sisään"
 
-#: /work/echorepo/templates/base.html:170
+#: /work/echorepo/templates/base.html:281
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo on osa EU:n ja UKRI:n rahoittamaa"
 
-#: /work/echorepo/templates/base.html:170
+#: /work/echorepo/templates/base.html:281
 msgid "project"
 msgstr "hanke"
 
-#: /work/echorepo/templates/base.html:172
+#: /work/echorepo/templates/base.html:283
 msgid "Need help?"
 msgstr "Tarvitsetko apua?"
 
-#: /work/echorepo/templates/base.html:181
+#: /work/echorepo/templates/base.html:291
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "UK Research and Innovation (UKRI)"
 
-#: /work/echorepo/templates/base.html:189
+#: /work/echorepo/templates/base.html:297
 msgid "Co-funded by the European Union"
 msgstr "Euroopan unionin osarahoitus"
 
-#: /work/echorepo/templates/base.html:195
+#: /work/echorepo/templates/base.html:301
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr ""
 "Euroopan unionin sekä Yhdistyneen kuningaskunnan tutkimuksen ja innovoinnin "
 "rahoittama"
 
+#: /work/echorepo/templates/coordinate_issues.html:2
+#: /work/echorepo/templates/coordinate_issues.html:6
+msgid "Coordinate issues"
+msgstr "Koordinoida kysymyksiä"
+
+#: /work/echorepo/templates/coordinate_issues.html:11
+msgid "The coordinate issues file was not found:"
+msgstr "Koordinointikysymyksiä koskevaa tiedostoa ei löytynyt:"
+
+#: /work/echorepo/templates/coordinate_issues.html:19
+#: /work/echorepo/templates/coordinate_issues.html:119
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:75
+msgid "Sample / QR"
+msgstr "Näyte / QR"
+
+#: /work/echorepo/templates/coordinate_issues.html:25
+#: /work/echorepo/templates/coordinate_issues.html:120
+msgid "User ID"
+msgstr "Käyttäjätunnus"
+
+#: /work/echorepo/templates/coordinate_issues.html:30
+#: /work/echorepo/templates/coordinate_issues.html:125
+msgid "Issue type"
+msgstr "Asiakirjatyyppi"
+
+#: /work/echorepo/templates/coordinate_issues.html:32
+msgid "Any issue"
+msgstr "Kaikki kysymykset"
+
+#: /work/echorepo/templates/coordinate_issues.html:43
+#: /work/echorepo/templates/explore.html:31 /work/echorepo/templates/search.html:31
+msgid "Search"
+msgstr "Etsi"
+
+#: /work/echorepo/templates/coordinate_issues.html:52
+#: /work/echorepo/templates/coordinate_issues.html:123
+msgid "Actual country"
+msgstr "Todellinen maa"
+
+#: /work/echorepo/templates/coordinate_issues.html:59
+#: /work/echorepo/templates/coordinate_issues.html:124
+msgid "Planned country"
+msgstr "Suunniteltu maa"
+
+#: /work/echorepo/templates/coordinate_issues.html:69
+msgid "Show approved"
+msgstr "Näytä hyväksytty"
+
+#: /work/echorepo/templates/coordinate_issues.html:83
+msgid "Export current results"
+msgstr "Vie nykyiset tulokset"
+
+#: /work/echorepo/templates/coordinate_issues.html:102
+msgid "coordinate issue(s)"
+msgstr "koordinointi"
+
+#: /work/echorepo/templates/coordinate_issues.html:105
+msgid "Source:"
+msgstr "Lähde:"
+
+#: /work/echorepo/templates/coordinate_issues.html:115
+msgid "OK"
+msgstr "SELVÄ"
+
+#: /work/echorepo/templates/coordinate_issues.html:121
+#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
+#: /work/echorepo/templates/search.html:79
+msgid "Lat"
+msgstr "Lat"
+
+#: /work/echorepo/templates/coordinate_issues.html:122
+#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
+#: /work/echorepo/templates/search.html:80
+msgid "Lon"
+msgstr "Lon"
+
+#: /work/echorepo/templates/coordinate_issues.html:134
+msgid "Approved"
+msgstr "Hyväksytty"
+
+#: /work/echorepo/templates/coordinate_issues.html:144
+#: /work/echorepo/templates/search.html:92
+msgid "Show only this sample on map"
+msgstr "Näytä vain tämä näyte kartalta"
+
+#: /work/echorepo/templates/coordinate_issues.html:175
+msgid "No coordinate issues for these filters."
+msgstr "Ei koordinoivia kysymyksiä näille suodattimille."
+
+#: /work/echorepo/templates/coordinate_issues.html:187
+msgid "Approval comment"
+msgstr "Hyväksyntää koskeva huomautus"
+
+#: /work/echorepo/templates/coordinate_issues.html:189
+msgid "Optional: e.g. border sample, algorithm false positive"
+msgstr "Valinnainen: esim. rajanäyte, algoritmi väärä positiivinen"
+
+#: /work/echorepo/templates/coordinate_issues.html:193
+msgid "Save selected as OK"
+msgstr "Tallenna valittu OK"
+
+#: /work/echorepo/templates/coordinate_issues.html:202
+#: /work/echorepo/templates/search.html:121
+msgid "Showing page"
+msgstr "Näytetään sivu"
+
+#: /work/echorepo/templates/coordinate_issues.html:202
+#: /work/echorepo/templates/search.html:121
+msgid "of"
+msgstr "/"
+
+#: /work/echorepo/templates/coordinate_issues.html:203
+#: /work/echorepo/templates/search.html:121
+msgid "results"
+msgstr "tulokset"
+
 #: /work/echorepo/templates/explore.html:2
 msgid "ECHOrepo — Explore"
 msgstr "ECHOrepo"
 
-#: /work/echorepo/templates/explore.html:27
+#: /work/echorepo/templates/explore.html:22
 msgid "Explore the map"
 msgstr "Tutki kartta"
 
-#: /work/echorepo/templates/explore.html:30
+#: /work/echorepo/templates/explore.html:25
 msgid "Sign in to export data and access your personal samples."
 msgstr ""
 "Kirjaudu sisään viedäksesi tietoja ja käyttääksesi henkilökohtaisia "
 "näytteitäsi."
 
-#: /work/echorepo/templates/explore.html:36 /work/echorepo/templates/search.html:44
-msgid "Search"
-msgstr "Etsi"
-
-#: /work/echorepo/templates/explore.html:47
-#: /work/echorepo/templates/results.html:311
+#: /work/echorepo/templates/explore.html:40
+#: /work/echorepo/templates/results.html:363
 msgid "min"
 msgstr "min"
 
-#: /work/echorepo/templates/explore.html:55
-#: /work/echorepo/templates/results.html:314
+#: /work/echorepo/templates/explore.html:45
+#: /work/echorepo/templates/results.html:366
 msgid "max"
 msgstr "enintään"
 
-#: /work/echorepo/templates/explore.html:60 /work/echorepo/templates/search.html:15
-#: /work/echorepo/templates/search.html:89
+#: /work/echorepo/templates/explore.html:49 /work/echorepo/templates/search.html:15
+#: /work/echorepo/templates/search.html:77
 msgid "Country"
 msgstr "Maa"
 
-#: /work/echorepo/templates/explore.html:65
+#: /work/echorepo/templates/explore.html:52
 msgid "All countries"
 msgstr "Kaikki maat"
 
-#: /work/echorepo/templates/explore.html:86
-#: /work/echorepo/templates/results.html:316
+#: /work/echorepo/templates/explore.html:65
+#: /work/echorepo/templates/results.html:368
 msgid "Apply"
 msgstr "Käytä"
 
-#: /work/echorepo/templates/explore.html:95
-#: /work/echorepo/templates/results.html:319
+#: /work/echorepo/templates/explore.html:70
+#: /work/echorepo/templates/results.html:371
 msgid "Export filtered (0)"
 msgstr "Vie suodatettu (0)"
 
-#: /work/echorepo/templates/explore.html:103
+#: /work/echorepo/templates/explore.html:76
 msgid "Copy view link"
 msgstr "Kopioi näkymälinkki"
 
@@ -358,16 +507,6 @@ msgstr "Käyttäjä"
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
-#: /work/echorepo/templates/search.html:91
-msgid "Lat"
-msgstr "Lat"
-
-#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
-#: /work/echorepo/templates/search.html:92
-msgid "Lon"
-msgstr "Lon"
-
 #: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:77
 msgid "Fix"
 msgstr "Korjaa"
@@ -397,15 +536,23 @@ msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr "Todellinen maa (koordista) ei ole tämän QR:n suunnitellussa luettelossa."
 
 #: /work/echorepo/templates/lab_upload.html:3
-#: /work/echorepo/templates/results.html:147
+#: /work/echorepo/templates/results.html:190
 msgid "Upload lab data"
 msgstr "Lataa laboratoriotiedot"
 
-#: /work/echorepo/templates/lab_upload.html:5
-msgid "Expected columns:"
-msgstr "Odotetut sarakkeet:"
+#: /work/echorepo/templates/lab_upload.html:6
+msgid ""
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with "
+"sheet"
+msgstr ""
+"Lataa joko metalleja koskevat tulokset (CSV/XLSX) tai biologista "
+"monimuotoisuutta koskevat OTU-taulukot (XLSX arkki)"
 
-#: /work/echorepo/templates/lab_upload.html:12
+#: /work/echorepo/templates/lab_upload.html:8
+msgid "The server will detect the format automatically."
+msgstr "Palvelin tunnistaa muodon automaattisesti."
+
+#: /work/echorepo/templates/lab_upload.html:13
 msgid "Upload"
 msgstr "Lähetä"
 
@@ -462,321 +609,429 @@ msgid "Download all samples (CSV)"
 msgstr "Lataa kaikki näytteet (CSV)"
 
 #: /work/echorepo/templates/results.html:13
-#: /work/echorepo/templates/results.html:151 /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/results.html:194 /work/echorepo/templates/search.html:2
 #: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Hakunäytteet"
 
-#: /work/echorepo/templates/results.html:133
+#: /work/echorepo/templates/results.html:177
 msgid "Your data"
 msgstr "Tietosi"
 
-#: /work/echorepo/templates/results.html:134
+#: /work/echorepo/templates/results.html:178
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
 msgstr "Tutustu maaperänäytteen sijainti kartalla, sitten viedä tai selata taulukkoa."
 
-#: /work/echorepo/templates/results.html:142
+#: /work/echorepo/templates/results.html:185
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Korjaa tiedot (__%(n)s_)"
 
-#: /work/echorepo/templates/results.html:159
-#: /work/echorepo/templates/results.html:217
+#: /work/echorepo/templates/results.html:202
+#: /work/echorepo/templates/results.html:263
 msgid "Final survey"
 msgstr "Loppututkimus"
 
-#: /work/echorepo/templates/results.html:161
+#: /work/echorepo/templates/results.html:204
 msgid "We sincerely thank you for your commitment to this project!"
 msgstr "Kiitämme teitä vilpittömästi sitoutumisestanne tähän hankkeeseen!"
 
-#: /work/echorepo/templates/results.html:164
+#: /work/echorepo/templates/results.html:207
 msgid ""
 "This is the third and final survey in the project, following the initial ones"
-" you completed before and after soil sampling. The majority of questions are "
-"consistent with the previous surveys so that we can accurately measure "
-"changes over time and understand the impact of project participation."
+" you completed before and after\n"
+"      soil sampling. The majority of questions are consistent with the "
+"previous surveys so that we can accurately\n"
+"      measure changes over time and understand the impact of project "
+"participation."
 msgstr ""
-"Tämä on hankkeen kolmas ja viimeinen tutkimus, joka on tehty ennen ja jälkeen"
-" maaperänäytteenoton. Suurin osa kysymyksistä on yhteneviä aiempien "
-"kyselyiden kanssa, jotta voimme tarkasti mitata muutoksia ajan mittaan ja "
-"ymmärtää hankkeiden osallistumisen vaikutuksia."
+"Tämä on kolmas ja loppututkimus projektissa, sen jälkeen kun ensimmäiset "
+"suorititte ennen ja jälkeen\n"
+"maaperän näytteenotto. Suurin osa kysymyksistä on yhdenmukaisia aiempien "
+"tutkimusten kanssa, jotta voimme tarkasti\n"
+"mitata muutoksia ajan mittaan ja ymmärtää hankkeiden osallistumisen "
+"vaikutuksia."
 
-#: /work/echorepo/templates/results.html:167
+#: /work/echorepo/templates/results.html:212
 msgid ""
 "Before you start: please only complete this survey if the lab results from "
-"your soil sample(s) have already been added to the repository. If the results"
-" are pending, please check back at a later time."
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check "
+"back at a later time."
 msgstr ""
-"Ennen kuin aloitat: Täytä tämä tutkimus vain, jos maaperänäytteiden tulokset "
-"on jo lisätty varastoon. Jos tulokset ovat kesken, tarkista myöhemmin."
+"Ennen kuin aloitat: tee tämä tutkimus loppuun vain, jos maaperänäytteistäsi "
+"saadut tulokset ovat jo olemassa.\n"
+"on lisätty arkistoon. Jos tulokset ovat kesken, tarkista myöhemmin."
 
-#: /work/echorepo/templates/results.html:172
+#: /work/echorepo/templates/results.html:218
 msgid "Go to final survey"
 msgstr "Siirry loppututkimukseen"
 
-#: /work/echorepo/templates/results.html:181
+#: /work/echorepo/templates/results.html:223
 msgid "Data use information"
 msgstr "Tietojen käyttötiedot"
 
-#: /work/echorepo/templates/results.html:188
+#: /work/echorepo/templates/results.html:228
 msgid "I have already completed it"
 msgstr "Olen jo saanut sen valmiiksi"
 
-#: /work/echorepo/templates/results.html:193
+#: /work/echorepo/templates/results.html:233
 msgid "Processing survey data in the ECHO project"
 msgstr "ECHO-hankkeen tutkimustietojen käsittely"
 
-#: /work/echorepo/templates/results.html:195
+#: /work/echorepo/templates/results.html:235
 msgid ""
 "The objective of this survey data is to examine the impact of project "
-"participation on participant attitudes and motivation towards soil."
+"participation on participant\n"
+"        attitudes and motivation towards soil."
 msgstr ""
-"Tämän kyselyn tavoitteena on selvittää hankkeen osallistumisen vaikutusta "
-"osallistujien asenteisiin ja motivaatioon maaperää kohtaan."
+"Tämän kyselyn tietojen tavoitteena on tarkastella hankkeen osallistumisen "
+"vaikutusta osallistujaan\n"
+"asenteet ja motivaatio maaperään."
 
-#: /work/echorepo/templates/results.html:198
+#: /work/echorepo/templates/results.html:239
 msgid ""
 "Your information will only be used for scientific purposes. We do not collect"
-" names or addresses. Your details regarding age and gender are only used for "
-"statistical purposes and all details are collected and evaluated anonymously."
-" It is not possible to draw conclusions about your person at any time."
+" names or addresses. Your\n"
+"        details regarding age and gender are only used for statistical "
+"purposes and all details are collected and\n"
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
 msgstr ""
 "Tietojasi käytetään vain tieteellisiin tarkoituksiin. Emme kerää nimiä tai "
-"osoitteita. Ikää ja sukupuolta koskevia tietojasi käytetään vain "
-"tilastollisiin tarkoituksiin ja kaikki tiedot kerätään ja arvioidaan "
-"nimettömästi. Henkilöstä ei voi tehdä johtopäätöksiä milloinkaan."
+"osoitteita. Sinun\n"
+"tietoja iästä ja sukupuolesta käytetään ainoastaan tilastollisiin "
+"tarkoituksiin, ja kaikki tiedot kerätään ja\n"
+"arvioitu nimettömästi. Henkilöstä ei voi tehdä johtopäätöksiä milloinkaan."
 
-#: /work/echorepo/templates/results.html:201
+#: /work/echorepo/templates/results.html:244
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
-"crucial role in providing valuable insights that enhance the relevance and "
-"impact of the ECHO project. Your honest responses are essential for "
-"understanding how engagement with the project influences attitudes and "
-"motivations, ensuring the project’s outcomes are meaningful and well-"
-"informed."
+"crucial role in providing valuable\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
+"        outcomes are meaningful and well-informed."
 msgstr ""
-"Kuhunkin kysymykseen vastaaminen tutkimuksessa on erittäin tärkeää, koska "
-"sillä on ratkaiseva merkitys ECHO-hankkeen merkityksellisyyden ja vaikutusten"
-" kannalta. Rehelliset vastauksesi ovat olennaisia, jotta voidaan ymmärtää, "
+"Jokaiseen kysymykseen vastaaminen tutkimuksessa on erittäin arvostettua, "
+"koska sillä on ratkaiseva merkitys arvokkaan\n"
+"ECHO-hankkeen merkityksellisyyttä ja vaikutusta lisäävät oivallukset. "
+"Rehelliset vastauksesi ovat välttämättömiä\n"
 "miten sitoutuminen projektiin vaikuttaa asenteisiin ja motivaatioihin ja "
-"varmistaa, että hankkeen tulokset ovat mielekkäitä ja hyvin perillä asioista."
+"varmistaa projektin\n"
+"tulokset ovat merkityksellisiä ja hyvin tietoon perustuvia."
 
-#: /work/echorepo/templates/results.html:204
+#: /work/echorepo/templates/results.html:250
 msgid ""
 "The survey will take approximately 8–10 minutes to complete. Please find a "
-"quiet space where you won’t be interrupted. There are no right or wrong "
-"answers — answer spontaneously."
+"quiet space where you won’t be\n"
+"        interrupted. There are no right or wrong answers — answer "
+"spontaneously."
 msgstr ""
-"Kyselyn valmistuminen kestää noin 8.10. Etsi hiljainen tila, jossa voit "
-"keskeyttää. Ei ole oikeita tai vääriä vastauksia . Vastaus spontaanisti."
+"Kyselyn valmistuminen kestää noin 8.10. Etsi rauhallinen tila, jossa voit "
+"olla\n"
+"Keskeytä. Ei ole oikeita tai vääriä vastauksia . Vastaus spontaanisti."
 
-#: /work/echorepo/templates/results.html:207
+#: /work/echorepo/templates/results.html:254
 msgid ""
 "Based on the information provided to you, please consent to participate in "
 "the survey below."
 msgstr "Saamiesi tietojen perusteella suostut osallistumaan alla olevaan tutkimukseen."
 
-#: /work/echorepo/templates/results.html:218
+#: /work/echorepo/templates/results.html:264
 msgid "thank you for your participation!"
 msgstr "kiitos osallistumisestanne!"
 
-#: /work/echorepo/templates/results.html:224
+#: /work/echorepo/templates/results.html:268
 msgid "Show details"
 msgstr "Näytä yksityiskohdat"
 
-#: /work/echorepo/templates/results.html:230
+#: /work/echorepo/templates/results.html:272
 msgid "Dismiss"
 msgstr "Poistu"
 
-#: /work/echorepo/templates/results.html:240
+#: /work/echorepo/templates/results.html:282
 msgid "No data found for"
 msgstr "Tietoja ei löytynyt"
 
-#: /work/echorepo/templates/results.html:240
-msgid "If you recently submitted samples, try again later."
-msgstr "Jos olet äskettäin toimittanut näytteitä, yritä myöhemmin uudelleen."
+#: /work/echorepo/templates/results.html:282
+msgid ""
+"If you recently submitted samples, try again\n"
+"    later."
+msgstr ""
+"Jos olet äskettäin toimittanut näytteitä, yritä uudelleen\n"
+"Myöhemmin."
 
-#: /work/echorepo/templates/results.html:253
+#: /work/echorepo/templates/results.html:296
 msgid "Download"
 msgstr "Lataa"
 
-#: /work/echorepo/templates/results.html:260
+#: /work/echorepo/templates/results.html:303
 msgid "CSV (per-user)"
 msgstr "CSV (käyttäjää kohti)"
 
-#: /work/echorepo/templates/results.html:268
+#: /work/echorepo/templates/results.html:311
 msgid "XLSX (per-user)"
 msgstr "XLSX (käyttäjäkohtainen)"
 
-#: /work/echorepo/templates/results.html:275
+#: /work/echorepo/templates/results.html:320
 msgid "All samples (CSV, anonymised)"
 msgstr "Kaikki näytteet (CSV, anonyymi)"
 
-#: /work/echorepo/templates/results.html:280
+#: /work/echorepo/templates/results.html:325
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (käyttäjä)"
 
-#: /work/echorepo/templates/results.html:284
+#: /work/echorepo/templates/results.html:331
 msgid "Canonical exports"
 msgstr "Kanoninen vienti"
 
-#: /work/echorepo/templates/results.html:287
+#: /work/echorepo/templates/results.html:334
 msgid "samples.csv"
 msgstr "näytteet.csv"
 
-#: /work/echorepo/templates/results.html:292
+#: /work/echorepo/templates/results.html:339
 msgid "sample_images.csv"
 msgstr "näyte_kuvat.csv"
 
-#: /work/echorepo/templates/results.html:297
+#: /work/echorepo/templates/results.html:344
 msgid "sample_parameters.csv"
 msgstr "näyte_parametrit.csv"
 
-#: /work/echorepo/templates/results.html:302
+#: /work/echorepo/templates/results.html:349
+msgid "sample_biodiversity.csv"
+msgstr "näyte biodiversiteetti.csv"
+
+#: /work/echorepo/templates/results.html:354
 msgid "All canonical (zip)"
 msgstr "Kaikki kanoniset (zip)"
 
-#: /work/echorepo/templates/results.html:316
+#: /work/echorepo/templates/results.html:368
 msgid "Apply pH filter"
 msgstr "Käytä pH-suodatinta"
 
-#: /work/echorepo/templates/results.html:318
+#: /work/echorepo/templates/results.html:370
 msgid "Export rows matching current pH filter"
 msgstr "Vie nykyisen pH-suotimen mukaiset rivit"
 
-#: /work/echorepo/templates/results.html:346
+#: /work/echorepo/templates/results.html:391
 msgid "Privacy information"
 msgstr "Yksityisyydensuoja"
 
-#: /work/echorepo/templates/results.html:373
+#: /work/echorepo/templates/results.html:418
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
-"my personal data for this project."
+"my personal data for\n"
+"              this project."
 msgstr ""
-"Olen lukenut yllä olevat tietosuojatiedot ja hyväksyn tämän projektin "
-"henkilötietojeni käsittelyn."
+"Olen lukenut yllä olevat tietosuojatiedot ja hyväksyn henkilötietojeni "
+"käsittelyn\n"
+"Tämä projekti."
 
-#: /work/echorepo/templates/results.html:380
+#: /work/echorepo/templates/results.html:426
 msgid "Accept and continue"
 msgstr "Hyväksy ja jatka"
 
-#: /work/echorepo/templates/results.html:691
+#: /work/echorepo/templates/results.html:739
 msgid "Show on map"
 msgstr "Näytä kartalta"
 
-#: /work/echorepo/templates/results.html:695
+#: /work/echorepo/templates/results.html:743
 msgid "Could not locate this sample on the map."
 msgstr "Tätä näytettä ei löytynyt kartalta."
 
-#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:87
-msgid "Sample / QR"
-msgstr "Näyte / QR"
-
-#: /work/echorepo/templates/search.html:17
+#: /work/echorepo/templates/search.html:17 /work/static/js/map.js:168
 msgid "Any country"
 msgstr "Mikä tahansa maa"
 
-#: /work/echorepo/templates/search.html:18
-msgid "Czechia"
-msgstr "Tšekki"
-
-#: /work/echorepo/templates/search.html:19
-msgid "Germany"
-msgstr "Saksa"
-
-#: /work/echorepo/templates/search.html:20
-msgid "Spain"
-msgstr "Espanja"
-
-#: /work/echorepo/templates/search.html:21
-msgid "Finland"
-msgstr "Suomi"
-
 #: /work/echorepo/templates/search.html:22
-msgid "France"
-msgstr "Ranska"
-
-#: /work/echorepo/templates/search.html:23
-msgid "United Kingdom"
-msgstr "Yhdistynyt kuningaskunta"
-
-#: /work/echorepo/templates/search.html:24
-msgid "Greece"
-msgstr "Kreikka"
-
-#: /work/echorepo/templates/search.html:25
-msgid "Italy"
-msgstr "Italia"
-
-#: /work/echorepo/templates/search.html:26
-msgid "Netherlands"
-msgstr "Alankomaat"
-
-#: /work/echorepo/templates/search.html:27
-msgid "Poland"
-msgstr "Puola"
-
-#: /work/echorepo/templates/search.html:28
-msgid "Portugal"
-msgstr "Portugali"
-
-#: /work/echorepo/templates/search.html:29
-msgid "Romania"
-msgstr "Romania"
-
-#: /work/echorepo/templates/search.html:30
-msgid "Slovakia"
-msgstr "Slovakia"
-
-#: /work/echorepo/templates/search.html:35
 msgid "pH min"
 msgstr "p H min"
 
-#: /work/echorepo/templates/search.html:39
+#: /work/echorepo/templates/search.html:26
 msgid "pH max"
 msgstr "p H max"
 
-#: /work/echorepo/templates/search.html:51
+#: /work/echorepo/templates/search.html:38
 msgid "Date from"
 msgstr "Päivämäärä"
 
-#: /work/echorepo/templates/search.html:55
+#: /work/echorepo/templates/search.html:42
 msgid "Date to"
 msgstr "Päivämäärä"
 
-#: /work/echorepo/templates/search.html:70
+#: /work/echorepo/templates/search.html:55
 msgid "Export current search"
 msgstr "Vie nykyinen haku"
 
-#: /work/echorepo/templates/search.html:74
+#: /work/echorepo/templates/search.html:59
 msgid "Sign in to export results as ZIP."
 msgstr "Kirjaudu vientituloksiin ZIP:nä."
 
-#: /work/echorepo/templates/search.html:88
+#: /work/echorepo/templates/search.html:76
 msgid "Timestamp"
 msgstr "Aikaleima"
 
-#: /work/echorepo/templates/search.html:93
+#: /work/echorepo/templates/search.html:81
 msgid "Collected by"
 msgstr "Kerää"
 
-#: /work/echorepo/templates/search.html:112
+#: /work/echorepo/templates/search.html:109
 msgid "No results for these filters."
 msgstr "Ei tuloksia näistä suodattimista."
 
-#: /work/echorepo/templates/search.html:124
-msgid "Showing page"
-msgstr "Näytetään sivu"
+#: /work/echorepo/templates/zenodo_publications.html:3
+msgid "ECHOrepo — Zenodo Publications"
+msgstr "ECHOrepo "
 
-#: /work/echorepo/templates/search.html:124
-msgid "of"
-msgstr "/"
+#: /work/echorepo/templates/zenodo_publications.html:8
+msgid "Published datasets on Zenodo"
+msgstr "Julkaistut tiedot Zenodosta"
 
-#: /work/echorepo/templates/search.html:124
-msgid "results"
-msgstr "tulokset"
+#: /work/echorepo/templates/zenodo_publications.html:10
+msgid ""
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
+msgstr ""
+"Tällä sivulla on luettelo Zenodossa julkaistuista ECHOrepo-aineistoista DOI-"
+"linkeillä ja ehdotetuilla viittauksilla."
+
+#: /work/echorepo/templates/zenodo_publications.html:24
+#: /work/echorepo/templates/zenodo_publications.html:27
+msgid "Untitled dataset"
+msgstr "Nimeämätön tietokokonaisuus"
+
+#: /work/echorepo/templates/zenodo_publications.html:32
+msgid "Published at"
+msgstr "Julkaistu"
+
+#: /work/echorepo/templates/zenodo_publications.html:43
+msgid "Version DOI"
+msgstr "Version DOI"
+
+#: /work/echorepo/templates/zenodo_publications.html:50
+msgid "Concept DOI"
+msgstr "Konsepti DOI"
+
+#: /work/echorepo/templates/zenodo_publications.html:63
+msgid "API path"
+msgstr "API-polku"
+
+#: /work/echorepo/templates/zenodo_publications.html:64
+msgid "Uploaded file"
+msgstr "Ladattu tiedosto"
+
+#: /work/echorepo/templates/zenodo_publications.html:65
+msgid "Deposition ID"
+msgstr "Laskeutumistunniste"
+
+#: /work/echorepo/templates/zenodo_publications.html:66
+msgid "Concept record ID"
+msgstr "Konseptin tietuetunniste"
+
+#: /work/echorepo/templates/zenodo_publications.html:69
+msgid "Download source"
+msgstr "Lataa lähde"
+
+#: /work/echorepo/templates/zenodo_publications.html:71
+msgid "source URL"
+msgstr "lähde"
+
+#: /work/echorepo/templates/zenodo_publications.html:76
+msgid "Filters"
+msgstr "Suodattimet"
+
+#: /work/echorepo/templates/zenodo_publications.html:77
+msgid "Zenodo page"
+msgstr "Zenodo- sivu"
+
+#: /work/echorepo/templates/zenodo_publications.html:79
+msgid "record page"
+msgstr "tietuesivu"
+
+#: /work/echorepo/templates/zenodo_publications.html:88
+msgid "Suggested reference"
+msgstr "Ehdotettu viite"
+
+#: /work/echorepo/templates/zenodo_publications.html:98
+msgid "No Zenodo publications have been logged yet."
+msgstr "Zenodo-julkaisuja ei ole vielä kirjattu."
+
+#: /work/static/js/map.js:114
+msgid "Link copied to clipboard"
+msgstr "Linkki kopioitu leikepöydälle"
+
+#: /work/static/js/map.js:117
+msgid "Copy this link:"
+msgstr "Kopioi tämä linkki:"
+
+#: /work/static/js/map.js:487 /work/static/js/map.js:2118
+#, python-brace-format
+msgid "Export filtered (${n})"
+msgstr "Vie suodatettu (${n})"
+
+#: /work/static/js/map.js:497 /work/static/js/map.js:1922
+msgid "Release mouse to finish drawing."
+msgstr "Vapauta hiiri viimeistelläksesi piirroksen."
+
+#: /work/static/js/map.js:585
+msgid "Street map"
+msgstr "Katukartta"
+
+#: /work/static/js/map.js:586
+msgid "Satellite"
+msgstr "Satelliitti"
+
+#: /work/static/js/map.js:1403 /work/static/js/map.js:2311
+msgid "Loading map data..."
+msgstr "Ladataan karttatietoja..."
+
+#: /work/static/js/map.js:1407
+msgid "Please wait"
+msgstr "Odottakaa"
+
+#: /work/static/js/map.js:1570
+msgid "Loading..."
+msgstr "Ladataan..."
+
+#: /work/static/js/map.js:1783
+msgid "Delete last point drawn"
+msgstr "Poistetaan viimeinen kohta"
+
+#: /work/static/js/map.js:1791
+msgid "Click and drag to draw a selection rectangle. You can draw more than one."
+msgstr "Klikkaa ja vedä piirtää valinta suorakulmio. Voit piirtää useamman kuin yhden."
+
+#: /work/static/js/map.js:1876
+msgid "No selected samples to export."
+msgstr "Vietäviä näytteitä ei ole valittu."
+
+#: /work/static/js/map.js:2162
+msgid "Please sign in to export data."
+msgstr "Kirjaudu sisään viedäksesi tietoja."
+
+#: /work/static/js/map.js:2221
+msgid "Loading samples..."
+msgstr "Ladataan näytteitä..."
+
+#: /work/static/js/map.js:2222
+msgid "Fetching visible map area"
+msgstr "Haetaan näkyvää kartta-aluetta"
+
+#: /work/static/js/map.js:2253
+msgid "Rendering markers..."
+msgstr "Renderöintimerkkejä..."
+
+#: /work/static/js/map.js:2254
+msgid "Building clusters and popups"
+msgstr "Rakennusklusterit ja ponnahdusikkunat"
+
+#: /work/static/js/map.js:2312
+msgid "Preparing map"
+msgstr "Valmistellaan karttaa"
 
 #~ msgid "Export filtered (%(n)s)"
 #~ msgstr "Vie suodatettu (__%(n)s_)"
@@ -806,4 +1061,46 @@ msgstr "tulokset"
 
 #~ msgid "Sign in to export data"
 #~ msgstr "Kirjaudu sisään vientitietoihin"
+
+#~ msgid "Expected columns:"
+#~ msgstr "Odotetut sarakkeet:"
+
+#~ msgid "Czechia"
+#~ msgstr "Tšekki"
+
+#~ msgid "Germany"
+#~ msgstr "Saksa"
+
+#~ msgid "Spain"
+#~ msgstr "Espanja"
+
+#~ msgid "Finland"
+#~ msgstr "Suomi"
+
+#~ msgid "France"
+#~ msgstr "Ranska"
+
+#~ msgid "United Kingdom"
+#~ msgstr "Yhdistynyt kuningaskunta"
+
+#~ msgid "Greece"
+#~ msgstr "Kreikka"
+
+#~ msgid "Italy"
+#~ msgstr "Italia"
+
+#~ msgid "Netherlands"
+#~ msgstr "Alankomaat"
+
+#~ msgid "Poland"
+#~ msgstr "Puola"
+
+#~ msgid "Portugal"
+#~ msgstr "Portugali"
+
+#~ msgid "Romania"
+#~ msgstr "Romania"
+
+#~ msgid "Slovakia"
+#~ msgstr "Slovakia"
 
