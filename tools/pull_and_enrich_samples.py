@@ -35,16 +35,8 @@ import logging
 import firebase_admin
 import pandas as pd
 import requests
-import shapefile  # pyshp
 from dotenv import load_dotenv
 from firebase_admin import auth, credentials, firestore
-from shapely.geometry import Point
-from shapely.geometry import shape as shp_shape
-
-try:
-    import reverse_geocoder as rg
-except Exception:
-    rg = None
 
 # ---------------------------------------------------------------------------
 # 0. load env and basic paths
@@ -135,6 +127,60 @@ def _container_data_path_to_host_path(maybe_path: str) -> str:
 
     return str(PROJECT_ROOT / p)
 
+
+COUNTRY_RESOLVER_ENABLED = env_bool("COUNTRY_RESOLVER_ENABLED", True)
+
+COUNTRY_RESOLVER_URL = os.getenv(
+    "COUNTRY_RESOLVER_URL",
+    "http://127.0.0.1:8010/resolve",
+)
+
+COUNTRY_RESOLVER_TIMEOUT_SECONDS = float(
+    os.getenv("COUNTRY_RESOLVER_TIMEOUT_SECONDS", "5")
+)
+
+
+def resolve_country_via_service(lat, lon) -> dict:
+    """
+    Resolve coordinates using the coord-country-resolver service.
+
+    Returns a normalized dictionary compatible with the old enrichment fields.
+    """
+    if not COUNTRY_RESOLVER_ENABLED:
+        return {
+            "country_code": "",
+            "country_source": "",
+            "country_lookup_note": "country_resolver_service_disabled",
+            "matched_country_name": "",
+            "distance_deg": None,
+        }
+
+    try:
+        response = requests.get(
+            COUNTRY_RESOLVER_URL,
+            params={"lat": lat, "lon": lon},
+            timeout=COUNTRY_RESOLVER_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        return {
+            "country_code": str(data.get("country_code") or "").strip().upper(),
+            "country_source": str(data.get("country_source") or ""),
+            "country_lookup_note": str(data.get("country_lookup_note") or ""),
+            "matched_country_name": str(data.get("matched_country_name") or ""),
+            "distance_deg": data.get("distance_deg"),
+        }
+
+    except Exception as e:
+        return {
+            "country_code": "",
+            "country_source": "",
+            "country_lookup_note": f"country_resolver_service_failed: {e}",
+            "matched_country_name": "",
+            "distance_deg": None,
+        }
+
 USERS_CSV = _local_path_to_abs(os.getenv("USERS_CSV", "/data/users.csv"))
 PLANNED_XLSX = _local_path_to_abs(os.getenv("PLANNED_XLSX", "/data/utils/planned.xlsx"))
 INPUT_CSV = _local_path_to_abs(os.getenv("INPUT_CSV", "/data/echorepo_samples.csv"))
@@ -177,14 +223,6 @@ FILTER_WRONG_COORDINATES = env_bool("FILTER_WRONG_COORDINATES", False)
 # Reverse decoder for country code (offline fallback)
 ALLOW_SINGLE_PLANNED_COUNTRY_FALLBACK = env_bool("ALLOW_SINGLE_PLANNED_COUNTRY_FALLBACK", True)
 
-COUNTRY_LOOKUP_TOLERANCE_DEG = float(
-    os.getenv("COUNTRY_LOOKUP_TOLERANCE_DEG", "0.10")
-)
-COUNTRY_NEAREST_BLACKLIST = {
-    x.strip().upper()
-    for x in os.getenv("COUNTRY_NEAREST_BLACKLIST", "").split(",")
-    if x.strip()
-}
 COORDINATE_APPROVED_CSV = Path(
     _container_data_path_to_host_path(
         os.getenv("COORDINATE_APPROVED_CSV", "data/coordinate_check_approved.csv")
@@ -239,33 +277,21 @@ def load_approved_coordinate_samples() -> dict[str, dict[str, str]]:
 
     return approvals
 
-def reverse_geocoder_country_code(lat, lon):
+
+_COUNTRY_RESOLUTION_CACHE: dict[tuple[str, str], dict] = {}
+
+
+def resolve_country_cached(lat, lon) -> dict:
     """
-    Offline nearest-place fallback country lookup.
-
-    This is useful when the Natural Earth polygon method fails because of
-    polygon simplification, ISO-field issues, or geometry quirks.
+    Cached wrapper around the coord-country-resolver HTTP service.
+    Avoids repeated HTTP calls for identical coordinates during one run.
     """
-    if rg is None:
-        return ""
+    key = (str(lat).strip(), str(lon).strip())
 
-    lat = _coord_to_float(lat)
-    lon = _coord_to_float(lon)
+    if key not in _COUNTRY_RESOLUTION_CACHE:
+        _COUNTRY_RESOLUTION_CACHE[key] = resolve_country_via_service(lat, lon)
 
-    if lat is None or lon is None:
-        return ""
-
-    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
-        return ""
-
-    try:
-        res = rg.search([(lat, lon)], mode=1)
-        if res:
-            return str(res[0].get("cc") or "").strip().upper()
-    except Exception:
-        return ""
-
-    return ""
+    return _COUNTRY_RESOLUTION_CACHE[key]
 
 
 def resolve_country_for_sample(
@@ -276,19 +302,10 @@ def resolve_country_for_sample(
     allow_planned_fallback=True,
 ):
     """
-    Resolve the country for a sample.
+    Resolve the country for a sample using the external coord-country-resolver service.
 
-    Priority:
-      1. Natural Earth polygon lookup from original coordinates
-      2. reverse_geocoder fallback from original coordinates
-      3. planned country only if there is exactly one planned country
-
-    Returns:
-      {
-        "country_code": "SE",
-        "country_source": "shapefile" | "reverse_geocoder" | "planned_single_fallback" | "",
-        "country_lookup_note": ""
-      }
+    ECHOREPO-specific fallback to planned country is kept here, because that is
+    project/business logic, not generic coordinate resolution logic.
     """
     planned_set = planned_set or set()
 
@@ -300,27 +317,33 @@ def resolve_country_for_sample(
             "country_code": "",
             "country_source": "",
             "country_lookup_note": "invalid_or_missing_coordinates",
+            "matched_country_name": "",
+            "distance_deg": None,
         }
 
-    # 1) Main method: shapefile polygons
-    cc = latlon_to_country_code(lat_f, lon_f)
+    if not (-90 <= lat_f <= 90 and -180 <= lon_f <= 180):
+        return {
+            "country_code": "",
+            "country_source": "",
+            "country_lookup_note": "coordinates_out_of_range",
+            "matched_country_name": "",
+            "distance_deg": None,
+        }
+
+    # Main method: coord-country-resolver service.
+    info = resolve_country_cached(lat_f, lon_f)
+
+    cc = str(info.get("country_code") or "").strip().upper()
     if cc:
         return {
             "country_code": cc,
-            "country_source": "shapefile",
-            "country_lookup_note": "",
+            "country_source": str(info.get("country_source") or "country_resolver_service"),
+            "country_lookup_note": str(info.get("country_lookup_note") or ""),
+            "matched_country_name": str(info.get("matched_country_name") or ""),
+            "distance_deg": info.get("distance_deg"),
         }
 
-    # 2) Fallback: reverse_geocoder
-    cc_rg = reverse_geocoder_country_code(lat_f, lon_f)
-    if cc_rg:
-        return {
-            "country_code": cc_rg,
-            "country_source": "reverse_geocoder",
-            "country_lookup_note": "shapefile_empty_reverse_geocoder_used",
-        }
-
-    # 3) Last-resort fallback: planned country only if unambiguous
+    # Last-resort fallback: planned country only if explicitly allowed and unambiguous.
     if (
         allow_planned_fallback
         and ALLOW_SINGLE_PLANNED_COUNTRY_FALLBACK
@@ -331,14 +354,17 @@ def resolve_country_for_sample(
             "country_code": cc_planned,
             "country_source": "planned_single_fallback",
             "country_lookup_note": "coordinate_country_lookup_failed_used_single_planned_country",
+            "matched_country_name": "",
+            "distance_deg": None,
         }
 
     return {
         "country_code": "",
-        "country_source": "",
-        "country_lookup_note": "country_lookup_failed",
+        "country_source": str(info.get("country_source") or ""),
+        "country_lookup_note": str(info.get("country_lookup_note") or "country_lookup_failed"),
+        "matched_country_name": str(info.get("matched_country_name") or ""),
+        "distance_deg": info.get("distance_deg"),
     }
-
 
 def _load_mirror_done() -> set[str]:
     """
@@ -372,6 +398,18 @@ def _mark_mirror_done(object_name: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write(object_name + "\n")
+
+def country_resolver_health_ok() -> bool:
+    if not COUNTRY_RESOLVER_ENABLED:
+        return True
+
+    try:
+        base_url = COUNTRY_RESOLVER_URL.rsplit("/", 1)[0]
+        response = requests.get(f"{base_url}/health", timeout=3)
+        return response.ok
+    except Exception as e:
+        log.warning("Country resolver health check failed: %s", e)
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -480,9 +518,9 @@ def init_minio():
         found = client.bucket_exists(MINIO_BUCKET)
         if not found:
             client.make_bucket(MINIO_BUCKET)
-            log.info("[INFO] Created MinIO bucket %s", MINIO_BUCKET)
+            log.info("Created MinIO bucket %s", MINIO_BUCKET)
     except Exception as e:
-        log.warning("[WARN] Could not ensure MinIO bucket: %s", e)
+        log.warning("Could not ensure MinIO bucket: %s", e)
         return None
     log.info("MinIO ready, bucket=%s", MINIO_BUCKET)
     return client
@@ -541,110 +579,8 @@ def _clean_float_val(v):
 
 
 # ---------------------------------------------------------------------------
-# helper: shapefile -> country polygons
+# coordinate parsing helpers
 # ---------------------------------------------------------------------------
-_COUNTRY_SHAPES = []
-
-
-COUNTRY_SHP = os.getenv(
-    "COUNTRY_SHP",
-    str(PROJECT_ROOT / "data" / "ne_50m_admin_0_countries" / "ne_50m_admin_0_countries.shp"),
-)
-
-
-def _record_get(rec, field_names, name, default=""):
-    if name not in field_names:
-        return default
-    try:
-        return rec[field_names.index(name)]
-    except Exception:
-        return default
-
-
-def _clean_iso2(v):
-    s = str(v or "").strip().upper()
-    if s in {"", "-99", "NULL", "NONE", "NAN"}:
-        return ""
-    if len(s) == 2 and s.isalpha():
-        return s
-    return ""
-
-
-def _best_iso2_from_record(rec, field_names):
-    """
-    Natural Earth may have ISO_A2=-99 for countries such as France.
-    Try several fields before giving up.
-    """
-    for field in ("ISO_A2_EH", "ISO_A2", "WB_A2", "POSTAL"):
-        iso2 = _clean_iso2(_record_get(rec, field_names, field))
-        if iso2:
-            return iso2
-
-    return ""
-
-
-def load_country_shapes_from_shp(shp_path=None):
-    global _COUNTRY_SHAPES
-
-    shp_path = shp_path or COUNTRY_SHP
-    shp_path = Path(shp_path)
-
-    if not shp_path.is_absolute():
-        shp_path = PROJECT_ROOT / shp_path
-
-    log.debug("Loading country shapefile: %s", shp_path)
-    
-    r = shapefile.Reader(str(shp_path))
-    field_names = [f[0] for f in r.fields[1:]]
-
-    shapes = []
-    missing_iso = []
-
-    for sr in r.shapeRecords():
-        geom = shp_shape(sr.shape.__geo_interface__)
-        rec = sr.record
-
-        iso2 = _best_iso2_from_record(rec, field_names)
-
-        name = (
-            _record_get(rec, field_names, "ADMIN")
-            or _record_get(rec, field_names, "NAME")
-            or _record_get(rec, field_names, "NAME_EN")
-            or ""
-        )
-
-        if not iso2:
-            missing_iso.append(
-                {
-                    "name": name,
-                    "ISO_A2": _record_get(rec, field_names, "ISO_A2"),
-                    "ISO_A2_EH": _record_get(rec, field_names, "ISO_A2_EH"),
-                    "WB_A2": _record_get(rec, field_names, "WB_A2"),
-                    "POSTAL": _record_get(rec, field_names, "POSTAL"),
-                }
-            )
-
-        # Store name and raw record fields too, useful for debugging.
-        shapes.append(
-            {
-                "geom": geom,
-                "iso2": iso2,
-                "name": str(name or ""),
-                "record": rec,
-                "field_names": field_names,
-            }
-        )
-
-    _COUNTRY_SHAPES = shapes
-
-    log.info("Loaded %d country polygons", len(_COUNTRY_SHAPES))
-    if missing_iso:
-        log.debug("Country polygons without ISO2 after fallback: %s", len(missing_iso))
-        for x in missing_iso[:10]:
-            log.debug("Missing ISO example: %s", x)
-    
-    return shapes
-
 
 def _coord_to_float(v):
     if v is None:
@@ -669,94 +605,6 @@ def _coord_to_float(v):
         return None
 
     return x
-
-
-def latlon_to_country_code(lat, lon, debug=False):
-    lat = _coord_to_float(lat)
-    lon = _coord_to_float(lon)
-
-    if lat is None or lon is None:
-        return ""
-
-    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
-        return ""
-
-    if not _COUNTRY_SHAPES:
-        load_country_shapes_from_shp()
-
-    pt = Point(lon, lat)
-
-    # 1) Exact polygon match.
-    # Do NOT apply blacklist here. If the point is actually inside a country polygon,
-    # that is stronger evidence than a nearest-neighbour fallback.
-    for item in _COUNTRY_SHAPES:
-        geom = item["geom"]
-        iso2 = item["iso2"]
-        name = item.get("name", "")
-
-        try:
-            if geom.covers(pt):
-                if debug:
-                    log.debug("[geo-debug] exact hit:", {"name": name, "iso2": iso2})
-                return iso2 or ""
-        except Exception:
-            continue
-
-    # 2) Nearest-polygon fallback for simplified coastlines / archipelagos.
-    # Blacklist applies only here.
-    nearest = []
-
-    for item in _COUNTRY_SHAPES:
-        geom = item["geom"]
-        iso2 = str(item["iso2"] or "").strip().upper()
-        name = item.get("name", "")
-
-        if not iso2:
-            continue
-
-        if iso2 in COUNTRY_NEAREST_BLACKLIST:
-            if debug:
-                log.debug(
-                    "[geo-debug] nearest candidate blacklisted:",
-                    {"iso2": iso2, "name": name},
-                )
-            continue
-
-        try:
-            minx, miny, maxx, maxy = geom.bounds
-
-            if lon < minx - COUNTRY_LOOKUP_TOLERANCE_DEG:
-                continue
-            if lon > maxx + COUNTRY_LOOKUP_TOLERANCE_DEG:
-                continue
-            if lat < miny - COUNTRY_LOOKUP_TOLERANCE_DEG:
-                continue
-            if lat > maxy + COUNTRY_LOOKUP_TOLERANCE_DEG:
-                continue
-
-            d = geom.distance(pt)
-            nearest.append((d, iso2, name))
-        except Exception:
-            continue
-
-    nearest.sort(key=lambda x: x[0])
-
-    if debug:
-        log.debug("[geo-debug] no exact hit. nearest candidates after blacklist:")
-        for d, iso2, name in nearest[:10]:
-            log.debug({"distance_deg": d, "iso2": iso2, "name": name})
-
-    if nearest:
-        d, iso2, name = nearest[0]
-        if d <= COUNTRY_LOOKUP_TOLERANCE_DEG:
-            if debug:
-                log.debug(
-                    "[geo-debug] nearest fallback used:",
-                    {"distance_deg": d, "iso2": iso2, "name": name},
-                )
-            return iso2 or ""
-
-    return ""
     
 # ---------------------------------------------------------------------------
 # misc helpers
@@ -1198,7 +1046,7 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
         
         if MIRROR_VERBOSE:
             action = "overwrote" if MIRROR_OVERWRITE_EXISTING else "uploaded"
-            log.info("[INFO] %s %s (%.2f MB)", action, object_name, len(data_fixed) / 1024 / 1024)
+            log.info("%s %s (%.2f MB)", action, object_name, len(data_fixed) / 1024 / 1024)
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
     except Exception as e:
         if MIRROR_VERBOSE:
@@ -1716,11 +1564,16 @@ def build_samples_df(
             lat_j, lon_j = lc_det_jitter(lat_f, lon_f, key, LC_MAX_JITTER_METERS)
 
         # Optional diagnostic only. Do NOT use this to assign country_code.
-        jitter_country = (
-            latlon_to_country_code(lat_j, lon_j)
-            if (lat_j is not None and lon_j is not None)
-            else ""
-        )
+        jitter_country = ""
+        if lat_j is not None and lon_j is not None:
+            jitter_info = resolve_country_for_sample(
+                lat_j,
+                lon_j,
+                planned_set=set(),
+                sample_id=sample_id,
+                allow_planned_fallback=False,
+            )
+            jitter_country = jitter_info.get("country_code", "")
 
         country = orig_country
 
@@ -1895,12 +1748,16 @@ def annotate_and_filter_wrong_coordinates(
     actual_cc = []
     actual_cc_source = []
     actual_cc_note = []
+    actual_cc_matched_name = []
+    actual_cc_distance_deg = []
 
     for lt, ln, valid, is_default in zip(lat_f, lon_f, valid_mask, default_mask, strict=False):
         if not valid or is_default:
             actual_cc.append("")
             actual_cc_source.append("")
             actual_cc_note.append("invalid_or_default_coordinates")
+            actual_cc_matched_name.append("")
+            actual_cc_distance_deg.append(None)
             continue
 
         info = resolve_country_for_sample(
@@ -1913,10 +1770,14 @@ def annotate_and_filter_wrong_coordinates(
         actual_cc.append(info["country_code"])
         actual_cc_source.append(info["country_source"])
         actual_cc_note.append(info["country_lookup_note"])
+        actual_cc_matched_name.append(info.get("matched_country_name"))
+        actual_cc_distance_deg.append(info.get("distance_deg"))
 
     out["actual_cc"] = actual_cc
     out["actual_cc_source"] = actual_cc_source
     out["actual_cc_note"] = actual_cc_note
+    out["actual_cc_matched_name"] = actual_cc_matched_name
+    out["actual_cc_distance_deg"] = actual_cc_distance_deg
 
     def _planned_set(q):
         q_norm = norm_qr_for_id(q)
@@ -2011,9 +1872,18 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         ln = _to_float_num(r.get("GPS_long"))
         country = (
             str(r.get("country_code_override") or "").strip().upper()
-            or r.get("country_code")
-            or latlon_to_country_code(lt, ln)
+            or str(r.get("country_code") or "").strip().upper()
+            or str(r.get("actual_cc") or "").strip().upper()
         )
+
+        if not country:
+            country_info = resolve_country_for_sample(
+                lt,
+                ln,
+                planned_set=set(),
+                allow_planned_fallback=False,
+            )
+            country = country_info.get("country_code", "")
 
         qr = norm_qr_for_id(r.get("QR_qrCode"))
         sample_id = qr or r.get("sampleId")
@@ -2050,7 +1920,7 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
 
 def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) -> pd.DataFrame:
     if not db_path or not os.path.exists(db_path):
-        log.info(f"[INFO] SQLite for lab_enrichment not found at {db_path}, skipping parameters.")
+        log.info(f"SQLite for lab_enrichment not found at {db_path}, skipping parameters.")
         return pd.DataFrame([])
 
     def norm_qr(q):
@@ -2067,9 +1937,18 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         lon = r.get("GPS_long")
         country = (
             str(r.get("country_code_override") or "").strip().upper()
-            or r.get("country_code")
-            or latlon_to_country_code(lat, lon)
-        )        
+            or str(r.get("country_code") or "").strip().upper()
+            or str(r.get("actual_cc") or "").strip().upper()
+        )
+
+        if not country:
+            country_info = resolve_country_for_sample(
+                lat,
+                lon,
+                planned_set=set(),
+                allow_planned_fallback=False,
+            )
+            country = country_info.get("country_code", "")        
         
         qr_to_country[qr_n] = country
 
@@ -2078,12 +1957,12 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         lab_df = pd.read_sql_query("SELECT * FROM lab_enrichment", conn)
     except Exception as e:
         conn.close()
-        log.info(f"[INFO] no lab_enrichment table in {db_path}: {e}")
+        log.info(f"no lab_enrichment table in {db_path}: {e}")
         return pd.DataFrame([])
     conn.close()
 
     if lab_df.empty:
-        log.info("[INFO] lab_enrichment table is empty, nothing to export.")
+        log.info("lab_enrichment table is empty, nothing to export.")
         return pd.DataFrame([])
 
     rows = []
@@ -2112,7 +1991,7 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
             }
         )
 
-    log.info("[INFO] built sample_parameters from sqlite: %s rows", len(rows))
+    log.info("built sample_parameters from sqlite: %s rows", len(rows))
     return pd.DataFrame(rows)
 
 
@@ -2158,17 +2037,20 @@ def upload_canonical_to_minio(mclient, local_path: Path, object_name: str):
             )
         log.info("[OK] uploaded to MinIO: %s", key)
     except Exception as e:
-        log.warning("[WARN] could not upload %s to MinIO as %s: %s", local_path, key, e)
+        log.warning("Could not upload %s to MinIO as %s: %s", local_path, key, e)
 
 
 # ---------------------------------------------------------------------------
 # Postgres tables
 # ---------------------------------------------------------------------------
-from psycopg2 import sql
-
+try:
+    from psycopg2 import sql
+except ImportError:
+    sql = None
 
 def ensure_pg_tables():
-    if psycopg2 is None:
+    if psycopg2 is None or sql is None:
+        log.info("[PG] psycopg2 not installed, skipping PG table setup")
         return
 
     conn = psycopg2.connect(
@@ -2657,11 +2539,14 @@ def apply_coordinate_approvals(df_annotated: pd.DataFrame) -> pd.DataFrame:
 # main
 # ---------------------------------------------------------------------------
 def main():
+    if COUNTRY_RESOLVER_ENABLED and not country_resolver_health_ok():
+        log.warning(
+            "Country resolver service is not available. "
+            "Coordinate resolution will probably fail and rows may be flagged."
+        )
+
     init_firebase()
     minio_client = init_minio()
-
-    # load country polygons once
-    load_country_shapes_from_shp()
 
     # 1) fetch from Firestore
     df_raw = fetch_samples_flat(minio_client)
