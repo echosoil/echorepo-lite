@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-31 13:02+0000\n"
+"POT-Creation-Date: 2026-06-20 23:17+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -16,314 +16,463 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: /work/echorepo/routes/web.py:354
+#: /work/echorepo/routes/web.py:365
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Ακτίνα απορρήτου (~±__{km}_ km)"
 
-#: /work/echorepo/routes/web.py:355
+#: /work/echorepo/routes/web.py:366
 msgid "Soil pH"
 msgstr "PH εδάφους"
 
-#: /work/echorepo/routes/web.py:356
+#: /work/echorepo/routes/web.py:367
 msgid "Acidic (≤5.5)"
 msgstr "Οξύ (≤5.5)"
 
-#: /work/echorepo/routes/web.py:357
+#: /work/echorepo/routes/web.py:368
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Ελαφρώς όξινα (5.5–6.5)"
 
-#: /work/echorepo/routes/web.py:358
+#: /work/echorepo/routes/web.py:369
 msgid "Neutral (6.5–7.5)"
 msgstr "Ουδέτερο (6.5–7.5)"
 
-#: /work/echorepo/routes/web.py:359
+#: /work/echorepo/routes/web.py:370
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Ελαφρώς αλκαλικό (7.5–8.5)"
 
-#: /work/echorepo/routes/web.py:360
+#: /work/echorepo/routes/web.py:371
 msgid "Alkaline (≥8.5)"
 msgstr "Αλκαλίνη (≥8. 5)"
 
-#: /work/echorepo/routes/web.py:361
+#: /work/echorepo/routes/web.py:372
 msgid "Your samples"
 msgstr "Τα δείγματα σας"
 
-#: /work/echorepo/routes/web.py:362
+#: /work/echorepo/routes/web.py:373
 msgid "Other samples"
 msgstr "Άλλα δείγματα"
 
-#: /work/echorepo/routes/web.py:363
+#: /work/echorepo/routes/web.py:374
 msgid "Export"
 msgstr "Εξαγωγή"
 
-#: /work/echorepo/routes/web.py:364
+#: /work/echorepo/routes/web.py:375
 msgid "Clear"
 msgstr "Καθαρισμός"
 
-#: /work/echorepo/routes/web.py:365
+#: /work/echorepo/routes/web.py:376
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Φίλτρα εξαγωγής ({n})"
 
-#: /work/echorepo/routes/web.py:366 /work/echorepo/templates/explore.html:68
+#: /work/echorepo/routes/web.py:377 /work/echorepo/templates/explore.html:55
+#: /work/static/js/map.js:1023
 msgid "Date"
 msgstr "Ημερομηνία"
 
-#: /work/echorepo/routes/web.py:367
+#: /work/echorepo/routes/web.py:378 /work/static/js/map.js:1024
 msgid "QR code"
 msgstr "Κωδικός QR"
 
-#: /work/echorepo/routes/web.py:368 /work/echorepo/templates/explore.html:42
-#: /work/echorepo/templates/results.html:309
-#: /work/echorepo/templates/search.html:90
+#: /work/echorepo/routes/web.py:379 /work/echorepo/templates/explore.html:37
+#: /work/echorepo/templates/results.html:361
+#: /work/echorepo/templates/search.html:78 /work/static/js/map.js:1025
 msgid "pH"
 msgstr "p Η"
 
-#: /work/echorepo/routes/web.py:369
+#: /work/echorepo/routes/web.py:380
 msgid "Colour"
 msgstr "Χρώμα"
 
-#: /work/echorepo/routes/web.py:370
+#: /work/echorepo/routes/web.py:381 /work/static/js/map.js:1026
 msgid "Soil organic matter"
 msgstr "Οργανική ύλη εδάφους"
 
-#: /work/echorepo/routes/web.py:371
+#: /work/echorepo/routes/web.py:382 /work/static/js/map.js:1027
 msgid "Texture"
 msgstr "Υφή"
 
-#: /work/echorepo/routes/web.py:372
+#: /work/echorepo/routes/web.py:383 /work/static/js/map.js:1028
 msgid "Structure"
 msgstr "Δομή"
 
-#: /work/echorepo/routes/web.py:373
+#: /work/echorepo/routes/web.py:384 /work/static/js/map.js:1029
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: /work/echorepo/routes/web.py:374
+#: /work/echorepo/routes/web.py:385 /work/static/js/map.js:1030
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: /work/echorepo/routes/web.py:375
+#: /work/echorepo/routes/web.py:386 /work/static/js/map.js:1031
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: /work/echorepo/routes/web.py:376
+#: /work/echorepo/routes/web.py:387 /work/static/js/map.js:1032
 msgid "Contamination"
 msgstr "Μόλυνση"
 
-#: /work/echorepo/routes/web.py:377
+#: /work/echorepo/routes/web.py:388
 msgid "Metals"
 msgstr "Μέταλλα"
 
-#: /work/echorepo/routes/web.py:378
+#: /work/echorepo/routes/web.py:389 /work/static/js/map.js:1034
 msgid "Elemental concentrations"
 msgstr "Στοιχειώδεις συγκεντρώσεις"
 
-#: /work/echorepo/routes/web.py:379
-msgid "Draw a rectangle"
-msgstr "Σχεδίαση ορθογωνίου"
+#: /work/echorepo/routes/web.py:390
+msgid "Draw a selection rectangle"
+msgstr "Σχεδίαση ορθογωνίου επιλογής"
 
-#: /work/echorepo/routes/web.py:380
+#: /work/echorepo/routes/web.py:391 /work/static/js/map.js:1779
 msgid "Cancel drawing"
 msgstr "Ακύρωση σχεδίου"
 
-#: /work/echorepo/routes/web.py:381
+#: /work/echorepo/routes/web.py:392 /work/static/js/map.js:1780
 msgid "Cancel"
 msgstr "Ακύρωση"
 
-#: /work/echorepo/routes/web.py:382
+#: /work/echorepo/routes/web.py:393 /work/static/js/map.js:1784
 msgid "Delete last point"
 msgstr "Διαγραφή τελευταίου σημείου"
 
-#: /work/echorepo/routes/web.py:383
-msgid "Click and drag to draw a rectangle."
-msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο."
+#: /work/echorepo/routes/web.py:394
+msgid "Click and drag to draw a selection rectangle."
+msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο επιλογής."
 
-#: /work/echorepo/routes/web.py:384
-msgid "Release mouse to finish drawing."
-msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
+#: /work/echorepo/routes/web.py:395 /work/static/js/map.js:1797
+msgid "Release mouse to add this rectangle to the selection."
+msgstr "Αφήστε το ποντίκι για να προσθέσετε αυτό το ορθογώνιο στην επιλογή."
 
-#: /work/echorepo/services/firebase.py:51
+#: /work/echorepo/routes/web.py:396
+msgid "Selection export to a file"
+msgstr "Επιλογή εξαγωγής σε ένα αρχείο"
+
+#: /work/echorepo/routes/web.py:397
+msgid "Use the selection tool"
+msgstr "Χρήση του εργαλείου επιλογής"
+
+#: /work/echorepo/routes/web.py:398
+msgid "to draw one or more selection areas."
+msgstr "να σχεδιάσει έναν ή περισσότερους τομείς επιλογής."
+
+#: /work/echorepo/routes/web.py:399
+msgid "Export selection"
+msgstr "Επιλογή εξαγωγής"
+
+#: /work/echorepo/routes/web.py:400
+msgid "Export selected samples"
+msgstr "Εξαγωγή επιλεγμένων δειγμάτων"
+
+#: /work/echorepo/routes/web.py:401
+msgid "Clear selection"
+msgstr "Καθαρισμός επιλογής"
+
+#: /work/echorepo/routes/web.py:402
+msgid "Clear all selection rectangles"
+msgstr "Καθαρισμός όλων των ορθογωνίων επιλογής"
+
+#: /work/echorepo/routes/web.py:403 /work/static/js/map.js:1772
+msgid "Draw selection rectangle"
+msgstr "Σχεδίαση ορθογωνίου επιλογής"
+
+#: /work/echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
 msgstr "Η ανάκτηση κωδικού πρόσβασης δεν έχει ρυθμιστεί για αυτόν τον ιστότοπο."
 
-#: /work/echorepo/services/firebase.py:60
+#: /work/echorepo/services/firebase.py:64
 msgid "Could not contact the password recovery service."
 msgstr "Αδυναμία επικοινωνίας με την υπηρεσία ανάκτησης κωδικού πρόσβασης."
 
-#: /work/echorepo/services/firebase.py:65
+#: /work/echorepo/services/firebase.py:69
 msgid "If this address is registered, a reset link has been sent."
 msgstr ""
 "Εάν αυτή η διεύθυνση είναι καταχωρημένη, έχει αποσταλεί ένας σύνδεσμος "
 "επαναφοράς."
 
-#: /work/echorepo/services/firebase.py:65
+#: /work/echorepo/services/firebase.py:70
 msgid "New password may take up to 30 minutes to activate in ECHOREPO."
 msgstr ""
 "Νέος κωδικός πρόσβασης μπορεί να διαρκέσει έως και 30 λεπτά για να "
 "ενεργοποιηθεί στο ECHOREPO."
 
-#: /work/echorepo/services/firebase.py:68
+#: /work/echorepo/services/firebase.py:74
 msgid "Password recovery is temporarily unavailable. Please contact the organisers."
 msgstr ""
 "Η ανάκτηση κωδικού πρόσβασης δεν είναι προσωρινά διαθέσιμη. Παρακαλώ "
 "επικοινωνήστε με τους διοργανωτές."
 
-#: /work/echorepo/templates/base.html:6 /work/echorepo/templates/base.html:10
+#: /work/echorepo/templates/base.html:7 /work/echorepo/templates/base.html:11
 msgid "ECHOrepo — EU Soil Data"
 msgstr "ECHOrepo — ΕΕ Δεδομένα εδάφους"
 
-#: /work/echorepo/templates/base.html:9
+#: /work/echorepo/templates/base.html:10
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr ""
 "ECHOREPO — Δείγματα εδάφους για την επιστήμη των πολιτών στο πλαίσιο του "
 "προγράμματος ECHO που χρηματοδοτείται από την ΕΕ"
 
-#: /work/echorepo/templates/base.html:12
+#: /work/echorepo/templates/base.html:14
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr ""
 "Πρόσβαση και λήψη δειγμάτων εδάφους σας. Μέρος του προγράμματος ECHO που "
 "χρηματοδοτείται από την ΕΕ."
 
-#: /work/echorepo/templates/base.html:79
+#: /work/echorepo/templates/base.html:179
 msgid "Skip to content"
 msgstr "Μετάβαση στο περιεχόμενο"
 
-#: /work/echorepo/templates/base.html:85
+#: /work/echorepo/templates/base.html:185
 msgid "Primary"
 msgstr "Πρωτοβάθμια"
 
-#: /work/echorepo/templates/base.html:88
+#: /work/echorepo/templates/base.html:188
 msgid "ECHOrepo logo"
 msgstr "Λογότυπο ECHOrepo"
 
-#: /work/echorepo/templates/base.html:93
+#: /work/echorepo/templates/base.html:194
 msgid "Toggle navigation"
 msgstr "Εναλλαγή πλοήγησης"
 
-#: /work/echorepo/templates/base.html:99
+#: /work/echorepo/templates/base.html:201
 msgid "About"
 msgstr "Σχετικά"
 
-#: /work/echorepo/templates/base.html:100
+#: /work/echorepo/templates/base.html:203
 msgid "For Participants"
 msgstr "Για τους συμμετέχοντες"
 
-#: /work/echorepo/templates/base.html:101
+#: /work/echorepo/templates/base.html:205
 msgid "Partners"
 msgstr "Εταίροι"
 
-#: /work/echorepo/templates/base.html:102
+#: /work/echorepo/templates/base.html:207
 msgid "News & Events"
 msgstr "Νέα & Γεγονότα"
 
-#: /work/echorepo/templates/base.html:104
+#: /work/echorepo/templates/base.html:210
 msgid "Resources"
 msgstr "Πόροι"
 
-#: /work/echorepo/templates/base.html:106
+#: /work/echorepo/templates/base.html:213
 msgid "Media Kit"
 msgstr "Κιτ πολυμέσων"
 
-#: /work/echorepo/templates/base.html:107
+#: /work/echorepo/templates/base.html:215
 msgid "Publications"
 msgstr "Εκδόσεις"
 
-#: /work/echorepo/templates/base.html:108
+#: /work/echorepo/templates/base.html:217
 msgid "Newsletter Archive"
 msgstr "Αρχείο ενημερωτικού δελτίου"
 
-#: /work/echorepo/templates/base.html:120
+#: /work/echorepo/templates/base.html:218
+msgid "Zenodo Publications"
+msgstr "Εκδόσεις Zenodo"
+
+#: /work/echorepo/templates/base.html:233
 msgid "Change language"
 msgstr "Αλλαγή γλώσσας"
 
-#: /work/echorepo/templates/base.html:140
+#: /work/echorepo/templates/base.html:253
 msgid "Logged in as"
 msgstr "Σύνδεση ως"
 
-#: /work/echorepo/templates/base.html:147
+#: /work/echorepo/templates/base.html:259
 msgid "Logout"
 msgstr "Αποσύνδεση"
 
-#: /work/echorepo/templates/base.html:152
+#: /work/echorepo/templates/base.html:263
 msgid "Sign in"
 msgstr "Υπογραφή"
 
-#: /work/echorepo/templates/base.html:170
+#: /work/echorepo/templates/base.html:281
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "Το ECHOrepo είναι μέρος της χρηματοδοτούμενης από την ΕΕ και το UKRI"
 
-#: /work/echorepo/templates/base.html:170
+#: /work/echorepo/templates/base.html:281
 msgid "project"
 msgstr "έργο"
 
-#: /work/echorepo/templates/base.html:172
+#: /work/echorepo/templates/base.html:283
 msgid "Need help?"
 msgstr "Χρειάζεσαι βοήθεια?"
 
-#: /work/echorepo/templates/base.html:181
+#: /work/echorepo/templates/base.html:291
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "Χρηματοδοτείται από το Ηνωμένο Βασίλειο Έρευνα και Καινοτομία (UKRI)"
 
-#: /work/echorepo/templates/base.html:189
+#: /work/echorepo/templates/base.html:297
 msgid "Co-funded by the European Union"
 msgstr "Συγχρηματοδότηση από την Ευρωπαϊκή Ένωση"
 
-#: /work/echorepo/templates/base.html:195
+#: /work/echorepo/templates/base.html:301
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr ""
 "Χρηματοδοτείται από την Ευρωπαϊκή Ένωση και το Ηνωμένο Βασίλειο Έρευνα και "
 "Καινοτομία"
 
+#: /work/echorepo/templates/coordinate_issues.html:2
+#: /work/echorepo/templates/coordinate_issues.html:6
+msgid "Coordinate issues"
+msgstr "Θέματα συντονισμού"
+
+#: /work/echorepo/templates/coordinate_issues.html:11
+msgid "The coordinate issues file was not found:"
+msgstr "Το αρχείο θεμάτων συντεταγμένων δε βρέθηκε:"
+
+#: /work/echorepo/templates/coordinate_issues.html:19
+#: /work/echorepo/templates/coordinate_issues.html:119
+#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:75
+msgid "Sample / QR"
+msgstr "Δείγμα / QR"
+
+#: /work/echorepo/templates/coordinate_issues.html:25
+#: /work/echorepo/templates/coordinate_issues.html:120
+msgid "User ID"
+msgstr "ID χρήστη"
+
+#: /work/echorepo/templates/coordinate_issues.html:30
+#: /work/echorepo/templates/coordinate_issues.html:125
+msgid "Issue type"
+msgstr "Τύπος έκδοσης"
+
+#: /work/echorepo/templates/coordinate_issues.html:32
+msgid "Any issue"
+msgstr "Κάθε θέμα"
+
+#: /work/echorepo/templates/coordinate_issues.html:43
+#: /work/echorepo/templates/explore.html:31 /work/echorepo/templates/search.html:31
+msgid "Search"
+msgstr "Αναζήτηση"
+
+#: /work/echorepo/templates/coordinate_issues.html:52
+#: /work/echorepo/templates/coordinate_issues.html:123
+msgid "Actual country"
+msgstr "Πραγματική χώρα"
+
+#: /work/echorepo/templates/coordinate_issues.html:59
+#: /work/echorepo/templates/coordinate_issues.html:124
+msgid "Planned country"
+msgstr "Προγραμματισμένη χώρα"
+
+#: /work/echorepo/templates/coordinate_issues.html:69
+msgid "Show approved"
+msgstr "Εμφάνιση εγκεκριμένων"
+
+#: /work/echorepo/templates/coordinate_issues.html:83
+msgid "Export current results"
+msgstr "Εξαγωγή των τρεχόντων αποτελεσμάτων"
+
+#: /work/echorepo/templates/coordinate_issues.html:102
+msgid "coordinate issue(s)"
+msgstr "θέματα συντονισμού"
+
+#: /work/echorepo/templates/coordinate_issues.html:105
+msgid "Source:"
+msgstr "Πηγή:"
+
+#: /work/echorepo/templates/coordinate_issues.html:115
+msgid "OK"
+msgstr "ΕΝΤΆΞΕΙ"
+
+#: /work/echorepo/templates/coordinate_issues.html:121
+#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
+#: /work/echorepo/templates/search.html:79
+msgid "Lat"
+msgstr "Λατ"
+
+#: /work/echorepo/templates/coordinate_issues.html:122
+#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
+#: /work/echorepo/templates/search.html:80
+msgid "Lon"
+msgstr "Λον"
+
+#: /work/echorepo/templates/coordinate_issues.html:134
+msgid "Approved"
+msgstr "Έγκριση"
+
+#: /work/echorepo/templates/coordinate_issues.html:144
+#: /work/echorepo/templates/search.html:92
+msgid "Show only this sample on map"
+msgstr "Εμφάνιση μόνο αυτού του δείγματος στο χάρτη"
+
+#: /work/echorepo/templates/coordinate_issues.html:175
+msgid "No coordinate issues for these filters."
+msgstr "Δεν υπάρχουν θέματα συντεταγμένων για αυτά τα φίλτρα."
+
+#: /work/echorepo/templates/coordinate_issues.html:187
+msgid "Approval comment"
+msgstr "Παρατηρήσεις έγκρισης"
+
+#: /work/echorepo/templates/coordinate_issues.html:189
+msgid "Optional: e.g. border sample, algorithm false positive"
+msgstr "Προαιρετικό: π.χ. δείγμα περιγράμματος, ψευδώς θετικός αλγόριθμος"
+
+#: /work/echorepo/templates/coordinate_issues.html:193
+msgid "Save selected as OK"
+msgstr "Αποθήκευση επιλεγμένου ως OK"
+
+#: /work/echorepo/templates/coordinate_issues.html:202
+#: /work/echorepo/templates/search.html:121
+msgid "Showing page"
+msgstr "Εμφάνιση σελίδας"
+
+#: /work/echorepo/templates/coordinate_issues.html:202
+#: /work/echorepo/templates/search.html:121
+msgid "of"
+msgstr "του"
+
+#: /work/echorepo/templates/coordinate_issues.html:203
+#: /work/echorepo/templates/search.html:121
+msgid "results"
+msgstr "αποτελέσματα"
+
 #: /work/echorepo/templates/explore.html:2
 msgid "ECHOrepo — Explore"
 msgstr "ECHOREPO — Εξερευνήστε"
 
-#: /work/echorepo/templates/explore.html:27
+#: /work/echorepo/templates/explore.html:22
 msgid "Explore the map"
 msgstr "Εξερευνήστε το χάρτη"
 
-#: /work/echorepo/templates/explore.html:30
+#: /work/echorepo/templates/explore.html:25
 msgid "Sign in to export data and access your personal samples."
 msgstr "Συνδεθείτε στην εξαγωγή δεδομένων και πρόσβαση στα προσωπικά σας δείγματα."
 
-#: /work/echorepo/templates/explore.html:36 /work/echorepo/templates/search.html:44
-msgid "Search"
-msgstr "Αναζήτηση"
-
-#: /work/echorepo/templates/explore.html:47
-#: /work/echorepo/templates/results.html:311
+#: /work/echorepo/templates/explore.html:40
+#: /work/echorepo/templates/results.html:363
 msgid "min"
 msgstr "λεπτά"
 
-#: /work/echorepo/templates/explore.html:55
-#: /work/echorepo/templates/results.html:314
+#: /work/echorepo/templates/explore.html:45
+#: /work/echorepo/templates/results.html:366
 msgid "max"
 msgstr "max"
 
-#: /work/echorepo/templates/explore.html:60 /work/echorepo/templates/search.html:15
-#: /work/echorepo/templates/search.html:89
+#: /work/echorepo/templates/explore.html:49 /work/echorepo/templates/search.html:15
+#: /work/echorepo/templates/search.html:77
 msgid "Country"
 msgstr "Χώρες"
 
-#: /work/echorepo/templates/explore.html:65
+#: /work/echorepo/templates/explore.html:52
 msgid "All countries"
 msgstr "Όλες οι χώρες"
 
-#: /work/echorepo/templates/explore.html:86
-#: /work/echorepo/templates/results.html:316
+#: /work/echorepo/templates/explore.html:65
+#: /work/echorepo/templates/results.html:368
 msgid "Apply"
 msgstr "Εφαρμογή"
 
-#: /work/echorepo/templates/explore.html:95
-#: /work/echorepo/templates/results.html:319
+#: /work/echorepo/templates/explore.html:70
+#: /work/echorepo/templates/results.html:371
 msgid "Export filtered (0)"
 msgstr "Φίλτρο εξαγωγής (0)"
 
-#: /work/echorepo/templates/explore.html:103
+#: /work/echorepo/templates/explore.html:76
 msgid "Copy view link"
 msgstr "Αντιγραφή δεσμού προβολής"
 
@@ -364,16 +513,6 @@ msgstr "Χρήστης"
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
-#: /work/echorepo/templates/search.html:91
-msgid "Lat"
-msgstr "Λατ"
-
-#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
-#: /work/echorepo/templates/search.html:92
-msgid "Lon"
-msgstr "Λον"
-
 #: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:77
 msgid "Fix"
 msgstr "Διόρθωση"
@@ -405,15 +544,23 @@ msgstr ""
 "κατάλογο για την παρούσα QR."
 
 #: /work/echorepo/templates/lab_upload.html:3
-#: /work/echorepo/templates/results.html:147
+#: /work/echorepo/templates/results.html:190
 msgid "Upload lab data"
 msgstr "Αποστολή δεδομένων εργαστηρίου"
 
-#: /work/echorepo/templates/lab_upload.html:5
-msgid "Expected columns:"
-msgstr "Αναμενόμενες στήλες:"
+#: /work/echorepo/templates/lab_upload.html:6
+msgid ""
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with "
+"sheet"
+msgstr ""
+"Αποστολή είτε αποτελεσμάτων μετάλλων (CSV/XLSX) ή πίνακα OTU βιοποικιλότητας "
+"(XLSX με φύλλο"
 
-#: /work/echorepo/templates/lab_upload.html:12
+#: /work/echorepo/templates/lab_upload.html:8
+msgid "The server will detect the format automatically."
+msgstr "Ο εξυπηρετητής θα ανιχνεύσει αυτόματα τη μορφή."
+
+#: /work/echorepo/templates/lab_upload.html:13
 msgid "Upload"
 msgstr "Αποστολή"
 
@@ -470,16 +617,16 @@ msgid "Download all samples (CSV)"
 msgstr "Κατεβάστε όλα τα δείγματα (CSV)"
 
 #: /work/echorepo/templates/results.html:13
-#: /work/echorepo/templates/results.html:151 /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/results.html:194 /work/echorepo/templates/search.html:2
 #: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Δείγματα αναζήτησης"
 
-#: /work/echorepo/templates/results.html:133
+#: /work/echorepo/templates/results.html:177
 msgid "Your data"
 msgstr "Τα δεδομένα σας"
 
-#: /work/echorepo/templates/results.html:134
+#: /work/echorepo/templates/results.html:178
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
@@ -487,109 +634,120 @@ msgstr ""
 "Εξερευνήστε τις τοποθεσίες του δείγματος εδάφους σας στο χάρτη, στη συνέχεια,"
 " εξαγωγή ή περιήγηση στον πίνακα."
 
-#: /work/echorepo/templates/results.html:142
+#: /work/echorepo/templates/results.html:185
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Διόρθωση θεμάτων δεδομένων (__%(n)s_)"
 
-#: /work/echorepo/templates/results.html:159
-#: /work/echorepo/templates/results.html:217
+#: /work/echorepo/templates/results.html:202
+#: /work/echorepo/templates/results.html:263
 msgid "Final survey"
 msgstr "Τελική έρευνα"
 
-#: /work/echorepo/templates/results.html:161
+#: /work/echorepo/templates/results.html:204
 msgid "We sincerely thank you for your commitment to this project!"
 msgstr "Σας ευχαριστούμε ειλικρινά για τη δέσμευσή σας σε αυτό το έργο!"
 
-#: /work/echorepo/templates/results.html:164
+#: /work/echorepo/templates/results.html:207
 msgid ""
 "This is the third and final survey in the project, following the initial ones"
-" you completed before and after soil sampling. The majority of questions are "
-"consistent with the previous surveys so that we can accurately measure "
-"changes over time and understand the impact of project participation."
+" you completed before and after\n"
+"      soil sampling. The majority of questions are consistent with the "
+"previous surveys so that we can accurately\n"
+"      measure changes over time and understand the impact of project "
+"participation."
 msgstr ""
-"Αυτή είναι η τρίτη και τελευταία έρευνα στο έργο, ακολουθώντας τις αρχικές "
-"που ολοκληρώσατε πριν και μετά τη δειγματοληψία του εδάφους. Η πλειοψηφία των"
-" ερωτήσεων είναι συνεπείς με τις προηγούμενες έρευνες, έτσι ώστε να μπορούμε "
-"να μετράμε με ακρίβεια τις αλλαγές με την πάροδο του χρόνου και να κατανοούμε"
-" τον αντίκτυπο της συμμετοχής στο έργο."
+"Αυτή είναι η τρίτη και τελευταία έρευνα στο έργο, μετά τις αρχικές που "
+"ολοκληρώσατε πριν και μετά\n"
+"δειγματοληψία του εδάφους. Οι περισσότερες ερωτήσεις είναι σύμφωνες με τις "
+"προηγούμενες έρευνες, έτσι ώστε να μπορούμε με ακρίβεια\n"
+"να μετρούν τις αλλαγές με την πάροδο του χρόνου και να κατανοούν τον "
+"αντίκτυπο της συμμετοχής στο έργο."
 
-#: /work/echorepo/templates/results.html:167
+#: /work/echorepo/templates/results.html:212
 msgid ""
 "Before you start: please only complete this survey if the lab results from "
-"your soil sample(s) have already been added to the repository. If the results"
-" are pending, please check back at a later time."
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check "
+"back at a later time."
 msgstr ""
 "Πριν ξεκινήσετε: παρακαλώ συμπληρώστε αυτή την έρευνα μόνο εάν τα "
-"αποτελέσματα του εργαστηρίου από το(τα) δείγμα(τα) του εδάφους σας έχουν ήδη "
-"προστεθεί στο αποθετήριο. Εάν εκκρεμούν τα αποτελέσματα, παρακαλούμε ελέγξτε "
-"ξανά αργότερα."
+"αποτελέσματα του εργαστηρίου από το(τα) δείγμα(τα) εδάφους σας έχουν ήδη\n"
+"προστέθηκε στο αποθετήριο. Εάν εκκρεμούν τα αποτελέσματα, παρακαλούμε ελέγξτε"
+" ξανά αργότερα."
 
-#: /work/echorepo/templates/results.html:172
+#: /work/echorepo/templates/results.html:218
 msgid "Go to final survey"
 msgstr "Μετάβαση στην τελική έρευνα"
 
-#: /work/echorepo/templates/results.html:181
+#: /work/echorepo/templates/results.html:223
 msgid "Data use information"
 msgstr "Πληροφορίες χρήσης δεδομένων"
 
-#: /work/echorepo/templates/results.html:188
+#: /work/echorepo/templates/results.html:228
 msgid "I have already completed it"
 msgstr "Το έχω ήδη ολοκληρώσει"
 
-#: /work/echorepo/templates/results.html:193
+#: /work/echorepo/templates/results.html:233
 msgid "Processing survey data in the ECHO project"
 msgstr "Δεδομένα έρευνας για την επεξεργασία του έργου ECHO"
 
-#: /work/echorepo/templates/results.html:195
+#: /work/echorepo/templates/results.html:235
 msgid ""
 "The objective of this survey data is to examine the impact of project "
-"participation on participant attitudes and motivation towards soil."
+"participation on participant\n"
+"        attitudes and motivation towards soil."
 msgstr ""
-"Στόχος των δεδομένων της έρευνας αυτής είναι να εξεταστεί ο αντίκτυπος της "
-"συμμετοχής του έργου στη στάση των συμμετεχόντων και τα κίνητρα προς το "
-"έδαφος."
+"Στόχος των δεδομένων της έρευνας αυτής είναι να εξεταστούν οι επιπτώσεις της "
+"συμμετοχής του έργου στον συμμετέχοντα\n"
+"στάσεις και κίνητρα προς το έδαφος."
 
-#: /work/echorepo/templates/results.html:198
+#: /work/echorepo/templates/results.html:239
 msgid ""
 "Your information will only be used for scientific purposes. We do not collect"
-" names or addresses. Your details regarding age and gender are only used for "
-"statistical purposes and all details are collected and evaluated anonymously."
-" It is not possible to draw conclusions about your person at any time."
+" names or addresses. Your\n"
+"        details regarding age and gender are only used for statistical "
+"purposes and all details are collected and\n"
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
 msgstr ""
 "Οι πληροφορίες σας θα χρησιμοποιηθούν μόνο για επιστημονικούς σκοπούς. Δεν "
-"συλλέγουμε ονόματα ή διευθύνσεις. Τα στοιχεία σας σχετικά με την ηλικία και "
-"το φύλο χρησιμοποιούνται μόνο για στατιστικούς σκοπούς και όλες οι "
-"λεπτομέρειες συλλέγονται και αξιολογούνται ανώνυμα. Δεν είναι δυνατόν να "
-"βγάλεις συμπεράσματα για το άτομο σου οποιαδήποτε στιγμή."
+"συλλέγουμε ονόματα ή διευθύνσεις. Το δικό σου\n"
+"Πληροφορίες σχετικά με την ηλικία και το φύλο χρησιμοποιούνται μόνο για "
+"στατιστικούς σκοπούς και συλλέγονται όλες οι λεπτομέρειες και\n"
+"αξιολογήθηκε ανώνυμα. Δεν είναι δυνατόν να βγάλεις συμπεράσματα για το άτομο "
+"σου οποιαδήποτε στιγμή."
 
-#: /work/echorepo/templates/results.html:201
+#: /work/echorepo/templates/results.html:244
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
-"crucial role in providing valuable insights that enhance the relevance and "
-"impact of the ECHO project. Your honest responses are essential for "
-"understanding how engagement with the project influences attitudes and "
-"motivations, ensuring the project’s outcomes are meaningful and well-"
-"informed."
+"crucial role in providing valuable\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
+"        outcomes are meaningful and well-informed."
 msgstr ""
-"Η απάντηση σε κάθε ερώτηση της έρευνας εκτιμάται περισσότερο, καθώς "
-"διαδραματίζει καθοριστικό ρόλο στην παροχή πολύτιμων γνώσεων που ενισχύουν τη"
-" συνάφεια και τον αντίκτυπο του έργου ECHO. Οι ειλικρινείς απαντήσεις σας "
-"είναι απαραίτητες για την κατανόηση του τρόπου με τον οποίο η εμπλοκή με το "
-"έργο επηρεάζει τις στάσεις και τα κίνητρα, εξασφαλίζοντας ότι τα αποτελέσματα"
-" του έργου είναι σημαντικά και καλά ενημερωμένα."
+"Η απάντηση σε κάθε ερώτηση της έρευνας εκτιμάται περισσότερο καθώς παίζει "
+"καθοριστικό ρόλο στην παροχή πολύτιμης\n"
+"πληροφορίες που ενισχύουν τη συνάφεια και τον αντίκτυπο του έργου ECHO. Οι "
+"ειλικρινείς απαντήσεις σας είναι απαραίτητες για\n"
+"κατανόηση του τρόπου με τον οποίο η εμπλοκή με το έργο επηρεάζει τις στάσεις "
+"και τα κίνητρα, εξασφαλίζοντας τη λειτουργία του έργου\n"
+"Τα αποτελέσματα είναι σημαντικά και καλά ενημερωμένα."
 
-#: /work/echorepo/templates/results.html:204
+#: /work/echorepo/templates/results.html:250
 msgid ""
 "The survey will take approximately 8–10 minutes to complete. Please find a "
-"quiet space where you won’t be interrupted. There are no right or wrong "
-"answers — answer spontaneously."
+"quiet space where you won’t be\n"
+"        interrupted. There are no right or wrong answers — answer "
+"spontaneously."
 msgstr ""
 "Η έρευνα θα διαρκέσει περίπου 8-10 λεπτά για να ολοκληρωθεί. Παρακαλώ βρείτε "
-"ένα ήσυχο χώρο όπου δεν θα σας διακόψει. Δεν υπάρχουν σωστές ή λάθος "
-"απαντήσεις — απαντήστε αυθόρμητα."
+"ένα ήσυχο χώρο όπου δεν θα είστε\n"
+"Διακόπτεται. Δεν υπάρχουν σωστές ή λάθος απαντήσεις — απαντήστε αυθόρμητα."
 
-#: /work/echorepo/templates/results.html:207
+#: /work/echorepo/templates/results.html:254
 msgid ""
 "Based on the information provided to you, please consent to participate in "
 "the survey below."
@@ -597,205 +755,299 @@ msgstr ""
 "Με βάση τις πληροφορίες που σας παρέχονται, παρακαλούμε συναινείτε να "
 "συμμετάσχετε στην παρακάτω έρευνα."
 
-#: /work/echorepo/templates/results.html:218
+#: /work/echorepo/templates/results.html:264
 msgid "thank you for your participation!"
 msgstr "σας ευχαριστώ για τη συμμετοχή σας!"
 
-#: /work/echorepo/templates/results.html:224
+#: /work/echorepo/templates/results.html:268
 msgid "Show details"
 msgstr "Εμφάνιση λεπτομερειών"
 
-#: /work/echorepo/templates/results.html:230
+#: /work/echorepo/templates/results.html:272
 msgid "Dismiss"
 msgstr "Ελεύθεροι"
 
-#: /work/echorepo/templates/results.html:240
+#: /work/echorepo/templates/results.html:282
 msgid "No data found for"
 msgstr "Δεν βρέθηκαν δεδομένα για"
 
-#: /work/echorepo/templates/results.html:240
-msgid "If you recently submitted samples, try again later."
-msgstr "Εάν υποβάλατε πρόσφατα δείγματα, προσπαθήστε ξανά αργότερα."
+#: /work/echorepo/templates/results.html:282
+msgid ""
+"If you recently submitted samples, try again\n"
+"    later."
+msgstr ""
+"Αν υποβάλατε πρόσφατα δείγματα, προσπαθήστε ξανά.\n"
+"Αργότερα."
 
-#: /work/echorepo/templates/results.html:253
+#: /work/echorepo/templates/results.html:296
 msgid "Download"
 msgstr "Λήψη"
 
-#: /work/echorepo/templates/results.html:260
+#: /work/echorepo/templates/results.html:303
 msgid "CSV (per-user)"
 msgstr "CSV (ανά χρήστη)"
 
-#: /work/echorepo/templates/results.html:268
+#: /work/echorepo/templates/results.html:311
 msgid "XLSX (per-user)"
 msgstr "XLSX (ανά χρήστη)"
 
-#: /work/echorepo/templates/results.html:275
+#: /work/echorepo/templates/results.html:320
 msgid "All samples (CSV, anonymised)"
 msgstr "Όλα τα δείγματα (CSV, ανώνυμα)"
 
-#: /work/echorepo/templates/results.html:280
+#: /work/echorepo/templates/results.html:325
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (ανά χρήστη)"
 
-#: /work/echorepo/templates/results.html:284
+#: /work/echorepo/templates/results.html:331
 msgid "Canonical exports"
 msgstr "Κανονική εξαγωγή"
 
-#: /work/echorepo/templates/results.html:287
+#: /work/echorepo/templates/results.html:334
 msgid "samples.csv"
 msgstr "δείγματα.csv"
 
-#: /work/echorepo/templates/results.html:292
+#: /work/echorepo/templates/results.html:339
 msgid "sample_images.csv"
 msgstr "δείγμα_εικόνες.csv"
 
-#: /work/echorepo/templates/results.html:297
+#: /work/echorepo/templates/results.html:344
 msgid "sample_parameters.csv"
 msgstr "δείγμα_παράμετροι.csv"
 
-#: /work/echorepo/templates/results.html:302
+#: /work/echorepo/templates/results.html:349
+msgid "sample_biodiversity.csv"
+msgstr "δείγμα βιοποικιλότητα.csv"
+
+#: /work/echorepo/templates/results.html:354
 msgid "All canonical (zip)"
 msgstr "Όλα τα κανονικά (zip)"
 
-#: /work/echorepo/templates/results.html:316
+#: /work/echorepo/templates/results.html:368
 msgid "Apply pH filter"
 msgstr "Εφαρμογή φίλτρου pH"
 
-#: /work/echorepo/templates/results.html:318
+#: /work/echorepo/templates/results.html:370
 msgid "Export rows matching current pH filter"
 msgstr "Εξαγωγή γραμμών που ταιριάζουν με το τρέχον φίλτρο pH"
 
-#: /work/echorepo/templates/results.html:346
+#: /work/echorepo/templates/results.html:391
 msgid "Privacy information"
 msgstr "Πληροφορίες απορρήτου"
 
-#: /work/echorepo/templates/results.html:373
+#: /work/echorepo/templates/results.html:418
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
-"my personal data for this project."
+"my personal data for\n"
+"              this project."
 msgstr ""
 "Έχω διαβάσει τις παραπάνω πληροφορίες απορρήτου και συναινώ στην επεξεργασία "
-"των προσωπικών μου δεδομένων για αυτό το έργο."
+"των προσωπικών μου δεδομένων για\n"
+"Αυτό το έργο."
 
-#: /work/echorepo/templates/results.html:380
+#: /work/echorepo/templates/results.html:426
 msgid "Accept and continue"
 msgstr "Αποδοχή και συνέχιση"
 
-#: /work/echorepo/templates/results.html:691
+#: /work/echorepo/templates/results.html:739
 msgid "Show on map"
 msgstr "Εμφάνιση στο χάρτη"
 
-#: /work/echorepo/templates/results.html:695
+#: /work/echorepo/templates/results.html:743
 msgid "Could not locate this sample on the map."
 msgstr "Αδυναμία εντοπισμού του δείγματος στο χάρτη."
 
-#: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:87
-msgid "Sample / QR"
-msgstr "Δείγμα / QR"
-
-#: /work/echorepo/templates/search.html:17
+#: /work/echorepo/templates/search.html:17 /work/static/js/map.js:168
 msgid "Any country"
 msgstr "Οποιαδήποτε χώρα"
 
-#: /work/echorepo/templates/search.html:18
-msgid "Czechia"
-msgstr "Τσεχική Δημοκρατία"
-
-#: /work/echorepo/templates/search.html:19
-msgid "Germany"
-msgstr "Γερμανία"
-
-#: /work/echorepo/templates/search.html:20
-msgid "Spain"
-msgstr "Ισπανία"
-
-#: /work/echorepo/templates/search.html:21
-msgid "Finland"
-msgstr "Φινλανδία"
-
 #: /work/echorepo/templates/search.html:22
-msgid "France"
-msgstr "Γαλλία"
-
-#: /work/echorepo/templates/search.html:23
-msgid "United Kingdom"
-msgstr "Ηνωμένο Βασίλειο"
-
-#: /work/echorepo/templates/search.html:24
-msgid "Greece"
-msgstr "Ελλάδα"
-
-#: /work/echorepo/templates/search.html:25
-msgid "Italy"
-msgstr "Ιταλία"
-
-#: /work/echorepo/templates/search.html:26
-msgid "Netherlands"
-msgstr "Κάτω Χώρες"
-
-#: /work/echorepo/templates/search.html:27
-msgid "Poland"
-msgstr "Πολωνία"
-
-#: /work/echorepo/templates/search.html:28
-msgid "Portugal"
-msgstr "Πορτογαλία"
-
-#: /work/echorepo/templates/search.html:29
-msgid "Romania"
-msgstr "Ρουμανία"
-
-#: /work/echorepo/templates/search.html:30
-msgid "Slovakia"
-msgstr "Σλοβακία"
-
-#: /work/echorepo/templates/search.html:35
 msgid "pH min"
 msgstr "π H min"
 
-#: /work/echorepo/templates/search.html:39
+#: /work/echorepo/templates/search.html:26
 msgid "pH max"
 msgstr "π H max"
 
-#: /work/echorepo/templates/search.html:51
+#: /work/echorepo/templates/search.html:38
 msgid "Date from"
 msgstr "Ημερομηνία από"
 
-#: /work/echorepo/templates/search.html:55
+#: /work/echorepo/templates/search.html:42
 msgid "Date to"
 msgstr "Ημερομηνία"
 
-#: /work/echorepo/templates/search.html:70
+#: /work/echorepo/templates/search.html:55
 msgid "Export current search"
 msgstr "Εξαγωγή τρέχουσας αναζήτησης"
 
-#: /work/echorepo/templates/search.html:74
+#: /work/echorepo/templates/search.html:59
 msgid "Sign in to export results as ZIP."
 msgstr "Συνδεθείτε στα αποτελέσματα των εξαγωγών ως ZIP."
 
-#: /work/echorepo/templates/search.html:88
+#: /work/echorepo/templates/search.html:76
 msgid "Timestamp"
 msgstr "Χρονοσφραγίδα"
 
-#: /work/echorepo/templates/search.html:93
+#: /work/echorepo/templates/search.html:81
 msgid "Collected by"
 msgstr "Συλλέγεται από"
 
-#: /work/echorepo/templates/search.html:112
+#: /work/echorepo/templates/search.html:109
 msgid "No results for these filters."
 msgstr "Δεν υπάρχουν αποτελέσματα για αυτά τα φίλτρα."
 
-#: /work/echorepo/templates/search.html:124
-msgid "Showing page"
-msgstr "Εμφάνιση σελίδας"
+#: /work/echorepo/templates/zenodo_publications.html:3
+msgid "ECHOrepo — Zenodo Publications"
+msgstr "ECHOREPO — Εκδόσεις Zenodo"
 
-#: /work/echorepo/templates/search.html:124
-msgid "of"
-msgstr "του"
+#: /work/echorepo/templates/zenodo_publications.html:8
+msgid "Published datasets on Zenodo"
+msgstr "Δημοσίευση συνόλων δεδομένων για το Zenodo"
 
-#: /work/echorepo/templates/search.html:124
-msgid "results"
-msgstr "αποτελέσματα"
+#: /work/echorepo/templates/zenodo_publications.html:10
+msgid ""
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
+msgstr ""
+"Η σελίδα αυτή απαριθμεί τα σύνολα δεδομένων ECHOrepo που δημοσιεύονται στο "
+"Zenodo, με συνδέσμους DOI και προτεινόμενες αναφορές."
+
+#: /work/echorepo/templates/zenodo_publications.html:24
+#: /work/echorepo/templates/zenodo_publications.html:27
+msgid "Untitled dataset"
+msgstr "Σύνολο δεδομένων χωρίς τίτλο"
+
+#: /work/echorepo/templates/zenodo_publications.html:32
+msgid "Published at"
+msgstr "Δημοσίευση"
+
+#: /work/echorepo/templates/zenodo_publications.html:43
+msgid "Version DOI"
+msgstr "Έκδοση DOI"
+
+#: /work/echorepo/templates/zenodo_publications.html:50
+msgid "Concept DOI"
+msgstr "Η ιδέα DOI"
+
+#: /work/echorepo/templates/zenodo_publications.html:63
+msgid "API path"
+msgstr "Διαδρομή API"
+
+#: /work/echorepo/templates/zenodo_publications.html:64
+msgid "Uploaded file"
+msgstr "Αποστολή αρχείου"
+
+#: /work/echorepo/templates/zenodo_publications.html:65
+msgid "Deposition ID"
+msgstr "ID κατάθεσης"
+
+#: /work/echorepo/templates/zenodo_publications.html:66
+msgid "Concept record ID"
+msgstr "ID εγγραφής σύλληψης"
+
+#: /work/echorepo/templates/zenodo_publications.html:69
+msgid "Download source"
+msgstr "Λήψη πηγής"
+
+#: /work/echorepo/templates/zenodo_publications.html:71
+msgid "source URL"
+msgstr "uRL πηγής"
+
+#: /work/echorepo/templates/zenodo_publications.html:76
+msgid "Filters"
+msgstr "Φίλτρα"
+
+#: /work/echorepo/templates/zenodo_publications.html:77
+msgid "Zenodo page"
+msgstr "Σελίδα Zenodo"
+
+#: /work/echorepo/templates/zenodo_publications.html:79
+msgid "record page"
+msgstr "καταγραφή σελίδας"
+
+#: /work/echorepo/templates/zenodo_publications.html:88
+msgid "Suggested reference"
+msgstr "Προτεινόμενη αναφορά"
+
+#: /work/echorepo/templates/zenodo_publications.html:98
+msgid "No Zenodo publications have been logged yet."
+msgstr "Δεν έχουν καταγραφεί ακόμα εκδόσεις του Zenodo."
+
+#: /work/static/js/map.js:114
+msgid "Link copied to clipboard"
+msgstr "Δεσμός αντιγραφόμενο στο πρόχειρο"
+
+#: /work/static/js/map.js:117
+msgid "Copy this link:"
+msgstr "Αντιγραφή αυτού του συνδέσμου:"
+
+#: /work/static/js/map.js:487 /work/static/js/map.js:2118
+#, python-brace-format
+msgid "Export filtered (${n})"
+msgstr "Φίλτρα εξαγωγής (${n})"
+
+#: /work/static/js/map.js:497 /work/static/js/map.js:1922
+msgid "Release mouse to finish drawing."
+msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
+
+#: /work/static/js/map.js:585
+msgid "Street map"
+msgstr "Χάρτης οδών"
+
+#: /work/static/js/map.js:586
+msgid "Satellite"
+msgstr "Δορυφόρος"
+
+#: /work/static/js/map.js:1403 /work/static/js/map.js:2311
+msgid "Loading map data..."
+msgstr "Φόρτωση δεδομένων χάρτη..."
+
+#: /work/static/js/map.js:1407
+msgid "Please wait"
+msgstr "Παρακαλώ περιμένετε"
+
+#: /work/static/js/map.js:1570
+msgid "Loading..."
+msgstr "Φόρτωση..."
+
+#: /work/static/js/map.js:1783
+msgid "Delete last point drawn"
+msgstr "Διαγραφή του τελευταίου σημείου που έχει σχεδιαστεί"
+
+#: /work/static/js/map.js:1791
+msgid "Click and drag to draw a selection rectangle. You can draw more than one."
+msgstr ""
+"Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο επιλογής. Μπορείς να "
+"ζωγραφίσεις περισσότερους από έναν."
+
+#: /work/static/js/map.js:1876
+msgid "No selected samples to export."
+msgstr "Δεν υπάρχουν επιλεγμένα δείγματα προς εξαγωγή."
+
+#: /work/static/js/map.js:2162
+msgid "Please sign in to export data."
+msgstr "Παρακαλώ υπογράψτε για εξαγωγή δεδομένων."
+
+#: /work/static/js/map.js:2221
+msgid "Loading samples..."
+msgstr "Φόρτωση δειγμάτων..."
+
+#: /work/static/js/map.js:2222
+msgid "Fetching visible map area"
+msgstr "Ανάκτηση ορατής περιοχής χάρτη"
+
+#: /work/static/js/map.js:2253
+msgid "Rendering markers..."
+msgstr "Αποτύπωση δεικτών..."
+
+#: /work/static/js/map.js:2254
+msgid "Building clusters and popups"
+msgstr "Συγκροτήματα και αναδυόμενα"
+
+#: /work/static/js/map.js:2312
+msgid "Preparing map"
+msgstr "Προετοιμασία χάρτη"
 
 #~ msgid "Export filtered (%(n)s)"
 #~ msgstr "Φίλτρα εξαγωγής (%(n)s)"
@@ -825,4 +1077,46 @@ msgstr "αποτελέσματα"
 
 #~ msgid "Sign in to export data"
 #~ msgstr "Σύνδεση στα στοιχεία εξαγωγής"
+
+#~ msgid "Expected columns:"
+#~ msgstr "Αναμενόμενες στήλες:"
+
+#~ msgid "Czechia"
+#~ msgstr "Τσεχική Δημοκρατία"
+
+#~ msgid "Germany"
+#~ msgstr "Γερμανία"
+
+#~ msgid "Spain"
+#~ msgstr "Ισπανία"
+
+#~ msgid "Finland"
+#~ msgstr "Φινλανδία"
+
+#~ msgid "France"
+#~ msgstr "Γαλλία"
+
+#~ msgid "United Kingdom"
+#~ msgstr "Ηνωμένο Βασίλειο"
+
+#~ msgid "Greece"
+#~ msgstr "Ελλάδα"
+
+#~ msgid "Italy"
+#~ msgstr "Ιταλία"
+
+#~ msgid "Netherlands"
+#~ msgstr "Κάτω Χώρες"
+
+#~ msgid "Poland"
+#~ msgstr "Πολωνία"
+
+#~ msgid "Portugal"
+#~ msgstr "Πορτογαλία"
+
+#~ msgid "Romania"
+#~ msgstr "Ρουμανία"
+
+#~ msgid "Slovakia"
+#~ msgstr "Σλοβακία"
 
