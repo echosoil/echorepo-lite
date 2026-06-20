@@ -1877,11 +1877,28 @@
           return;
         }
 
-        const params = new URLSearchParams();
-        params.set('format', 'zip');
-        params.set('sample_ids', ids.join(','));
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/search';
+        form.style.display = 'none';
 
-        window.location = `/search?${params.toString()}`;
+        const formatInput = document.createElement('input');
+        formatInput.type = 'hidden';
+        formatInput.name = 'format';
+        formatInput.value = 'zip';
+        form.appendChild(formatInput);
+
+        const idsInput = document.createElement('textarea');
+        idsInput.name = 'sample_ids';
+        idsInput.value = ids.join(',');
+        form.appendChild(idsInput);
+
+        document.body.appendChild(form);
+        form.submit();
+
+        setTimeout(() => {
+          form.remove();
+        }, 1000);
 
       });
 

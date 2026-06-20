@@ -2014,8 +2014,9 @@ def coordinate_issues_approve():
     return redirect(url_for("web.coordinate_issues", **return_args))
 
 
-@web_bp.route("/search", endpoint="search_samples", methods=["GET"])
+@web_bp.route("/search", endpoint="search_samples", methods=["GET", "POST"])
 def search_samples():
+    req = request.values
     q = request.args.get("q", "").strip()
 
     base = base_labels()
@@ -2025,26 +2026,21 @@ def search_samples():
     }
     # ----- read filters from querystring -----
     criteria = {
-        # Accept both:
-        #   sample_id=ABC-1234       old/search form style
-        #   sample_ids=ABC-1234,...  map selection export style
         "sample_id": (
-            request.args.get("sample_ids")
-            or request.args.get("sample_id")
+            req.get("sample_ids")
+            or req.get("sample_id")
             or ""
         ).strip(),
-        "sample_ids_exact": bool(request.args.get("sample_ids")),
-        "country_code": (request.args.get("country_code") or request.args.get("country") or "").strip().upper(),
-        "ph_min": (request.args.get("ph_min") or "").strip(),
-        "ph_max": (request.args.get("ph_max") or "").strip(),
-        "date_from": (request.args.get("date_from") or request.args.get("from") or "").strip(),
-        "date_to": (request.args.get("date_to") or request.args.get("to") or "").strip(),
+        "sample_ids_exact": bool(req.get("sample_ids")),
+        "country_code": (req.get("country_code") or req.get("country") or "").strip().upper(),
+        "ph_min": (req.get("ph_min") or "").strip(),
+        "ph_max": (req.get("ph_max") or "").strip(),
+        "date_from": (req.get("date_from") or req.get("from") or "").strip(),
+        "date_to": (req.get("date_to") or req.get("to") or "").strip(),
     }
+    fmt = (req.get("format") or "").lower()
 
-    fmt = (request.args.get("format") or "").lower()
-
-    # pagination (for HTML)
-    page = max(int(request.args.get("page", 1)), 1)
+    page = max(int(req.get("page", 1)), 1)
     per_page = 50
     offset = (page - 1) * per_page
 
