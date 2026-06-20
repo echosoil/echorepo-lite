@@ -1611,10 +1611,30 @@ def canonical_map_geojson():
     if not (current_app.config.get("CANONICAL_PUBLIC") or os.getenv("CANONICAL_PUBLIC") == "1"):
         require_api_auth()
 
-    limit = max(1, min(int(request.args.get("limit", 2000)), 5000))
+    limit = max(1, min(int(request.args.get("limit", 2000)), 10000))
     offset = max(0, int(request.args.get("offset", 0)))
 
     where_sql, params, filter_meta = _canonical_where_from_request(alias="")
+
+    # Optional: single-sample mode, useful when opening one search result on the map.
+    sample_id = (request.args.get("sample_id") or request.args.get("sampleId") or "").strip()
+    if sample_id:
+        extra = "sample_id = %s"
+        if where_sql:
+            where_sql += " AND " + extra
+        else:
+            where_sql = "WHERE " + extra
+        params.append(sample_id)
+
+    # For the normal map, do not send known bad coordinates.
+    # Admin/debug can request include_wrong=1.
+    include_wrong = (request.args.get("include_wrong") or "").strip().lower() in {"1", "true", "yes"}
+    if not include_wrong:
+        extra = "(qa_status IS NULL OR qa_status NOT LIKE 'wrong_coordinates%')"
+        if where_sql:
+            where_sql += " AND " + extra
+        else:
+            where_sql = "WHERE " + extra
 
     fields = [
         "sample_id",
@@ -1689,6 +1709,9 @@ def canonical_map_geojson():
         props["SOIL_CONTAMINATION_debris"] = props.get("contamination_debris")
         props["SOIL_CONTAMINATION_comments"] = props.get("contamination_other_en")
         props["METALS_info"] = props.get("metals_info_en")
+        
+        qa_status = str(props.get("qa_status") or "").strip().lower()
+        props["wrong_coordinates"] = qa_status.startswith("wrong_coordinates")
 
         features.append(
             {
