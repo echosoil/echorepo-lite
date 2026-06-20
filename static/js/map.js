@@ -82,6 +82,14 @@
 
   map.setView([initialView.lat, initialView.lng], initialView.z);
 
+  map.on('popupopen', () => {
+    popupIsOpen = true;
+  });
+
+  map.on('popupclose', () => {
+    popupIsOpen = false;
+  });
+
   // ---- Invalidate size after short delay (fixes display issues when map is in a hidden tab or collapsible) ----
   setTimeout(() => map.invalidateSize(true), 0);
   setTimeout(() => map.invalidateSize(true), 300);
@@ -1434,6 +1442,7 @@
   let currentMapLoadSeq = 0;
   let bboxLoadTimer = null;
   let dynamicMapReady = false;
+  let popupIsOpen = false;
 
   function getCurrentBboxParam() {
     const b = map.getBounds();
@@ -2280,10 +2289,13 @@
   function scheduleBboxReload() {
     if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) return;
 
-    clearTimeout(bboxLoadTimer);
+    if (popupIsOpen) return;
 
+    clearTimeout(bboxLoadTimer);
     bboxLoadTimer = setTimeout(() => {
-      loadSamplesForCurrentView();
+      if (!popupIsOpen) {
+        loadSamplesForCurrentView();
+      }
     }, 350);
   }
 
@@ -2325,7 +2337,7 @@
         return loadSamplesForCurrentView();
       })
       .then(() => {
-        map.on('moveend zoomend', scheduleBboxReload);
+        map.on('dragend zoomend', scheduleBboxReload);
       })
       .catch(err => {
         console.warn('Init failed:', err);
