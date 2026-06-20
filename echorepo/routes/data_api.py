@@ -1630,12 +1630,13 @@ def canonical_map_geojson():
     # Admin/debug can request include_wrong=1.
     include_wrong = (request.args.get("include_wrong") or "").strip().lower() in {"1", "true", "yes"}
     if not include_wrong:
-        extra = "(qa_status IS NULL OR qa_status NOT LIKE 'wrong_coordinates%')"
+        extra = "(qa_status IS NULL OR qa_status NOT LIKE %s)"
         if where_sql:
             where_sql += " AND " + extra
         else:
             where_sql = "WHERE " + extra
-
+        params.append("wrong_coordinates%")
+        
     fields = [
         "sample_id",
         "timestamp_utc",
