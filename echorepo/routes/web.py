@@ -393,6 +393,13 @@ def _js_base_labels() -> dict:
         "deleteLastPoint": _("Delete last point"),
         "drawRectangleHint": _("Click and drag to draw a rectangle."),
         "releaseToFinish": _("Release mouse to finish drawing."),
+        "selectionExport": _("Selection export"),
+        "selectionExportHint": _("Use the rectangle tool to draw one or more selection areas. Samples inside all rectangles are combined."),
+        "exportSelection": _("Export selection"),
+        "exportSelectionTitle": _("Export selected samples"),
+        "clearSelection": _("Clear selection"),
+        "clearSelectionTitle": _("Clear all selection rectangles"),
+        "drawSelectionRectangle": _("Draw selection rectangle"),
     }
 
 
@@ -2044,7 +2051,7 @@ def search_samples():
     def _build_where(criteria):
         where = ["1=1"]
         params = []
-        
+
         if criteria["sample_id"]:
             tokens = _parse_sample_id_list(criteria["sample_id"])
 
