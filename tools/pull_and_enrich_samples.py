@@ -107,6 +107,27 @@ def _local_path_to_abs(maybe_path: str) -> str:
         return str(alt)
     return str(PROJECT_ROOT / p)
 
+def _container_data_path_to_host_path(maybe_path: str) -> str:
+    """
+    Convert container-style /data/... path to host-side PROJECT_ROOT/data/...
+
+    Example:
+      /data/coordinate_check_approved.csv
+      -> PROJECT_ROOT/data/coordinate_check_approved.csv
+
+    This is needed because this script is usually run on the host, while web.py
+    runs inside Docker where /data is the mounted data directory.
+    """
+    p = Path(maybe_path)
+
+    if str(p).startswith("/data/"):
+        return str(PROJECT_ROOT / "data" / p.relative_to("/data"))
+
+    if p.is_absolute():
+        return str(p)
+
+    return str(PROJECT_ROOT / p)
+
 USERS_CSV = _local_path_to_abs(os.getenv("USERS_CSV", "/data/users.csv"))
 PLANNED_XLSX = _local_path_to_abs(os.getenv("PLANNED_XLSX", "/data/utils/planned.xlsx"))
 INPUT_CSV = _local_path_to_abs(os.getenv("INPUT_CSV", "/data/echorepo_samples.csv"))
@@ -162,7 +183,7 @@ COUNTRY_NEAREST_BLACKLIST = {
     if x.strip()
 }
 COORDINATE_APPROVED_CSV = Path(
-    _local_path_to_abs(
+    _container_data_path_to_host_path(
         os.getenv("COORDINATE_APPROVED_CSV", "data/coordinate_check_approved.csv")
     )
 )
