@@ -146,9 +146,19 @@
 
     return true;
   }
+
   function populateCountryFilter() {
     const sel = document.getElementById('countryFilter');
     if (!sel) return;
+
+    const current = sel.value || activeCountry || '';
+
+    sel.innerHTML = '';
+
+    const allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = T('anyCountry', {}, 'Any country');
+    sel.appendChild(allOpt);
 
     const counts = {};
 
@@ -168,6 +178,8 @@
 
       const label = countryNames?.of(cc) || cc;
       opt.textContent = `${label} (${counts[cc]})`;
+
+      if (cc === current) opt.selected = true;
 
       sel.appendChild(opt);
     });
@@ -1284,14 +1296,29 @@
       "SOIL_DIVER_earthworms", "SOIL_CONTAMINATION_plastic", "SOIL_CONTAMINATION_debris",
       "SOIL_CONTAMINATION_comments", "METALS_info"
     ];
+
     const set = new Set(preferred);
-    const add = (gj) => (gj?.features || []).forEach(f => {
-      const p = f.properties || {};
-      Object.keys(p).forEach(k => { if (!SHOULD_DROP(k)) set.add(k); });
-    });
-    add(userGJ); add(othersGJ);
-    set.add(LAT_KEY); set.add(LON_KEY);
-    const rest = [...set].filter(k => !preferred.includes(k)).sort(); ALL_HEADERS = [...preferred, ...rest];
+
+    const add = (gj) => {
+      (gj?.features || []).forEach(f => {
+        const p = f.properties || {};
+        Object.keys(p).forEach(k => {
+          if (!SHOULD_DROP(k)) set.add(k);
+        });
+      });
+    };
+
+    add(userGJ);
+    add(othersGJ);
+
+    set.add(LAT_KEY);
+    set.add(LON_KEY);
+
+    const rest = [...set]
+      .filter(k => !preferred.includes(k))
+      .sort();
+
+    ALL_HEADERS = [...preferred, ...rest];
   }
 
   let mapLoaderEl = null;
@@ -2158,3 +2185,5 @@
         hideMapLoader();
       });
   })();
+
+})();
