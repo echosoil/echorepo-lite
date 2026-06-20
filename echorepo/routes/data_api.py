@@ -1744,6 +1744,86 @@ def canonical_map_geojson():
     )
 
 
+@data_api.get("/canonical/map.count")
+def canonical_map_count():
+    """
+    Count canonical samples for the map/export UI.
+
+    Important:
+    - This endpoint intentionally ignores bbox.
+    - It returns the total number of samples matching global filters.
+    - Used for "Export filtered (N)".
+    """
+    if not (current_app.config.get("CANONICAL_PUBLIC") or os.getenv("CANONICAL_PUBLIC") == "1"):
+        require_api_auth()
+
+    where = []
+    params = []
+
+    country = (
+        request.args.get("country_code")
+        or request.args.get("country")
+        or ""
+    ).strip().upper()
+
+    if country:
+        where.append("country_code = %s")
+        params.append(country)
+
+    date_from = (request.args.get("from") or request.args.get("date_from") or "").strip()
+    date_to = (request.args.get("to") or request.args.get("date_to") or "").strip()
+
+    if date_from:
+        where.append("timestamp_utc >= %s")
+        params.append(date_from)
+
+    if date_to:
+        where.append("timestamp_utc < (%s::date + interval '1 day')")
+        params.append(date_to)
+
+    ph_min = (request.args.get("ph_min") or "").strip()
+    ph_max = (request.args.get("ph_max") or "").strip()
+
+    if ph_min:
+        where.append("ph >= %s")
+        params.append(float(ph_min))
+
+    if ph_max:
+        where.append("ph <= %s")
+        params.append(float(ph_max))
+
+    include_wrong = (request.args.get("include_wrong") or "").strip().lower() in {"1", "true", "yes"}
+    if not include_wrong:
+        where.append("(qa_status IS NULL OR qa_status NOT LIKE %s)")
+        params.append("wrong_coordinates%")
+
+    where_sql = ""
+    if where:
+        where_sql = "WHERE " + " AND ".join(where)
+
+    sql = f"""
+        SELECT COUNT(*) AS n
+        FROM samples
+        {where_sql}
+    """
+
+    with get_pg_conn() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql, params)
+            row = cur.fetchone() or {"n": 0}
+
+    return jsonify({
+        "count": int(row["n"]),
+        "filters": {
+            "country_code": country or None,
+            "from": date_from or None,
+            "to": date_to or None,
+            "ph_min": ph_min or None,
+            "ph_max": ph_max or None,
+            "include_wrong": include_wrong,
+        }
+    })
+
 @data_api.get("/canonical/zenodo_bundle.zip")
 def canonical_zenodo_bundle_zip():
     """
