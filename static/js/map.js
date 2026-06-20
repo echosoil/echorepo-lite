@@ -447,7 +447,7 @@
     if (selectionButtonEl) {
       const n = selectionRows?.length || 0;
       selectionButtonEl.textContent =
-        `${T('export', {}, 'Export')} (${n})`;
+        `${T('exportSelection', {}, 'Export selection')} (${n})`;
     }
 
     // Export filtered button
@@ -1738,7 +1738,11 @@
     if (L.drawLocal.draw && L.drawLocal.draw.toolbar) {
       const tb = L.drawLocal.draw.toolbar;
       if (tb.buttons) {
-        tb.buttons.rectangle = T('drawRectangle', {}, 'Draw a rectangle');
+        tb.buttons.rectangle = T(
+          'drawSelectionRectangle',
+          {},
+          'Draw selection rectangle'
+        );
       }
       if (tb.actions) {
         tb.actions.title = T('cancelDrawing', {}, 'Cancel drawing');
@@ -1753,8 +1757,17 @@
     if (L.drawLocal.draw && L.drawLocal.draw.handlers) {
       const h = L.drawLocal.draw.handlers;
 
-      const startText = T('drawRectangleHint', {}, 'Click and drag to draw a rectangle.');
-      const endText = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
+      const startText = T(
+        'drawRectangleHint',
+        {},
+        'Click and drag to draw a selection rectangle. You can draw more than one.'
+      );
+
+      const endText = T(
+        'releaseToFinish',
+        {},
+        'Release mouse to add this rectangle to the selection.'
+      );
 
       if (h.rectangle && h.rectangle.tooltip) {
         h.rectangle.tooltip.start = startText;
@@ -1774,13 +1787,38 @@
       const div = L.DomUtil.create('div', 'leaflet-control leaflet-bar p-2');
       div.style.background = 'white'; div.style.borderRadius = '8px'; div.style.lineHeight = '1';
       div.innerHTML = `
-        <div class="d-flex gap-2 align-items-center">
-          <button type="button" class="btn btn-sm btn-primary" id="btnExportSel" disabled title="${T('export', {}, 'Export')}">
-            ${T('export', {}, 'Export')} (0)
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btnClearSel" disabled title="${T('clear', {}, 'Clear')}">
-            ${T('clear', {}, 'Clear')}
-          </button>
+        <div style="min-width: 260px;">
+          <div class="fw-semibold mb-1">
+            ${T('selectionExport', {}, 'Selection export')}
+          </div>
+
+          <div class="small text-muted mb-2" style="line-height:1.2;">
+            ${T(
+        'selectionExportHint',
+        {},
+        'Use the rectangle tool to draw one or more selection areas. Samples inside all rectangles are combined.'
+      )}
+          </div>
+
+          <div class="d-flex gap-2 align-items-center">
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              id="btnExportSel"
+              disabled
+              title="${T('exportSelectionTitle', {}, 'Export selected samples')}">
+              ${T('exportSelection', {}, 'Export selection')} (0)
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              id="btnClearSel"
+              disabled
+              title="${T('clearSelectionTitle', {}, 'Clear all selection rectangles')}">
+              ${T('clearSelection', {}, 'Clear selection')}
+            </button>
+          </div>
         </div>`;
       L.DomEvent.disableClickPropagation(div);
       selectionButtonEl = div.querySelector('#btnExportSel');
@@ -1889,7 +1927,7 @@
     selectionRows = collectRowsWithinAll();
     const n = selectionRows.length;
     selectionButtonEl.disabled = n === 0;
-    selectionButtonEl.textContent = `${T('export', {}, 'Export')} (${n})`;
+    selectionButtonEl.textContent = `${T('exportSelection', {}, 'Export selection')} (${n})`;
     clearButtonEl.disabled = selectionLayers.length === 0;
   }
 
