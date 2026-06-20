@@ -135,10 +135,65 @@ COUNTRY_RESOLVER_URL = os.getenv(
     "http://127.0.0.1:8010/resolve",
 )
 
+
 COUNTRY_RESOLVER_TIMEOUT_SECONDS = float(
     os.getenv("COUNTRY_RESOLVER_TIMEOUT_SECONDS", "5")
 )
 
+COUNTRY_RESOLVER_BATCH_URL = os.getenv(
+    "COUNTRY_RESOLVER_BATCH_URL",
+    COUNTRY_RESOLVER_URL.rsplit("/", 1)[0] + "/resolve-batch",
+)
+
+
+def resolve_countries_via_service_batch(points: list[dict]) -> dict[str, dict]:
+    """
+    Resolve many coordinate pairs using the coord-country-resolver batch endpoint.
+
+    Input:
+      [{"id": "sample-id", "lat": 41.0, "lon": 2.0}, ...]
+
+    Returns:
+      {
+        "sample-id": {
+          "country_code": "...",
+          "country_source": "...",
+          ...
+        }
+      }
+    """
+    if not COUNTRY_RESOLVER_ENABLED or not points:
+        return {}
+
+    try:
+        response = requests.post(
+            COUNTRY_RESOLVER_BATCH_URL,
+            json={"points": points},
+            timeout=max(COUNTRY_RESOLVER_TIMEOUT_SECONDS, 30),
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        out = {}
+
+        for item in data.get("results", []):
+            point_id = str(item.get("id") or "").strip()
+            if not point_id:
+                continue
+
+            out[point_id] = {
+                "country_code": str(item.get("country_code") or "").strip().upper(),
+                "country_source": str(item.get("country_source") or ""),
+                "country_lookup_note": str(item.get("country_lookup_note") or ""),
+                "matched_country_name": str(item.get("matched_country_name") or ""),
+                "distance_deg": item.get("distance_deg"),
+            }
+
+        return out
+
+    except Exception as e:
+        log.warning("Country resolver batch request failed: %s", e)
+        return {}
 
 def resolve_country_via_service(lat, lon) -> dict:
     """
@@ -1519,6 +1574,7 @@ def build_samples_df(
         orig_lon = r.get("GPS_long")
         lat_f = None
         lon_f = None
+
         try:
             if lc_parse_coord is not None:
                 lat_f = lc_parse_coord(orig_lat, "lat")
@@ -1527,8 +1583,8 @@ def build_samples_df(
                 lat_f = geo_parse_coord(orig_lat, "lat")
                 lon_f = geo_parse_coord(orig_lon, "lon")
             else:
-                lat_f = float(orig_lat) if orig_lat not in (None, "") else None
-                lon_f = float(orig_lon) if orig_lon not in (None, "") else None
+                lat_f = _coord_to_float(orig_lat)
+                lon_f = _coord_to_float(orig_lon)
         except Exception:
             lat_f = lon_f = None
 
@@ -1539,11 +1595,27 @@ def build_samples_df(
 
         country_override = str(r.get("country_code_override") or "").strip().upper()
 
-        # Resolve actual country from ORIGINAL coordinates
+        # Reuse coordinate validation result if annotate_and_filter_wrong_coordinates()
+        # has already resolved it. This avoids another API call.
+        existing_actual_cc = str(r.get("actual_cc") or "").strip().upper()
+        existing_actual_source = str(r.get("actual_cc_source") or "").strip()
+        existing_actual_note = str(r.get("actual_cc_note") or "").strip()
+
+        # Resolve actual country from ORIGINAL coordinates.
+        # Priority:
+        #   1. manual country_code_override from approval workflow
+        #   2. actual_cc already computed during coordinate validation
+        #   3. fallback single resolver call
         if country_override:
             orig_country = country_override
             country_source = "manual_override"
             country_lookup_note = "country_code_manually_overridden"
+
+        elif existing_actual_cc:
+            orig_country = existing_actual_cc
+            country_source = existing_actual_source or "coordinate_validation"
+            country_lookup_note = existing_actual_note
+
         else:
             country_info = resolve_country_for_sample(
                 lat_f,
@@ -1556,7 +1628,7 @@ def build_samples_df(
             orig_country = country_info["country_code"]
             country_source = country_info["country_source"]
             country_lookup_note = country_info["country_lookup_note"]
-        
+
         # jitter like before, but only for public lat/lon
         lat_j, lon_j = lat_f, lon_f
         if lat_f is not None and lon_f is not None and lc_det_jitter is not None:
@@ -1564,8 +1636,9 @@ def build_samples_df(
             lat_j, lon_j = lc_det_jitter(lat_f, lon_f, key, LC_MAX_JITTER_METERS)
 
         # Optional diagnostic only. Do NOT use this to assign country_code.
+        # Avoid this extra resolver call unless the diagnostic file is enabled.
         jitter_country = ""
-        if lat_j is not None and lon_j is not None:
+        if WRITE_COUNTRY_RESOLUTION_DIAG and lat_j is not None and lon_j is not None:
             jitter_info = resolve_country_for_sample(
                 lat_j,
                 lon_j,
@@ -1587,7 +1660,7 @@ def build_samples_df(
         soil_texture_orig = str(r.get("SOIL_TEXTURE_texture") or "").strip()
         observations_orig = str(r.get("SOIL_DIVER_observations") or "").strip()
         metals_info_orig = str(r.get("METALS_info") or "").strip()
-
+        
         pre_rows.append(
             {
                 "sample_id": sample_id,
@@ -1686,7 +1759,6 @@ def build_samples_df(
 
     return pd.DataFrame(rows)
 
-
 def annotate_and_filter_wrong_coordinates(
     df: pd.DataFrame,
     planned_map: dict[str, set[str]],
@@ -1714,17 +1786,29 @@ def annotate_and_filter_wrong_coordinates(
     out = df.copy()
 
     if qr_col not in out.columns:
-        log.info("[coords] QR column %s not found; skipping coordinate filtering", qr_col)
+        log.info("QR column %s not found; skipping coordinate filtering", qr_col)
         out["wrong_coordinates"] = False
         out["actual_cc"] = ""
+        out["actual_cc_source"] = ""
+        out["actual_cc_note"] = ""
+        out["actual_cc_matched_name"] = ""
+        out["actual_cc_distance_deg"] = None
         out["planned_iso2"] = ""
         out["coordinate_check_reason"] = "missing_qr_column"
         return out, out
 
     if lat_col not in out.columns or lon_col not in out.columns:
-        log.info("[coords] lat/lon columns %s/%s not found; skipping coordinate filtering", lat_col, lon_col)
+        log.info(
+            "Lat/lon columns %s/%s not found; skipping coordinate filtering",
+            lat_col,
+            lon_col,
+        )
         out["wrong_coordinates"] = False
         out["actual_cc"] = ""
+        out["actual_cc_source"] = ""
+        out["actual_cc_note"] = ""
+        out["actual_cc_matched_name"] = ""
+        out["actual_cc_distance_deg"] = None
         out["planned_iso2"] = ""
         out["coordinate_check_reason"] = "missing_lat_lon_columns"
         return out, out
@@ -1742,16 +1826,52 @@ def annotate_and_filter_wrong_coordinates(
         & lon_f.between(-180.0, 180.0)
     )
 
-    # Your app sentinel/default coordinates
+    # EchoSoil app sentinel/default coordinates
     default_mask = (lat_f == 46.5) & (lon_f == 11.35)
 
+    # ------------------------------------------------------------------
+    # Batch country resolution
+    # ------------------------------------------------------------------
+    batch_points = []
+
+    for idx, lt, ln, valid, is_default in zip(
+        out.index,
+        lat_f,
+        lon_f,
+        valid_mask,
+        default_mask,
+        strict=False,
+    ):
+        if not valid or is_default:
+            continue
+
+        batch_points.append(
+            {
+                "id": str(idx),
+                "lat": float(lt),
+                "lon": float(ln),
+            }
+        )
+
+    batch_results = resolve_countries_via_service_batch(batch_points)
+
+    # ------------------------------------------------------------------
+    # Build actual country columns. Important: append one value per row.
+    # ------------------------------------------------------------------
     actual_cc = []
     actual_cc_source = []
     actual_cc_note = []
     actual_cc_matched_name = []
     actual_cc_distance_deg = []
 
-    for lt, ln, valid, is_default in zip(lat_f, lon_f, valid_mask, default_mask, strict=False):
+    for idx, lt, ln, valid, is_default in zip(
+        out.index,
+        lat_f,
+        lon_f,
+        valid_mask,
+        default_mask,
+        strict=False,
+    ):
         if not valid or is_default:
             actual_cc.append("")
             actual_cc_source.append("")
@@ -1760,17 +1880,21 @@ def annotate_and_filter_wrong_coordinates(
             actual_cc_distance_deg.append(None)
             continue
 
-        info = resolve_country_for_sample(
-            lt,
-            ln,
-            planned_set=set(),
-            allow_planned_fallback=False,  # validation must be coordinate-based only
-        )
+        info = batch_results.get(str(idx))
 
-        actual_cc.append(info["country_code"])
-        actual_cc_source.append(info["country_source"])
-        actual_cc_note.append(info["country_lookup_note"])
-        actual_cc_matched_name.append(info.get("matched_country_name"))
+        if info is None:
+            # Fallback to single request if batch failed or this row was missing.
+            info = resolve_country_for_sample(
+                lt,
+                ln,
+                planned_set=set(),
+                allow_planned_fallback=False,
+            )
+
+        actual_cc.append(str(info.get("country_code") or "").strip().upper())
+        actual_cc_source.append(str(info.get("country_source") or ""))
+        actual_cc_note.append(str(info.get("country_lookup_note") or ""))
+        actual_cc_matched_name.append(str(info.get("matched_country_name") or ""))
         actual_cc_distance_deg.append(info.get("distance_deg"))
 
     out["actual_cc"] = actual_cc
@@ -1779,6 +1903,9 @@ def annotate_and_filter_wrong_coordinates(
     out["actual_cc_matched_name"] = actual_cc_matched_name
     out["actual_cc_distance_deg"] = actual_cc_distance_deg
 
+    # ------------------------------------------------------------------
+    # Planned country comparison
+    # ------------------------------------------------------------------
     def _planned_set(q):
         q_norm = norm_qr_for_id(q)
         if not q_norm:
@@ -1795,7 +1922,7 @@ def annotate_and_filter_wrong_coordinates(
 
     for i, row in out.iterrows():
         planned = planned_sets.loc[i]
-        cc = str(row.get("actual_cc") or "").strip()
+        cc = str(row.get("actual_cc") or "").strip().upper()
 
         if bool(default_mask.loc[i]):
             wrong.append(True)
@@ -1831,8 +1958,10 @@ def annotate_and_filter_wrong_coordinates(
     filtered = out[out["wrong_coordinates"] != True].copy()
 
     log.info(
-        "coordinate check: "
-        f"total={len(out)}, wrong={int(out['wrong_coordinates'].sum())}, kept={len(filtered)}"
+        "Coordinate check: total=%s, wrong=%s, kept=%s",
+        len(out),
+        int(out["wrong_coordinates"].sum()),
+        len(filtered),
     )
 
     return filtered, out
