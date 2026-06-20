@@ -2017,13 +2017,22 @@ def search_samples():
     }
     # ----- read filters from querystring -----
     criteria = {
-        "sample_id": (request.args.get("sample_id") or "").strip(),
-        "country_code": (request.args.get("country_code") or "").strip().upper(),
+        # Accept both:
+        #   sample_id=ABC-1234       old/search form style
+        #   sample_ids=ABC-1234,...  map selection export style
+        "sample_id": (
+            request.args.get("sample_ids")
+            or request.args.get("sample_id")
+            or ""
+        ).strip(),
+        "sample_ids_exact": bool(request.args.get("sample_ids")),
+        "country_code": (request.args.get("country_code") or request.args.get("country") or "").strip().upper(),
         "ph_min": (request.args.get("ph_min") or "").strip(),
         "ph_max": (request.args.get("ph_max") or "").strip(),
-        "date_from": (request.args.get("date_from") or "").strip(),
-        "date_to": (request.args.get("date_to") or "").strip(),
+        "date_from": (request.args.get("date_from") or request.args.get("from") or "").strip(),
+        "date_to": (request.args.get("date_to") or request.args.get("to") or "").strip(),
     }
+
     fmt = (request.args.get("format") or "").lower()
 
     # pagination (for HTML)
@@ -2035,20 +2044,26 @@ def search_samples():
     def _build_where(criteria):
         where = ["1=1"]
         params = []
+        
         if criteria["sample_id"]:
             tokens = _parse_sample_id_list(criteria["sample_id"])
 
-            if len(tokens) == 1:
-                # keep old behaviour: substring match
-                where.append("sample_id ILIKE %s")
-                params.append(f"%{tokens[0]}%")
+            if criteria.get("sample_ids_exact"):
+                # Map rectangle export: exact selected sample IDs only.
+                where.append("sample_id = ANY(%s)")
+                params.append(tokens)
             else:
-                # multiple: match ANY of the tokens (OR)
-                ors = []
-                for t in tokens:
-                    ors.append("sample_id ILIKE %s")
-                    params.append(f"%{t}%")
-                where.append("(" + " OR ".join(ors) + ")")
+                # Search page behaviour: keep substring matching for user-entered search.
+                if len(tokens) == 1:
+                    where.append("sample_id ILIKE %s")
+                    params.append(f"%{tokens[0]}%")
+                else:
+                    ors = []
+                    for t in tokens:
+                        ors.append("sample_id ILIKE %s")
+                        params.append(f"%{t}%")
+                    where.append("(" + " OR ".join(ors) + ")")
+                    
         if criteria["country_code"]:
             where.append("country_code = %s")
             params.append(criteria["country_code"])
