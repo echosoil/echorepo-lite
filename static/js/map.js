@@ -454,7 +454,7 @@
       .leaflet-control-layers-base label {
         margin-bottom: 3px;
       }
-        
+
       @keyframes echo-spin {
         to {
           transform: rotate(360deg);
@@ -1890,7 +1890,8 @@
       opacity: 1,
       fill: true,
       fillColor: '#0d6efd',
-      fillOpacity: 0.18
+      fillOpacity: 0.12,
+      interactive: false
     };
     const drawControl = new L.Control.Draw({
       draw: {
@@ -1914,9 +1915,26 @@
 
     map.on(L.Draw.Event.CREATED, (e) => {
       const layer = e.layer;
-      if (layer.setStyle) layer.setStyle(RECT_STYLE);
+
+      if (layer.setStyle) {
+        layer.setStyle(RECT_STYLE);
+      }
+
+      // The rectangle is only a selection area.
+      // It must not block clicks on sample circles underneath.
+      layer.options.interactive = false;
+
       drawnItems.addLayer(layer);
-      if (layer.bringToFront) layer.bringToFront();
+
+      // Disable pointer events on the actual SVG element after Leaflet creates it.
+      setTimeout(() => {
+        const el = layer.getElement && layer.getElement();
+        if (el) {
+          el.style.pointerEvents = 'none';
+          el.style.cursor = 'default';
+        }
+      }, 0);
+
       selectionLayers.push(layer);
       updateSelectionCount();
     });
