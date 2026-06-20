@@ -199,6 +199,7 @@ def load_approved_coordinate_samples() -> dict[str, dict[str, str]]:
     path = COORDINATE_APPROVED_CSV
 
     if not path.exists():
+        log.debug("Coordinate approval file not found: %s", path)
         return {}
 
     try:
@@ -207,6 +208,7 @@ def load_approved_coordinate_samples() -> dict[str, dict[str, str]]:
         return {}
 
     if "sample_id" not in df.columns:
+        log.warning("Coordinate approval file has no sample_id column: %s", path)
         return {}
 
     for col in ["approved_by", "approved_at", "comment", "country_code_override"]:
@@ -451,7 +453,7 @@ def init_firebase():
 # ---------------------------------------------------------------------------
 def init_minio():
     if Minio is None:
-        print("[INFO] python-minio not installed; will keep Firebase URLs and local canonical.")
+        log.info("python-minio not installed; will keep Firebase URLs and local canonical")
         return None
 
     secure = False
@@ -464,7 +466,7 @@ def init_minio():
         endpoint = endpoint[len("http://") :]
 
     if not MINIO_ACCESS_KEY or not MINIO_SECRET_KEY:
-        print("[WARN] MinIO credentials not set; skipping mirroring & canonical upload.")
+        log.warning("MinIO credentials not set; skipping mirroring and canonical upload")
         return None
 
     client = Minio(
@@ -478,9 +480,9 @@ def init_minio():
         found = client.bucket_exists(MINIO_BUCKET)
         if not found:
             client.make_bucket(MINIO_BUCKET)
-            print(f"[INFO] Created MinIO bucket {MINIO_BUCKET}")
+            log.info("[INFO] Created MinIO bucket %s", MINIO_BUCKET)
     except Exception as e:
-        print(f"[WARN] Could not ensure MinIO bucket: {e}")
+        log.warning("[WARN] Could not ensure MinIO bucket: %s", e)
         return None
     log.info("MinIO ready, bucket=%s", MINIO_BUCKET)
     return client
@@ -695,7 +697,7 @@ def latlon_to_country_code(lat, lon, debug=False):
         try:
             if geom.covers(pt):
                 if debug:
-                    print("[geo-debug] exact hit:", {"name": name, "iso2": iso2})
+                    log.debug("[geo-debug] exact hit:", {"name": name, "iso2": iso2})
                 return iso2 or ""
         except Exception:
             continue
@@ -714,7 +716,7 @@ def latlon_to_country_code(lat, lon, debug=False):
 
         if iso2 in COUNTRY_NEAREST_BLACKLIST:
             if debug:
-                print(
+                log.debug(
                     "[geo-debug] nearest candidate blacklisted:",
                     {"iso2": iso2, "name": name},
                 )
@@ -740,15 +742,15 @@ def latlon_to_country_code(lat, lon, debug=False):
     nearest.sort(key=lambda x: x[0])
 
     if debug:
-        print("[geo-debug] no exact hit. nearest candidates after blacklist:")
+        log.debug("[geo-debug] no exact hit. nearest candidates after blacklist:")
         for d, iso2, name in nearest[:10]:
-            print({"distance_deg": d, "iso2": iso2, "name": name})
+            log.debug({"distance_deg": d, "iso2": iso2, "name": name})
 
     if nearest:
         d, iso2, name = nearest[0]
         if d <= COUNTRY_LOOKUP_TOLERANCE_DEG:
             if debug:
-                print(
+                log.debug(
                     "[geo-debug] nearest fallback used:",
                     {"distance_deg": d, "iso2": iso2, "name": name},
                 )
@@ -766,7 +768,7 @@ def _add_jitter_columns_to_sqlite(db_path: str, jitter_fn):
     We do NOT overwrite the original GPS_lat/GPS_long.
     """
     if jitter_fn is None:
-        print("[sqlite] jitter function missing; skipping jitter columns")
+        log.info("[sqlite] jitter function missing; skipping jitter columns")
         return
 
     conn = sqlite3.connect(db_path)
@@ -785,8 +787,8 @@ def _add_jitter_columns_to_sqlite(db_path: str, jitter_fn):
             target = t
             break
     if not target:
-        print(
-            "[sqlite] could not find a table with sampleId/GPS_lat/GPS_long; skipping jitter columns"
+        log.warning(
+            "Could not find a SQLite table with sampleId/GPS_lat/GPS_long; skipping jitter columns"
         )
         conn.close()
         return
@@ -829,7 +831,7 @@ def _add_jitter_columns_to_sqlite(db_path: str, jitter_fn):
     cur.executemany(f"UPDATE {target} SET lat = ?, lon = ? WHERE sampleId = ?", updates)
     conn.commit()
     conn.close()
-    print(f"[sqlite] added/updated jittered columns 'lat','lon' in {target}")
+    log.info(f"[sqlite] added/updated jittered columns 'lat','lon' in {target}")
 
 
 def norm_qr_for_id(q):
@@ -844,14 +846,17 @@ def norm_qr_for_id(q):
 
 def parse_ph(value):
     if value is None:
+        log.debug("[parse_ph] Value is None")
         return None
     s = str(value).strip().lower().replace(",", ".")
     m = re.search(r"(-?\d+(\.\d+)?)", s)
     if not m:
+        log.debug("[parse_ph] No match found for value: %s", value)
         return value
     try:
         return float(m.group(1))
     except ValueError:
+        log.debug("[parse_ph] Failed to convert value to float: %s", value)
         return value
 
 
@@ -1135,10 +1140,10 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
     ext = _guess_ext_from_firebase_url(url)
     object_name = f"{user_id}/{sample_id}/{field}{ext}"
 
-    # --- NEW: skip if we've already processed this object in a previous run ---
+    # Skip if we've already processed this object in a previous run
     if object_name in _MIRROR_DONE_OBJECTS:
         if MIRROR_VERBOSE:
-            print(f"[SKIP] already processed {object_name}, skipping download")
+            log.info("[SKIP] already processed %s, skipping download", object_name)
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
 
     # If we are NOT overwriting, skip if object already exists in MinIO
@@ -1159,7 +1164,7 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
         data = resp.content
     except Exception as e:
         if MIRROR_VERBOSE:
-            print(f"[WARN] could not download {url}: {e}")
+            log.warning("Could not download %s: %s", url, e)
         return url
 
     # Fix orientation + compress + strip public EXIF
@@ -1171,7 +1176,7 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
         )
     except Exception as e:
         if MIRROR_VERBOSE:
-            print(f"[WARN] compression/orientation failed for {url}: {e}")
+            log.warning("Compression/orientation failed for %s: %s", url, e)
         data_fixed = data
         exif_sidecar = None
 
@@ -1193,11 +1198,11 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
         
         if MIRROR_VERBOSE:
             action = "overwrote" if MIRROR_OVERWRITE_EXISTING else "uploaded"
-            print(f"[INFO] {action} {object_name} ({len(data_fixed) / 1024 / 1024:.2f} MB)")
+            log.info("[INFO] %s %s (%.2f MB)", action, object_name, len(data_fixed) / 1024 / 1024)
         return f"{PUBLIC_STORAGE_BASE}/{object_name}"
     except Exception as e:
         if MIRROR_VERBOSE:
-            print(f"[WARN] could not upload to MinIO {object_name}: {e}")
+            log.warning("Could not upload to MinIO %s: %s", object_name, e)
         return url
 
 def _upload_exif_sidecar_to_minio(mclient, image_object_name: str, sidecar: dict | None) -> None:
@@ -1224,11 +1229,11 @@ def _upload_exif_sidecar_to_minio(mclient, image_object_name: str, sidecar: dict
         )
 
         if MIRROR_VERBOSE:
-            print(f"[OK] uploaded EXIF sidecar to MinIO: {sidecar_object_name}")
+            log.debug("Uploaded EXIF sidecar to MinIO: %s", sidecar_object_name)
 
     except Exception as e:
         if MIRROR_VERBOSE:
-            print(f"[WARN] could not upload EXIF sidecar for {image_object_name}: {e}")
+            log.warning("Could not upload EXIF sidecar for %s: %s", image_object_name, e)
 
 # ---------------------------------------------------------------------------
 # 1. Firestore -> flattened rows
@@ -1329,9 +1334,10 @@ def fetch_samples_flat(mclient, max_stream_retries: int = 5) -> pd.DataFrame:
             if "_UnaryStreamMultiCallable" in msg and "has no attribute '_retry'" in msg:
                 # Don't count this towards max_stream_retries; just keep trying
                 sleep_s = 10
-                print(
-                    f"[WARN] Firestore stream hit known bug "
-                    f"('_UnaryStreamMultiCallable/_retry'); sleeping {sleep_s}s and retrying..."
+                log.warning(
+                    "Firestore stream hit known bug "
+                    "('_UnaryStreamMultiCallable/_retry'); sleeping %ss and retrying...",
+                    sleep_s,
                 )
                 time.sleep(sleep_s)
                 db = firestore.client()
@@ -1340,14 +1346,16 @@ def fetch_samples_flat(mclient, max_stream_retries: int = 5) -> pd.DataFrame:
             # --- Normal retry path for network/transient errors ---
             attempt += 1
             if attempt > max_stream_retries:
-                print(f"[ERROR] Firestore stream failed after {attempt} attempts: {e}")
+                log.error("Firestore stream failed after %s attempts: %s", attempt, e)
                 raise
 
             sleep_s = min(60, 5 * attempt)
-            print(
-                f"[WARN] Firestore stream failed "
-                f"(attempt {attempt}/{max_stream_retries}): {e} – "
-                f"retrying in {sleep_s}s"
+            log.warning(
+                "Firestore stream failed (attempt %s/%s): %s – retrying in %ss",
+                attempt,
+                max_stream_retries,
+                e,
+                sleep_s,
             )
             time.sleep(sleep_s)
             db = firestore.client()
@@ -1404,12 +1412,12 @@ def fetch_uid_to_email(max_retries: int = 5) -> dict:
 
         except Exception as e:
             if attempt >= max_retries:
-                print(f"[ERROR] Firebase Auth list_users failed after {attempt} attempts: {e}")
+                log.error("Firebase Auth list_users failed after %s attempts: %s", attempt, e)
                 raise
 
             sleep_s = min(60, 5 * attempt)
-            print(
-                f"[WARN] Firebase Auth list_users failed "
+            log.warning(
+                "Firebase Auth list_users failed "
                 f"(attempt {attempt}/{max_retries}): {e} – "
                 f"retrying in {sleep_s}s"
             )
@@ -1499,7 +1507,7 @@ def _restore_original_coords_from_csv(
     in case that step overwrote them. We DO NOT touch jitter columns.
     """
     if not (os.path.exists(db_path) and os.path.exists(csv_path)):
-        print("[sqlite] skip restore originals: db or csv missing")
+        log.info("[sqlite] skip restore originals: db or csv missing")
         return
 
     conn = sqlite3.connect(db_path)
@@ -1519,7 +1527,7 @@ def _restore_original_coords_from_csv(
             break
 
     if not target:
-        print("[sqlite] could not find table with sampleId/GPS_lat/GPS_long; nothing to restore")
+        log.info("[sqlite] could not find table with sampleId/GPS_lat/GPS_long; nothing to restore")
         conn.close()
         return
 
@@ -1529,7 +1537,7 @@ def _restore_original_coords_from_csv(
         or orig_lon_col not in df_csv.columns
         or "sampleId" not in df_csv.columns
     ):
-        print("[sqlite] CSV missing required columns; nothing to restore")
+        log.info("[sqlite] CSV missing required columns; nothing to restore")
         conn.close()
         return
 
@@ -1557,7 +1565,7 @@ def _restore_original_coords_from_csv(
     )
     conn.commit()
     conn.close()
-    print(f"[sqlite] restored originals into {target}.{orig_lat_col}/{orig_lon_col} from CSV")
+    log.info("[sqlite] restored originals into %s.%s/%s from CSV", target, orig_lat_col, orig_lon_col)
 
 
 def _truthy(v):
@@ -1594,18 +1602,18 @@ def refresh_sqlite_from_csv(OUTPUT_CSV: str, sqlite_path: str):
     os.environ["CSV_PATH"] = csv_path
     os.environ["SQLITE_PATH"] = db_path
 
-    print(f"[sqlite] CSV_PATH={csv_path}")
-    print(f"[sqlite] SQLITE_PATH={db_path}")
+    log.info("[sqlite] CSV_PATH=%s", csv_path)
+    log.info("[sqlite] SQLITE_PATH=%s", db_path)
 
     backup = _backup_lab_enrichment(db_path)
     if backup:
-        print(f"[sqlite] backed up {len(backup['rows'])} lab_enrichment rows")
+        log.info("[sqlite] backed up %s lab_enrichment rows", len(backup['rows']))
     else:
-        print("[sqlite] no lab_enrichment to back up")
+        log.info("[sqlite] no lab_enrichment to back up")
 
     # Rebuild DB (may jitter internally—we’ll fix originals next)
     ensure_sqlite()
-    print("[sqlite] base SQLite refreshed from CSV")
+    log.info("[sqlite] base SQLite refreshed from CSV")
 
     # Force ORIGINALS back (so GPS_lat/GPS_long are raw, not jittered)
     _restore_original_coords_from_csv(
@@ -1613,7 +1621,7 @@ def refresh_sqlite_from_csv(OUTPUT_CSV: str, sqlite_path: str):
     )
 
     _restore_lab_enrichment(db_path, backup)
-    print("[sqlite] lab_enrichment restored")
+    log.info("[sqlite] lab_enrichment restored")
 
     # Add/refresh separate jitter columns (lat/lon) without touching originals
     _add_jitter_columns_to_sqlite(db_path, lc_det_jitter)
@@ -1853,7 +1861,7 @@ def annotate_and_filter_wrong_coordinates(
     out = df.copy()
 
     if qr_col not in out.columns:
-        print(f"[coords] QR column {qr_col!r} not found; skipping coordinate filtering")
+        log.info("[coords] QR column %s not found; skipping coordinate filtering", qr_col)
         out["wrong_coordinates"] = False
         out["actual_cc"] = ""
         out["planned_iso2"] = ""
@@ -1861,7 +1869,7 @@ def annotate_and_filter_wrong_coordinates(
         return out, out
 
     if lat_col not in out.columns or lon_col not in out.columns:
-        print(f"[coords] lat/lon columns {lat_col!r}/{lon_col!r} not found; skipping coordinate filtering")
+        log.info("[coords] lat/lon columns %s/%s not found; skipping coordinate filtering", lat_col, lon_col)
         out["wrong_coordinates"] = False
         out["actual_cc"] = ""
         out["planned_iso2"] = ""
@@ -1961,8 +1969,8 @@ def annotate_and_filter_wrong_coordinates(
 
     filtered = out[out["wrong_coordinates"] != True].copy()
 
-    print(
-        "[coords] coordinate check: "
+    log.info(
+        "coordinate check: "
         f"total={len(out)}, wrong={int(out['wrong_coordinates'].sum())}, kept={len(filtered)}"
     )
 
@@ -2042,7 +2050,7 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
 
 def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) -> pd.DataFrame:
     if not db_path or not os.path.exists(db_path):
-        print(f"[INFO] SQLite for lab_enrichment not found at {db_path}, skipping parameters.")
+        log.info(f"[INFO] SQLite for lab_enrichment not found at {db_path}, skipping parameters.")
         return pd.DataFrame([])
 
     def norm_qr(q):
@@ -2070,12 +2078,12 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         lab_df = pd.read_sql_query("SELECT * FROM lab_enrichment", conn)
     except Exception as e:
         conn.close()
-        print(f"[INFO] no lab_enrichment table in {db_path}: {e}")
+        log.info(f"[INFO] no lab_enrichment table in {db_path}: {e}")
         return pd.DataFrame([])
     conn.close()
 
     if lab_df.empty:
-        print("[INFO] lab_enrichment table is empty, nothing to export.")
+        log.info("[INFO] lab_enrichment table is empty, nothing to export.")
         return pd.DataFrame([])
 
     rows = []
@@ -2104,7 +2112,7 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
             }
         )
 
-    print(f"[INFO] built sample_parameters from sqlite: {len(rows)} rows")
+    log.info("[INFO] built sample_parameters from sqlite: %s rows", len(rows))
     return pd.DataFrame(rows)
 
 
@@ -2148,9 +2156,9 @@ def upload_canonical_to_minio(mclient, local_path: Path, object_name: str):
                 length=size,
                 content_type="text/csv" if object_name.endswith(".csv") else "application/zip",
             )
-        print(f"[OK] uploaded to MinIO: {key}")
+        log.info("[OK] uploaded to MinIO: %s", key)
     except Exception as e:
-        print(f"[WARN] could not upload {local_path} to MinIO as {key}: {e}")
+        log.warning("[WARN] could not upload %s to MinIO as %s: %s", local_path, key, e)
 
 
 # ---------------------------------------------------------------------------
@@ -2282,14 +2290,14 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
     then normalize+cast into real tables.
     """
     if psycopg2 is None:
-        print("[PG] psycopg2 not installed, skipping PG load.")
+        log.info("[PG] psycopg2 not installed, skipping PG load.")
         return
 
     # Ensure schema matches the new CSV columns
     try:
         ensure_pg_tables()
     except Exception as e:
-        print(f"[PG] ensure_pg_tables() failed (will try to continue): {e}")
+        log.info("[PG] ensure_pg_tables() failed (will try to continue): %s", e)
 
     conn = psycopg2.connect(
         host=os.getenv("DB_HOST_OUTSIDE", "echorepo-postgres"),
@@ -2553,10 +2561,10 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
         """)
 
         conn.commit()
-        print("[PG] staging swap completed.")
+        log.info("[PG] staging swap completed.")
     except Exception as e:
         conn.rollback()
-        print(f"[PG] staging load failed: {e}")
+        log.error("[PG] staging load failed: %s", e)
     finally:
         try:
             cur.execute("DROP TABLE IF EXISTS samples_stage_raw;")
@@ -2568,6 +2576,82 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
         cur.close()
         conn.close()
 
+def _issue_sample_id_for_row(row) -> str:
+    """
+    Return the stable sample identifier used in coordinate_check_approved.csv.
+    Prefer QR_qrCode because this is what the coordinate issue UI displays.
+    """
+    for col in ("QR_qrCode", "sample_id", "sampleId"):
+        if col in row and str(row.get(col) or "").strip():
+            value = str(row.get(col) or "").strip()
+            try:
+                return norm_qr_for_id(value).upper()
+            except Exception:
+                return value.upper()
+    return ""
+
+
+def apply_coordinate_approvals(df_annotated: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply persistent human approvals and country overrides.
+
+    Adds:
+      - _issue_sample_id
+      - coordinate_issue_approved
+      - country_code_override
+      - wrong_coordinates_effective
+    """
+    out = df_annotated.copy()
+
+    if out.empty:
+        out["coordinate_issue_approved"] = []
+        out["country_code_override"] = []
+        out["wrong_coordinates_effective"] = []
+        return out
+
+    approved_map = load_approved_coordinate_samples()
+    approved_ids = set(approved_map.keys())
+
+    out["_issue_sample_id"] = out.apply(_issue_sample_id_for_row, axis=1)
+
+    out["coordinate_issue_approved"] = out["_issue_sample_id"].isin(approved_ids)
+
+    def _country_override_for_row(row):
+        sid = str(row.get("_issue_sample_id") or "").strip().upper()
+        if not sid:
+            return ""
+
+        override = str(
+            approved_map.get(sid, {}).get("country_code_override") or ""
+        ).strip().upper()
+
+        if override:
+            return override
+
+        planned = str(row.get("planned_iso2") or "").strip().upper()
+        planned_set = {x.strip() for x in planned.split(",") if x.strip()}
+
+        if sid in approved_ids and len(planned_set) == 1:
+            return next(iter(planned_set))
+
+        return ""
+
+    out["country_code_override"] = out.apply(_country_override_for_row, axis=1)
+
+    out["wrong_coordinates_effective"] = out.apply(
+        lambda row: _truthy(row.get("wrong_coordinates"))
+        and not _truthy(row.get("coordinate_issue_approved")),
+        axis=1,
+    )
+
+    log.info(
+        "Coordinate approvals: approved=%s, overridden_country=%s, actionable_wrong=%s",
+        int(out["coordinate_issue_approved"].sum()),
+        int((out["country_code_override"].astype(str).str.strip() != "").sum()),
+        int(out["wrong_coordinates_effective"].sum()),
+    )
+
+    return out
 
 # ---------------------------------------------------------------------------
 # main
@@ -2603,8 +2687,7 @@ def main():
         if col in df_enriched.columns:
             df_enriched[col] = df_enriched[col].apply(_ts_to_iso_loose)
 
-    # Load planned QR -> country map before writing OUTPUT_CSV,
-    # because wrong-coordinate rows should not enter downstream outputs.
+    # Load planned QR -> country map for coordinate validation and country overrides.
     planned_map = {}
     if load_qr_to_planned is not None:
         try:
@@ -2626,98 +2709,27 @@ def main():
         lon_col="GPS_long",
     )
 
+    df_annotated = apply_coordinate_approvals(df_annotated)
+
     coord_diag_path = str(PROJECT_ROOT / "data" / "coordinate_check_annotated.csv")
     coord_bad_path = str(PROJECT_ROOT / "data" / "coordinate_check_wrong.csv")
 
-    # Load manually approved coordinate issues.
-    # These are samples that the algorithm marked as wrong, but a human reviewer accepted as OK.
-    approved_map = load_approved_coordinate_samples()
-    approved_ids = set(approved_map.keys())
-
-    def _issue_sample_id_for_row(row):
-        """
-        Return the stable ID used in coordinate_check_approved.csv.
-        Prefer QR_qrCode because this is what the coordinate issue UI displays.
-        """
-        for col in ("QR_qrCode", "sample_id", "sampleId"):
-            if col in row and str(row.get(col) or "").strip():
-                value = str(row.get(col) or "").strip()
-                try:
-                    return norm_qr_for_id(value).upper()
-                except Exception:
-                    return value.upper()
-        return ""
-
-    def _country_override_for_row(row):
-        sid = _issue_sample_id_for_row(row)
-        if not sid:
-            return ""
-
-        override = str(
-            approved_map.get(sid, {}).get("country_code_override") or ""
-        ).strip().upper()
-
-        if override:
-            return override
-
-        # Optional convenience:
-        # If the issue is approved and planned country is unambiguous,
-        # use that planned country as the override.
-        planned = str(row.get("planned_iso2") or "").strip().upper()
-        planned_set = {x.strip() for x in planned.split(",") if x.strip()}
-
-        if sid in approved_ids and len(planned_set) == 1:
-            return next(iter(planned_set))
-
-        return ""
-
-    def _boolish(value) -> bool:
-        return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
-
-    if not df_annotated.empty:
-        df_annotated["_issue_sample_id"] = df_annotated.apply(
-            _issue_sample_id_for_row,
-            axis=1,
-        )
-
-        df_annotated["coordinate_issue_approved"] = (
-            df_annotated["_issue_sample_id"].isin(approved_ids)
-        )
-
-        df_annotated["country_code_override"] = df_annotated.apply(
-            _country_override_for_row,
-            axis=1,
-        )
-
-        df_annotated["wrong_coordinates_effective"] = df_annotated.apply(
-            lambda row: _boolish(row.get("wrong_coordinates"))
-            and not _boolish(row.get("coordinate_issue_approved")),
-            axis=1,
-        )
-    else:
-        df_annotated["coordinate_issue_approved"] = []
-        df_annotated["country_code_override"] = []
-        df_annotated["wrong_coordinates_effective"] = []
-        
-    # Write full diagnostic file with both raw and effective flags.
     write_csv_atomic(df_annotated, coord_diag_path)
 
-    # Write only still-actionable wrong coordinates.
-    # Manually approved rows are excluded from this file.
     write_csv_atomic(
         df_annotated[df_annotated["wrong_coordinates_effective"] == True].copy(),
         coord_bad_path,
     )
 
-    # Keep the coordinate flags in the main output.
-    # Optionally drop only EFFECTIVE wrong-coordinate rows if FILTER_WRONG_COORDINATES=1.
     if FILTER_WRONG_COORDINATES:
-        print("[coords] FILTER_WRONG_COORDINATES=1 -> dropping effective wrong-coordinate rows")
+        log.warning(
+            "FILTER_WRONG_COORDINATES=true: dropping effective wrong-coordinate rows"
+        )
         df_enriched = df_annotated[
             df_annotated["wrong_coordinates_effective"] != True
         ].copy()
     else:
-        print("[coords] FILTER_WRONG_COORDINATES=0 -> keeping all rows, only flagging them")
+        log.info("Keeping all rows in enriched output; coordinate issues are only flagged")
         df_enriched = df_annotated
 
     # This is the ONLY write of OUTPUT_CSV.
@@ -2746,7 +2758,7 @@ def main():
             os.makedirs(orphan_path.parent, exist_ok=True)
             orphan_params.to_csv(orphan_path, index=False)
             log.info("Wrote %s orphan parameter rows to %s", len(orphan_params), orphan_path)
-            
+
         # 2) drop parameter rows that point to a non-existing sample
         if not params_df.empty:
             before = len(params_df)
@@ -2755,7 +2767,7 @@ def main():
             ].copy()
             after = len(params_df)
             if before != after:
-                print(f"[INFO] dropped {before - after} parameter rows without matching sample")
+                log.info("Dropped %s parameter rows without matching sample", before - after)
 
         # sanitize numeric-ish columns so Postgres COPY is happy
         if not samples_df.empty:
@@ -2797,7 +2809,7 @@ def main():
         write_csv_atomic(samples_df, str(samples_path))
         write_csv_atomic(images_df, str(images_path))
         write_csv_atomic(params_df, str(params_path))
-        print("[OK] Wrote canonical 3-file export.")
+        log.info("[OK] Wrote canonical 3-file export.")
 
         # 4b) produce all.zip locally
         all_zip_path = canon_dir / "all.zip"
@@ -2805,13 +2817,13 @@ def main():
             zf.write(samples_path, arcname="samples.csv")
             zf.write(images_path, arcname="sample_images.csv")
             zf.write(params_path, arcname="sample_parameters.csv")
-        print(f"[OK] Wrote {all_zip_path}")
+        log.info("[OK] Wrote %s", all_zip_path)
 
         # 5) optional: Postgres (just ensuring tables for now)
         try:
             ensure_pg_tables()
         except Exception as e:
-            print(f"[WARN] Could not ensure Postgres tables: {e}")
+            log.warning("ensure_pg_tables() failed (will try to continue): %s", e)
 
         # 6) optional: load into Postgres staging + swap
         try:
@@ -2821,12 +2833,20 @@ def main():
                 str(params_path),
             )
         except Exception as e:
-            print(f"[WARN] PG staging load skipped/failed: {e}")
-
+            log.warning("PG staging load skipped/failed: %s", e)
+    log.info(
+        "Pipeline complete: raw=%s, enriched=%s, users=%s, canonical_samples=%s, images=%s, parameters=%s",
+        len(df_raw),
+        len(df_enriched),
+        len(df_users),
+        len(samples_df) if "samples_df" in locals() else 0,
+        len(images_df) if "images_df" in locals() else 0,
+        len(params_df) if "params_df" in locals() else 0,
+    )
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        print(f"[ERROR] {e}")
+        log.error("[ERROR] %s", e)
         sys.exit(1)
