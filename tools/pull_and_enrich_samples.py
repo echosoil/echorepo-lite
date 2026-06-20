@@ -168,32 +168,48 @@ COORDINATE_APPROVED_CSV = Path(
     )
 )
 
-def load_approved_coordinate_samples() -> set[str]:
+def load_approved_coordinate_samples() -> dict[str, dict[str, str]]:
     path = COORDINATE_APPROVED_CSV
 
     if not path.exists():
-        return set()
+        return {}
 
     try:
         df = pd.read_csv(path, dtype=str, keep_default_na=False)
     except Exception:
-        return set()
+        return {}
 
     if "sample_id" not in df.columns:
-        return set()
+        return {}
 
-    approved = set()
-    for x in df["sample_id"].tolist():
-        value = str(x or "").strip()
+    for col in ["approved_by", "approved_at", "comment", "country_code_override"]:
+        if col not in df.columns:
+            df[col] = ""
+
+    approvals = {}
+
+    for _, row in df.iterrows():
+        value = str(row.get("sample_id") or "").strip()
         if not value:
             continue
-        try:
-            approved.add(norm_qr_for_id(value).upper())
-        except Exception:
-            approved.add(value.upper())
 
-    return approved
-    
+        try:
+            sid = norm_qr_for_id(value).upper()
+        except Exception:
+            sid = value.upper()
+
+        country_override = str(row.get("country_code_override") or "").strip().upper()
+
+        approvals[sid] = {
+            "sample_id": sid,
+            "approved_by": str(row.get("approved_by") or "").strip(),
+            "approved_at": str(row.get("approved_at") or "").strip(),
+            "comment": str(row.get("comment") or "").strip(),
+            "country_code_override": country_override,
+        }
+
+    return approvals
+
 def reverse_geocoder_country_code(lat, lon):
     """
     Offline nearest-place fallback country lookup.
@@ -1524,8 +1540,13 @@ def _truthy(v):
 def build_qa_status_from_row(r):
     """
     Convert coordinate validation flags into canonical qa_status.
+
+    Use wrong_coordinates_effective when available so manually approved
+    coordinate issues do not remain hidden on the map or shown as alerts.
     """
-    if _truthy(r.get("wrong_coordinates")):
+    wrong_flag = r.get("wrong_coordinates_effective", r.get("wrong_coordinates"))
+
+    if _truthy(wrong_flag):
         reason = str(r.get("coordinate_check_reason") or "").strip()
 
         if reason:
@@ -1633,19 +1654,26 @@ def build_samples_df(
         if qr_norm and qr_norm in planned_map:
             planned_countries = planned_map[qr_norm] or set()
 
+        country_override = str(r.get("country_code_override") or "").strip().upper()
+
         # Resolve actual country from ORIGINAL coordinates
-        country_info = resolve_country_for_sample(
-            lat_f,
-            lon_f,
-            planned_set=planned_countries,
-            sample_id=sample_id,
-            allow_planned_fallback=False,
-        )
+        if country_override:
+            orig_country = country_override
+            country_source = "manual_override"
+            country_lookup_note = "country_code_manually_overridden"
+        else:
+            country_info = resolve_country_for_sample(
+                lat_f,
+                lon_f,
+                planned_set=planned_countries,
+                sample_id=sample_id,
+                allow_planned_fallback=False,
+            )
 
-        orig_country = country_info["country_code"]
-        country_source = country_info["country_source"]
-        country_lookup_note = country_info["country_lookup_note"]
-
+            orig_country = country_info["country_code"]
+            country_source = country_info["country_source"]
+            country_lookup_note = country_info["country_lookup_note"]
+        
         # jitter like before, but only for public lat/lon
         lat_j, lon_j = lat_f, lon_f
         if lat_f is not None and lon_f is not None and lc_det_jitter is not None:
@@ -1940,7 +1968,11 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     for _, r in df_flat.iterrows():
         lt = _to_float_num(r.get("GPS_lat"))
         ln = _to_float_num(r.get("GPS_long"))
-        country = r.get("country_code") or latlon_to_country_code(lt, ln)
+        country = (
+            str(r.get("country_code_override") or "").strip().upper()
+            or r.get("country_code")
+            or latlon_to_country_code(lt, ln)
+        )
 
         qr = norm_qr_for_id(r.get("QR_qrCode"))
         sample_id = qr or r.get("sampleId")
@@ -1992,7 +2024,12 @@ def build_sample_parameters_df_from_sqlite(df_flat: pd.DataFrame, db_path: str) 
         qr_n = norm_qr(qr)
         lat = r.get("GPS_lat")
         lon = r.get("GPS_long")
-        country = r.get("country_code") or latlon_to_country_code(lat, lon)
+        country = (
+            str(r.get("country_code_override") or "").strip().upper()
+            or r.get("country_code")
+            or latlon_to_country_code(lat, lon)
+        )        
+        
         qr_to_country[qr_n] = country
 
     conn = sqlite3.connect(db_path)
@@ -2541,50 +2578,78 @@ def main():
     df_users = pd.DataFrame(columns=["email"], data=sorted(list(uid_to_email.values())))
     write_csv_atomic(df_users, USERS_CSV)
 
-# 3b) coordinate validation/filtering
-df_filtered, df_annotated = annotate_and_filter_wrong_coordinates(
-    df_enriched,
-    planned_map=planned_map,
-    qr_col="QR_qrCode",
-    lat_col="GPS_lat",
-    lon_col="GPS_long",
-)
+    # 3b) coordinate validation/filtering
+    df_filtered, df_annotated = annotate_and_filter_wrong_coordinates(
+        df_enriched,
+        planned_map=planned_map,
+        qr_col="QR_qrCode",
+        lat_col="GPS_lat",
+        lon_col="GPS_long",
+    )
 
-coord_diag_path = str(PROJECT_ROOT / "data" / "coordinate_check_annotated.csv")
-coord_bad_path = str(PROJECT_ROOT / "data" / "coordinate_check_wrong.csv")
+    coord_diag_path = str(PROJECT_ROOT / "data" / "coordinate_check_annotated.csv")
+    coord_bad_path = str(PROJECT_ROOT / "data" / "coordinate_check_wrong.csv")
 
-# Load manually approved coordinate issues.
-# These are samples that the algorithm marked as wrong, but a human reviewer accepted as OK.
-approved_ids = load_approved_coordinate_samples()
+    # Load manually approved coordinate issues.
+    # These are samples that the algorithm marked as wrong, but a human reviewer accepted as OK.
+    approved_map = load_approved_coordinate_samples()
+    approved_ids = set(approved_map.keys())
 
+    def _issue_sample_id_for_row(row):
+        """
+        Return the stable ID used in coordinate_check_approved.csv.
+        Prefer QR_qrCode because this is what the coordinate issue UI displays.
+        """
+        for col in ("QR_qrCode", "sample_id", "sampleId"):
+            if col in row and str(row.get(col) or "").strip():
+                value = str(row.get(col) or "").strip()
+                try:
+                    return norm_qr_for_id(value).upper()
+                except Exception:
+                    return value.upper()
+        return ""
 
-def _issue_sample_id_for_row(row):
-    """
-    Return the stable ID used in coordinate_check_approved.csv.
-    Prefer QR_qrCode because this is what the coordinate issue UI displays.
-    """
-    for col in ("QR_qrCode", "sample_id", "sampleId"):
-        if col in row and str(row.get(col) or "").strip():
-            value = str(row.get(col) or "").strip()
-            try:
-                return norm_qr_for_id(value).upper()
-            except Exception:
-                return value.upper()
-    return ""
+    def _country_override_for_row(row):
+        sid = _issue_sample_id_for_row(row)
+        if not sid:
+            return ""
 
+        override = str(
+            approved_map.get(sid, {}).get("country_code_override") or ""
+        ).strip().upper()
+
+        if override:
+            return override
+
+        # Optional convenience:
+        # If the issue is approved and planned country is unambiguous,
+        # use that planned country as the override.
+        planned = str(row.get("planned_iso2") or "").strip().upper()
+        planned_set = {x.strip() for x in planned.split(",") if x.strip()}
+
+        if sid in approved_ids and len(planned_set) == 1:
+            return next(iter(planned_set))
+
+        return ""
 
     def _boolish(value) -> bool:
         return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
 
-
     if not df_annotated.empty:
-        # Mark rows that have been manually approved as OK.
-        df_annotated["coordinate_issue_approved"] = df_annotated.apply(
-            lambda row: _issue_sample_id_for_row(row) in approved_ids,
+        df_annotated["_issue_sample_id"] = df_annotated.apply(
+            _issue_sample_id_for_row,
             axis=1,
         )
 
-        # Effective wrongness = algorithm says wrong AND human has not approved it.
+        df_annotated["coordinate_issue_approved"] = (
+            df_annotated["_issue_sample_id"].isin(approved_ids)
+        )
+
+        df_annotated["country_code_override"] = df_annotated.apply(
+            _country_override_for_row,
+            axis=1,
+        )
+
         df_annotated["wrong_coordinates_effective"] = df_annotated.apply(
             lambda row: _boolish(row.get("wrong_coordinates"))
             and not _boolish(row.get("coordinate_issue_approved")),
@@ -2592,8 +2657,9 @@ def _issue_sample_id_for_row(row):
         )
     else:
         df_annotated["coordinate_issue_approved"] = []
+        df_annotated["country_code_override"] = []
         df_annotated["wrong_coordinates_effective"] = []
-
+        
     # Write full diagnostic file with both raw and effective flags.
     write_csv_atomic(df_annotated, coord_diag_path)
 
@@ -2614,7 +2680,7 @@ def _issue_sample_id_for_row(row):
     else:
         print("[coords] FILTER_WRONG_COORDINATES=0 -> keeping all rows, only flagging them")
         df_enriched = df_annotated
-        
+
     # This is the ONLY write of OUTPUT_CSV.
     write_csv_atomic(df_enriched, OUTPUT_CSV)
 
