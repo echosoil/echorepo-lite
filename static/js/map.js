@@ -1327,6 +1327,14 @@
   let mapLoadingCount = 0;
   let mapLoaderStartedAt = null;
 
+  function forceHideMapLoader() {
+    mapLoadingCount = 0;
+
+    if (mapLoaderEl) {
+      mapLoaderEl.classList.remove('is-visible');
+    }
+  }
+
   function addMapLoaderControl() {
     if (mapLoaderEl) return;
 
@@ -2120,10 +2128,13 @@
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.warn('Could not load map samples:', err);
+        forceHideMapLoader();
       }
     } finally {
+      hideMapLoader();
+
       if (seq === currentMapLoadSeq) {
-        hideMapLoader();
+        currentMapLoadAbort = null;
       }
     }
   }
