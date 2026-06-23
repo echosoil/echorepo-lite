@@ -27,6 +27,8 @@
 - `/user_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson_debug`  _(in echorepo/routes/api.py)_
 - `/canonical/all.zip`  _(in echorepo/routes/data_api.py)_
+- `/canonical/map.count`  _(in echorepo/routes/data_api.py)_
+- `/canonical/map.geojson`  _(in echorepo/routes/data_api.py)_
 - `/canonical/sample_biodiversity`  _(in echorepo/routes/data_api.py)_
 - `/canonical/sample_images`  _(in echorepo/routes/data_api.py)_
 - `/canonical/sample_parameters`  _(in echorepo/routes/data_api.py)_
@@ -51,6 +53,8 @@
 - `/storage/<path:relpath>`  _(in echorepo/routes/storage.py)_
 - `/`  _(in echorepo/routes/web.py)_
 - `/admin/usage`  _(in echorepo/routes/web.py)_
+- `/coordinate-issues`  _(in echorepo/routes/web.py)_
+- `/coordinate-issues/approve`  _(in echorepo/routes/web.py)_
 - `/download/all_csv`  _(in echorepo/routes/web.py)_
 - `/download/canonical/<date>/<filename>`  _(in echorepo/routes/web.py)_
 - `/download/canonical/all.zip`  _(in echorepo/routes/web.py)_
@@ -74,7 +78,13 @@
 - `/public/others_geojson`  _(in echorepo/routes/web.py)_
 - `/public/sample_image/<sample_id>`  _(in echorepo/routes/web.py)_
 - `/public/sample_piechart/<sample_id>`  _(in echorepo/routes/web.py)_
+- `/publications/zenodo`  _(in echorepo/routes/web.py)_
 - `/search`  _(in echorepo/routes/web.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
+- `/x`  _(in tools/make_repo_overview.py)_
 
 ## Directory tree (depth ≤ 4)
 
@@ -84,6 +94,7 @@
 ├── data
 │   └── .gitkeep
 ├── docs
+│   ├── ECHOREPO_Architecture.md
 │   ├── ECHOREPO_Data_API_Guide_v3.html
 │   ├── ECHOREPO_Data_API_Guide_v3.md
 │   ├── ECHOREPO_Zenodo_Sync_API_Guide_v1.md
@@ -104,14 +115,18 @@
 │   └── wsgi.py
 ├── keys
 │   └── .gitkeep
+├── migrations
+│   └── migrations/postgres
 ├── scripts
 │   ├── .gitkeep
 │   ├── compile_translations.sh
 │   ├── feature.sh
 │   ├── make_release.sh
 │   ├── publish_zenodo_bundle.sh
+│   ├── run_pg_migrations.py
 │   ├── translate_all.sh
-│   └── update_zenodo_bundle.sh
+│   ├── update_zenodo_bundle.sh
+│   └── wait_for_postgres.py
 ├── static
 │   ├── static/css
 │   ├── static/fonts
@@ -121,9 +136,11 @@
 ├── storage
 │   └── .gitkeep
 ├── tools
+│   ├── tools/biodiversity
 │   ├── tools/sql
 │   ├── auto_translate.py
 │   ├── check_lab_enrichment_qrs.py
+│   ├── create_funguild_db_once.sh
 │   ├── create_indexes.py
 │   ├── find_default_coords.py
 │   ├── firebase_kc_sync.py
@@ -136,6 +153,7 @@
 │   ├── run_sql.py
 │   ├── run_sql_pg.py
 │   └── translate_pg_en.py
+├── .dockerignore
 ├── .env.example
 ├── .env_zenodo.example
 ├── .gitignore
@@ -144,6 +162,7 @@
 ├── Dockerfile.i18n
 ├── Makefile
 ├── REPO_OVERVIEW.md
+├── REPO_OVERVIEW_tmp.html
 ├── babel.cfg
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
