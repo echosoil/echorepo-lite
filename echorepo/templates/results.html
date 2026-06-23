@@ -822,8 +822,11 @@
 
     const targetNames = [
       'elemental concentrations',
+      'element concentrations',
       'metals info',
-      'metals_info_orig'
+      'metals',
+      'metals_info_orig',
+      'metals_info_en'
     ];
 
     const colIdx = headerCells.findIndex(cell => targetNames.includes(norm(cell.textContent)));
@@ -848,13 +851,16 @@
           const trimmed = line.trim();
 
           // Match lines like:
-          // Cd=0 mg/kg
-          // Cd = 0 mg/kg
-          // Cd=0.0 %
-          const m = trimmed.match(/^([^=]+?)\s*=\s*0(?:[.,]0+)?\s*(mg\/kg|%)\s*$/i);
+          // Ca=0 mg/kg
+          // Ca = 0 mg/kg
+          // Ca=0.0 %
+          // Ca = 0,0 %
+          const m = trimmed.match(/^([^=]+?)\s*=\s*0(?:[.,]0+)?\s*(mg\/kg|%)?\s*$/i);
+
           if (m) {
-            return `${m[1].trim()}=Not available`;
+            return `${m[1].trim()} = Not available`;
           }
+
           return line;
         })
         .join('\n');
