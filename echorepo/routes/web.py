@@ -401,6 +401,7 @@ def _js_base_labels() -> dict:
         "clearSelection": _("Clear selection"),
         "clearSelectionTitle": _("Clear all selection rectangles"),
         "drawSelectionRectangle": _("Draw selection rectangle"),
+        "notAvailable": _("Not available"),
     }
 
 
