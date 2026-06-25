@@ -525,33 +525,64 @@
     }
   }
 
-  /** Accepts "PARAM=VAL [UNIT]" separated by ";" or "<br>" */
+  /** Accepts "PARAM=VAL [UNIT]" separated by ";", "<br>", or newlines */
   function cleanMetalsInfo(raw) {
     if (raw == null) return "";
-    const pieces = String(raw).split(/(?:<br\s*\/?>|;)/i)
-      .map(s => s.trim()).filter(Boolean);
-    const out = [];
-    for (const tok of pieces) {
-      const [left, ...rest] = tok.split("=");
-      const name = (left || "").replace(/\s+/g, "").toUpperCase();
-      if (!left) continue;
-      if (OXIDES.has(name)) continue;               // drop oxides
 
-      if (rest.length === 0) {                      // no "=" → keep as-is
-        out.push(tok);
+    const pieces = String(raw)
+      .replace(/<br\s*\/?>/gi, "\n")
+      .split(/[;\n]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const out = [];
+
+    for (const tok of pieces) {
+      const eqPos = tok.indexOf("=");
+
+      // If the token has no "=", keep it instead of silently losing it.
+      if (eqPos < 0) {
+        out.push(escapeHtml(tok));
         continue;
       }
 
-      const right = rest.join("=").trim();
-      const [valPart, ...unitParts] = right.split(/\s+/);
-      const unit = unitParts.join(" ");
-      const num = Number(String(valPart).replace(",", "."));
-      const valFmt = Number.isFinite(num) ? roundSigStr(num, 2) : valPart;
+      const left = tok.slice(0, eqPos).trim();
+      const right = tok.slice(eqPos + 1).trim();
 
-      out.push(
-        `${escapeHtml(left.trim())}=${escapeHtml(valFmt)}${unit ? " " + escapeHtml(unit) : ""}`
-      );
+      if (!left) continue;
+
+      const nameNorm = left.replace(/\s+/g, "").toUpperCase();
+
+      // Drop oxide rows, but not elemental Ca.
+      // Note: CAO is oxide; CA is element and will be kept.
+      if (OXIDES.has(nameNorm)) continue;
+
+      const m = right.match(/^([+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:[eE][+-]?\d+)?)(?:\s+(.*))?$/);
+
+      let valueHtml = "";
+      let unitHtml = "";
+
+      if (m) {
+        const rawNum = m[1];
+        const unit = (m[2] || "").trim();
+        const num = Number(String(rawNum).replace(",", "."));
+
+        if (Number.isFinite(num) && num === 0) {
+          valueHtml = escapeHtml(T('notAvailable', {}, 'Not available'));
+          unitHtml = "";
+        } else if (Number.isFinite(num)) {
+          valueHtml = escapeHtml(roundSigStr(num, 2));
+          unitHtml = unit ? " " + escapeHtml(unit) : "";
+        } else {
+          valueHtml = escapeHtml(right);
+        }
+      } else {
+        valueHtml = escapeHtml(right);
+      }
+
+      out.push(`${escapeHtml(left)} = ${valueHtml}${unitHtml}`);
     }
+
     return out.join("<br>");
   }
 
