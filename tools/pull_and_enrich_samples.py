@@ -748,19 +748,49 @@ def norm_qr_for_id(q):
 
 
 def parse_ph(value):
+    """
+    Parse pH safely.
+
+    Valid pH is normally 0..14.
+    Values outside this range are treated as missing/invalid.
+    This prevents app sentinel values like -1 from being shown as real pH.
+    """
     if value is None:
-        log.debug("[parse_ph] Value is None")
         return None
-    s = str(value).strip().lower().replace(",", ".")
-    m = re.search(r"(-?\d+(\.\d+)?)", s)
-    if not m:
-        log.debug("[parse_ph] No match found for value: %s", value)
-        return value
+
     try:
-        return float(m.group(1))
+        if pd.isna(value):
+            return None
+    except Exception:
+        pass
+
+    s = str(value).strip().lower().replace(",", ".")
+
+    if s in {"", "-", "na", "n/a", "nan", "null", "none"}:
+        return None
+
+    # Extract first numeric value, but do not accept negative sentinel values as pH.
+    m = re.search(r"([+-]?\d+(?:\.\d+)?)", s)
+    if not m:
+        log.debug("[parse_ph] No numeric value found for pH: %s", value)
+        return None
+
+    try:
+        ph = float(m.group(1))
     except ValueError:
-        log.debug("[parse_ph] Failed to convert value to float: %s", value)
-        return value
+        log.debug("[parse_ph] Failed to convert pH to float: %s", value)
+        return None
+
+    if not math.isfinite(ph):
+        return None
+
+    # Real pH should not be negative or above 14.
+    ph = abs(ph)        
+    if ph > 14:
+        log.warning("[parse_ph] Invalid pH value ignored: %r -> %s", value, ph)
+        return None
+
+    return ph
 
 
 def _ts_to_iso(ts):
