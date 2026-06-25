@@ -1639,7 +1639,7 @@ def canonical_map_geojson():
     # Optional: single-sample mode, useful when opening one search result on the map.
     sample_id = (request.args.get("sample_id") or request.args.get("sampleId") or "").strip()
     if sample_id:
-        extra = "sample_id = %s"
+        extra = "s.sample_id = %s"
         if where_sql:
             where_sql += " AND " + extra
         else:
@@ -1684,10 +1684,30 @@ def canonical_map_geojson():
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             f"""
-            SELECT {cols_sql}
-            FROM samples
+            WITH param_metals AS (
+                SELECT
+                    sample_id,
+                    string_agg(
+                        parameter_code || '=' || value ||
+                        CASE
+                            WHEN COALESCE(uom, '') <> '' THEN ' ' || uom
+                            ELSE ''
+                        END,
+                        '; ' ORDER BY parameter_code
+                    ) AS metals_info_params
+                FROM sample_parameters
+                WHERE UPPER(REPLACE(parameter_code, ' ', '')) NOT IN
+                    ('MN2O3','AL2O3','CAO','FE2O3','MGO','SIO2','P2O5','TIO2','K2O','SO3')
+                GROUP BY sample_id
+            )
+            SELECT
+                {cols_sql},
+                pm.metals_info_params
+            FROM samples s
+            LEFT JOIN param_metals pm
+            ON pm.sample_id = s.sample_id
             {where_sql}
-            ORDER BY timestamp_utc DESC NULLS LAST, sample_id
+            ORDER BY s.timestamp_utc DESC NULLS LAST, s.sample_id
             LIMIT %s OFFSET %s
             """,
             params + [limit, offset],
@@ -1695,11 +1715,10 @@ def canonical_map_geojson():
         rows = cur.fetchall()
 
         cur.execute(
-            f"SELECT COUNT(*) AS c FROM samples {where_sql}",
+            f"SELECT COUNT(*) AS c FROM samples s {where_sql}",
             params,
         )
         total = cur.fetchone()["c"]
-
     features = []
 
     for r in rows:
@@ -1743,7 +1762,7 @@ def canonical_map_geojson():
             or _usable_metals_value(props.get("metals_info_en"))
             or _usable_metals_value(props.get("metals_info_orig"))
         )        
-        
+
         qa_status = str(props.get("qa_status") or "").strip().lower()
         props["wrong_coordinates"] = qa_status.startswith("wrong_coordinates")
 
