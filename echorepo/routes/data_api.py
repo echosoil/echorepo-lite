@@ -1269,10 +1269,30 @@ def canonical_samples():
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             f"""
-            SELECT {cols_sql}
-            FROM samples
+            WITH param_metals AS (
+                SELECT
+                    sample_id,
+                    string_agg(
+                        parameter_code || '=' || value ||
+                        CASE
+                            WHEN COALESCE(uom, '') <> '' THEN ' ' || uom
+                            ELSE ''
+                        END,
+                        '; ' ORDER BY parameter_code
+                    ) AS metals_info_params
+                FROM sample_parameters
+                WHERE UPPER(REPLACE(parameter_code, ' ', '')) NOT IN
+                    ('MN2O3','AL2O3','CAO','FE2O3','MGO','SIO2','P2O5','TIO2','K2O','SO3')
+                GROUP BY sample_id
+            )
+            SELECT
+                {cols_sql},
+                pm.metals_info_params
+            FROM samples s
+            LEFT JOIN param_metals pm
+            ON pm.sample_id = s.sample_id
             {where_sql}
-            ORDER BY {order} {direction}
+            ORDER BY s.timestamp_utc DESC NULLS LAST, s.sample_id
             LIMIT %s OFFSET %s
             """,
             params + [limit, offset],
@@ -1280,7 +1300,7 @@ def canonical_samples():
         rows = cur.fetchall()
 
         cur.execute(
-            f"SELECT COUNT(*) AS c FROM samples {where_sql}",
+            f"SELECT COUNT(*) AS c FROM samples s {where_sql}",
             params,
         )
         total = cur.fetchone()["c"]
@@ -1614,7 +1634,7 @@ def canonical_map_geojson():
     limit = max(1, min(int(request.args.get("limit", 2000)), 10000))
     offset = max(0, int(request.args.get("offset", 0)))
 
-    where_sql, params, filter_meta = _canonical_where_from_request(alias="")
+    where_sql, params, filter_meta = _canonical_where_from_request(alias="s")
 
     # Optional: single-sample mode, useful when opening one search result on the map.
     sample_id = (request.args.get("sample_id") or request.args.get("sampleId") or "").strip()
@@ -1630,7 +1650,7 @@ def canonical_map_geojson():
     # Admin/debug can request include_wrong=1.
     include_wrong = (request.args.get("include_wrong") or "").strip().lower() in {"1", "true", "yes"}
     if not include_wrong:
-        extra = "(qa_status IS NULL OR qa_status NOT LIKE %s)"
+        extra = "(s.qa_status IS NULL OR s.qa_status NOT LIKE %s)"
         if where_sql:
             where_sql += " AND " + extra
         else:
@@ -1653,12 +1673,13 @@ def canonical_map_geojson():
         "soil_structure_en",
         "soil_texture_en",
         "observations_en",
+        "metals_info_orig",
         "metals_info_en",
         "qa_status",
         "licence",
     ]
 
-    cols_sql = ", ".join(fields)
+    cols_sql = ", ".join(f"s.{c}" for c in fields)
 
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
@@ -1709,7 +1730,19 @@ def canonical_map_geojson():
         props["SOIL_CONTAMINATION_plastic"] = props.get("contamination_plastic")
         props["SOIL_CONTAMINATION_debris"] = props.get("contamination_debris")
         props["SOIL_CONTAMINATION_comments"] = props.get("contamination_other_en")
-        props["METALS_info"] = props.get("metals_info_en")
+        def _usable_metals_value(v):
+            if v is None:
+                return ""
+            s = str(v).strip()
+            if s.lower() in {"", "0", "0.0", "0,0", "nan", "none", "null", "-", "—"}:
+                return ""
+            return s
+
+        props["METALS_info"] = (
+            _usable_metals_value(props.get("metals_info_params"))
+            or _usable_metals_value(props.get("metals_info_en"))
+            or _usable_metals_value(props.get("metals_info_orig"))
+        )        
         
         qa_status = str(props.get("qa_status") or "").strip().lower()
         props["wrong_coordinates"] = qa_status.startswith("wrong_coordinates")
