@@ -27,6 +27,13 @@
   {% endif %}
 
   <div class="d-flex gap-2">
+    {% if zenodo_dataset_url %}
+    <a class="btn btn-outline-success" href="{{ zenodo_dataset_url }}" target="_blank" rel="noopener">
+      <i class="bi bi-cloud-download"></i>
+      {{ _('Download dataset from Zenodo') }}
+    </a>
+    {% endif %}
+
     <a class="btn btn-outline-secondary" href="{{ url_for('web.search_samples') }}">
       {{ _('Search') }}
     </a>

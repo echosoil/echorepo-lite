@@ -83,6 +83,11 @@ except Exception:
 # Zenodo sync log path (can also be set via env var)
 ZENODO_LOG_DEFAULT = os.getenv("ZENODO_LOG_FILE", "/data/zenodo_sync_log.csv")
 
+ZENODO_DATASET_URL = (
+    os.getenv("ZENODO_DATASET_URL")
+    or "https://zenodo.org/records/19723699/files/zenodo_bundle.zip?download=1"
+)
+
 # constants for privacy acceptance
 PRIVACY_VERSION = "2025-11-echo"  # bump when text changes
 PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv")
@@ -402,6 +407,7 @@ def _js_base_labels() -> dict:
         "clearSelectionTitle": _("Clear all selection rectangles"),
         "drawSelectionRectangle": _("Draw selection rectangle"),
         "notAvailable": _("Not available"),
+        "zenodoDownload": _("Download dataset from Zenodo"),
     }
 
 
@@ -2519,6 +2525,7 @@ def explore():
         I18N=i18n,
         current_locale=str(get_locale() or "en"),
         public_mode=True,
+        zenodo_dataset_url=ZENODO_DATASET_URL,
     )
 
 
