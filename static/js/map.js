@@ -463,6 +463,19 @@
         margin-bottom: 3px;
       }
 
+      .leaflet-popup-content .popup-help-btn {
+        border: 0;
+        background: transparent;
+        padding: 0;
+        margin-left: .35rem;
+        line-height: 1;
+        color: #6c757d;
+        vertical-align: middle;
+      }
+
+      .leaflet-popup-content .popup-help-btn:hover {
+        color: #0d6efd;
+      }
       @keyframes echo-spin {
         to {
           transform: rotate(360deg);
@@ -826,6 +839,62 @@
 
   window.T = T;
 
+  function elementalConcentrationsHeaderHtml() {
+    const helpText = T(
+      'elementalConcentrationsHelp',
+      {},
+      'Values reported in % can be converted to mg/kg by multiplying by 10000.'
+    );
+
+    const ariaLabel = T(
+      'unitConversionHelp',
+      {},
+      'Unit conversion help'
+    );
+
+    return `
+      <i class="bi bi-nut"></i>
+      ${T('elementalConcentrations', {}, 'Elemental concentrations')}
+      <button
+        type="button"
+        class="popup-help-btn"
+        data-bs-toggle="tooltip"
+        data-bs-container="body"
+        data-bs-placement="top"
+        title="${escapeHtml(helpText)}"
+        aria-label="${escapeHtml(ariaLabel)}">
+        <i class="bi bi-question-circle-fill"></i>
+      </button>
+    `;
+  }
+
+  function initPopupTooltips(popup) {
+    if (!popup || !popup.getElement) return;
+
+    const root = popup.getElement();
+    if (!root) return;
+
+    const buttons = root.querySelectorAll('.popup-help-btn');
+
+    buttons.forEach(btn => {
+      // Avoid clicks on the help icon interacting with the map/popup.
+      if (!btn.dataset.echoHelpReady) {
+        btn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+        });
+        btn.dataset.echoHelpReady = '1';
+      }
+
+      if (window.bootstrap && bootstrap.Tooltip) {
+        bootstrap.Tooltip.getOrCreateInstance(btn, {
+          container: 'body',
+          trigger: 'hover focus'
+        });
+      }
+    });
+  }
+
   async function fetchSampleImage(sampleId) {
     if (!sampleId) return null;
     try {
@@ -1062,7 +1131,7 @@
       ['<i class="bi bi-bricks"></i> ' + T('debris', {}, 'Debris'), fmtInt(debris)],
       ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination', {}, 'Contamination'), contaminationNotes],
       [
-        '<i class="bi bi-nut"></i> ' + T('elementalConcentrations', {}, 'Elemental concentrations'),
+        elementalConcentrationsHeaderHtml(),
         metals,
         true
       ],
@@ -1609,6 +1678,7 @@
 
             // Render immediately with already-known fields.
             e.popup.setContent(formatPopup(f, isOwner));
+            setTimeout(() => initPopupTooltips(e.popup), 0);
 
             if (!photoId && !chartId) return;
 
@@ -1667,6 +1737,7 @@
 
             if (changed) {
               e.popup.setContent(formatPopup(f, isOwner));
+              setTimeout(() => initPopupTooltips(e.popup), 0);
             }
           });
           bucket.push(ring);
