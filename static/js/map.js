@@ -12,6 +12,10 @@
   const SHOULD_DROP = (k) => /_orig$/i.test(k);
   const JITTER_M = Number(cfg.jitter_m) || 1000;
 
+  // Page-specific switch. /explore can set this to true to remove
+  // rectangle selection/export-selection tools while keeping normal filters.
+  const DISABLE_SELECTION_TOOLS = !!cfg.disable_selection_tools;
+
   const URL_PARAMS = new URLSearchParams(window.location.search);
 
   const SINGLE_SAMPLE_ID = (
@@ -61,8 +65,10 @@
     preferCanvas: true
   });
 
-  map.createPane('selectionPane');
-  map.getPane('selectionPane').style.zIndex = 650;
+  if (!DISABLE_SELECTION_TOOLS) {
+    map.createPane('selectionPane');
+    map.getPane('selectionPane').style.zIndex = 650;
+  }
 
   // Default fallback view
   let initialView = { lat: 50, lng: 10, z: 5 };
@@ -1268,8 +1274,10 @@
   let userLayer, othersLayer;
   let twoToggleControl = null;
 
-  // Selection state
-  const drawnItems = new L.FeatureGroup([], { pane: 'selectionPane' }).addTo(map);
+  // Selection state. Disabled on pages such as /explore when configured.
+  const drawnItems = DISABLE_SELECTION_TOOLS
+    ? null
+    : new L.FeatureGroup([], { pane: 'selectionPane' }).addTo(map);
   let selectionLayers = [], selectionRows = [];
   let selectionButtonEl = null, clearButtonEl = null;
 
@@ -1784,7 +1792,9 @@
         addTwoToggleControl();
       }
 
-      addSelectionControl();
+      if (!DISABLE_SELECTION_TOOLS) {
+        addSelectionControl();
+      }
       addLegends();
 
       dynamicMapReady = true;
@@ -1866,7 +1876,7 @@
 
   // ---- Localize Leaflet.Draw built-in strings ----
   function applyLeafletDrawTranslations() {
-    if (!L.drawLocal) return;
+    if (DISABLE_SELECTION_TOOLS || !window.L || !L.drawLocal) return;
 
     if (L.drawLocal.draw && L.drawLocal.draw.toolbar) {
       const tb = L.drawLocal.draw.toolbar;
@@ -1915,6 +1925,12 @@
 
   // ---- Selection (rectangle multi-select) ----
   function addSelectionControl() {
+    // /explore and other public browsing pages can disable all selection tools.
+    // Also avoid crashing if leaflet.draw.js was not loaded on that page.
+    if (DISABLE_SELECTION_TOOLS) return;
+    if (!window.L || !L.Control || !L.Control.Draw || !L.Draw) return;
+    if (!drawnItems) return;
+
     const ctl = L.control({ position: 'topright' });
     ctl.onAdd = function () {
       const div = L.DomUtil.create('div', 'leaflet-control leaflet-bar p-2');
@@ -2021,6 +2037,7 @@
       fillOpacity: 0.12,
       interactive: false
     };
+
     const drawControl = new L.Control.Draw({
       draw: {
         polygon: false,
@@ -2034,12 +2051,15 @@
       },
       edit: false
     });
+
     map.addControl(drawControl);
     window.__echodraw = drawControl;
 
-    const rectHandler = drawControl._toolbars.draw._modes.rectangle.handler;
-    const endText = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
-    rectHandler._endLabelText = endText;
+    try {
+      const rectHandler = drawControl._toolbars.draw._modes.rectangle.handler;
+      const endText = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
+      rectHandler._endLabelText = endText;
+    } catch (_) { }
 
     map.on(L.Draw.Event.CREATED, (e) => {
       const layer = e.layer;
@@ -2067,10 +2087,15 @@
       updateSelectionCount();
     });
   }
-  function clearSelections() { drawnItems.clearLayers(); selectionLayers = []; selectionRows = []; updateSelectionCount(); }
+  function clearSelections() {
+    if (drawnItems) drawnItems.clearLayers();
+    selectionLayers = [];
+    selectionRows = [];
+    updateSelectionCount();
+  }
 
   function collectRowsWithinAll() {
-    if (!selectionLayers.length) return [];
+    if (DISABLE_SELECTION_TOOLS || !selectionLayers.length) return [];
     const active = twoToggleControl ? twoToggleControl._getState() : { user: true, others: true };
     const rows = [], seen = new Set();
     const inAny = (ll) => selectionLayers.some(r => r.getBounds().contains(ll));
@@ -2093,7 +2118,7 @@
     return rows;
   }
   function updateSelectionCount() {
-    if (!selectionButtonEl || !clearButtonEl) return;
+    if (DISABLE_SELECTION_TOOLS || !selectionButtonEl || !clearButtonEl) return;
     selectionRows = collectRowsWithinAll();
     const n = selectionRows.length;
     selectionButtonEl.disabled = n === 0;
