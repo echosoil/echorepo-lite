@@ -15,6 +15,7 @@
   // Page-specific switch. /explore can set this to true to remove
   // rectangle selection/export-selection tools while keeping normal filters.
   const DISABLE_SELECTION_TOOLS = !!cfg.disable_selection_tools;
+  const DISABLE_SAMPLE_TOGGLES = !!cfg.disable_sample_toggles;
 
   const URL_PARAMS = new URLSearchParams(window.location.search);
 
@@ -1788,7 +1789,7 @@
     map.addLayer(userCluster);
     map.addLayer(othersCluster);
     if (!dynamicMapReady) {
-      if (!PUBLIC_MODE) {
+      if (!PUBLIC_MODE && !DISABLE_SAMPLE_TOGGLES) {
         addTwoToggleControl();
       }
 
