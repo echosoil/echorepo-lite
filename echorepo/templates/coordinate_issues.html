@@ -145,8 +145,8 @@
               {% endif %}
             </td>
 
-            <td>
-              <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="d-flex gap-2 align-items-center">
+            <td class="fix-coords-cell">
+              <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="fix-coords-form">
                 <input type="hidden" name="sampleId" value="{{ r.sample_display }}">
                 <input type="hidden" name="userId" value="{{ r.uid_display }}">
 
@@ -156,7 +156,7 @@
                 <input name="lon_input" class="form-control form-control-sm coord-input" placeholder="{{ _('Lon') }}"
                   value="{{ r.lon_display }}">
 
-                <button class="btn btn-sm btn-primary" type="submit">
+                <button class="btn btn-sm btn-primary coord-save-btn" type="submit">
                   {{ _('Save') }}
                 </button>
               </form>
@@ -229,6 +229,14 @@
 
 {% block extra_css %}
 <style>
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .coordinate-issue-table {
+    min-width: 1150px;
+  }
+
   .coordinate-issue-table td,
   .coordinate-issue-table th {
     font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -237,8 +245,25 @@
     vertical-align: middle;
   }
 
+  .coordinate-issue-table .fix-coords-cell {
+    min-width: 280px;
+  }
+
+  .coordinate-issue-table .fix-coords-form {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
   .coordinate-issue-table .coord-input {
-    width: 9rem;
+    width: 7rem;
+    min-width: 7rem;
+  }
+
+  .coordinate-issue-table .coord-save-btn {
+    min-width: 4.5rem;
+    white-space: nowrap;
   }
 </style>
 {% endblock %}
