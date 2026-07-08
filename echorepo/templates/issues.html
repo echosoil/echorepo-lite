@@ -2,9 +2,9 @@
 {% block title %}{{ _('Data quality issues — ECHOrepo') }}{% endblock %}
 
 {% block nav_right %}
-  <a class="btn btn-outline-light btn-sm" href="{{ url_for('home') }}">
-    <i class="bi bi-arrow-left"></i> {{ _('Back to My Data') }}
-  </a>
+<a class="btn btn-outline-light btn-sm" href="{{ url_for('home') }}">
+  <i class="bi bi-arrow-left"></i> {{ _('Back to My Data') }}
+</a>
 {% endblock %}
 
 {% block content %}
@@ -20,84 +20,86 @@
 
   <h5 class="mt-4">1) {{ _('Default coordinates (%(lat)s, %(lon)s)', lat='46.5', lon='11.35') }}</h5>
   {% if default_rows.empty %}
-    <p>{{ _('No entries with default coordinates') }} 🎉</p>
+  <p>{{ _('No entries with default coordinates') }} 🎉</p>
   {% else %}
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th>{{ _('Sample') }}</th>
-          <th>{{ _('User') }}</th>
-          <th>{{ _('QR') }}</th>
-          <th>{{ _('Lat') }}</th>
-          <th>{{ _('Lon') }}</th>
-          <th>{{ _('Fix') }}</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>{{ _('Sample') }}</th>
+        <th>{{ _('User') }}</th>
+        <th>{{ _('QR') }}</th>
+        <th>{{ _('Lat') }}</th>
+        <th>{{ _('Lon') }}</th>
+        <th>{{ _('Fix') }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
       {% for idx, r in default_rows.iterrows() %}
-        <tr>
-          <td>{{ r.get("sampleId","") }}</td>
-          <td>{{ r.get("userId","") }}</td>
-          <td>{{ r.get("QR_qrCode","") }}</td>
-          <td>{{ r.get(orig_lat_col, "") }}</td>
-          <td>{{ r.get(orig_lon_col, "") }}</td>
-          <td>
-            <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="d-flex gap-2">
-              <input type="hidden" name="sampleId" value="{{ r.get('sampleId','') }}">
-              <input type="hidden" name="userId"   value="{{ r.get('userId','') }}">
-              <input name="lat_input" class="form-control form-control-sm" placeholder="{{ _('Lat (dec or DMS)') }}">
-              <input name="lon_input" class="form-control form-control-sm" placeholder="{{ _('Lon (dec or DMS)') }}">
-              <button class="btn btn-sm btn-primary" type="submit">{{ _('Save') }}</button>
-            </form>
-          </td>
-          <td>
-            <a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener"
-               href="{{ url_for('errors.why') }}?sampleId={{ r.get('sampleId','') }}&userId={{ r.get('userId','') }}">Why?</a>
-          </td>
-        </tr>
+      <tr>
+        <td>{{ r.get("sampleId","") }}</td>
+        <td>{{ r.get("userId","") }}</td>
+        <td>{{ r.get("QR_qrCode","") }}</td>
+        <td>{{ r.get(orig_lat_col, "") }}</td>
+        <td>{{ r.get(orig_lon_col, "") }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="d-flex gap-2">
+            <input type="hidden" name="sampleId" value="{{ r.get('sampleId','') }}">
+            <input type="hidden" name="userId" value="{{ r.get('userId','') }}">
+            <input name="lat_input" class="form-control form-control-sm" placeholder="{{ _('Lat (dec or DMS)') }}"
+              value="{{ r.get(orig_lat_col, '') }}">
+            <input name="lon_input" class="form-control form-control-sm" placeholder="{{ _('Lon (dec or DMS)') }}"
+              value="{{ r.get(orig_lon_col, '') }}">
+            <button class="btn btn-sm btn-primary" type="submit">{{ _('Save') }}</button>
+          </form>
+        </td>
+        <td>
+          <a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener"
+            href="{{ url_for('errors.why') }}?sampleId={{ r.get('sampleId','') }}&userId={{ r.get('userId','') }}">Why?</a>
+        </td>
+      </tr>
       {% endfor %}
-      </tbody>
-    </table>
+    </tbody>
+  </table>
   {% endif %}
 
   <h5 class="mt-4">2) {{ _('Country mismatches') }}</h5>
   {% if mismatch_rows.empty %}
-    <p>{{ _('No country mismatches') }} 🎉</p>
+  <p>{{ _('No country mismatches') }} 🎉</p>
   {% else %}
-    <p class="text-muted">{{ _('Actual country (from coords) is not in the planned list for this QR.') }}</p>
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th>{{ _('Sample') }}</th>
-          <th>{{ _('User') }}</th>
-          <th>{{ _('QR') }}</th>
-          <th>{{ _('Lat') }}</th>
-          <th>{{ _('Lon') }}</th>
-          <th>{{ _('Fix') }}</th>
-        </tr>
-      </thead>
-      <tbody>
+  <p class="text-muted">{{ _('Actual country (from coords) is not in the planned list for this QR.') }}</p>
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>{{ _('Sample') }}</th>
+        <th>{{ _('User') }}</th>
+        <th>{{ _('QR') }}</th>
+        <th>{{ _('Lat') }}</th>
+        <th>{{ _('Lon') }}</th>
+        <th>{{ _('Fix') }}</th>
+      </tr>
+    </thead>
+    <tbody>
       {% for idx, r in mismatch_rows.iterrows() %}
-        <tr>
-          <td>{{ r.get("sampleId","") }}</td>
-          <td>{{ r.get("userId","") }}</td>
-          <td>{{ r.get("QR_qrCode","") }}</td>
-          <td>{{ r.get(orig_lat_col, "") }}</td>
-          <td>{{ r.get(orig_lon_col, "") }}</td>
-          <td>
-            <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="d-flex gap-2">
-              <input type="hidden" name="sampleId" value="{{ r.get('sampleId','') }}">
-              <input type="hidden" name="userId"   value="{{ r.get('userId','') }}">
-              <input name="lat_input" class="form-control form-control-sm" placeholder="{{ _('Lat (dec or DMS)') }}">
-              <input name="lon_input" class="form-control form-control-sm" placeholder="{{ _('Lon (dec or DMS)') }}">
-              <button class="btn btn-sm btn-primary" type="submit">{{ _('Save') }}</button>
-            </form>
-          </td>
-        </tr>
+      <tr>
+        <td>{{ r.get("sampleId","") }}</td>
+        <td>{{ r.get("userId","") }}</td>
+        <td>{{ r.get("QR_qrCode","") }}</td>
+        <td>{{ r.get(orig_lat_col, "") }}</td>
+        <td>{{ r.get(orig_lon_col, "") }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="d-flex gap-2">
+            <input type="hidden" name="sampleId" value="{{ r.get('sampleId','') }}">
+            <input type="hidden" name="userId" value="{{ r.get('userId','') }}">
+            <input name="lat_input" class="form-control form-control-sm" placeholder="{{ _('Lat (dec or DMS)') }}">
+            <input name="lon_input" class="form-control form-control-sm" placeholder="{{ _('Lon (dec or DMS)') }}">
+            <button class="btn btn-sm btn-primary" type="submit">{{ _('Save') }}</button>
+          </form>
+        </td>
+      </tr>
       {% endfor %}
-      </tbody>
-    </table>
+    </tbody>
+  </table>
   {% endif %}
 </div>
 {% endblock %}
