@@ -5,7 +5,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
 
 <style>
   #map {
@@ -89,7 +88,6 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
 <script>
   window.I18N = {{ I18N | tojson | safe }};
@@ -99,8 +97,11 @@
     public_mode: {{ 'false' if g.user else 'true' }},
     geojson_user_url: null,
     geojson_others_url: "/public/others_geojson",
-    hide_wrong_coordinates: true
-    });
+    hide_wrong_coordinates: true,
+
+    // /explore is public browsing only: no rectangle/polygon selection tools.
+    disable_selection_tools: true
+  });
 </script>
-<script src="{{ url_for('static', filename='js/map.js') }}?v=13"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=14"></script>
 {% endblock %}
