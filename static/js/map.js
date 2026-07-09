@@ -7,15 +7,12 @@
 
   // ---- Config & helpers ----
   const cfg = (window.ECHOREPO_CFG || {});
+  const DISABLE_SELECTION_TOOLS = !!cfg.disable_selection_tools;
+  const DISABLE_SAMPLE_TOGGLES = !!cfg.disable_sample_toggles;
   const LAT_KEY = cfg.lat_col || 'GPS_lat';
   const LON_KEY = cfg.lon_col || 'GPS_long';
   const SHOULD_DROP = (k) => /_orig$/i.test(k);
   const JITTER_M = Number(cfg.jitter_m) || 1000;
-
-  // Page-specific switch. /explore can set this to true to remove
-  // rectangle selection/export-selection tools while keeping normal filters.
-  const DISABLE_SELECTION_TOOLS = !!cfg.disable_selection_tools;
-  const DISABLE_SAMPLE_TOGGLES = !!cfg.disable_sample_toggles;
 
   const URL_PARAMS = new URLSearchParams(window.location.search);
 
@@ -312,16 +309,42 @@
   // 👇 Expose map + global index + "show" helper
   window.__echomap = map;
   window.__echomapIndex = new Map();
-  window.__echomapShow = function (sampleId, opts) {
-    const id = String(sampleId || '');
-    const ring = window.__echomapIndex.get(id);
+
+  function showIndexedSample(sampleId, opts) {
+    const id = String(sampleId || '').trim();
+    if (!id) return false;
+
+    const candidates = [
+      id,
+      id.toUpperCase(),
+      id.toLowerCase()
+    ];
+
+    let ring = null;
+
+    for (const key of candidates) {
+      ring = window.__echomapIndex.get(key);
+      if (ring) break;
+    }
+
+    if (!ring) {
+      // Last-resort case-insensitive scan.
+      const wanted = id.toUpperCase();
+      for (const [key, value] of window.__echomapIndex.entries()) {
+        if (String(key).toUpperCase() === wanted) {
+          ring = value;
+          break;
+        }
+      }
+    }
+
     if (!ring) return false;
 
     if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(ring.__props || {})) {
       return false;
     }
 
-    // make sure it's visible
+    // make sure it is visible even if current pH/country/date filters hide it
     if (!map.hasLayer(ring) && ring.addTo) {
       try { ring.addTo(map); } catch (_) { }
     }
@@ -330,9 +353,39 @@
     if (!ll) return false;
 
     const targetZoom = (opts && opts.zoom) || Math.max(map.getZoom(), 14);
+
+    // This setView will emit moveend/zoomend. Suppress the automatic bbox reload
+    // briefly so the dynamically loaded single sample is not immediately replaced.
+    suppressBboxReloadUntil = Date.now() + 1500;
+
     map.setView(ll, targetZoom, { animate: true });
-    if (ring.openPopup) ring.openPopup();
+
+    setTimeout(() => {
+      if (ring.openPopup) ring.openPopup();
+    }, 250);
+
     return true;
+  }
+
+  window.__echomapShow = async function (sampleId, opts = {}) {
+    const id = String(sampleId || '').trim();
+    if (!id) return false;
+
+    // Fast path: sample is already in the current dynamic map window.
+    if (showIndexedSample(id, opts)) return true;
+
+    // Dynamic map loading means the sample may not be in the current bbox.
+    // Fetch this exact sample, rebuild the map around it, then try again.
+    if (opts.fetchIfMissing === false) return false;
+
+    try {
+      const loaded = await loadSingleSampleForMap(id, opts);
+      if (!loaded) return false;
+      return showIndexedSample(id, opts);
+    } catch (err) {
+      console.warn('Could not dynamically load sample for map:', id, err);
+      return false;
+    }
   };
 
   // Inject CSS once for scrollable popups
@@ -1275,7 +1328,7 @@
   let userLayer, othersLayer;
   let twoToggleControl = null;
 
-  // Selection state. Disabled on pages such as /explore when configured.
+  // Selection state
   const drawnItems = DISABLE_SELECTION_TOOLS
     ? null
     : new L.FeatureGroup([], { pane: 'selectionPane' }).addTo(map);
@@ -1552,6 +1605,7 @@
   let bboxLoadTimer = null;
   let dynamicMapReady = false;
   let popupIsOpen = false;
+  let suppressBboxReloadUntil = 0;
 
   function getCurrentBboxParam() {
     const b = map.getBounds();
@@ -1926,11 +1980,7 @@
 
   // ---- Selection (rectangle multi-select) ----
   function addSelectionControl() {
-    // /explore and other public browsing pages can disable all selection tools.
-    // Also avoid crashing if leaflet.draw.js was not loaded on that page.
-    if (DISABLE_SELECTION_TOOLS) return;
-    if (!window.L || !L.Control || !L.Control.Draw || !L.Draw) return;
-    if (!drawnItems) return;
+    if (DISABLE_SELECTION_TOOLS || !window.L || !L.Control || !L.Control.Draw) return;
 
     const ctl = L.control({ position: 'topright' });
     ctl.onAdd = function () {
@@ -2038,7 +2088,6 @@
       fillOpacity: 0.12,
       interactive: false
     };
-
     const drawControl = new L.Control.Draw({
       draw: {
         polygon: false,
@@ -2056,11 +2105,9 @@
     map.addControl(drawControl);
     window.__echodraw = drawControl;
 
-    try {
-      const rectHandler = drawControl._toolbars.draw._modes.rectangle.handler;
-      const endText = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
-      rectHandler._endLabelText = endText;
-    } catch (_) { }
+    const rectHandler = drawControl._toolbars.draw._modes.rectangle.handler;
+    const endText = T('releaseToFinish', {}, 'Release mouse to finish drawing.');
+    rectHandler._endLabelText = endText;
 
     map.on(L.Draw.Event.CREATED, (e) => {
       const layer = e.layer;
@@ -2353,6 +2400,77 @@
     }; phLegend.addTo(map);
   }
 
+  async function loadSingleSampleForMap(sampleId, opts = {}) {
+    const id = String(sampleId || '').trim();
+    if (!id) return false;
+
+    const params = new URLSearchParams();
+    params.set('limit', '10000');
+    params.set('sample_id', id);
+
+    if (opts.includeWrong || SHOW_WRONG_IN_SINGLE) {
+      params.set('include_wrong', '1');
+    }
+
+    showMapLoader(
+      T('loadingSample', {}, 'Loading sample...'),
+      id
+    );
+
+    try {
+      const r = await fetch(`/api/v1/canonical/map.geojson?${params.toString()}`, {
+        credentials: 'same-origin'
+      });
+
+      if (!r.ok) {
+        throw new Error(`Single-sample map API failed: ${r.status}`);
+      }
+
+      const gj = await r.json();
+      const features = Array.isArray(gj?.features) ? gj.features : [];
+
+      if (!features.length) {
+        return false;
+      }
+
+      userGJ = {
+        type: "FeatureCollection",
+        features: [],
+      };
+
+      othersGJ = gj || {
+        type: "FeatureCollection",
+        features: [],
+      };
+
+      updateMapLoader(
+        T('renderingSample', {}, 'Rendering sample...'),
+        id
+      );
+
+      clearMapDataLayers();
+
+      computeAllHeaders();
+      buildLayers();
+
+      populateCountryFilter();
+      syncFiltersToUI();
+
+      updateFiltered();
+      refreshI18NTexts();
+      scheduleGlobalFilteredCountRefresh();
+
+      return true;
+
+    } catch (err) {
+      console.warn('Could not load single sample for map:', id, err);
+      return false;
+
+    } finally {
+      hideMapLoader();
+    }
+  }
+
   async function loadSamplesForCurrentView() {
     const seq = ++currentMapLoadSeq;
 
@@ -2433,6 +2551,8 @@
 
   function scheduleBboxReload() {
     if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) return;
+
+    if (Date.now() < suppressBboxReloadUntil) return;
 
     if (popupIsOpen) return;
 

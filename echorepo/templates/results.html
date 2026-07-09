@@ -445,7 +445,7 @@
 'hide_wrong_coordinates': true
 } %}
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
-<script src="{{ url_for('static', filename='js/map.js') }}?v=14"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=16"></script>
 
 {% if needs_privacy %}
 <script>
@@ -738,11 +738,31 @@
       btn.className = 'btn btn-sm btn-outline-secondary ms-2 btn-show-on-map';
       btn.title = '{{ _("Show on map") }}';
       btn.innerHTML = '<i class="bi bi-geo-alt"></i>'; // or use text: 'Locate'
-      btn.addEventListener('click', () => {
-        const ok = window.__echomapShow && window.__echomapShow(sampleId);
-        if (!ok) alert('{{ _("Could not locate this sample on the map.") }}');
-        // optional: scroll to map
+      btn.addEventListener('click', async () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (!window.__echomapShow) {
+          alert('{{ _("Could not locate this sample on the map.") }}');
+          return;
+        }
+
+        btn.disabled = true;
+
+        try {
+          const ok = await window.__echomapShow(sampleId, {
+            zoom: 15,
+            fetchIfMissing: true
+          });
+
+          if (!ok) {
+            alert('{{ _("Could not locate this sample on the map.") }}');
+          }
+        } catch (e) {
+          console.warn('Could not locate sample on map:', e);
+          alert('{{ _("Could not locate this sample on the map.") }}');
+        } finally {
+          btn.disabled = false;
+        }
       });
 
       cell.appendChild(btn);
