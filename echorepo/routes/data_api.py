@@ -1237,9 +1237,15 @@ def canonical_samples():
         require_api_auth()
 
     fmt = (request.args.get("format") or "json").lower()
-    limit = max(1, min(int(request.args.get("limit", 100)), 1000))
-    offset = max(0, int(request.args.get("offset", 0)))
-
+    # CSV exports return the entire matching dataset.
+    # JSON and GeoJSON remain paginated.
+    if fmt == "csv":
+        limit = None
+        offset = 0
+    else:
+        limit = max(1, min(int(request.args.get("limit", 100)), 1000))
+        offset = max(0, int(request.args.get("offset", 0)))
+    
     # ---------- fields ----------
     fields_param = (request.args.get("fields") or "").strip()
     if fields_param:
@@ -1267,16 +1273,31 @@ def canonical_samples():
 
     # ---------- Query ----------
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(
-            f"""
-            SELECT {cols_sql}
-            FROM samples
-            {where_sql}
-            ORDER BY {order} {direction}
-            LIMIT %s OFFSET %s
-            """,
-            params + [limit, offset],
-        )
+
+        if fmt == "csv":
+            # Full matching CSV export: no LIMIT/OFFSET.
+            cur.execute(
+                f"""
+                SELECT {cols_sql}
+                FROM samples
+                {where_sql}
+                ORDER BY {order} {direction}
+                """,
+                params,
+            )
+        else:
+            # Paginated JSON/GeoJSON response.
+            cur.execute(
+                f"""
+                SELECT {cols_sql}
+                FROM samples
+                {where_sql}
+                ORDER BY {order} {direction}
+                LIMIT %s OFFSET %s
+                """,
+                params + [limit, offset],
+            )
+
         rows = cur.fetchall()
 
         cur.execute(
@@ -1284,7 +1305,7 @@ def canonical_samples():
             params,
         )
         total = cur.fetchone()["c"]
-        
+                
     # ---------- Analytics extras ----------
     meta = {
         "api_name": "canonical_samples",
