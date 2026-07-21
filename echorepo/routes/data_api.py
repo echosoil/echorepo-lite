@@ -1269,30 +1269,10 @@ def canonical_samples():
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             f"""
-            WITH param_metals AS (
-                SELECT
-                    sample_id,
-                    string_agg(
-                        parameter_code || '=' || value ||
-                        CASE
-                            WHEN COALESCE(uom, '') <> '' THEN ' ' || uom
-                            ELSE ''
-                        END,
-                        '; ' ORDER BY parameter_code
-                    ) AS metals_info_params
-                FROM sample_parameters
-                WHERE UPPER(REPLACE(parameter_code, ' ', '')) NOT IN
-                    ('MN2O3','AL2O3','CAO','FE2O3','MGO','SIO2','P2O5','TIO2','K2O','SO3')
-                GROUP BY sample_id
-            )
-            SELECT
-                {cols_sql},
-                pm.metals_info_params
-            FROM samples s
-            LEFT JOIN param_metals pm
-            ON pm.sample_id = s.sample_id
+            SELECT {cols_sql}
+            FROM samples
             {where_sql}
-            ORDER BY s.timestamp_utc DESC NULLS LAST, s.sample_id
+            ORDER BY {order} {direction}
             LIMIT %s OFFSET %s
             """,
             params + [limit, offset],
@@ -1300,11 +1280,11 @@ def canonical_samples():
         rows = cur.fetchall()
 
         cur.execute(
-            f"SELECT COUNT(*) AS c FROM samples s {where_sql}",
+            f"SELECT COUNT(*) AS c FROM samples {where_sql}",
             params,
         )
         total = cur.fetchone()["c"]
-
+        
     # ---------- Analytics extras ----------
     meta = {
         "api_name": "canonical_samples",
