@@ -66,17 +66,18 @@
   if (!DISABLE_SELECTION_TOOLS) {
     map.createPane('selectionPane');
     map.getPane('selectionPane').style.zIndex = 650;
-
-    map.createPane('selectedSamplePane');
-
-    Object.assign(
-      map.getPane('selectedSamplePane').style,
-      {
-        zIndex: 675,
-        pointerEvents: 'none'
-      }
-    );
   }
+
+  // Highlighting is independent of the drawing/selection tools.
+  map.createPane('selectedSamplePane');
+
+  Object.assign(
+    map.getPane('selectedSamplePane').style,
+    {
+      zIndex: 675,
+      pointerEvents: 'none'
+    }
+  );
 
   // Default fallback view
   let initialView = { lat: 50, lng: 10, z: 5 };
@@ -382,38 +383,17 @@
 
       refreshRingsVisibilityByZoom();
 
-      if (opts.highlight !== false) {
-        highlightSelectedSample(ring, id);
-      }
+      activateSelectedSample(
+        ring,
+        id,
+        {
+          highlight:
+            opts.highlight !== false,
 
-      if (opts.openPopup === false) {
-        return;
-      }
-
-      const popup = ring.getPopup?.();
-
-      if (!popup) {
-        console.warn(
-          'No popup found for sample:',
-          id
-        );
-
-        return;
-      }
-
-      if (isRingZoom(targetZoom)) {
-        // Middle zoom range: show the actual privacy ring.
-        if (!map.hasLayer(ring)) {
-          ring.addTo(map);
+          openPopup:
+            opts.openPopup !== false
         }
-
-        ring.openPopup();
-      } else {
-        // Low/high zoom: open the ring's bound popup at the
-        // point location without adding the 1 km ring.
-        popup.setLatLng(ll);
-        popup.openOn(map);
-      }
+      );
     }
 
     map.once('moveend', finishShowingSample);
@@ -431,6 +411,13 @@
 
   window.__echomapShow = async function (sampleId, opts = {}) {
     const id = String(sampleId || '').trim();
+
+    opts = {
+      highlight: true,
+      openPopup: true,
+      ...opts
+    };
+
     if (!id) return false;
 
     // Fast path: sample is already in the current dynamic map window.
@@ -1514,16 +1501,19 @@
     );
   }
 
-  function resolveSampleTargetZoom(opts = {}) {
-    const requestedZoom = Number(opts.zoom);
+  function resolveSampleTargetZoom(
+    opts = {}
+  ) {
+    const requested =
+      Number(opts.zoom);
 
     if (opts.keepZoom) {
-      if (Number.isFinite(requestedZoom)) {
+      if (Number.isFinite(requested)) {
         return Math.min(
           map.getMaxZoom(),
           Math.max(
             map.getMinZoom(),
-            Math.round(requestedZoom)
+            Math.round(requested)
           )
         );
       }
@@ -1531,7 +1521,7 @@
       return map.getZoom();
     }
 
-    return clampToRingZoom(requestedZoom);
+    return clampToRingZoom(requested);
   }
 
   // Keep the existing variable names to minimise changes elsewhere,
@@ -1557,7 +1547,6 @@
   let selectionButtonEl = null, clearButtonEl = null;
 
   let selectedSampleMarker = null;
-  let selectedSampleId = null;
 
   function clearSelectedSampleHighlight() {
     if (
@@ -1568,7 +1557,6 @@
     }
 
     selectedSampleMarker = null;
-    selectedSampleId = null;
   }
 
   function highlightSelectedSample(ring, sampleId) {
@@ -1608,13 +1596,61 @@
       zIndexOffset: 10000
     }).addTo(map);
 
-    selectedSampleId = String(sampleId || '');
+    return true;
+  }
+
+  function activateSelectedSample(
+    ring,
+    sampleId,
+    opts = {}
+  ) {
+    if (!ring) return false;
+
+    const latLng = ring.getLatLng?.();
+    if (!latLng) return false;
+
+    // Highlight by default.
+    if (opts.highlight !== false) {
+      highlightSelectedSample(
+        ring,
+        sampleId
+      );
+    }
+
+    // Open the popup by default.
+    if (opts.openPopup !== false) {
+      const popup = ring.getPopup?.();
+
+      if (!popup) {
+        console.warn(
+          'No popup found for sample:',
+          sampleId
+        );
+
+        return true;
+      }
+
+      if (isRingZoom(map.getZoom())) {
+        // Middle zoom: the ring itself is visible.
+        if (!map.hasLayer(ring)) {
+          ring.addTo(map);
+        }
+
+        ring.openPopup();
+
+      } else {
+        // High/low zoom: do not display the 1 km ring.
+        // Open its existing popup at the point location.
+        popup.setLatLng(latLng);
+        popup.openOn(map);
+      }
+    }
 
     return true;
   }
 
-  window.__echomapClearHighlight =
-    clearSelectedSampleHighlight;
+  window.__echomapClearHighlight = clearSelectedSampleHighlight;
+
   // Filter state (UI elements in page)
   const phMinEl = document.getElementById('phMin');
   const phMaxEl = document.getElementById('phMax');
@@ -1923,6 +1959,67 @@
   let dynamicMapReady = false;
   let popupIsOpen = false;
   let suppressBboxReloadUntil = 0;
+  let requestedUrlSampleHandled = false;
+
+  function focusRequestedUrlSampleOnce() {
+    if (
+      requestedUrlSampleHandled ||
+      !SINGLE_SAMPLE_ID
+    ) {
+      return;
+    }
+
+    requestedUrlSampleHandled = true;
+
+    setTimeout(async () => {
+      if (
+        typeof window.__echomapShow !==
+        'function'
+      ) {
+        console.warn(
+          'Map sample-focus helper is unavailable.'
+        );
+
+        return;
+      }
+
+      const focusOptions = SINGLE_SAMPLE_MODE
+        ? {
+          // Deliberate one-sample mode:
+          // use the privacy-ring range.
+          zoom: SAMPLE_FOCUS_ZOOM,
+          keepZoom: false,
+
+          highlight: true,
+          openPopup: true,
+          fetchIfMissing: true,
+          includeWrong: SHOW_WRONG_IN_SINGLE
+        }
+        : {
+          // Normal link from /search:
+          // remain at the requested high zoom.
+          zoom: map.getZoom(),
+          keepZoom: true,
+
+          highlight: true,
+          openPopup: true,
+          fetchIfMissing: true,
+          includeWrong: false
+        };
+
+      const ok = await window.__echomapShow(
+        SINGLE_SAMPLE_ID,
+        focusOptions
+      );
+
+      if (!ok) {
+        console.warn(
+          'Requested URL sample was not found:',
+          SINGLE_SAMPLE_ID
+        );
+      }
+    }, 250);
+  }
 
   function getCurrentBboxParam() {
     const b = map.getBounds();
@@ -2012,24 +2109,8 @@
     otherHighPins = L.layerGroup();
   }
 
-  // ---- Build layers (rings + base invisible markers for selection) ----
+  // Build low-zoom dots, middle-zoom rings and high-zoom pins
   function buildLayers() {
-    function makeTickMarker(feature, latlng) {
-      const props = feature?.properties || {};
-      const color = phColor(getPhFromProps(props));
-
-      return L.circleMarker(latlng, {
-        radius: 5,
-        color: '#ffffff',
-        weight: 1,
-        opacity: 1,
-        fill: true,
-        fillColor: color,
-        fillOpacity: 0.95,
-        interactive: true,
-        bubblingMouseEvents: false
-      });
-    }
 
     function makeLowZoomDot(feature, latlng) {
       const props = feature?.properties || {};
@@ -2238,22 +2319,19 @@
 
             pin.on('click', event => {
               if (event.originalEvent) {
-                L.DomEvent.stopPropagation(event.originalEvent);
+                L.DomEvent.stopPropagation(
+                  event.originalEvent
+                );
               }
 
-              highlightSelectedSample(ring, sid);
-
-              const popup = ring.getPopup?.();
-
-              if (!popup) {
-                console.warn('No popup found for sample:', sid);
-                return;
-              }
-
-              // Open the ring's existing popup at the pin position,
-              // without changing the map zoom.
-              popup.setLatLng(pin.getLatLng());
-              popup.openOn(map);
+              activateSelectedSample(
+                ring,
+                sid,
+                {
+                  highlight: true,
+                  openPopup: true
+                }
+              );
             });
           }
 
@@ -2300,7 +2378,7 @@
 
   map.on('zoomend', refreshRingsVisibilityByZoom);
 
-  // ---- Rebuild clusters to reflect current filter ----
+  // Rebuild point layers to reflect the current filter
   function rebuildPointLayersForFilter() {
     const oldGroups = [
       userLowDots,
@@ -3023,14 +3101,7 @@
       refreshI18NTexts();
       scheduleGlobalFilteredCountRefresh();
 
-      if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
-        setTimeout(() => {
-          window.__echomapShow?.(SINGLE_SAMPLE_ID, {
-            zoom: SAMPLE_FOCUS_ZOOM,
-            includeWrong: SHOW_WRONG_IN_SINGLE
-          });
-        }, 200);
-      }
+      focusRequestedUrlSampleOnce();
 
     } catch (err) {
       if (err.name !== 'AbortError') {

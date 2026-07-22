@@ -87,9 +87,13 @@
           <tr>
             <td>
               {% if r.lat is not none and r.lon is not none %}
-              <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"
-                href="{{ url_for('web.home') }}?sample_id={{ r.sample_id | urlencode }}&single=0&lat={{ r.lat }}&lng={{ r.lon }}&z=15"
-                title="{{ _('Show this sample on map') }}">
+              <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" href="{{ url_for(
+                  'web.home',
+                  sample_id=r.sample_id,
+                  lat=r.lat,
+                  lng=r.lon,
+                  z=15
+                ) }}" title="{{ _('Show this sample on map') }}">
                 <i class="bi bi-geo-alt"></i>
               </a>
               {% endif %}
