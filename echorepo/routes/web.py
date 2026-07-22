@@ -408,7 +408,7 @@ def _js_base_labels() -> dict:
         "drawSelectionRectangle": _("Draw selection rectangle"),
         "notAvailable": _("Not available"),
         "zenodoDownload": _("Download dataset from Zenodo"),
-        "elementalConcentrationsHelp": _("Values reported in % can be converted to mg/kg by multiplying by 10000."),
+        "elementalConcentrationsHelp": _("Percentage values (%) can be converted to mg/kg by multiplying by 10000."),
         "unitConversionHelp": _("Unit conversion help"),
     }
 
