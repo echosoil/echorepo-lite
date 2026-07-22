@@ -1102,7 +1102,7 @@
     const helpText = T(
       'elementalConcentrationsHelp',
       {},
-      'Values reported in % can be converted to mg/kg by multiplying by 10000.'
+      'Percentage values (%) can be converted to mg/kg by multiplying by 10000.'
     );
 
     const ariaLabel = T(
@@ -1490,7 +1490,7 @@
     if (!PUBLIC_MODE && sampleId && !MOBILE_COMPACT_MODE) {
       exportHtml = `<div class="mt-2">
         <a class="btn btn-sm btn-outline-primary"
-          href="/download/sample_csv?sampleId=${encodeURIComponent(sampleId)}"
+          href="/download/sample_csv?sample_id=${encodeURIComponent(sampleId)}"
           target="_blank" rel="noopener">
           <i class="bi bi-filetype-csv"></i> ${T('export', {}, 'Export')}
         </a>

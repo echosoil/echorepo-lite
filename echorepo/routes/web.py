@@ -408,7 +408,7 @@ def _js_base_labels() -> dict:
         "drawSelectionRectangle": _("Draw selection rectangle"),
         "notAvailable": _("Not available"),
         "zenodoDownload": _("Download dataset from Zenodo"),
-        "elementalConcentrationsHelp": _("Values reported in % can be converted to mg/kg by multiplying by 10000."),
+        "elementalConcentrationsHelp": _("Percentage values (%) can be converted to mg/kg by multiplying by 10000."),
         "unitConversionHelp": _("Unit conversion help"),
     }
 
@@ -1562,43 +1562,130 @@ def download_all_csv():
 @web_bp.get("/download/sample_csv")
 @login_required
 def download_sample_csv():
-    g._analytics_extra = {
-        "dataset": "user_data",
-        "file_name": "sample_data.csv",
-        "kind": "user_export",
-    }
-    sample_id = (request.args.get("sampleId") or "").strip()
+    """
+    Export one canonical sample from PostgreSQL.
+
+    Supports both parameter spellings for backward compatibility:
+
+        /download/sample_csv?sample_id=GLMA-3458
+        /download/sample_csv?sampleId=GLMA-3458
+    """
+    sample_id = (
+        request.args.get("sample_id")
+        or request.args.get("sampleId")
+        or ""
+    ).strip()
+
     if not sample_id:
-        abort(400, description="sampleId is required")
-    df = query_sample(sample_id)
-    if df.empty:
-        abort(404, description="Sample not found")
+        abort(
+            400,
+            description="sample_id is required",
+        )
 
-    user_key = session.get("user")
-    is_owner = False
-    try:
-        if (
-            settings.USER_KEY_COLUMN in df.columns
-            and (df[settings.USER_KEY_COLUMN] == user_key).any()
-        ):
-            is_owner = True
-        if "userId" in df.columns and (df["userId"] == user_key).any():
-            is_owner = True
-    except Exception:
-        pass
+    cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
 
+    with (
+        get_pg_conn() as conn,
+        conn.cursor(
+            cursor_factory=RealDictCursor
+        ) as cur,
+    ):
+        cur.execute(
+            f"""
+            SELECT {cols_sql}
+            FROM samples
+            WHERE UPPER(sample_id) = UPPER(%s)
+            LIMIT 1
+            """,
+            (sample_id,),
+        )
+
+        row = cur.fetchone()
+
+    if not row:
+        abort(
+            404,
+            description=(
+                f"Canonical sample not found: "
+                f"{sample_id}"
+            ),
+        )
+
+    row = dict(row)
+
+    canonical_sample_id = str(
+        row.get("sample_id") or sample_id
+    ).strip()
+
+    # ----------------------------------------------------------
+    # Determine whether the logged-in user owns this sample.
+    # ----------------------------------------------------------
+    profile = (
+        (session.get("kc") or {})
+        .get("profile")
+        or {}
+    )
+
+    possible_user_ids = {
+        session.get("user"),
+        profile.get("email"),
+        profile.get("username"),
+        profile.get("preferred_username"),
+        profile.get("sub"),
+        profile.get("id"),
+    }
+
+    possible_user_ids = {
+        str(value).strip().casefold()
+        for value in possible_user_ids
+        if value is not None
+        and str(value).strip()
+    }
+
+    collected_by = str(
+        row.get("collected_by") or ""
+    ).strip().casefold()
+
+    is_owner = bool(
+        collected_by
+        and collected_by in possible_user_ids
+    )
+
+    # Do not disclose the submitter identifier to another user.
     if not is_owner:
-        for pii in ("email", "userId"):
-            if pii in df.columns:
-                df = df.drop(columns=[pii])
+        row.pop("collected_by", None)
+
+    df = pd.DataFrame([row])
 
     buf = BytesIO()
-    df.to_csv(buf, index=False)
+
+    df.to_csv(
+        buf,
+        index=False,
+    )
+
     buf.seek(0)
+
+    safe_filename_id = re.sub(
+        r"[^A-Za-z0-9._-]+",
+        "_",
+        canonical_sample_id,
+    )
+
+    g._analytics_extra = {
+        "dataset": "canonical_sample",
+        "file_name":
+            f"sample_{safe_filename_id}.csv",
+        "kind": "sample_export",
+        "sample_id": canonical_sample_id,
+    }
+
     return send_file(
         buf,
         as_attachment=True,
-        download_name=f"sample_{sample_id}.csv",
+        download_name=(
+            f"sample_{safe_filename_id}.csv"
+        ),
         mimetype="text/csv",
     )
 
