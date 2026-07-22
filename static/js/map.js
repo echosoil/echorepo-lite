@@ -340,36 +340,57 @@
 
     if (!ring) return false;
 
-    if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(ring.__props || {})) {
+    const allowWrongCoordinates =
+      !!opts?.includeWrong ||
+      SHOW_WRONG_IN_SINGLE;
+
+    if (
+      HIDE_WRONG_COORDINATES &&
+      hasWrongCoordinates(ring.__props || {}) &&
+      !allowWrongCoordinates
+    ) {
       return false;
     }
 
     const ll = ring.getLatLng ? ring.getLatLng() : null;
     if (!ll) return false;
 
-    const targetZoom =
-      (opts && opts.zoom) ||
-      Math.max(map.getZoom(), 14);
+    // Any request to focus a sample is placed inside the ring range.
+    // For example, a requested zoom of 15 becomes zoom 12.
+    const targetZoom = clampToRingZoom(opts?.zoom);
 
-    // Only force the ring onto the map when the destination zoom
-    // is one where rings are supposed to be displayed.
-    if (targetZoom >= RINGS_MIN_ZOOM) {
-      if (!map.hasLayer(ring) && ring.addTo) {
-        try {
-          ring.addTo(map);
-        } catch (_) { }
+    // This setView emits moveend/zoomend. Prevent the automatic
+    // bbox reload from immediately replacing the focused sample.
+    suppressBboxReloadUntil = Date.now() + 1500;
+
+    let popupOpened = false;
+
+    function finishShowingSample() {
+      if (popupOpened) return;
+      popupOpened = true;
+
+      refreshRingsVisibilityByZoom();
+
+      // targetZoom is guaranteed to be inside the ring range.
+      // Keep the selected ring visible even if a frontend filter excludes it.
+      if (!map.hasLayer(ring)) {
+        ring.addTo(map);
+      }
+
+      if (ring.openPopup) {
+        ring.openPopup();
       }
     }
 
-    // This setView will emit moveend/zoomend. Suppress the automatic bbox reload
-    // briefly so the dynamically loaded single sample is not immediately replaced.
-    suppressBboxReloadUntil = Date.now() + 1500;
+    map.once('moveend', finishShowingSample);
 
-    map.setView(ll, targetZoom, { animate: true });
+    map.setView(ll, targetZoom, {
+      animate: true
+    });
 
-    setTimeout(() => {
-      if (ring.openPopup) ring.openPopup();
-    }, 250);
+    // Fallback for cases where setView does not emit moveend,
+    // for example when the map is already at the target location.
+    setTimeout(finishShowingSample, 450);
 
     return true;
   }
@@ -1319,9 +1340,29 @@
   // ---- State ----
   let ALL_HEADERS = null, userGJ, othersGJ;
 
-  // Below this zoom: show compact point ticks.
-  // At this zoom and above: show privacy-radius rings.
-  const RINGS_MIN_ZOOM = 11;
+  // Ticks are shown outside the middle zoom range.
+  // Privacy-radius rings are shown only from zoom 9 through 12.
+  const RINGS_MIN_ZOOM = 9;
+  const RINGS_MAX_ZOOM = 12;
+  const SAMPLE_FOCUS_ZOOM = 11;
+
+  function isRingZoom(zoom) {
+    return zoom >= RINGS_MIN_ZOOM &&
+      zoom <= RINGS_MAX_ZOOM;
+  }
+
+  function clampToRingZoom(requestedZoom) {
+    const parsed = Number(requestedZoom);
+
+    const zoom = Number.isFinite(parsed)
+      ? parsed
+      : SAMPLE_FOCUS_ZOOM;
+
+    return Math.min(
+      RINGS_MAX_ZOOM,
+      Math.max(RINGS_MIN_ZOOM, Math.round(zoom))
+    );
+  }
 
   // Keep the existing variable names to minimise changes elsewhere,
   // but these are now ordinary tick layers, not cluster groups.
@@ -1352,7 +1393,7 @@
   let filteredRows = [];
 
   function shouldShowRingsAtCurrentZoom() {
-    return map.getZoom() >= RINGS_MIN_ZOOM;
+    return isRingZoom(map.getZoom());
   }
 
   function escapeHtml(v) {
@@ -1401,7 +1442,7 @@
       }
     }
 
-    // At lower zoom, show clusters and compact ticks.
+    // Outside the ring range, show compact ticks.
     setGroupVisibility(
       userCluster,
       showTicks && state.user
@@ -1412,7 +1453,7 @@
       showTicks && state.others
     );
 
-    // At higher zoom, show privacy rings instead.
+    // Inside the middle zoom range, show privacy rings.
     processRings(userRings, state.user);
     processRings(otherRings, state.others);
   }
@@ -1722,7 +1763,7 @@
       const color = phColor(getPhFromProps(props));
 
       return L.circleMarker(latlng, {
-        radius: 4,
+        radius: 3,
         color: '#ffffff',
         weight: 1,
         opacity: 1,
@@ -1730,7 +1771,7 @@
         fillColor: color,
         fillOpacity: 0.95,
         interactive: true,
-        bubblingMouseEvents: true
+        bubblingMouseEvents: false
       });
     }
 
@@ -1860,10 +1901,8 @@
                 L.DomEvent.stopPropagation(event.originalEvent);
               }
 
-              // Zoom to the level where the full privacy ring is displayed,
-              // then open the existing ring popup.
               showIndexedSample(sid, {
-                zoom: Math.max(RINGS_MIN_ZOOM, map.getZoom() + 1)
+                zoom: SAMPLE_FOCUS_ZOOM
               });
             });
 
@@ -2570,7 +2609,10 @@
 
       if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
         setTimeout(() => {
-          window.__echomapShow?.(SINGLE_SAMPLE_ID, { zoom: 15 });
+          window.__echomapShow?.(SINGLE_SAMPLE_ID, {
+            zoom: SAMPLE_FOCUS_ZOOM,
+            includeWrong: SHOW_WRONG_IN_SINGLE
+          });
         }, 200);
       }
 
