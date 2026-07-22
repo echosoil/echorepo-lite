@@ -564,7 +564,27 @@
       .leaflet-popup-content .popup-help-btn:hover {
         color: #0d6efd;
       }
+      .echo-high-zoom-pin-icon {
+        background: transparent !important;
+        border: 0 !important;
+      }
 
+      .echo-high-zoom-pin {
+        display: block;
+        color: var(--echo-pin-color, #777);
+        font-size: 25px;
+        line-height: 1;
+        text-align: center;
+        filter:
+          drop-shadow(0 0 1px #fff)
+          drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65));
+        transform-origin: 50% 100%;
+        transition: transform 100ms ease;
+      }
+
+      .echo-high-zoom-pin-icon:hover .echo-high-zoom-pin {
+        transform: scale(1.18);
+      }
       @keyframes echo-spin {
         to {
           transform: rotate(360deg);
@@ -1366,8 +1386,13 @@
 
   // Keep the existing variable names to minimise changes elsewhere,
   // but these are now ordinary tick layers, not cluster groups.
-  let userCluster = L.layerGroup();
-  let othersCluster = L.layerGroup();
+  // Low-zoom canvas dots
+  let userLowDots = L.layerGroup();
+  let otherLowDots = L.layerGroup();
+
+  // High-zoom location pins
+  let userHighPins = L.layerGroup();
+  let otherHighPins = L.layerGroup();
 
   // Rings & base layers
   const userRings = [], otherRings = [];
@@ -1410,8 +1435,11 @@
       ? twoToggleControl._getState()
       : { user: true, others: true };
 
-    const showRings = shouldShowRingsAtCurrentZoom();
-    const showTicks = !showRings;
+    const zoom = map.getZoom();
+
+    const showLowDots = zoom < RINGS_MIN_ZOOM;
+    const showRings = isRingZoom(zoom);
+    const showHighPins = zoom > RINGS_MAX_ZOOM;
 
     function setGroupVisibility(group, visible) {
       if (!group) return;
@@ -1442,18 +1470,26 @@
       }
     }
 
-    // Outside the ring range, show compact ticks.
     setGroupVisibility(
-      userCluster,
-      showTicks && state.user
+      userLowDots,
+      showLowDots && state.user
     );
 
     setGroupVisibility(
-      othersCluster,
-      showTicks && state.others
+      otherLowDots,
+      showLowDots && state.others
     );
 
-    // Inside the middle zoom range, show privacy rings.
+    setGroupVisibility(
+      userHighPins,
+      showHighPins && state.user
+    );
+
+    setGroupVisibility(
+      otherHighPins,
+      showHighPins && state.others
+    );
+
     processRings(userRings, state.user);
     processRings(otherRings, state.others);
   }
@@ -1720,15 +1756,22 @@
   }
 
   function clearMapDataLayers() {
-    try {
-      if (userCluster && map.hasLayer(userCluster)) map.removeLayer(userCluster);
-      if (othersCluster && map.hasLayer(othersCluster)) map.removeLayer(othersCluster);
-    } catch (_) { }
+    const pointGroups = [
+      userLowDots,
+      otherLowDots,
+      userHighPins,
+      otherHighPins
+    ];
 
-    try {
-      userCluster?.clearLayers();
-      othersCluster?.clearLayers();
-    } catch (_) { }
+    for (const group of pointGroups) {
+      try {
+        if (group && map.hasLayer(group)) {
+          map.removeLayer(group);
+        }
+
+        group?.clearLayers();
+      } catch (_) { }
+    }
 
     for (const r of userRings) {
       try {
@@ -1752,8 +1795,10 @@
     userLayer = null;
     othersLayer = null;
 
-    userCluster = L.layerGroup();
-    othersCluster = L.layerGroup();
+    userLowDots = L.layerGroup();
+    otherLowDots = L.layerGroup();
+    userHighPins = L.layerGroup();
+    otherHighPins = L.layerGroup();
   }
 
   // ---- Build layers (rings + base invisible markers for selection) ----
@@ -1763,7 +1808,7 @@
       const color = phColor(getPhFromProps(props));
 
       return L.circleMarker(latlng, {
-        radius: 3,
+        radius: 5,
         color: '#ffffff',
         weight: 1,
         opacity: 1,
@@ -1775,8 +1820,50 @@
       });
     }
 
-    const mkUser = makeTickMarker;
-    const mkOther = makeTickMarker;
+    function makeLowZoomDot(feature, latlng) {
+      const props = feature?.properties || {};
+      const color = phColor(getPhFromProps(props));
+
+      return L.circleMarker(latlng, {
+        radius: 4,
+        color: '#ffffff',
+        weight: 1,
+        opacity: 1,
+        fill: true,
+        fillColor: color,
+        fillOpacity: 0.95,
+        interactive: true,
+        bubblingMouseEvents: false
+      });
+    }
+
+    function makeHighZoomPin(feature, latlng) {
+      const props = feature?.properties || {};
+      const color = phColor(getPhFromProps(props));
+
+      const icon = L.divIcon({
+        className: 'echo-high-zoom-pin-icon',
+        html: `
+          <span
+            class="echo-high-zoom-pin"
+            style="--echo-pin-color:${color}">
+            <i class="bi bi-geo-alt-fill"></i>
+          </span>
+        `,
+        iconSize: [26, 30],
+        iconAnchor: [13, 28],
+        tooltipAnchor: [0, -25]
+      });
+
+      return L.marker(latlng, {
+        icon,
+        interactive: true,
+        keyboard: true,
+        riseOnHover: true
+      });
+    }
+    const mkUser = makeLowZoomDot;
+    const mkOther = makeLowZoomDot;
     const cfg = window.ECHOREPO_CFG || {};
     const PUBLIC_MODE = !!cfg.public_mode;
 
@@ -1787,6 +1874,17 @@
           const props = f.properties || {};
           const ph = getPhFromProps(props);
           const clr = phColor(ph);
+          const highPin = makeHighZoomPin(
+            f,
+            marker.getLatLng()
+          );
+
+          highPin.__props = props;
+          highPin.__owner = !!isOwner;
+          highPin.feature = f;
+
+          // Keep a reference from the low dot to its corresponding pin.
+          marker.__highPin = highPin;
           const ring = L.circle(marker.getLatLng(), {
             radius: JITTER_M,
             color: clr,
@@ -1889,31 +1987,42 @@
 
           const sid = getSampleIdFromProps(props);
 
-          if (sid) {
-            marker.bindTooltip(sid, {
+          function configurePointMarker(pointMarker) {
+            if (!sid || !pointMarker) return;
+
+            pointMarker.bindTooltip(sid, {
               direction: 'top',
               offset: [0, -7],
               opacity: 0.9
             });
 
-            marker.on('click', event => {
+            pointMarker.on('click', event => {
               if (event.originalEvent) {
                 L.DomEvent.stopPropagation(event.originalEvent);
               }
 
+              // Both low dots and high pins move to the middle zoom range,
+              // where the privacy ring and detailed popup are displayed.
               showIndexedSample(sid, {
                 zoom: SAMPLE_FOCUS_ZOOM
               });
             });
+          }
 
+          configurePointMarker(marker);
+          configurePointMarker(highPin);
+
+          if (sid) {
             window.__echomapIndex.set(String(sid), ring);
           }
 
           if (passesCurrentFilter(props)) {
             if (isOwner) {
-              userCluster.addLayer(marker);
+              userLowDots.addLayer(marker);
+              userHighPins.addLayer(highPin);
             } else {
-              othersCluster.addLayer(marker);
+              otherLowDots.addLayer(marker);
+              otherHighPins.addLayer(highPin);
             }
           }
         }
@@ -1944,30 +2053,68 @@
   map.on('zoomend', refreshRingsVisibilityByZoom);
 
   // ---- Rebuild clusters to reflect current filter ----
-  function rebuildClustersForFilter() {
-    if (map.hasLayer(userCluster)) map.removeLayer(userCluster);
-    if (map.hasLayer(othersCluster)) map.removeLayer(othersCluster);
+  function rebuildPointLayersForFilter() {
+    const oldGroups = [
+      userLowDots,
+      otherLowDots,
+      userHighPins,
+      otherHighPins
+    ];
 
-    const newUser = L.layerGroup();
-    const newOthers = L.layerGroup();
+    for (const group of oldGroups) {
+      if (map.hasLayer(group)) {
+        map.removeLayer(group);
+      }
+    }
 
-    function addFilteredMarkers(layer, include, targetGroup) {
+    const newUserLowDots = L.layerGroup();
+    const newOtherLowDots = L.layerGroup();
+    const newUserHighPins = L.layerGroup();
+    const newOtherHighPins = L.layerGroup();
+
+    function addFilteredMarkers(
+      layer,
+      include,
+      lowTarget,
+      highTarget
+    ) {
       if (!include || !layer) return;
 
-      layer.eachLayer(m => {
-        const props = m.__props || {};
+      layer.eachLayer(lowMarker => {
+        const props = lowMarker.__props || {};
+
         if (!passesCurrentFilter(props)) return;
-        targetGroup.addLayer(m);
+
+        lowTarget.addLayer(lowMarker);
+
+        if (lowMarker.__highPin) {
+          highTarget.addLayer(lowMarker.__highPin);
+        }
       });
     }
 
-    const state = twoToggleControl ? twoToggleControl._getState() : { user: true, others: true };
+    const state = twoToggleControl
+      ? twoToggleControl._getState()
+      : { user: true, others: true };
 
-    addFilteredMarkers(userLayer, state.user, newUser);
-    addFilteredMarkers(othersLayer, state.others, newOthers);
+    addFilteredMarkers(
+      userLayer,
+      state.user,
+      newUserLowDots,
+      newUserHighPins
+    );
 
-    userCluster = newUser;
-    othersCluster = newOthers;
+    addFilteredMarkers(
+      othersLayer,
+      state.others,
+      newOtherLowDots,
+      newOtherHighPins
+    );
+
+    userLowDots = newUserLowDots;
+    otherLowDots = newOtherLowDots;
+    userHighPins = newUserHighPins;
+    otherHighPins = newOtherHighPins;
 
     refreshRingsVisibilityByZoom();
   }
@@ -2403,7 +2550,7 @@
     applyFilterToRings();
 
     if (sig !== lastFilterSignature) {
-      rebuildClustersForFilter();
+      rebuildPointLayersForFilter();
 
       filteredRows = collectRowsFiltered(
         activePhMin,
@@ -2534,7 +2681,7 @@
       populateCountryFilter();
       syncFiltersToUI();
 
-      updateFiltered();
+      rebuildPointLayersForFilter();
       refreshI18NTexts();
       scheduleGlobalFilteredCountRefresh();
 
@@ -2603,7 +2750,7 @@
       populateCountryFilter();
       syncFiltersToUI();
 
-      updateFiltered();
+      rebuildPointLayersForFilter();
       refreshI18NTexts();
       scheduleGlobalFilteredCountRefresh();
 
