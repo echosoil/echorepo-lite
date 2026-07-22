@@ -66,6 +66,16 @@
   if (!DISABLE_SELECTION_TOOLS) {
     map.createPane('selectionPane');
     map.getPane('selectionPane').style.zIndex = 650;
+
+    map.createPane('selectedSamplePane');
+
+    Object.assign(
+      map.getPane('selectedSamplePane').style,
+      {
+        zIndex: 675,
+        pointerEvents: 'none'
+      }
+    );
   }
 
   // Default fallback view
@@ -310,7 +320,7 @@
   window.__echomap = map;
   window.__echomapIndex = new Map();
 
-  function showIndexedSample(sampleId, opts) {
+  function showIndexedSample(sampleId, opts = {}) {
     const id = String(sampleId || '').trim();
     if (!id) return false;
 
@@ -357,7 +367,7 @@
 
     // Any request to focus a sample is placed inside the ring range.
     // For example, a requested zoom of 15 becomes zoom 12.
-    const targetZoom = clampToRingZoom(opts?.zoom);
+    const targetZoom = resolveSampleTargetZoom(opts);
 
     // This setView emits moveend/zoomend. Prevent the automatic
     // bbox reload from immediately replacing the focused sample.
@@ -367,18 +377,42 @@
 
     function finishShowingSample() {
       if (popupOpened) return;
+
       popupOpened = true;
 
       refreshRingsVisibilityByZoom();
 
-      // targetZoom is guaranteed to be inside the ring range.
-      // Keep the selected ring visible even if a frontend filter excludes it.
-      if (!map.hasLayer(ring)) {
-        ring.addTo(map);
+      if (opts.highlight !== false) {
+        highlightSelectedSample(ring, id);
       }
 
-      if (ring.openPopup) {
+      if (opts.openPopup === false) {
+        return;
+      }
+
+      const popup = ring.getPopup?.();
+
+      if (!popup) {
+        console.warn(
+          'No popup found for sample:',
+          id
+        );
+
+        return;
+      }
+
+      if (isRingZoom(targetZoom)) {
+        // Middle zoom range: show the actual privacy ring.
+        if (!map.hasLayer(ring)) {
+          ring.addTo(map);
+        }
+
         ring.openPopup();
+      } else {
+        // Low/high zoom: open the ring's bound popup at the
+        // point location without adding the 1 km ring.
+        popup.setLatLng(ll);
+        popup.openOn(map);
       }
     }
 
@@ -584,6 +618,102 @@
 
       .echo-high-zoom-pin-icon:hover .echo-high-zoom-pin {
         transform: scale(1.18);
+      }
+      .echo-selected-sample-icon {
+        background: transparent !important;
+        border: 0 !important;
+        overflow: visible !important;
+      }
+
+      .echo-selected-sample-highlight {
+        position: relative;
+        display: block;
+        width: 56px;
+        height: 60px;
+      }
+
+      .echo-selected-sample-halo {
+        position: absolute;
+        left: 50%;
+        bottom: 7px;
+        width: 28px;
+        height: 28px;
+
+        border: 4px solid #ffb000;
+        border-radius: 50%;
+
+        background: rgba(255, 193, 7, 0.25);
+
+        box-shadow:
+          0 0 0 3px rgba(255, 255, 255, 0.95),
+          0 0 18px 8px rgba(255, 176, 0, 0.8);
+
+        transform: translate(-50%, 50%);
+
+        animation:
+          echo-selected-pulse 1.35s ease-out infinite;
+      }
+
+      .echo-selected-sample-pin {
+        position: absolute;
+        left: 50%;
+        bottom: 3px;
+
+        display: block;
+
+        color: var(--echo-selected-color, #ff9800);
+        font-size: 39px;
+        line-height: 1;
+
+        transform: translateX(-50%);
+        transform-origin: 50% 100%;
+
+        filter:
+          drop-shadow(0 0 3px #fff)
+          drop-shadow(0 0 5px #fff)
+          drop-shadow(0 3px 4px rgba(0, 0, 0, 0.8));
+
+        animation:
+          echo-selected-bob 1.1s ease-in-out infinite;
+      }
+
+      @keyframes echo-selected-pulse {
+        0% {
+          opacity: 1;
+          transform:
+            translate(-50%, 50%)
+            scale(0.55);
+        }
+
+        75%,
+        100% {
+          opacity: 0;
+          transform:
+            translate(-50%, 50%)
+            scale(1.65);
+        }
+      }
+
+      @keyframes echo-selected-bob {
+        0%,
+        100% {
+          transform:
+            translateX(-50%)
+            translateY(0);
+        }
+
+        50% {
+          transform:
+            translateX(-50%)
+            translateY(-5px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .echo-selected-sample-halo,
+        .echo-selected-sample-pin {
+          animation: none;
+        }
       }
       @keyframes echo-spin {
         to {
@@ -1384,6 +1514,26 @@
     );
   }
 
+  function resolveSampleTargetZoom(opts = {}) {
+    const requestedZoom = Number(opts.zoom);
+
+    if (opts.keepZoom) {
+      if (Number.isFinite(requestedZoom)) {
+        return Math.min(
+          map.getMaxZoom(),
+          Math.max(
+            map.getMinZoom(),
+            Math.round(requestedZoom)
+          )
+        );
+      }
+
+      return map.getZoom();
+    }
+
+    return clampToRingZoom(requestedZoom);
+  }
+
   // Keep the existing variable names to minimise changes elsewhere,
   // but these are now ordinary tick layers, not cluster groups.
   // Low-zoom canvas dots
@@ -1406,6 +1556,65 @@
   let selectionLayers = [], selectionRows = [];
   let selectionButtonEl = null, clearButtonEl = null;
 
+  let selectedSampleMarker = null;
+  let selectedSampleId = null;
+
+  function clearSelectedSampleHighlight() {
+    if (
+      selectedSampleMarker &&
+      map.hasLayer(selectedSampleMarker)
+    ) {
+      map.removeLayer(selectedSampleMarker);
+    }
+
+    selectedSampleMarker = null;
+    selectedSampleId = null;
+  }
+
+  function highlightSelectedSample(ring, sampleId) {
+    const latLng = ring?.getLatLng?.();
+
+    if (!latLng) {
+      return false;
+    }
+
+    clearSelectedSampleHighlight();
+
+    const props = ring.__props || {};
+    const color = phColor(getPhFromProps(props));
+
+    const icon = L.divIcon({
+      className: 'echo-selected-sample-icon',
+      html: `
+        <span
+          class="echo-selected-sample-highlight"
+          style="--echo-selected-color:${color}">
+          <span class="echo-selected-sample-halo"></span>
+
+          <i
+            class="bi bi-geo-alt-fill echo-selected-sample-pin">
+          </i>
+        </span>
+      `,
+      iconSize: [56, 60],
+      iconAnchor: [28, 54]
+    });
+
+    selectedSampleMarker = L.marker(latLng, {
+      icon,
+      pane: 'selectedSamplePane',
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: 10000
+    }).addTo(map);
+
+    selectedSampleId = String(sampleId || '');
+
+    return true;
+  }
+
+  window.__echomapClearHighlight =
+    clearSelectedSampleHighlight;
   // Filter state (UI elements in page)
   const phMinEl = document.getElementById('phMin');
   const phMaxEl = document.getElementById('phMax');
@@ -1763,6 +1972,8 @@
       otherHighPins
     ];
 
+    clearSelectedSampleHighlight();
+
     for (const group of pointGroups) {
       try {
         if (group && map.hasLayer(group)) {
@@ -1987,6 +2198,12 @@
 
           const sid = getSampleIdFromProps(props);
 
+          if (sid) {
+            ring.on('click', () => {
+              highlightSelectedSample(ring, sid);
+            });
+          }
+
           function addSampleTooltip(pointMarker) {
             if (!sid || !pointMarker) return;
 
@@ -2023,6 +2240,8 @@
               if (event.originalEvent) {
                 L.DomEvent.stopPropagation(event.originalEvent);
               }
+
+              highlightSelectedSample(ring, sid);
 
               const popup = ring.getPopup?.();
 
@@ -2654,12 +2873,17 @@
     }; phLegend.addTo(map);
   }
 
-  async function loadSingleSampleForMap(sampleId, opts = {}) {
+  async function loadSingleSampleForMap(
+    sampleId,
+    opts = {}
+  ) {
     const id = String(sampleId || '').trim();
+
     if (!id) return false;
 
     const params = new URLSearchParams();
-    params.set('limit', '10000');
+
+    params.set('limit', '1');
     params.set('sample_id', id);
 
     if (opts.includeWrong || SHOW_WRONG_IN_SINGLE) {
@@ -2672,52 +2896,68 @@
     );
 
     try {
-      const r = await fetch(`/api/v1/canonical/map.geojson?${params.toString()}`, {
-        credentials: 'same-origin'
-      });
+      // Fetch the exact sample only to discover its position.
+      const response = await fetch(
+        `/api/v1/canonical/map.geojson?${params.toString()}`,
+        {
+          credentials: 'same-origin'
+        }
+      );
 
-      if (!r.ok) {
-        throw new Error(`Single-sample map API failed: ${r.status}`);
+      if (!response.ok) {
+        throw new Error(
+          `Single-sample map API failed: ${response.status}`
+        );
       }
 
-      const gj = await r.json();
-      const features = Array.isArray(gj?.features) ? gj.features : [];
+      const geojson = await response.json();
+      const feature = geojson?.features?.[0];
 
-      if (!features.length) {
+      if (!feature) {
         return false;
       }
 
-      userGJ = {
-        type: "FeatureCollection",
-        features: [],
-      };
+      const coordinates =
+        feature.geometry?.coordinates;
 
-      othersGJ = gj || {
-        type: "FeatureCollection",
-        features: [],
-      };
+      const lon = Number(coordinates?.[0]);
+      const lat = Number(coordinates?.[1]);
 
-      updateMapLoader(
-        T('renderingSample', {}, 'Rendering sample...'),
-        id
+      if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lon)
+      ) {
+        return false;
+      }
+
+      const targetZoom =
+        resolveSampleTargetZoom(opts);
+
+      suppressBboxReloadUntil =
+        Date.now() + 2000;
+
+      // Move first so the normal bbox request is built
+      // around the selected sample.
+      map.setView(
+        [lat, lon],
+        targetZoom,
+        {
+          animate: false
+        }
       );
 
-      clearMapDataLayers();
-
-      computeAllHeaders();
-      buildLayers();
-
-      populateCountryFilter();
-      syncFiltersToUI();
-
-      rebuildPointLayersForFilter();
-      refreshI18NTexts();
-      scheduleGlobalFilteredCountRefresh();
+      // Load all samples in that visible map area.
+      await loadSamplesForCurrentView();
 
       return true;
 
-    } catch (err) {
-      console.warn('Could not load single sample for map:', id, err);
+    } catch (error) {
+      console.warn(
+        'Could not locate sample on map:',
+        id,
+        error
+      );
+
       return false;
 
     } finally {
