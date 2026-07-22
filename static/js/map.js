@@ -536,6 +536,29 @@
       .leaflet-popup-content .popup-help-btn:hover {
         color: #0d6efd;
       }
+      .echo-map-tick-icon {
+        background: transparent !important;
+        border: 0 !important;
+      }
+
+      .echo-map-tick {
+        display: block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--echo-tick-color, #777);
+        border: 2px solid #fff;
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.55),
+          0 1px 3px rgba(0, 0, 0, 0.35);
+      }
+
+      .echo-map-tick-icon:hover .echo-map-tick {
+        width: 12px;
+        height: 12px;
+        margin-left: -1px;
+        margin-top: -1px;
+      }
       @keyframes echo-spin {
         to {
           transform: rotate(360deg);
@@ -1312,12 +1335,19 @@
   let ALL_HEADERS = null, userGJ, othersGJ;
 
   // Cluster groups (will be rebuilt on filter)
+  // Below this zoom: show compact point markers / clusters.
+  // At this zoom and above: show the privacy-radius rings.
+  const RINGS_MIN_ZOOM = 11;
+
   const CLUSTER_OPTS = {
     chunkedLoading: true,
     chunkInterval: 50,
     chunkDelay: 25,
     removeOutsideVisibleBounds: true,
-    disableClusteringAtZoom: 13
+
+    // At this zoom the cluster layer will be hidden anyway,
+    // but this keeps its behaviour consistent.
+    disableClusteringAtZoom: RINGS_MIN_ZOOM
   };
 
   let userCluster = L.markerClusterGroup(CLUSTER_OPTS);
@@ -1346,9 +1376,6 @@
   let activePhMax = null;
   let filteredRows = [];
 
-  // Loading accelerator helper: if user has many points, we delay ring creation until we know they are needed
-  const RINGS_MIN_ZOOM = 9;
-
   function shouldShowRingsAtCurrentZoom() {
     return map.getZoom() >= RINGS_MIN_ZOOM;
   }
@@ -1367,23 +1394,52 @@
       ? twoToggleControl._getState()
       : { user: true, others: true };
 
-    function process(rings, includeGroup) {
-      for (const r of rings) {
-        const shouldShow =
-          shouldShowRingsAtCurrentZoom() &&
-          includeGroup &&
-          passesCurrentFilter(r.__props || {});
+    const showRings = shouldShowRingsAtCurrentZoom();
+    const showTicks = !showRings;
 
-        if (shouldShow) {
-          if (!map.hasLayer(r)) r.addTo(map);
-        } else {
-          if (map.hasLayer(r)) map.removeLayer(r);
+    function setGroupVisibility(group, visible) {
+      if (!group) return;
+
+      if (visible) {
+        if (!map.hasLayer(group)) {
+          map.addLayer(group);
+        }
+      } else if (map.hasLayer(group)) {
+        map.removeLayer(group);
+      }
+    }
+
+    function processRings(rings, includeGroup) {
+      for (const ring of rings) {
+        const visible =
+          showRings &&
+          includeGroup &&
+          passesCurrentFilter(ring.__props || {});
+
+        if (visible) {
+          if (!map.hasLayer(ring)) {
+            ring.addTo(map);
+          }
+        } else if (map.hasLayer(ring)) {
+          map.removeLayer(ring);
         }
       }
     }
 
-    process(userRings, state.user);
-    process(otherRings, state.others);
+    // At lower zoom, show clusters and compact ticks.
+    setGroupVisibility(
+      userCluster,
+      showTicks && state.user
+    );
+
+    setGroupVisibility(
+      othersCluster,
+      showTicks && state.others
+    );
+
+    // At higher zoom, show privacy rings instead.
+    processRings(userRings, state.user);
+    processRings(otherRings, state.others);
   }
 
   // ---- Restore filters from URL (Optional D) ----
@@ -1686,24 +1742,33 @@
 
   // ---- Build layers (rings + base invisible markers for selection) ----
   function buildLayers() {
-    const invisibleIcon = L.divIcon({
-      className: 'echo-invisible-marker',
-      html: '',
-      iconSize: [1, 1],
-      iconAnchor: [0, 0]
-    });
+    function makeTickMarker(feature, latlng) {
+      const props = feature?.properties || {};
+      const color = phColor(getPhFromProps(props));
 
-    const mkUser = (_f, latlng) => L.marker(latlng, {
-      icon: invisibleIcon,
-      opacity: 0,
-      interactive: false
-    });
+      const tickIcon = L.divIcon({
+        className: 'echo-map-tick-icon',
+        html: `
+          <span
+            class="echo-map-tick"
+            style="--echo-tick-color:${color}">
+          </span>
+        `,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      });
 
-    const mkOther = (_f, latlng) => L.marker(latlng, {
-      icon: invisibleIcon,
-      opacity: 0,
-      interactive: false
-    });
+      return L.marker(latlng, {
+        icon: tickIcon,
+        opacity: 1,
+        interactive: true,
+        keyboard: true,
+        riseOnHover: true
+      });
+    }
+
+    const mkUser = makeTickMarker;
+    const mkOther = makeTickMarker;
     const cfg = window.ECHOREPO_CFG || {};
     const PUBLIC_MODE = !!cfg.public_mode;
 
@@ -1809,10 +1874,34 @@
             ring.addTo(map);
           }
 
-          // keep the invisible marker only for clustering
+          // The compact point marker is used below RINGS_MIN_ZOOM.
           marker.__props = props;
           marker.__owner = !!isOwner;
           marker.feature = f;
+
+          const sid = getSampleIdFromProps(props);
+
+          if (sid) {
+            marker.bindTooltip(sid, {
+              direction: 'top',
+              offset: [0, -7],
+              opacity: 0.9
+            });
+
+            marker.on('click', event => {
+              if (event.originalEvent) {
+                L.DomEvent.stopPropagation(event.originalEvent);
+              }
+
+              // Zoom to the level where the full privacy ring is displayed,
+              // then open the existing ring popup.
+              showIndexedSample(sid, {
+                zoom: Math.max(RINGS_MIN_ZOOM, map.getZoom() + 1)
+              });
+            });
+
+            window.__echomapIndex.set(String(sid), ring);
+          }
 
           if (passesCurrentFilter(props)) {
             if (isOwner) {
@@ -1821,17 +1910,6 @@
               othersCluster.addLayer(marker);
             }
           }
-
-          // index by sample id
-          const sid =
-            props.sampleId ||
-            props.sample_id ||
-            props.Sample ||
-            props.QR_qrCode || null;
-
-          if (sid) {
-            window.__echomapIndex.set(String(sid), ring);
-          }
         }
       });
     }
@@ -1839,9 +1917,6 @@
     userLayer = makeLayer(userGJ, mkUser, true, userRings);
     othersLayer = makeLayer(othersGJ, mkOther, false, otherRings);
 
-    // Initial clusters (unfiltered = all)
-    map.addLayer(userCluster);
-    map.addLayer(othersCluster);
     if (!dynamicMapReady) {
       if (!PUBLIC_MODE && !DISABLE_SAMPLE_TOGGLES) {
         addTwoToggleControl();
@@ -1854,6 +1929,9 @@
 
       dynamicMapReady = true;
     }
+    // Display either compact ticks/clusters or privacy rings,
+    // depending on the current zoom.
+    refreshRingsVisibilityByZoom();
 
   }
 
@@ -1885,8 +1963,7 @@
     userCluster = newUser;
     othersCluster = newOthers;
 
-    if (state.user) map.addLayer(userCluster);
-    if (state.others) map.addLayer(othersCluster);
+    refreshRingsVisibilityByZoom();
   }
   // ---- Show/hide rings based on current filter + toggles ----
   function applyFilterToRings() {
@@ -1897,12 +1974,7 @@
     const state = { user: true, others: true };
 
     function sync() {
-      if (state.user) { if (!map.hasLayer(userCluster)) map.addLayer(userCluster); }
-      else { if (map.hasLayer(userCluster)) map.removeLayer(userCluster); }
-      if (state.others) { if (!map.hasLayer(othersCluster)) map.addLayer(othersCluster); }
-      else { if (map.hasLayer(othersCluster)) map.removeLayer(othersCluster); }
-
-      applyFilterToRings();
+      refreshRingsVisibilityByZoom();
       updateSelectionCount();
       updateFilteredCountsLabelOnly();
     }
