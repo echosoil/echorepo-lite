@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-02 09:47+0000\n"
+"POT-Creation-Date: 2026-07-22 23:15+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ro\n"
@@ -69,18 +69,18 @@ msgstr "Clar"
 msgid "Export filtered ({n})"
 msgstr "Export filtrat ({n})"
 
-#: /work/echorepo/routes/web.py:382 /work/echorepo/templates/explore.html:62
-#: /work/static/js/map.js:1123
+#: /work/echorepo/routes/web.py:382 /work/echorepo/templates/explore.html:172
+#: /work/static/js/map.js:1382
 msgid "Date"
 msgstr "Dată"
 
-#: /work/echorepo/routes/web.py:383 /work/static/js/map.js:1124
+#: /work/echorepo/routes/web.py:383 /work/static/js/map.js:1383
 msgid "QR code"
 msgstr "Codul QR"
 
-#: /work/echorepo/routes/web.py:384 /work/echorepo/templates/explore.html:44
-#: /work/echorepo/templates/results.html:361
-#: /work/echorepo/templates/search.html:78 /work/static/js/map.js:1125
+#: /work/echorepo/routes/web.py:384 /work/echorepo/templates/explore.html:154
+#: /work/echorepo/templates/results.html:400
+#: /work/echorepo/templates/search.html:78 /work/static/js/map.js:1384
 msgid "pH"
 msgstr "p H"
 
@@ -88,31 +88,31 @@ msgstr "p H"
 msgid "Colour"
 msgstr "Culoare"
 
-#: /work/echorepo/routes/web.py:386 /work/static/js/map.js:1126
+#: /work/echorepo/routes/web.py:386 /work/static/js/map.js:1385
 msgid "Soil organic matter"
 msgstr "Materia organică din sol"
 
-#: /work/echorepo/routes/web.py:387 /work/static/js/map.js:1127
+#: /work/echorepo/routes/web.py:387 /work/static/js/map.js:1386
 msgid "Texture"
 msgstr "Textură"
 
-#: /work/echorepo/routes/web.py:388 /work/static/js/map.js:1128
+#: /work/echorepo/routes/web.py:388 /work/static/js/map.js:1387
 msgid "Structure"
 msgstr "Structura"
 
-#: /work/echorepo/routes/web.py:389 /work/static/js/map.js:1129
+#: /work/echorepo/routes/web.py:389 /work/static/js/map.js:1388
 msgid "Earthworms"
 msgstr "Viermi"
 
-#: /work/echorepo/routes/web.py:390 /work/static/js/map.js:1130
+#: /work/echorepo/routes/web.py:390 /work/static/js/map.js:1389
 msgid "Plastic"
 msgstr "Plastic"
 
-#: /work/echorepo/routes/web.py:391 /work/static/js/map.js:1131
+#: /work/echorepo/routes/web.py:391 /work/static/js/map.js:1390
 msgid "Debris"
 msgstr "Debris"
 
-#: /work/echorepo/routes/web.py:392 /work/static/js/map.js:1132
+#: /work/echorepo/routes/web.py:392 /work/static/js/map.js:1391
 msgid "Contamination"
 msgstr "Contaminarea"
 
@@ -128,15 +128,15 @@ msgstr "Concentrații elementare"
 msgid "Draw a selection rectangle"
 msgstr "Desenează un dreptunghi de selecție"
 
-#: /work/echorepo/routes/web.py:396 /work/static/js/map.js:1881
+#: /work/echorepo/routes/web.py:396 /work/static/js/map.js:2604
 msgid "Cancel drawing"
 msgstr "Anulează desenul"
 
-#: /work/echorepo/routes/web.py:397 /work/static/js/map.js:1882
+#: /work/echorepo/routes/web.py:397 /work/static/js/map.js:2605
 msgid "Cancel"
 msgstr "Renunță"
 
-#: /work/echorepo/routes/web.py:398 /work/static/js/map.js:1886
+#: /work/echorepo/routes/web.py:398 /work/static/js/map.js:2609
 msgid "Delete last point"
 msgstr "Se elimină ultimul punct"
 
@@ -144,7 +144,7 @@ msgstr "Se elimină ultimul punct"
 msgid "Click and drag to draw a selection rectangle."
 msgstr "Faceți clic și trageți pentru a desena un dreptunghi de selecție."
 
-#: /work/echorepo/routes/web.py:400 /work/static/js/map.js:1899
+#: /work/echorepo/routes/web.py:400 /work/static/js/map.js:2622
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Eliberați mouse-ul pentru a adăuga acest dreptunghi la selecție."
 
@@ -153,12 +153,12 @@ msgid "Selection export to a file"
 msgstr "Selectare exportă într- un fișier"
 
 #: /work/echorepo/routes/web.py:402
-msgid "Use the selection tool"
+msgid "Use selection tool"
 msgstr "Folosește instrumentul de selecție"
 
 #: /work/echorepo/routes/web.py:403
-msgid "to draw one or more selection areas."
-msgstr "să deseneze una sau mai multe zone de selecție."
+msgid "to draw one or more areas"
+msgstr "să deseneze una sau mai multe zone"
 
 #: /work/echorepo/routes/web.py:404
 msgid "Export selection"
@@ -176,26 +176,25 @@ msgstr "Șterge selecția"
 msgid "Clear all selection rectangles"
 msgstr "Șterge toate dreptunghiurile de selecție"
 
-#: /work/echorepo/routes/web.py:408 /work/static/js/map.js:1874
+#: /work/echorepo/routes/web.py:408 /work/static/js/map.js:2597
 msgid "Draw selection rectangle"
 msgstr "Trage dreptunghiul de selecție"
 
-#: /work/echorepo/routes/web.py:409 /work/static/js/map.js:584
+#: /work/echorepo/routes/web.py:409 /work/static/js/map.js:843
 msgid "Not available"
 msgstr "Nu este disponibil"
 
-#: /work/echorepo/routes/web.py:410 /work/echorepo/templates/explore.html:33
+#: /work/echorepo/routes/web.py:410 /work/echorepo/templates/explore.html:131
 msgid "Download dataset from Zenodo"
 msgstr "Descărcaţi seturile de date de la Zenodo"
 
-#: /work/echorepo/routes/web.py:411 /work/static/js/map.js:843
-#, python-format
-msgid "Values reported in % can be converted to mg/kg by multiplying by 10000."
+#: /work/echorepo/routes/web.py:411 /work/static/js/map.js:1102
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
-"Valorile raportate în % pot fi convertite în mg/kg prin multiplicarea cu "
+"Valorile procentuale (%) pot fi convertite în mg/kg prin multiplicarea cu "
 "10000."
 
-#: /work/echorepo/routes/web.py:412 /work/static/js/map.js:849
+#: /work/echorepo/routes/web.py:412 /work/static/js/map.js:1108
 msgid "Unit conversion help"
 msgstr "Ajutor de conversie unitate"
 
@@ -332,114 +331,105 @@ msgstr "Finanțat de Uniunea Europeană și Regatul Unit pentru cercetare și in
 msgid "Coordinate issues"
 msgstr "Aspecte de coordonare"
 
-#: /work/echorepo/templates/coordinate_issues.html:11
+#: /work/echorepo/templates/coordinate_issues.html:10
 msgid "The coordinate issues file was not found:"
 msgstr "Dosarul de coordonate nu a fost găsit:"
 
-#: /work/echorepo/templates/coordinate_issues.html:19
-#: /work/echorepo/templates/coordinate_issues.html:119
+#: /work/echorepo/templates/coordinate_issues.html:18
+#: /work/echorepo/templates/coordinate_issues.html:102
 #: /work/echorepo/templates/search.html:10 /work/echorepo/templates/search.html:75
 msgid "Sample / QR"
 msgstr "Mostră / QR"
 
-#: /work/echorepo/templates/coordinate_issues.html:25
-#: /work/echorepo/templates/coordinate_issues.html:120
+#: /work/echorepo/templates/coordinate_issues.html:23
+#: /work/echorepo/templates/coordinate_issues.html:103
 msgid "User ID"
 msgstr "ID utilizator"
 
-#: /work/echorepo/templates/coordinate_issues.html:30
-#: /work/echorepo/templates/coordinate_issues.html:125
+#: /work/echorepo/templates/coordinate_issues.html:28
+#: /work/echorepo/templates/coordinate_issues.html:108
 msgid "Issue type"
 msgstr "Tipul emisiunii"
 
-#: /work/echorepo/templates/coordinate_issues.html:32
+#: /work/echorepo/templates/coordinate_issues.html:30
 msgid "Any issue"
 msgstr "Orice problemă"
 
-#: /work/echorepo/templates/coordinate_issues.html:43
-#: /work/echorepo/templates/explore.html:38 /work/echorepo/templates/search.html:31
+#: /work/echorepo/templates/coordinate_issues.html:41
+#: /work/echorepo/templates/explore.html:137
+#: /work/echorepo/templates/search.html:31
 msgid "Search"
 msgstr "Caută"
 
-#: /work/echorepo/templates/coordinate_issues.html:52
-#: /work/echorepo/templates/coordinate_issues.html:123
+#: /work/echorepo/templates/coordinate_issues.html:48
+#: /work/echorepo/templates/coordinate_issues.html:106
 msgid "Actual country"
 msgstr "Țara efectivă"
 
-#: /work/echorepo/templates/coordinate_issues.html:59
-#: /work/echorepo/templates/coordinate_issues.html:124
+#: /work/echorepo/templates/coordinate_issues.html:54
+#: /work/echorepo/templates/coordinate_issues.html:107
 msgid "Planned country"
 msgstr "Țara planificată"
 
-#: /work/echorepo/templates/coordinate_issues.html:69
+#: /work/echorepo/templates/coordinate_issues.html:64
 msgid "Show approved"
 msgstr "Afișează aprobarea"
 
-#: /work/echorepo/templates/coordinate_issues.html:83
+#: /work/echorepo/templates/coordinate_issues.html:78
 msgid "Export current results"
 msgstr "Exportă rezultatele curente"
 
-#: /work/echorepo/templates/coordinate_issues.html:102
+#: /work/echorepo/templates/coordinate_issues.html:87
 msgid "coordinate issue(s)"
 msgstr "problema coordonării (s)"
 
-#: /work/echorepo/templates/coordinate_issues.html:105
+#: /work/echorepo/templates/coordinate_issues.html:90
 msgid "Source:"
 msgstr "Sursă:"
 
-#: /work/echorepo/templates/coordinate_issues.html:115
-msgid "OK"
-msgstr "BINE"
-
-#: /work/echorepo/templates/coordinate_issues.html:121
-#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:75
+#: /work/echorepo/templates/coordinate_issues.html:104
+#: /work/echorepo/templates/coordinate_issues.html:153
+#: /work/echorepo/templates/issues.html:31 /work/echorepo/templates/issues.html:77
 #: /work/echorepo/templates/search.html:79
 msgid "Lat"
 msgstr "Lat"
 
-#: /work/echorepo/templates/coordinate_issues.html:122
-#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:76
+#: /work/echorepo/templates/coordinate_issues.html:105
+#: /work/echorepo/templates/coordinate_issues.html:156
+#: /work/echorepo/templates/issues.html:32 /work/echorepo/templates/issues.html:78
 #: /work/echorepo/templates/search.html:80
 msgid "Lon"
 msgstr "Lon"
 
-#: /work/echorepo/templates/coordinate_issues.html:134
-msgid "Approved"
-msgstr "Aprobat"
+#: /work/echorepo/templates/coordinate_issues.html:109
+msgid "Fix coordinates"
+msgstr "Fixează coordonatele"
 
-#: /work/echorepo/templates/coordinate_issues.html:144
-#: /work/echorepo/templates/search.html:92
+#: /work/echorepo/templates/coordinate_issues.html:121
 msgid "Show only this sample on map"
 msgstr "Arată doar această mostră pe hartă"
 
-#: /work/echorepo/templates/coordinate_issues.html:175
+#: /work/echorepo/templates/coordinate_issues.html:160
+#: /work/echorepo/templates/issues.html:53 /work/echorepo/templates/issues.html:96
+msgid "Save"
+msgstr "Salvează"
+
+#: /work/echorepo/templates/coordinate_issues.html:169
 msgid "No coordinate issues for these filters."
 msgstr "Fără probleme de coordonare pentru aceste filtre."
 
-#: /work/echorepo/templates/coordinate_issues.html:187
-msgid "Approval comment"
-msgstr "Observații privind omologarea"
-
-#: /work/echorepo/templates/coordinate_issues.html:189
-msgid "Optional: e.g. border sample, algorithm false positive"
-msgstr "Opțional: de exemplu, eșantion de frontieră, algoritm fals pozitiv"
-
-#: /work/echorepo/templates/coordinate_issues.html:193
-msgid "Save selected as OK"
-msgstr "Salvează selectat ca OK"
-
-#: /work/echorepo/templates/coordinate_issues.html:202
-#: /work/echorepo/templates/search.html:121
+#: /work/echorepo/templates/coordinate_issues.html:181
+#: /work/echorepo/templates/search.html:125
 msgid "Showing page"
 msgstr "Afișează pagina"
 
-#: /work/echorepo/templates/coordinate_issues.html:202
-#: /work/echorepo/templates/search.html:121
+#: /work/echorepo/templates/coordinate_issues.html:181
+#: /work/echorepo/templates/search.html:125
 msgid "of"
 msgstr "din"
 
-#: /work/echorepo/templates/coordinate_issues.html:203
-#: /work/echorepo/templates/search.html:121
+#: /work/echorepo/templates/coordinate_issues.html:182
+#: /work/echorepo/templates/search.html:125
 msgid "results"
 msgstr "rezultate"
 
@@ -447,44 +437,54 @@ msgstr "rezultate"
 msgid "ECHOrepo — Explore"
 msgstr "Explorează"
 
-#: /work/echorepo/templates/explore.html:22
+#: /work/echorepo/templates/explore.html:119
 msgid "Explore the map"
 msgstr "Explorează harta"
 
-#: /work/echorepo/templates/explore.html:25
+#: /work/echorepo/templates/explore.html:122
 msgid "Sign in to export data and access your personal samples."
 msgstr "Conectați-vă pentru a exporta date și accesați probele personale."
 
-#: /work/echorepo/templates/explore.html:47
-#: /work/echorepo/templates/results.html:363
+#: /work/echorepo/templates/explore.html:144
+#: /work/echorepo/templates/results.html:229
+msgid "Mobile version"
+msgstr "Versiunea mobilă"
+
+#: /work/echorepo/templates/explore.html:147
+#: /work/echorepo/templates/results.html:232
+msgid "Desktop version"
+msgstr "Versiunea biroului"
+
+#: /work/echorepo/templates/explore.html:157
+#: /work/echorepo/templates/results.html:402
 msgid "min"
 msgstr "min"
 
-#: /work/echorepo/templates/explore.html:52
-#: /work/echorepo/templates/results.html:366
+#: /work/echorepo/templates/explore.html:162
+#: /work/echorepo/templates/results.html:405
 msgid "max"
 msgstr "max"
 
-#: /work/echorepo/templates/explore.html:56 /work/echorepo/templates/search.html:15
-#: /work/echorepo/templates/search.html:77
+#: /work/echorepo/templates/explore.html:166
+#: /work/echorepo/templates/search.html:15 /work/echorepo/templates/search.html:77
 msgid "Country"
 msgstr "Țara"
 
-#: /work/echorepo/templates/explore.html:59
+#: /work/echorepo/templates/explore.html:169
 msgid "All countries"
 msgstr "Toate țările"
 
-#: /work/echorepo/templates/explore.html:72
-#: /work/echorepo/templates/results.html:368
+#: /work/echorepo/templates/explore.html:182
+#: /work/echorepo/templates/results.html:407
 msgid "Apply"
 msgstr "Aplicare"
 
-#: /work/echorepo/templates/explore.html:77
-#: /work/echorepo/templates/results.html:371
+#: /work/echorepo/templates/explore.html:187
+#: /work/echorepo/templates/results.html:410
 msgid "Export filtered (0)"
 msgstr "Export filtrat (0)"
 
-#: /work/echorepo/templates/explore.html:83
+#: /work/echorepo/templates/explore.html:193
 msgid "Copy view link"
 msgstr "Copiază linkul de vizualizare"
 
@@ -513,48 +513,44 @@ msgstr "Coordonate implicite (%(lat)s, %(lon)s)"
 msgid "No entries with default coordinates"
 msgstr "Nicio intrare cu coordonate implicite"
 
-#: /work/echorepo/templates/issues.html:28 /work/echorepo/templates/issues.html:72
+#: /work/echorepo/templates/issues.html:28 /work/echorepo/templates/issues.html:74
 msgid "Sample"
 msgstr "Eșantion"
 
-#: /work/echorepo/templates/issues.html:29 /work/echorepo/templates/issues.html:73
+#: /work/echorepo/templates/issues.html:29 /work/echorepo/templates/issues.html:75
 msgid "User"
 msgstr "Utilizator"
 
-#: /work/echorepo/templates/issues.html:30 /work/echorepo/templates/issues.html:74
+#: /work/echorepo/templates/issues.html:30 /work/echorepo/templates/issues.html:76
 msgid "QR"
 msgstr "QR"
 
-#: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:77
+#: /work/echorepo/templates/issues.html:33 /work/echorepo/templates/issues.html:79
 msgid "Fix"
 msgstr "Fixează"
 
-#: /work/echorepo/templates/issues.html:49 /work/echorepo/templates/issues.html:92
+#: /work/echorepo/templates/issues.html:49 /work/echorepo/templates/issues.html:94
 msgid "Lat (dec or DMS)"
 msgstr "Lat (dec sau DMS)"
 
-#: /work/echorepo/templates/issues.html:50 /work/echorepo/templates/issues.html:93
+#: /work/echorepo/templates/issues.html:51 /work/echorepo/templates/issues.html:95
 msgid "Lon (dec or DMS)"
 msgstr "Lon (dec sau DMS)"
 
-#: /work/echorepo/templates/issues.html:51 /work/echorepo/templates/issues.html:94
-msgid "Save"
-msgstr "Salvează"
-
-#: /work/echorepo/templates/issues.html:64
+#: /work/echorepo/templates/issues.html:66
 msgid "Country mismatches"
 msgstr "Nepotriviri de țară"
 
-#: /work/echorepo/templates/issues.html:66
+#: /work/echorepo/templates/issues.html:68
 msgid "No country mismatches"
 msgstr "Nu există neconcordanțe de țară"
 
-#: /work/echorepo/templates/issues.html:68
+#: /work/echorepo/templates/issues.html:70
 msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr "Țara reală (din coords) nu figurează pe lista planificată pentru acest QR."
 
 #: /work/echorepo/templates/lab_upload.html:3
-#: /work/echorepo/templates/results.html:190
+#: /work/echorepo/templates/results.html:219
 msgid "Upload lab data"
 msgstr "Încarcă datele laboratorului"
 
@@ -574,69 +570,77 @@ msgstr "Serverul va detecta formatul automat."
 msgid "Upload"
 msgstr "Încarcă"
 
-#: /work/echorepo/templates/login.html:2
+#: /work/echorepo/templates/login.html:4
 msgid "ECHOrepo — Access"
 msgstr "Acces ECHOrepo"
 
-#: /work/echorepo/templates/login.html:10
+#: /work/echorepo/templates/login.html:13
 msgid "Access your data"
 msgstr "Accesează datele"
 
-#: /work/echorepo/templates/login.html:12
+#: /work/echorepo/templates/login.html:17
 msgid "Sign in with your Keycloak credentials."
 msgstr "Semnează cu legitimaţia ta."
 
-#: /work/echorepo/templates/login.html:29
+#: /work/echorepo/templates/login.html:48
 msgid "Email or username"
 msgstr "E-mail sau nume de utilizator"
 
-#: /work/echorepo/templates/login.html:33
+#: /work/echorepo/templates/login.html:57
 msgid "you@example.org"
 msgstr "you@exemplu.org"
 
-#: /work/echorepo/templates/login.html:38
+#: /work/echorepo/templates/login.html:65
 msgid "Password"
 msgstr "Parolă"
 
-#: /work/echorepo/templates/login.html:49
+#: /work/echorepo/templates/login.html:86
 msgid "Continue"
 msgstr "Continuă"
 
-#: /work/echorepo/templates/login.html:59
+#: /work/echorepo/templates/login.html:94
 msgid "Forgot your password?"
 msgstr "Ţi-ai uitat parola?"
 
-#: /work/echorepo/templates/login.html:67
+#: /work/echorepo/templates/login.html:112
+msgid "or"
+msgstr "sau"
+
+#: /work/echorepo/templates/login.html:123
+msgid "Sign in through Keycloak"
+msgstr "Conectează-te prin Keycloak"
+
+#: /work/echorepo/templates/login.html:129
 msgid "Issues signing in? Contact the organisers."
 msgstr "Probleme de semnare? Contactaţi organizatorii."
 
-#: /work/echorepo/templates/login.html:75
+#: /work/echorepo/templates/login.html:138
 msgid "GDPR-friendly access"
 msgstr "Accesul favorabil GDPR"
 
-#: /work/echorepo/templates/login.html:78
+#: /work/echorepo/templates/login.html:143
 msgid "Download your data anytime"
 msgstr "Descărcaţi datele oricând"
 
-#: /work/echorepo/templates/results.html:2
+#: /work/echorepo/templates/results.html:6
 msgid "ECHOrepo — Your Data"
 msgstr "ECHOrepo "
 
-#: /work/echorepo/templates/results.html:8
+#: /work/echorepo/templates/results.html:12
 msgid "Download all samples (CSV)"
 msgstr "Descărcați toate eșantioanele (CSV)"
 
-#: /work/echorepo/templates/results.html:13
-#: /work/echorepo/templates/results.html:194 /work/echorepo/templates/search.html:2
+#: /work/echorepo/templates/results.html:17
+#: /work/echorepo/templates/results.html:223 /work/echorepo/templates/search.html:2
 #: /work/echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Probe de căutare"
 
-#: /work/echorepo/templates/results.html:177
+#: /work/echorepo/templates/results.html:206
 msgid "Your data"
 msgstr "Datele dumneavoastră"
 
-#: /work/echorepo/templates/results.html:178
+#: /work/echorepo/templates/results.html:207
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
@@ -644,21 +648,21 @@ msgstr ""
 "Explorați locațiile de probă de sol de pe hartă, apoi exportați sau răsfoiți "
 "tabelul."
 
-#: /work/echorepo/templates/results.html:185
+#: /work/echorepo/templates/results.html:214
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Fixează datele (%(n)s)"
 
-#: /work/echorepo/templates/results.html:202
-#: /work/echorepo/templates/results.html:263
+#: /work/echorepo/templates/results.html:241
+#: /work/echorepo/templates/results.html:302
 msgid "Final survey"
 msgstr "Sondaj final"
 
-#: /work/echorepo/templates/results.html:204
+#: /work/echorepo/templates/results.html:243
 msgid "We sincerely thank you for your commitment to this project!"
 msgstr "Vă mulţumim sincer pentru angajamentul dumneavoastră faţă de acest proiect!"
 
-#: /work/echorepo/templates/results.html:207
+#: /work/echorepo/templates/results.html:246
 msgid ""
 "This is the third and final survey in the project, following the initial ones"
 " you completed before and after\n"
@@ -674,7 +678,7 @@ msgstr ""
 "măsurarea schimbărilor în timp și înțelegerea impactului participării la "
 "proiect."
 
-#: /work/echorepo/templates/results.html:212
+#: /work/echorepo/templates/results.html:251
 msgid ""
 "Before you start: please only complete this survey if the lab results from "
 "your soil sample(s) have already\n"
@@ -686,23 +690,23 @@ msgstr ""
 "au fost adăugate la depozit. În cazul în care rezultatele sunt în așteptare, "
 "vă rugăm să verificați înapoi la un moment ulterior."
 
-#: /work/echorepo/templates/results.html:218
+#: /work/echorepo/templates/results.html:257
 msgid "Go to final survey"
 msgstr "Du-te la ultimul sondaj"
 
-#: /work/echorepo/templates/results.html:223
+#: /work/echorepo/templates/results.html:262
 msgid "Data use information"
 msgstr "Informații privind utilizarea datelor"
 
-#: /work/echorepo/templates/results.html:228
+#: /work/echorepo/templates/results.html:267
 msgid "I have already completed it"
 msgstr "Am terminat-o deja"
 
-#: /work/echorepo/templates/results.html:233
+#: /work/echorepo/templates/results.html:272
 msgid "Processing survey data in the ECHO project"
 msgstr "Prelucrarea datelor sondajului în proiectul ECHO"
 
-#: /work/echorepo/templates/results.html:235
+#: /work/echorepo/templates/results.html:274
 msgid ""
 "The objective of this survey data is to examine the impact of project "
 "participation on participant\n"
@@ -712,7 +716,7 @@ msgstr ""
 " asupra participantului\n"
 "atitudini şi motivaţie faţă de sol."
 
-#: /work/echorepo/templates/results.html:239
+#: /work/echorepo/templates/results.html:278
 msgid ""
 "Your information will only be used for scientific purposes. We do not collect"
 " names or addresses. Your\n"
@@ -728,7 +732,7 @@ msgstr ""
 "evaluat anonim. Nu este posibil să trageţi concluzii despre persoana "
 "dumneavoastră în orice moment."
 
-#: /work/echorepo/templates/results.html:244
+#: /work/echorepo/templates/results.html:283
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
 "crucial role in providing valuable\n"
@@ -746,7 +750,7 @@ msgstr ""
 " motivaţiile, asigurând proiectul\n"
 "Rezultatele sunt semnificative și bine informate."
 
-#: /work/echorepo/templates/results.html:250
+#: /work/echorepo/templates/results.html:289
 msgid ""
 "The survey will take approximately 8–10 minutes to complete. Please find a "
 "quiet space where you won’t be\n"
@@ -757,7 +761,7 @@ msgstr ""
 "găsiți un spațiu liniștit în cazul în care nu va fi\n"
 "întreruptă. Nu există răspunsuri corecte sau greşite."
 
-#: /work/echorepo/templates/results.html:254
+#: /work/echorepo/templates/results.html:293
 msgid ""
 "Based on the information provided to you, please consent to participate in "
 "the survey below."
@@ -765,23 +769,23 @@ msgstr ""
 "Pe baza informaţiilor furnizate, vă rugăm să acceptaţi participarea la "
 "sondajul de mai jos."
 
-#: /work/echorepo/templates/results.html:264
+#: /work/echorepo/templates/results.html:303
 msgid "thank you for your participation!"
 msgstr "vă mulţumesc pentru participare!"
 
-#: /work/echorepo/templates/results.html:268
+#: /work/echorepo/templates/results.html:307
 msgid "Show details"
 msgstr "Arată detalii"
 
-#: /work/echorepo/templates/results.html:272
+#: /work/echorepo/templates/results.html:311
 msgid "Dismiss"
 msgstr "Liber"
 
-#: /work/echorepo/templates/results.html:282
+#: /work/echorepo/templates/results.html:321
 msgid "No data found for"
 msgstr "Nu s- au găsit date pentru"
 
-#: /work/echorepo/templates/results.html:282
+#: /work/echorepo/templates/results.html:321
 msgid ""
 "If you recently submitted samples, try again\n"
 "    later."
@@ -789,63 +793,63 @@ msgstr ""
 "Dacă ați trimis recent probe, încercați din nou\n"
 "Mai târziu."
 
-#: /work/echorepo/templates/results.html:296
+#: /work/echorepo/templates/results.html:335
 msgid "Download"
 msgstr "Descărcare"
 
-#: /work/echorepo/templates/results.html:303
+#: /work/echorepo/templates/results.html:342
 msgid "CSV (per-user)"
 msgstr "CSV (per-utilizator)"
 
-#: /work/echorepo/templates/results.html:311
+#: /work/echorepo/templates/results.html:350
 msgid "XLSX (per-user)"
 msgstr "XLSX (per-utilizator)"
 
-#: /work/echorepo/templates/results.html:320
+#: /work/echorepo/templates/results.html:359
 msgid "All samples (CSV, anonymised)"
 msgstr "Toate eșantioanele (CSV, anonimizate)"
 
-#: /work/echorepo/templates/results.html:325
+#: /work/echorepo/templates/results.html:364
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (per-utilizator)"
 
-#: /work/echorepo/templates/results.html:331
+#: /work/echorepo/templates/results.html:370
 msgid "Canonical exports"
 msgstr "Exporturi canonice"
 
-#: /work/echorepo/templates/results.html:334
+#: /work/echorepo/templates/results.html:373
 msgid "samples.csv"
 msgstr "probe.csv"
 
-#: /work/echorepo/templates/results.html:339
+#: /work/echorepo/templates/results.html:378
 msgid "sample_images.csv"
 msgstr "move_images.csv"
 
-#: /work/echorepo/templates/results.html:344
+#: /work/echorepo/templates/results.html:383
 msgid "sample_parameters.csv"
 msgstr "mostră_parametri.csv"
 
-#: /work/echorepo/templates/results.html:349
+#: /work/echorepo/templates/results.html:388
 msgid "sample_biodiversity.csv"
 msgstr "eșantion biodiversitate.csv"
 
-#: /work/echorepo/templates/results.html:354
+#: /work/echorepo/templates/results.html:393
 msgid "All canonical (zip)"
 msgstr "Toate canonice (zip)"
 
-#: /work/echorepo/templates/results.html:368
+#: /work/echorepo/templates/results.html:407
 msgid "Apply pH filter"
 msgstr "Aplică filtrul pH"
 
-#: /work/echorepo/templates/results.html:370
+#: /work/echorepo/templates/results.html:409
 msgid "Export rows matching current pH filter"
 msgstr "Exportă rânduri de potrivire filtru curent pH"
 
-#: /work/echorepo/templates/results.html:391
+#: /work/echorepo/templates/results.html:430
 msgid "Privacy information"
 msgstr "Informații privind confidențialitatea"
 
-#: /work/echorepo/templates/results.html:418
+#: /work/echorepo/templates/results.html:457
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
@@ -855,19 +859,21 @@ msgstr ""
 "prelucrarea datelor mele personale pentru\n"
 "Acest proiect."
 
-#: /work/echorepo/templates/results.html:426
+#: /work/echorepo/templates/results.html:465
 msgid "Accept and continue"
 msgstr "Acceptă şi continuă"
 
-#: /work/echorepo/templates/results.html:739
+#: /work/echorepo/templates/results.html:837
 msgid "Show on map"
 msgstr "Arată pe hartă"
 
-#: /work/echorepo/templates/results.html:743
+#: /work/echorepo/templates/results.html:850
+#: /work/echorepo/templates/results.html:874
+#: /work/echorepo/templates/results.html:883
 msgid "Could not locate this sample on the map."
 msgstr "Nu am putut localiza această mostră pe hartă."
 
-#: /work/echorepo/templates/search.html:17 /work/static/js/map.js:168
+#: /work/echorepo/templates/search.html:17 /work/static/js/map.js:207
 msgid "Any country"
 msgstr "Orice țară"
 
@@ -903,7 +909,11 @@ msgstr "Timestamp"
 msgid "Collected by"
 msgstr "Colectat de"
 
-#: /work/echorepo/templates/search.html:109
+#: /work/echorepo/templates/search.html:96
+msgid "Show this sample on map"
+msgstr "Arată acest eșantion pe hartă"
+
+#: /work/echorepo/templates/search.html:113
 msgid "No results for these filters."
 msgstr "Niciun rezultat pentru aceste filtre."
 
@@ -984,78 +994,82 @@ msgstr "Trimitere sugerată"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Încă nu s-au înregistrat publicaţii Zenodo."
 
-#: /work/static/js/map.js:114
+#: /work/static/js/map.js:153
 msgid "Link copied to clipboard"
 msgstr "Link copiat în clipboard"
 
-#: /work/static/js/map.js:117
+#: /work/static/js/map.js:156
 msgid "Copy this link:"
 msgstr "Copiază acest link:"
 
-#: /work/static/js/map.js:500 /work/static/js/map.js:2237
+#: /work/static/js/map.js:759 /work/static/js/map.js:2973
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Export filtrat (${n})"
 
-#: /work/static/js/map.js:510 /work/static/js/map.js:2041
+#: /work/static/js/map.js:769 /work/static/js/map.js:2767
 msgid "Release mouse to finish drawing."
 msgstr "Eliberați mouse-ul pentru a termina desenul."
 
-#: /work/static/js/map.js:629
+#: /work/static/js/map.js:888
 msgid "Street map"
 msgstr "Hartă de stradă"
 
-#: /work/static/js/map.js:630
+#: /work/static/js/map.js:889
 msgid "Satellite"
 msgstr "Satelit"
 
-#: /work/static/js/map.js:1503 /work/static/js/map.js:2430
+#: /work/static/js/map.js:2017 /work/static/js/map.js:3259
 msgid "Loading map data..."
 msgstr "Se încarcă datele hărții..."
 
-#: /work/static/js/map.js:1507
+#: /work/static/js/map.js:2021
 msgid "Please wait"
 msgstr "Vă rugăm să așteptați"
 
-#: /work/static/js/map.js:1670
+#: /work/static/js/map.js:2295
 msgid "Loading..."
 msgstr "Se încarcă..."
 
-#: /work/static/js/map.js:1885
+#: /work/static/js/map.js:2608
 msgid "Delete last point drawn"
 msgstr "Se elimină ultimul punct extras"
 
-#: /work/static/js/map.js:1893
+#: /work/static/js/map.js:2616
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Faceți clic și trageți pentru a desena un dreptunghi de selecție. Poţi desena"
 " mai multe."
 
-#: /work/static/js/map.js:1978
+#: /work/static/js/map.js:2703
 msgid "No selected samples to export."
 msgstr "Niciun eșantion selectat de exportat."
 
-#: /work/static/js/map.js:2281
+#: /work/static/js/map.js:3019
 msgid "Please sign in to export data."
 msgstr "Vă rugăm să vă conectați pentru a exporta date."
 
-#: /work/static/js/map.js:2340
+#: /work/static/js/map.js:3086
+msgid "Loading sample..."
+msgstr "Se încarcă proba..."
+
+#: /work/static/js/map.js:3170
 msgid "Loading samples..."
 msgstr "Se încarcă mostrele..."
 
-#: /work/static/js/map.js:2341
+#: /work/static/js/map.js:3171
 msgid "Fetching visible map area"
 msgstr "Aducerea zonei vizibile a hărții"
 
-#: /work/static/js/map.js:2372
+#: /work/static/js/map.js:3202
 msgid "Rendering markers..."
 msgstr "Rendering markers..."
 
-#: /work/static/js/map.js:2373
+#: /work/static/js/map.js:3203
 msgid "Building clusters and popups"
 msgstr "Construirea de clustere și popup-uri"
 
-#: /work/static/js/map.js:2431
+#: /work/static/js/map.js:3260
 msgid "Preparing map"
 msgstr "Pregătirea hărții"
 
@@ -1131,3 +1145,17 @@ msgstr "Pregătirea hărții"
 #~ msgid "Slovakia"
 #~ msgstr "Slovacia"
 
+#~ msgid "OK"
+#~ msgstr "BINE"
+
+#~ msgid "Approved"
+#~ msgstr "Aprobat"
+
+#~ msgid "Approval comment"
+#~ msgstr "Observații privind omologarea"
+
+#~ msgid "Optional: e.g. border sample, algorithm false positive"
+#~ msgstr "Opțional: de exemplu, eșantion de frontieră, algoritm fals pozitiv"
+
+#~ msgid "Save selected as OK"
+#~ msgstr "Salvează selectat ca OK"
