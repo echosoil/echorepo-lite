@@ -1102,7 +1102,7 @@
     const helpText = T(
       'elementalConcentrationsHelp',
       {},
-      'Values reported in % can be converted to mg/kg by multiplying by 10000.'
+      'Percentage values (%) can be converted to mg/kg by multiplying by 10000.'
     );
 
     const ariaLabel = T(
