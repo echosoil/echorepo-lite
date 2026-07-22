@@ -1902,7 +1902,7 @@
           // popup goes on the ring
           ring.bindPopup(
             T('loading', {}, 'Loading...'),
-            { className: 'echo-popup', maxWidth: 420, autoPanPadding: [20, 20] }
+            { className: 'echo-popup', maxWidth: 420, autoPan: false }
           );
 
           ring.on("popupopen", async (e) => {
@@ -1987,7 +1987,7 @@
 
           const sid = getSampleIdFromProps(props);
 
-          function configurePointMarker(pointMarker) {
+          function addSampleTooltip(pointMarker) {
             if (!sid || !pointMarker) return;
 
             pointMarker.bindTooltip(sid, {
@@ -1995,22 +1995,51 @@
               offset: [0, -7],
               opacity: 0.9
             });
+          }
 
-            pointMarker.on('click', event => {
+          function configureLowZoomDot(dot) {
+            if (!sid || !dot) return;
+
+            addSampleTooltip(dot);
+
+            dot.on('click', event => {
               if (event.originalEvent) {
                 L.DomEvent.stopPropagation(event.originalEvent);
               }
 
-              // Both low dots and high pins move to the middle zoom range,
-              // where the privacy ring and detailed popup are displayed.
+              // Low zoom: move into the ring range.
               showIndexedSample(sid, {
                 zoom: SAMPLE_FOCUS_ZOOM
               });
             });
           }
 
-          configurePointMarker(marker);
-          configurePointMarker(highPin);
+          function configureHighZoomPin(pin) {
+            if (!sid || !pin) return;
+
+            addSampleTooltip(pin);
+
+            pin.on('click', event => {
+              if (event.originalEvent) {
+                L.DomEvent.stopPropagation(event.originalEvent);
+              }
+
+              const popup = ring.getPopup?.();
+
+              if (!popup) {
+                console.warn('No popup found for sample:', sid);
+                return;
+              }
+
+              // Open the ring's existing popup at the pin position,
+              // without changing the map zoom.
+              popup.setLatLng(pin.getLatLng());
+              popup.openOn(map);
+            });
+          }
+
+          configureLowZoomDot(marker);
+          configureHighZoomPin(highPin);
 
           if (sid) {
             window.__echomapIndex.set(String(sid), ring);
