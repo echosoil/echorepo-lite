@@ -1256,9 +1256,11 @@ def home():
     # who is this
     user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
     if not user_key:
-        return redirect(url_for("auth.login"))
+        requested_url = request.full_path.rstrip("?")
 
-    # NEW: lab upload permission flag
+        return redirect(url_for("auth.login", next=requested_url,))
+
+    # lab upload permission flag
     can_upload = can_upload_lab_data(user_key)
 
     # privacy gate
