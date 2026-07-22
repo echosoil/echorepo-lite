@@ -1,9 +1,13 @@
 {% extends 'base.html' %}
+{% set force_desktop_mode =
+request.args.get('desktop', '')
+|lower in ['1', 'true']
+%}
 {% block title %}{{ _('ECHOrepo — Your Data') }}{% endblock %}
 
 {# navbar-left items (still here) #}
 {% block nav_left %}
-<li class="nav-item">
+<li class="nav-item echo-desktop-only">
   <a class="nav-link" href="{{ url_for('download_all_csv') }}">
     <i class="bi bi-download"></i> {{ _('Download all samples (CSV)') }}
   </a>
@@ -170,6 +174,31 @@
     color: #0d6efd;
   }
 </style>
+<style>
+  .echo-layout-switch {
+    display: none;
+  }
+
+  @media (max-width: 767.98px) {
+      {
+      % if not force_desktop_mode %
+    }
+
+    .echo-desktop-only {
+      display: none !important;
+    }
+
+      {
+      % endif %
+    }
+
+    .echo-layout-switch {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 0.4rem;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -192,6 +221,16 @@
     {% endif %}
     <a class="btn btn-outline-primary" href="{{ url_for('web.search_samples') }}">
       <i class="bi bi-search"></i> {{ _('Search samples') }}
+    </a>
+    <a id="echoLayoutSwitch" class="btn btn-outline-secondary echo-layout-switch" href="#">
+
+      {% if force_desktop_mode %}
+      <i class="bi bi-phone"></i>
+      {{ _('Mobile version') }}
+      {% else %}
+      <i class="bi bi-display"></i>
+      {{ _('Desktop version') }}
+      {% endif %}
     </a>
   </div>
 
@@ -291,7 +330,7 @@
 <!-- Toolbar -->
 <div class="d-flex flex-wrap align-items-center toolbar mb-3">
   <!-- Download dropdown -->
-  <div class="btn-group">
+  <div class="btn-group echo-desktop-only">
     <button type="button" class="btn btn-earth dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
       <i class="bi bi-download me-1"></i> {{ _('Download') }}
     </button>
@@ -366,7 +405,7 @@
       placeholder="{{ _('max') }}" style="width:6rem">
     <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button"
       title="{{ _('Apply pH filter') }}">{{ _('Apply') }}</button>
-    <button class="btn btn-sm btn-primary" id="btnExportFiltered" type="button" disabled
+    <button class="btn btn-sm btn-primary echo-desktop-only" id="btnExportFiltered" type="button" disabled
       title="{{ _('Export rows matching current pH filter') }}">
       {{ _('Export filtered (0)') }}
     </button>
@@ -971,6 +1010,44 @@
         el.textContent = updated;
       }
     });
+  })();
+</script>
+<script>
+  (function setupLayoutSwitch() {
+    const link = document.getElementById(
+      'echoLayoutSwitch'
+    );
+
+    if (!link) return;
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const desktopEnabled = [
+      '1',
+      'true'
+    ].includes(
+      String(
+        params.get('desktop') || ''
+      ).toLowerCase()
+    );
+
+    if (desktopEnabled) {
+      // Return to compact mobile mode.
+      params.delete('desktop');
+    } else {
+      // Reload with all desktop tools enabled.
+      params.set('desktop', '1');
+    }
+
+    const query = params.toString();
+
+    link.href =
+      window.location.pathname +
+      (query ? `?${query}` : '') +
+      window.location.hash;
   })();
 </script>
 {% endblock %}
