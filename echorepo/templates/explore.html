@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('ECHOrepo — Explore') }}{% endblock %}
 
+{% set force_desktop_mode =
+(request.args.get('desktop', '') | lower)
+in ['1', 'true']
+%}
+
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
@@ -13,11 +18,104 @@
     border-radius: 12px;
     overflow: hidden;
   }
+
+  .echo-layout-switch {
+    display: none;
+  }
+
+  @media (max-width: 767.98px) {
+      {
+      % if not force_desktop_mode %
+    }
+
+    .echo-desktop-only {
+      display: none !important;
+    }
+
+      {
+      % endif %
+    }
+
+    .echo-layout-switch {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .explore-header {
+      align-items: stretch !important;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .explore-header .alert {
+      width: 100%;
+      margin: 0;
+    }
+
+    .explore-actions {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .explore-actions .btn {
+      flex: 1 1 auto;
+    }
+
+    .explore-filters {
+      padding: 0.75rem;
+      border-radius: 10px;
+      background: #f8f9fa;
+    }
+
+    .explore-filters>span {
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+
+    .explore-filters input,
+    .explore-filters select {
+      width: 100% !important;
+      min-height: 44px;
+    }
+
+    .explore-filters #phMin,
+    .explore-filters #phMax {
+      width: calc(50% - 1.25rem) !important;
+    }
+
+    .explore-filters .echo-range-separator {
+      width: auto;
+    }
+
+    .explore-filters #btnApplyFilter {
+      width: 100%;
+      min-height: 44px;
+    }
+
+    #btnCopyView {
+      width: 100%;
+      min-height: 44px;
+      margin-bottom: 0.75rem;
+    }
+
+    #map {
+      height: calc(100vh - 120px);
+      height: calc(100dvh - 120px);
+      min-height: 520px;
+
+      width: calc(100% + 1.5rem);
+      margin-left: -0.75rem;
+      margin-right: -0.75rem;
+
+      border-radius: 0;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="explore-header d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">{{ _('Explore the map') }}</h1>
   {% if not g.user %}
   <div class="alert alert-info small">
@@ -25,27 +123,40 @@
   </div>
   {% endif %}
 
-  <div class="d-flex gap-2">
+  <div class="explore-actions d-flex gap-2">
     {% if zenodo_dataset_url %}
-    <a class="btn btn-outline-success" href="{{ zenodo_dataset_url }}" target="_blank" rel="noopener">
+    <a class="btn btn-outline-success echo-desktop-only" href="{{ zenodo_dataset_url }}" target="_blank" rel="noopener">
+
       <i class="bi bi-cloud-download"></i>
       {{ _('Download dataset from Zenodo') }}
     </a>
     {% endif %}
 
     <a class="btn btn-outline-secondary" href="{{ url_for('web.search_samples') }}">
+      <i class="bi bi-search"></i>
       {{ _('Search') }}
+    </a>
+
+    <a id="echoLayoutSwitch" class="btn btn-outline-secondary echo-layout-switch" href="#">
+
+      {% if force_desktop_mode %}
+      <i class="bi bi-phone"></i>
+      {{ _('Mobile version') }}
+      {% else %}
+      <i class="bi bi-display"></i>
+      {{ _('Desktop version') }}
+      {% endif %}
     </a>
   </div>
 </div>
 
-<div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+<div class="explore-filters d-flex flex-wrap align-items-center gap-2 mb-2">
   <span class="text-muted small">{{ _('pH') }}</span>
 
   <input type="number" step="0.1" min="0" max="14" id="phMin" class="form-control form-control-sm"
     placeholder="{{ _('min') }}" style="width:5.5rem">
 
-  <span class="text-muted">–</span>
+  <span class="text-muted echo-range-separator">–</span>
 
   <input type="number" step="0.1" min="0" max="14" id="phMax" class="form-control form-control-sm"
     placeholder="{{ _('max') }}" style="width:5.5rem">
@@ -72,7 +183,7 @@
   </button>
 
   {% if g.user %}
-  <button id="btnExportFiltered" class="btn btn-sm btn-outline-primary" type="button" disabled>
+  <button id="btnExportFiltered" class="btn btn-sm btn-outline-primary echo-desktop-only" type="button" disabled>
     {{ _('Export filtered (0)') }}
   </button>
   {% endif %}
@@ -106,4 +217,40 @@
   });
 </script>
 <script src="{{ url_for('static', filename='js/map.js') }}?v=18"></script>
+<script>
+  (function setupLayoutSwitch() {
+    const link = document.getElementById(
+      'echoLayoutSwitch'
+    );
+
+    if (!link) return;
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const desktopEnabled = [
+      '1',
+      'true'
+    ].includes(
+      String(
+        params.get('desktop') || ''
+      ).toLowerCase()
+    );
+
+    if (desktopEnabled) {
+      params.delete('desktop');
+    } else {
+      params.set('desktop', '1');
+    }
+
+    const query = params.toString();
+
+    link.href =
+      window.location.pathname +
+      (query ? `?${query}` : '') +
+      window.location.hash;
+  })();
+</script>
 {% endblock %}
