@@ -344,15 +344,22 @@
       return false;
     }
 
-    // make sure it is visible even if current pH/country/date filters hide it
-    if (!map.hasLayer(ring) && ring.addTo) {
-      try { ring.addTo(map); } catch (_) { }
-    }
-
     const ll = ring.getLatLng ? ring.getLatLng() : null;
     if (!ll) return false;
 
-    const targetZoom = (opts && opts.zoom) || Math.max(map.getZoom(), 14);
+    const targetZoom =
+      (opts && opts.zoom) ||
+      Math.max(map.getZoom(), 14);
+
+    // Only force the ring onto the map when the destination zoom
+    // is one where rings are supposed to be displayed.
+    if (targetZoom >= RINGS_MIN_ZOOM) {
+      if (!map.hasLayer(ring) && ring.addTo) {
+        try {
+          ring.addTo(map);
+        } catch (_) { }
+      }
+    }
 
     // This setView will emit moveend/zoomend. Suppress the automatic bbox reload
     // briefly so the dynamically loaded single sample is not immediately replaced.
@@ -536,29 +543,7 @@
       .leaflet-popup-content .popup-help-btn:hover {
         color: #0d6efd;
       }
-      .echo-map-tick-icon {
-        background: transparent !important;
-        border: 0 !important;
-      }
 
-      .echo-map-tick {
-        display: block;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--echo-tick-color, #777);
-        border: 2px solid #fff;
-        box-shadow:
-          0 0 0 1px rgba(0, 0, 0, 0.55),
-          0 1px 3px rgba(0, 0, 0, 0.35);
-      }
-
-      .echo-map-tick-icon:hover .echo-map-tick {
-        width: 12px;
-        height: 12px;
-        margin-left: -1px;
-        margin-top: -1px;
-      }
       @keyframes echo-spin {
         to {
           transform: rotate(360deg);
@@ -1334,24 +1319,14 @@
   // ---- State ----
   let ALL_HEADERS = null, userGJ, othersGJ;
 
-  // Cluster groups (will be rebuilt on filter)
-  // Below this zoom: show compact point markers / clusters.
-  // At this zoom and above: show the privacy-radius rings.
+  // Below this zoom: show compact point ticks.
+  // At this zoom and above: show privacy-radius rings.
   const RINGS_MIN_ZOOM = 11;
 
-  const CLUSTER_OPTS = {
-    chunkedLoading: true,
-    chunkInterval: 50,
-    chunkDelay: 25,
-    removeOutsideVisibleBounds: true,
-
-    // At this zoom the cluster layer will be hidden anyway,
-    // but this keeps its behaviour consistent.
-    disableClusteringAtZoom: RINGS_MIN_ZOOM
-  };
-
-  let userCluster = L.markerClusterGroup(CLUSTER_OPTS);
-  let othersCluster = L.markerClusterGroup(CLUSTER_OPTS);
+  // Keep the existing variable names to minimise changes elsewhere,
+  // but these are now ordinary tick layers, not cluster groups.
+  let userCluster = L.layerGroup();
+  let othersCluster = L.layerGroup();
 
   // Rings & base layers
   const userRings = [], otherRings = [];
@@ -1736,8 +1711,8 @@
     userLayer = null;
     othersLayer = null;
 
-    userCluster = L.markerClusterGroup(CLUSTER_OPTS);
-    othersCluster = L.markerClusterGroup(CLUSTER_OPTS);
+    userCluster = L.layerGroup();
+    othersCluster = L.layerGroup();
   }
 
   // ---- Build layers (rings + base invisible markers for selection) ----
@@ -1746,24 +1721,16 @@
       const props = feature?.properties || {};
       const color = phColor(getPhFromProps(props));
 
-      const tickIcon = L.divIcon({
-        className: 'echo-map-tick-icon',
-        html: `
-          <span
-            class="echo-map-tick"
-            style="--echo-tick-color:${color}">
-          </span>
-        `,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6]
-      });
-
-      return L.marker(latlng, {
-        icon: tickIcon,
+      return L.circleMarker(latlng, {
+        radius: 4,
+        color: '#ffffff',
+        weight: 1,
         opacity: 1,
+        fill: true,
+        fillColor: color,
+        fillOpacity: 0.95,
         interactive: true,
-        keyboard: true,
-        riseOnHover: true
+        bubblingMouseEvents: true
       });
     }
 
@@ -1942,8 +1909,8 @@
     if (map.hasLayer(userCluster)) map.removeLayer(userCluster);
     if (map.hasLayer(othersCluster)) map.removeLayer(othersCluster);
 
-    const newUser = L.markerClusterGroup(CLUSTER_OPTS);
-    const newOthers = L.markerClusterGroup(CLUSTER_OPTS);
+    const newUser = L.layerGroup();
+    const newOthers = L.layerGroup();
 
     function addFilteredMarkers(layer, include, targetGroup) {
       if (!include || !layer) return;
