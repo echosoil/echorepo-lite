@@ -24,6 +24,17 @@
     ).matches;
 
   const cfg = window.ECHOREPO_CFG || {};
+  const LAT_KEY =
+    cfg.lat_col || 'GPS_lat';
+
+  const LON_KEY =
+    cfg.lon_col || 'GPS_long';
+
+  const SHOULD_DROP =
+    key => /_orig$/i.test(key);
+
+  const JITTER_M =
+    Number(cfg.jitter_m) || 1000;
 
   const DISABLE_SELECTION_TOOLS = !!cfg.disable_selection_tools || MOBILE_COMPACT_MODE;
 
@@ -3202,8 +3213,9 @@
 
       rebuildPointLayersForFilter();
       refreshI18NTexts();
-      scheduleGlobalFilteredCountRefresh();
-
+      if (!MOBILE_COMPACT_MODE) {
+        scheduleGlobalFilteredCountRefresh();
+      }
       focusRequestedUrlSampleOnce();
 
     } catch (err) {
