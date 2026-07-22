@@ -504,7 +504,16 @@
         object-fit: cover;
         border-radius: 6px;
       }
-
+      .leaflet-popup.echo-popup
+      .leaflet-popup-tip-container {
+        display: none;
+      }
+      .leaflet-popup.echo-popup
+      .leaflet-popup-content-wrapper {
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        box-shadow:
+          0 8px 28px rgba(0, 0, 0, 0.24);
+      }
       .echo-map-loader-overlay {
         position: absolute;
         inset: 0;
@@ -1630,6 +1639,8 @@
         return true;
       }
 
+      configureSamplePopupPosition(popup);
+
       if (isRingZoom(map.getZoom())) {
         // Middle zoom: the ring itself is visible.
         if (!map.hasLayer(ring)) {
@@ -1647,6 +1658,70 @@
     }
 
     return true;
+  }
+
+  function configureSamplePopupPosition(popup) {
+    if (!popup) return;
+
+    const mapWidth = map.getSize().x;
+    const useLeftPosition = mapWidth >= 760;
+
+    if (useLeftPosition) {
+      /*
+      * Keep the popup reasonably wide.
+      *
+      * Leaflet normally centres the popup over its anchor:
+      *
+      *   half popup width + desired gap
+      *
+      * Moving it left by that amount places its right edge
+      * approximately 28 px before the selected pin.
+      */
+      const popupWidth = Math.min(
+        420,
+        Math.max(
+          340,
+          Math.round(mapWidth * 0.38)
+        )
+      );
+
+      const gapFromPin = 28;
+
+      popup.options.minWidth = 340;
+      popup.options.maxWidth = popupWidth;
+
+      popup.options.offset = L.point(
+        -Math.round(
+          popupWidth / 2 + gapFromPin
+        ),
+        0
+      );
+    } else {
+      /*
+      * On smaller screens, a popup beside the point would
+      * frequently leave the viewport. Use the normal,
+      * centred mobile position instead.
+      */
+      popup.options.minWidth = 50;
+      popup.options.maxWidth = Math.max(
+        240,
+        mapWidth - 40
+      );
+
+      popup.options.offset = L.point(
+        0,
+        12
+      );
+    }
+
+    popup.options.autoPan = true;
+    popup.options.keepInView = true;
+
+    popup.options.autoPanPaddingTopLeft =
+      L.point(24, 24);
+
+    popup.options.autoPanPaddingBottomRight =
+      L.point(24, 24);
   }
 
   window.__echomapClearHighlight = clearSelectedSampleHighlight;
@@ -2194,7 +2269,15 @@
           // popup goes on the ring
           ring.bindPopup(
             T('loading', {}, 'Loading...'),
-            { className: 'echo-popup', maxWidth: 420, autoPan: false }
+            {
+              className: 'echo-popup',
+              minWidth: 340,
+              maxWidth: 420,
+              autoPan: true,
+              keepInView: true,
+              autoPanPaddingTopLeft: [24, 24],
+              autoPanPaddingBottomRight: [24, 24]
+            }
           );
 
           ring.on("popupopen", async (e) => {
