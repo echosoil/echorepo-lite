@@ -160,7 +160,9 @@
 ├── .pre-commit-config.yaml
 ├── Dockerfile
 ├── Dockerfile.i18n
+├── LICENSE
 ├── Makefile
+├── README.md
 ├── REPO_OVERVIEW.md
 ├── REPO_OVERVIEW_tmp.html
 ├── babel.cfg
