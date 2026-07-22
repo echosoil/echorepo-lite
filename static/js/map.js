@@ -6,15 +6,28 @@
   const UI_LANG = document.documentElement.lang || 'en';
 
   // ---- Config & helpers ----
-  const cfg = (window.ECHOREPO_CFG || {});
-  const DISABLE_SELECTION_TOOLS = !!cfg.disable_selection_tools;
-  const DISABLE_SAMPLE_TOGGLES = !!cfg.disable_sample_toggles;
-  const LAT_KEY = cfg.lat_col || 'GPS_lat';
-  const LON_KEY = cfg.lon_col || 'GPS_long';
-  const SHOULD_DROP = (k) => /_orig$/i.test(k);
-  const JITTER_M = Number(cfg.jitter_m) || 1000;
-
   const URL_PARAMS = new URLSearchParams(window.location.search);
+
+  const FORCE_DESKTOP_MODE = [
+    '1',
+    'true'
+  ].includes(
+    String(
+      URL_PARAMS.get('desktop') || ''
+    ).toLowerCase()
+  );
+
+  const MOBILE_COMPACT_MODE =
+    !FORCE_DESKTOP_MODE &&
+    window.matchMedia(
+      '(max-width: 767.98px)'
+    ).matches;
+
+  const cfg = window.ECHOREPO_CFG || {};
+
+  const DISABLE_SELECTION_TOOLS = !!cfg.disable_selection_tools || MOBILE_COMPACT_MODE;
+
+  const DISABLE_SAMPLE_TOGGLES = !!cfg.disable_sample_toggles;
 
   const SINGLE_SAMPLE_ID = (
     URL_PARAMS.get('sample_id') ||
@@ -1463,7 +1476,7 @@
         </div>`;
     }
     let exportHtml = "";
-    if (!PUBLIC_MODE && sampleId) {
+    if (!PUBLIC_MODE && sampleId && !MOBILE_COMPACT_MODE) {
       exportHtml = `<div class="mt-2">
         <a class="btn btn-sm btn-outline-primary"
           href="/download/sample_csv?sampleId=${encodeURIComponent(sampleId)}"
@@ -2627,12 +2640,12 @@
           </div>
 
           <div class="small text-muted mb-2" style="line-height:1.2;">
-            ${T('selectionExportHintBefore', {}, 'Use the selection tool')}
+            ${T('selectionExportHintBefore', {}, 'Use selection tool')}
             <span class="echo-selection-tool-symbol" aria-hidden="true"></span>
             ${T(
         'selectionExportHintAfter',
         {},
-        'to draw one or more selection areas.'
+        'to draw one or more areas'
       )}
           </div>
 
@@ -2935,7 +2948,12 @@
   }
 
   function updateFilteredCountsLabelOnly() {
-    if (!btnExportFiltered) return;
+    if (
+      MOBILE_COMPACT_MODE ||
+      !btnExportFiltered
+    ) {
+      return;
+    }
 
     const n = globalFilteredCount || 0;
 
@@ -2973,7 +2991,9 @@
 
     updateFilteredCountsLabelOnly();
     updateSelectionCount();
-    scheduleGlobalFilteredCountRefresh();
+    if (!MOBILE_COMPACT_MODE) {
+      scheduleGlobalFilteredCountRefresh();
+    }
   }
 
   btnApplyFilter?.addEventListener('click', () => {
