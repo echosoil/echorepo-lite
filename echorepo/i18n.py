@@ -46,6 +46,8 @@ BASE_LABEL_MSGIDS = {
     "selectionExport2": "Selection export",
     "selectionExportHintBefore": "Use selection tool",
     "selectionExportHintAfter": "to draw one or more areas",
+    "exportSelection": "Export selection",
+    "clearSelection": "Clear selection", 
 }
 
 LOCALE_FLAGS = {
