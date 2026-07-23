@@ -1,7 +1,16 @@
 {% extends 'base.html' %}
-{% set force_desktop_mode =
+{% set desktop_param =
 request.args.get('desktop', '')
-|lower in ['1', 'true']
+|trim
+|lower
+%}
+
+{% set force_desktop_mode =
+desktop_param in ['1', 'true']
+%}
+
+{% set force_mobile_mode =
+desktop_param in ['0', 'false']
 %}
 {% block title %}{{ _('ECHOrepo — Your Data') }}{% endblock %}
 
@@ -177,6 +186,45 @@ request.args.get('desktop', '')
 <style>
   .echo-layout-switch {
     display: none;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+    {
+    # Explicit mobile mode,
+    including on a desktop-width browser #
+  }
+
+    {
+    % if force_mobile_mode %
+  }
+
+  .echo-desktop-only {
+    display: none !important;
+  }
+
+  .echo-layout-switch {
+    display: inline-flex !important;
+  }
+
+    {
+    % endif %
+  }
+
+    {
+    # Show the return switch when desktop mode was explicitly requested #
+  }
+
+    {
+    % if force_desktop_mode %
+  }
+
+  .echo-layout-switch {
+    display: inline-flex !important;
+  }
+
+    {
+    % endif %
   }
 
   @media (max-width: 767.98px) {
@@ -194,8 +242,6 @@ request.args.get('desktop', '')
 
     .echo-layout-switch {
       display: inline-flex !important;
-      align-items: center;
-      gap: 0.4rem;
     }
   }
 </style>
@@ -1020,10 +1066,9 @@ request.args.get('desktop', '')
 
     if (!link) return;
 
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
+    const params = new URLSearchParams(
+      window.location.search
+    );
 
     const desktopEnabled = [
       '1',
@@ -1035,10 +1080,8 @@ request.args.get('desktop', '')
     );
 
     if (desktopEnabled) {
-      // Return to compact mobile mode.
-      params.delete('desktop');
+      params.set('desktop', '0');
     } else {
-      // Reload with all desktop tools enabled.
       params.set('desktop', '1');
     }
 

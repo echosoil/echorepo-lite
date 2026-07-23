@@ -48,6 +48,7 @@ BASE_LABEL_MSGIDS = {
     "selectionExportHintAfter": "to draw one or more areas",
     "exportSelection": "Export selection",
     "clearSelection": "Clear selection", 
+    "elementalConcentrationsHelp": "Percentage values (%) can be converted to mg/kg by multiplying by 10000.",
 }
 
 LOCALE_FLAGS = {
