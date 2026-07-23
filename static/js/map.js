@@ -3266,14 +3266,47 @@
           ? i18n
           : { labels: (i18n || {}), by_msgid: {} };
 
-        window.I18N = window.I18N || { labels: {}, by_msgid: {} };
-
-        if (payload.labels && Object.keys(payload.labels).length) {
-          Object.assign(window.I18N.labels, payload.labels);
+        // window.I18N may already have been created by /i18n/labels.js,
+        // but that script may contain only the "labels" object.
+        if (
+          !window.I18N ||
+          typeof window.I18N !== 'object'
+        ) {
+          window.I18N = {};
         }
 
-        if (payload.by_msgid && Object.keys(payload.by_msgid).length) {
-          Object.assign(window.I18N.by_msgid, payload.by_msgid);
+        if (
+          !window.I18N.labels ||
+          typeof window.I18N.labels !== 'object'
+        ) {
+          window.I18N.labels = {};
+        }
+
+        if (
+          !window.I18N.by_msgid ||
+          typeof window.I18N.by_msgid !== 'object'
+        ) {
+          window.I18N.by_msgid = {};
+        }
+
+        if (
+          payload.labels &&
+          typeof payload.labels === 'object'
+        ) {
+          Object.assign(
+            window.I18N.labels,
+            payload.labels
+          );
+        }
+
+        if (
+          payload.by_msgid &&
+          typeof payload.by_msgid === 'object'
+        ) {
+          Object.assign(
+            window.I18N.by_msgid,
+            payload.by_msgid
+          );
         }
 
         userGJ = { type: "FeatureCollection", features: [] };
