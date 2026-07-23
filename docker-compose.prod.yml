@@ -2,18 +2,21 @@ services:
   echorepo-lite:
     container_name: echorepo-lite
     user: "1001:1001"
-    
+
     environment:
       APP_ENV: prod
 
-      # Make migration scripts use the correct Docker Compose service name
+      # The map endpoint checks specifically for the string "1".
+      CANONICAL_PUBLIC: "1"
+
+      # Migration-script database variables
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_DB: echorepo
       POSTGRES_USER: echorepo
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
 
-      # Also keep your app-style DB variables consistent
+      # Application database variables
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_NAME: echorepo
@@ -24,19 +27,43 @@ services:
       DB_PORT_INSIDE: "5432"
 
     ports:
-      - "0.0.0.0:8001:8000"
+      # Recommended when Nginx/Apache runs on the same host.
+      - "127.0.0.1:8001:8000"
 
-    command: >
-      sh -c "python scripts/wait_for_postgres.py &&
-      python scripts/run_pg_migrations.py &&
-      exec gunicorn -w 2 -b 0.0.0.0:8000 --timeout 900 --graceful-timeout 900 --keep-alive 5 --access-logfile - --error-logfile - --log-level info echorepo.wsgi:app"
+    command:
+      - sh
+      - -c
+      - |
+        python scripts/wait_for_postgres.py &&
+        python scripts/run_pg_migrations.py &&
+        exec gunicorn \
+          --workers 2 \
+          --worker-class gthread \
+          --threads 4 \
+          --bind 0.0.0.0:8000 \
+          --timeout 120 \
+          --graceful-timeout 30 \
+          --keep-alive 5 \
+          --access-logfile - \
+          --error-logfile - \
+          --log-level info \
+          echorepo.wsgi:app
+
+    stop_grace_period: 45s
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/ >/dev/null || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS --max-time 5 http://127.0.0.1:8000/ping >/dev/null || exit 1"
+        ]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 10
+      start_period: 30s
 
   postgres:
+    # PostgreSQL does not need a public host port for communication
+    # with echorepo-lite. Bind locally only if host-side tools need it.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
