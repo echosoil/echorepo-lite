@@ -882,18 +882,29 @@
   // Default base layer
   streetLayer.addTo(map);
 
-  // Leaflet base-layer switcher
-  L.control.layers(
-    {
-      [T('streetMap', {}, 'Street map')]: streetLayer,
-      [T('satellite', {}, 'Satellite')]: satelliteLayer
-    },
-    null,
-    {
-      position: 'topright',
-      collapsed: false
+  // Created only after the current translations have been loaded.
+  let baseLayerControl = null;
+
+  function rebuildBaseLayerControl() {
+    if (baseLayerControl) {
+      map.removeControl(baseLayerControl);
+      baseLayerControl = null;
     }
-  ).addTo(map);
+
+    baseLayerControl = L.control.layers(
+      {
+        [T('streetMap', {}, 'Street map')]: streetLayer,
+        [T('satellite', {}, 'Satellite')]: satelliteLayer
+      },
+      null,
+      {
+        position: 'topright',
+        collapsed: false
+      }
+    );
+
+    baseLayerControl.addTo(map);
+  }
 
   /** ─────────────────────────────────────────────────────────────
    *  Degree rulers (left: latitude, bottom: longitude) — ticks only
@@ -3308,6 +3319,10 @@
             payload.by_msgid
           );
         }
+
+        // Create controls that contain static translated labels only
+        // after the current translation payload has been applied.
+        rebuildBaseLayerControl();
 
         userGJ = { type: "FeatureCollection", features: [] };
         othersGJ = { type: "FeatureCollection", features: [] };
