@@ -40,6 +40,12 @@ BASE_LABEL_MSGIDS = {
     "cancelDrawing": "Cancel drawing",
     "cancel": "Cancel",
     "deleteLastPoint": "Delete last point",
+    "streetMap": "Street map",
+    "satellite": "Satellite",
+    "selectionExport": "Selection export to a file",
+    "selectionExport2": "Selection export",
+    "selectionExportHintBefore": "Use selection tool",
+    "selectionExportHintAfter": "to draw one or more areas",
 }
 
 LOCALE_FLAGS = {
