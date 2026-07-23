@@ -2647,7 +2647,7 @@
       div.innerHTML = `
         <div style="min-width: 260px;">
           <div class="fw-semibold mb-1">
-            ${T('selectionExport', {}, 'Selection export')}
+            ${T('selectionExport2', {}, 'Selection export')}
           </div>
 
           <div class="small text-muted mb-2" style="line-height:1.2;">
