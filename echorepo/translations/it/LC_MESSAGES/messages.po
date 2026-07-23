@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-22 23:15+0000\n"
+"POT-Creation-Date: 2026-07-23 07:48+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -18,184 +18,196 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: /work/echorepo/routes/web.py:370
+#: /work/echorepo/routes/web.py:389
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
 msgstr "Raggio della privacy (~±_{km}_ km)"
 
-#: /work/echorepo/routes/web.py:371
+#: /work/echorepo/routes/web.py:390
 msgid "Soil pH"
 msgstr "PH del suolo"
 
-#: /work/echorepo/routes/web.py:372
+#: /work/echorepo/routes/web.py:391
 msgid "Acidic (≤5.5)"
 msgstr "Acido (≤5.5)"
 
-#: /work/echorepo/routes/web.py:373
+#: /work/echorepo/routes/web.py:392
 msgid "Slightly acidic (5.5–6.5)"
 msgstr "Leggermente acido (5.5–6.5)"
 
-#: /work/echorepo/routes/web.py:374
+#: /work/echorepo/routes/web.py:393
 msgid "Neutral (6.5–7.5)"
 msgstr "Neutrale (6.5–7.5)"
 
-#: /work/echorepo/routes/web.py:375
+#: /work/echorepo/routes/web.py:394
 msgid "Slightly alkaline (7.5–8.5)"
 msgstr "Leggermente alcalina (7.5-8.5)"
 
-#: /work/echorepo/routes/web.py:376
+#: /work/echorepo/routes/web.py:395
 msgid "Alkaline (≥8.5)"
 msgstr "Alcalina (≥8.5)"
 
-#: /work/echorepo/routes/web.py:377
+#: /work/echorepo/routes/web.py:396
 msgid "Your samples"
 msgstr "I campioni"
 
-#: /work/echorepo/routes/web.py:378
+#: /work/echorepo/routes/web.py:397
 msgid "Other samples"
 msgstr "Altri campioni"
 
-#: /work/echorepo/routes/web.py:379
+#: /work/echorepo/routes/web.py:398
 msgid "Export"
 msgstr "Esportazione"
 
-#: /work/echorepo/routes/web.py:380
+#: /work/echorepo/routes/web.py:399
 msgid "Clear"
 msgstr "Libero"
 
-#: /work/echorepo/routes/web.py:381
+#: /work/echorepo/routes/web.py:400
 #, python-brace-format
 msgid "Export filtered ({n})"
 msgstr "Esportazione filtrata (__{n}_)"
 
-#: /work/echorepo/routes/web.py:382 /work/echorepo/templates/explore.html:172
+#: /work/echorepo/routes/web.py:401 /work/echorepo/templates/explore.html:172
 #: /work/static/js/map.js:1382
 msgid "Date"
 msgstr "Data"
 
-#: /work/echorepo/routes/web.py:383 /work/static/js/map.js:1383
+#: /work/echorepo/routes/web.py:402 /work/static/js/map.js:1383
 msgid "QR code"
 msgstr "Codice QR"
 
-#: /work/echorepo/routes/web.py:384 /work/echorepo/templates/explore.html:154
+#: /work/echorepo/routes/web.py:403 /work/echorepo/templates/explore.html:154
 #: /work/echorepo/templates/results.html:400
 #: /work/echorepo/templates/search.html:78 /work/static/js/map.js:1384
 msgid "pH"
 msgstr "p H"
 
-#: /work/echorepo/routes/web.py:385
+#: /work/echorepo/routes/web.py:404
 msgid "Colour"
 msgstr "Colore"
 
-#: /work/echorepo/routes/web.py:386 /work/static/js/map.js:1385
+#: /work/echorepo/routes/web.py:405 /work/static/js/map.js:1385
 msgid "Soil organic matter"
 msgstr "Soil materia organica"
 
-#: /work/echorepo/routes/web.py:387 /work/static/js/map.js:1386
+#: /work/echorepo/routes/web.py:406 /work/static/js/map.js:1386
 msgid "Texture"
 msgstr "Texture"
 
-#: /work/echorepo/routes/web.py:388 /work/static/js/map.js:1387
+#: /work/echorepo/routes/web.py:407 /work/static/js/map.js:1387
 msgid "Structure"
 msgstr "Struttura"
 
-#: /work/echorepo/routes/web.py:389 /work/static/js/map.js:1388
+#: /work/echorepo/routes/web.py:408 /work/static/js/map.js:1388
 msgid "Earthworms"
 msgstr "I vermi terrestri"
 
-#: /work/echorepo/routes/web.py:390 /work/static/js/map.js:1389
+#: /work/echorepo/routes/web.py:409 /work/static/js/map.js:1389
 msgid "Plastic"
 msgstr "Plastica"
 
-#: /work/echorepo/routes/web.py:391 /work/static/js/map.js:1390
+#: /work/echorepo/routes/web.py:410 /work/static/js/map.js:1390
 msgid "Debris"
 msgstr "Debris"
 
-#: /work/echorepo/routes/web.py:392 /work/static/js/map.js:1391
+#: /work/echorepo/routes/web.py:411 /work/static/js/map.js:1391
 msgid "Contamination"
 msgstr "Contaminazione"
 
-#: /work/echorepo/routes/web.py:393
+#: /work/echorepo/routes/web.py:412
 msgid "Metals"
 msgstr "Metalli"
 
-#: /work/echorepo/routes/web.py:394
+#: /work/echorepo/routes/web.py:413
 msgid "Elemental concentrations"
 msgstr "Concentrazioni elementali"
 
-#: /work/echorepo/routes/web.py:395
+#: /work/echorepo/routes/web.py:414
 msgid "Draw a selection rectangle"
 msgstr "Disegnare un rettangolo di selezione"
 
-#: /work/echorepo/routes/web.py:396 /work/static/js/map.js:2604
+#: /work/echorepo/routes/web.py:415 /work/static/js/map.js:2604
 msgid "Cancel drawing"
 msgstr "Cancella disegno"
 
-#: /work/echorepo/routes/web.py:397 /work/static/js/map.js:2605
+#: /work/echorepo/routes/web.py:416 /work/static/js/map.js:2605
 msgid "Cancel"
 msgstr "Annulla"
 
-#: /work/echorepo/routes/web.py:398 /work/static/js/map.js:2609
+#: /work/echorepo/routes/web.py:417 /work/static/js/map.js:2609
 msgid "Delete last point"
 msgstr "Eliminare l'ultimo punto"
 
-#: /work/echorepo/routes/web.py:399
+#: /work/echorepo/routes/web.py:418
 msgid "Click and drag to draw a selection rectangle."
 msgstr "Fare clic e trascinare per disegnare un rettangolo di selezione."
 
-#: /work/echorepo/routes/web.py:400 /work/static/js/map.js:2622
+#: /work/echorepo/routes/web.py:419 /work/static/js/map.js:2622
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Rilasciare il mouse per aggiungere questo rettangolo alla selezione."
 
-#: /work/echorepo/routes/web.py:401
+#: /work/echorepo/routes/web.py:420
 msgid "Selection export to a file"
 msgstr "Selezione esportazione in un file"
 
-#: /work/echorepo/routes/web.py:402
+#: /work/echorepo/routes/web.py:421
+msgid "Selection export"
+msgstr "Esportazione di selezione"
+
+#: /work/echorepo/routes/web.py:422
 msgid "Use selection tool"
 msgstr "Utilizzare lo strumento di selezione"
 
-#: /work/echorepo/routes/web.py:403
+#: /work/echorepo/routes/web.py:423
 msgid "to draw one or more areas"
 msgstr "per disegnare una o più aree"
 
-#: /work/echorepo/routes/web.py:404
+#: /work/echorepo/routes/web.py:424
 msgid "Export selection"
 msgstr "Selezione delle esportazioni"
 
-#: /work/echorepo/routes/web.py:405
+#: /work/echorepo/routes/web.py:425
 msgid "Export selected samples"
 msgstr "Esportazione di campioni selezionati"
 
-#: /work/echorepo/routes/web.py:406
+#: /work/echorepo/routes/web.py:426
 msgid "Clear selection"
 msgstr "Selezione chiara"
 
-#: /work/echorepo/routes/web.py:407
+#: /work/echorepo/routes/web.py:427
 msgid "Clear all selection rectangles"
 msgstr "Cancella tutti i rettangoli di selezione"
 
-#: /work/echorepo/routes/web.py:408 /work/static/js/map.js:2597
+#: /work/echorepo/routes/web.py:428 /work/static/js/map.js:2597
 msgid "Draw selection rectangle"
 msgstr "Disegno selezione rettangolo"
 
-#: /work/echorepo/routes/web.py:409 /work/static/js/map.js:843
+#: /work/echorepo/routes/web.py:429 /work/static/js/map.js:843
 msgid "Not available"
 msgstr "Non disponibile"
 
-#: /work/echorepo/routes/web.py:410 /work/echorepo/templates/explore.html:131
+#: /work/echorepo/routes/web.py:430 /work/echorepo/templates/explore.html:131
 msgid "Download dataset from Zenodo"
 msgstr "Scarica il dataset da Zenodo"
 
-#: /work/echorepo/routes/web.py:411 /work/static/js/map.js:1102
+#: /work/echorepo/routes/web.py:431 /work/static/js/map.js:1102
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
 "Valori percentuali (%) possono essere convertiti in mg/kg moltiplicando per "
 "10000."
 
-#: /work/echorepo/routes/web.py:412 /work/static/js/map.js:1108
+#: /work/echorepo/routes/web.py:432 /work/static/js/map.js:1108
 msgid "Unit conversion help"
 msgstr "Aiuto per la conversione unità"
+
+#: /work/echorepo/routes/web.py:433 /work/static/js/map.js:888
+msgid "Street map"
+msgstr "Mappa stradale"
+
+#: /work/echorepo/routes/web.py:434 /work/static/js/map.js:889
+msgid "Satellite"
+msgstr "Satellite"
 
 #: /work/echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
@@ -1012,14 +1024,6 @@ msgstr "Esportazione filtrata (${n})"
 #: /work/static/js/map.js:769 /work/static/js/map.js:2767
 msgid "Release mouse to finish drawing."
 msgstr "Rilasciare il mouse per terminare il disegno."
-
-#: /work/static/js/map.js:888
-msgid "Street map"
-msgstr "Mappa stradale"
-
-#: /work/static/js/map.js:889
-msgid "Satellite"
-msgstr "Satellite"
 
 #: /work/static/js/map.js:2017 /work/static/js/map.js:3259
 msgid "Loading map data..."

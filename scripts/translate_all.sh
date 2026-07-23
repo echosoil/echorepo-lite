@@ -1,41 +1,51 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 0) where the code is inside the container
-WORK_DIR="/work"
-TRANS_DIR="$WORK_DIR/echorepo/translations"
-LT_HOST_URL="http://localhost:5001"       # host side
-LT_CONTAINER_URL="http://libretranslate:5000"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+VENV="$REPO_ROOT/.venv-i18n"
+TRANS_DIR="$REPO_ROOT/echorepo/translations"
+LT_URL="${LT_URL:-http://127.0.0.1:5001}"
 
-echo "[1/6] Starting libretranslate + i18n..."
-docker compose up -d libretranslate i18n
+if [[ ! -x "$VENV/bin/python" ]]; then
+    echo "ERROR: i18n virtual environment not found: $VENV" >&2
+    echo "Create it with:" >&2
+    echo "  python3 -m venv .venv-i18n" >&2
+    echo "  .venv-i18n/bin/pip install libretranslate Babel polib requests" >&2
+    exit 1
+fi
 
-echo "[2/6] Waiting for LibreTranslate at $LT_HOST_URL ..."
-for i in {1..30}; do
-  if curl -s "$LT_HOST_URL/languages" >/dev/null 2>&1; then
-    echo "LibreTranslate is up."
-    break
-  fi
-  sleep 1
-done
+# Activate the environment so pybabel and Python dependencies are available.
+source "$VENV/bin/activate"
 
-echo "[3/6] Running pybabel extract in i18n container..."
-docker compose run --rm i18n \
-  pybabel extract -F babel.cfg -o "$TRANS_DIR/messages.pot" "$WORK_DIR"
+cd "$REPO_ROOT"
 
-echo "[4/6] Running pybabel update in i18n container..."
-docker compose run --rm i18n \
-  pybabel update -i "$TRANS_DIR/messages.pot" -d "$TRANS_DIR"
+echo "[1/5] Checking LibreTranslate at $LT_URL ..."
 
-echo "[5/6] Running auto_translate.py in i18n container..."
-docker compose run --rm i18n \
-  python tools/auto_translate.py --trans-dir "$TRANS_DIR" --endpoint "$LT_CONTAINER_URL"
+if ! curl --fail --silent "$LT_URL/languages" >/dev/null; then
+    echo "ERROR: LibreTranslate is not running at $LT_URL" >&2
+    echo "Start it with:" >&2
+    echo "  systemctl --user start libretranslate" >&2
+    exit 1
+fi
 
-echo "[6/6] Compiling translations in i18n container..."
-docker compose run --rm i18n \
-  pybabel compile -d "$TRANS_DIR"
+echo "[2/5] Extracting translatable messages..."
+pybabel extract \
+  -F babel.cfg \
+  -o "$TRANS_DIR/messages.pot" \
+  "$REPO_ROOT"
 
-echo "Stopping libretranslate..."
-docker compose stop libretranslate
+echo "[3/5] Updating translation catalogues..."
+pybabel update \
+  -i "$TRANS_DIR/messages.pot" \
+  -d "$TRANS_DIR"
 
-echo "✅ Translation pipeline done."
+echo "[4/5] Automatically translating messages..."
+python tools/auto_translate.py \
+  --trans-dir "$TRANS_DIR" \
+  --endpoint "$LT_URL"
+
+echo "[5/5] Compiling translation catalogues..."
+pybabel compile \
+  -d "$TRANS_DIR"
+
+echo "✅ Translation pipeline completed."
