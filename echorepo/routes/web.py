@@ -29,7 +29,6 @@ from flask_babel import gettext as _
 from openpyxl import load_workbook
 from psycopg2.extras import RealDictCursor
 
-from echorepo.i18n import build_i18n_labels
 from echorepo.services.i18n_labels import make_labels
 from echorepo.services.i18n_overrides import (
     _canon_locale,
@@ -95,8 +94,28 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 # blueprint
 web_bp = Blueprint("web", __name__)
 
-# --- Remove oxides helpers ------------------------------------------------
 
+def _current_ui_i18n() -> dict:
+    """
+    Build the current UI translation payload.
+
+    Precedence inside make_labels():
+      1. compiled PO/MO catalogue
+      2. msgid overrides
+      3. JS key overrides
+    """
+    loc = _canon_locale(
+        str(get_locale() or "en")
+    )
+
+    return {
+        "labels": make_labels(loc),
+        "by_msgid": (
+            get_overrides_msgid(loc)
+            or {}
+        ),
+        "locale": loc,
+    }
 
 def _looks_like_oxide(label: str) -> bool:
     """
@@ -1295,7 +1314,7 @@ def home():
     # only for display, now drop oxide-like columns (harmless on samples DF)
     df = _drop_oxide_columns_from_df(df)
 
-    i18n = {"labels": build_i18n_labels(_js_base_labels())}
+    i18n = _current_ui_i18n()
 
     # try to get "real" internal user id from data
     kc_user_id = None
@@ -1414,9 +1433,29 @@ def home():
 # misc routes
 # --------------------------------------------------------------------------
 @web_bp.get("/i18n/labels")
-@login_required
 def i18n_labels():
-    return jsonify({"labels": build_i18n_labels(_js_base_labels())})
+    """
+    Return current UI translations, including overrides.
+
+    This must remain public because /explore also uses it.
+    """
+    payload = _current_ui_i18n()
+
+    response = jsonify(payload)
+
+    # Do not let browsers or reverse proxies retain an old
+    # translation response after an override is changed.
+    response.headers[
+        "Cache-Control"
+    ] = (
+        "no-store, no-cache, "
+        "must-revalidate, max-age=0"
+    )
+
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
+    return response
 
 
 @web_bp.get("/labels")
@@ -2117,11 +2156,8 @@ def search_samples():
     req = request.values
     q = request.args.get("q", "").strip()
 
-    base = base_labels()
-    i18n = {
-        "labels": build_i18n_labels(base),
-        "by_msgid": {},
-    }
+    i18n = _current_ui_i18n()
+    
     # ----- read filters from querystring -----
     criteria = {
         "sample_id": (
@@ -2596,17 +2632,9 @@ def download_canonical_version(date, filename):
     return _stream_minio_canonical(obj_name)
 
 
-from echorepo.i18n import base_labels
-
-
 @web_bp.get("/explore", endpoint="explore")
 def explore():
-    base = base_labels()  # <-- THIS IS THE KEY LINE
-
-    i18n = {
-        "labels": build_i18n_labels(base),
-        "by_msgid": {},
-    }
+    i18n = _current_ui_i18n()
 
     return render_template(
         "explore.html",
