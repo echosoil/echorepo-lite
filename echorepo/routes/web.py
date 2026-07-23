@@ -418,6 +418,7 @@ def _js_base_labels() -> dict:
         "drawRectangleHint": _("Click and drag to draw a selection rectangle."),
         "releaseToFinish": _("Release mouse to add this rectangle to the selection."),
         "selectionExport": _("Selection export to a file"),
+        "selectionExport2": _("Selection export"),
         "selectionExportHintBefore": _("Use selection tool"),
         "selectionExportHintAfter": _("to draw one or more areas"),
         "exportSelection": _("Export selection"),
@@ -429,6 +430,8 @@ def _js_base_labels() -> dict:
         "zenodoDownload": _("Download dataset from Zenodo"),
         "elementalConcentrationsHelp": _("Percentage values (%) can be converted to mg/kg by multiplying by 10000."),
         "unitConversionHelp": _("Unit conversion help"),
+        "streetMap": _("Street map"),
+        "satellite": _("Satellite"),
     }
 
 
