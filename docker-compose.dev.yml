@@ -4,14 +4,17 @@ services:
       APP_ENV: dev
       FLASK_DEBUG: "1"
 
-      # Make migration scripts use the correct Docker Compose service name
+      # Public canonical map API
+      CANONICAL_PUBLIC: "1"
+
+      # Migration-script variables
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_DB: echorepo
       POSTGRES_USER: echorepo
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
 
-      # Keep app-style DB variables consistent too
+      # Application database variables
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_NAME: echorepo
@@ -22,13 +25,30 @@ services:
       DB_PORT_INSIDE: "5432"
 
     ports:
-      - "0.0.0.0:18080:8000" # app
-      - "127.0.0.1:5678:5678" # debugpy
+      # Prefer localhost unless this port must be reachable directly
+      # from other computers.
+      - "127.0.0.1:18080:8000"
+      - "127.0.0.1:5678:5678"
 
-    command: >
-      sh -c "python scripts/wait_for_postgres.py &&
-      python scripts/run_pg_migrations.py &&
-      exec gunicorn -w 1 -b 0.0.0.0:8000 --timeout 900 --graceful-timeout 900 --keep-alive 5 --reload --access-logfile - --error-logfile - --log-level debug echorepo.wsgi:app"
+    command:
+      - sh
+      - -c
+      - |
+        python scripts/wait_for_postgres.py &&
+        python scripts/run_pg_migrations.py &&
+        exec gunicorn \
+          --workers 1 \
+          --worker-class gthread \
+          --threads 4 \
+          --bind 0.0.0.0:8000 \
+          --timeout 120 \
+          --graceful-timeout 30 \
+          --keep-alive 5 \
+          --reload \
+          --access-logfile - \
+          --error-logfile - \
+          --log-level debug \
+          echorepo.wsgi:app
 
   postgres:
     ports:
