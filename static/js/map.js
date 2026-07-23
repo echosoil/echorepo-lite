@@ -8,20 +8,28 @@
   // ---- Config & helpers ----
   const URL_PARAMS = new URLSearchParams(window.location.search);
 
+  const DESKTOP_MODE_PARAM = String(
+    URL_PARAMS.get('desktop') || ''
+  ).trim().toLowerCase();
+
   const FORCE_DESKTOP_MODE = [
     '1',
     'true'
-  ].includes(
-    String(
-      URL_PARAMS.get('desktop') || ''
-    ).toLowerCase()
-  );
+  ].includes(DESKTOP_MODE_PARAM);
+
+  const FORCE_MOBILE_MODE = [
+    '0',
+    'false'
+  ].includes(DESKTOP_MODE_PARAM);
 
   const MOBILE_COMPACT_MODE =
-    !FORCE_DESKTOP_MODE &&
-    window.matchMedia(
-      '(max-width: 767.98px)'
-    ).matches;
+    FORCE_MOBILE_MODE ||
+    (
+      !FORCE_DESKTOP_MODE &&
+      window.matchMedia(
+        '(max-width: 767.98px)'
+      ).matches
+    );
 
   const cfg = window.ECHOREPO_CFG || {};
   const LAT_KEY =
