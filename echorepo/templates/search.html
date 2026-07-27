@@ -44,15 +44,16 @@
     </div>
     <div class="col-md-6 d-flex align-items-end justify-content-md-end">
       {% if session.get("user") or (session.get("kc") or {}).get("profile") %}
-      <a class="btn btn-outline-secondary echo-desktop-only" href="{{ url_for('web.search_samples',
-                        sample_id=criteria.sample_id,
-                        country_code=criteria.country_code,
-                        ph_min=criteria.ph_min,
-                        ph_max=criteria.ph_max,
-                        date_from=criteria.date_from,
-                        date_to=criteria.date_to,
-                        format='zip') }}">
-        <i class="bi bi-download"></i> {{ _('Export current search') }}
+      <a class="btn btn-outline-id" href="{{ url_for('web.search_samples',
+            sample_id=criteria.sample_id,
+            country_code=criteria.country_code,
+            ph_min=criteria.ph_min,
+            ph_max=criteria.ph_max,
+            date_from=criteria.date_from,
+            date_to=criteria.date_to,
+            format='zip') }}">
+        <i class="bi bi-download"></i>
+        {{ _('Export current search') }}
       </a>
       {% else %}
       <div class="alert alert-info">
