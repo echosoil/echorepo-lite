@@ -1367,6 +1367,8 @@ def home():
             # pass flag to template
             can_upload_lab_data=can_upload,
             current_locale=str(get_locale() or "en"),
+            biodev_marker=os.getenv("BIODEV_MARKER", "16S,ITS"),
+            biodev_level=os.getenv("BIODEV_LEVEL", "Phylum"),   
         )
 
     # NON-EMPTY: data issues ------------------------------------------------
@@ -1429,6 +1431,8 @@ def home():
         # NEW: pass flag to template
         can_upload_lab_data=can_upload,
         current_locale=str(get_locale() or "en"),
+        biodev_marker=os.getenv("BIODEV_MARKER", "16S,ITS"),
+        biodev_level=os.getenv("BIODEV_LEVEL", "Phylum"),
     )
 
 

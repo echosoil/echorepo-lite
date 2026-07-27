@@ -532,7 +532,9 @@ desktop_param in ['0', 'false']
 'jitter_m': jitter_m|default(1000)|int,
 'lat_col': lat_col|default('GPS_lat'),
 'lon_col': lon_col|default('GPS_long'),
-'hide_wrong_coordinates': true
+'hide_wrong_coordinates': true,
+'biodev_marker': biodev_marker|default('16S,ITS'),
+'biodev_level': biodev_level|default('Phylum')
 } %}
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
 <script src="{{ url_for('static', filename='js/map.js') }}?v=21"></script>
