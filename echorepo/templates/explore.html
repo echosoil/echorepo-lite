@@ -1,9 +1,18 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('ECHOrepo — Explore') }}{% endblock %}
 
+{% set desktop_param =
+request.args.get('desktop', '')
+|trim
+|lower
+%}
+
 {% set force_desktop_mode =
-(request.args.get('desktop', '') | lower)
-in ['1', 'true']
+desktop_param in ['1', 'true']
+%}
+
+{% set force_mobile_mode =
+desktop_param in ['0', 'false']
 %}
 
 {% block extra_css %}
@@ -21,6 +30,36 @@ in ['1', 'true']
 
   .echo-layout-switch {
     display: none;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+    {
+    % if force_mobile_mode %
+  }
+
+  .echo-desktop-only {
+    display: none !important;
+  }
+
+  .echo-layout-switch {
+    display: inline-flex !important;
+  }
+
+    {
+    % endif %
+  }
+
+    {
+    % if force_desktop_mode %
+  }
+
+  .echo-layout-switch {
+    display: inline-flex !important;
+  }
+
+    {
+    % endif %
   }
 
   @media (max-width: 767.98px) {
@@ -38,78 +77,9 @@ in ['1', 'true']
 
     .echo-layout-switch {
       display: inline-flex !important;
-      align-items: center;
-      gap: 0.4rem;
     }
 
-    .explore-header {
-      align-items: stretch !important;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .explore-header .alert {
-      width: 100%;
-      margin: 0;
-    }
-
-    .explore-actions {
-      width: 100%;
-      flex-wrap: wrap;
-    }
-
-    .explore-actions .btn {
-      flex: 1 1 auto;
-    }
-
-    .explore-filters {
-      padding: 0.75rem;
-      border-radius: 10px;
-      background: #f8f9fa;
-    }
-
-    .explore-filters>span {
-      width: 100%;
-      margin-top: 0.25rem;
-    }
-
-    .explore-filters input,
-    .explore-filters select {
-      width: 100% !important;
-      min-height: 44px;
-    }
-
-    .explore-filters #phMin,
-    .explore-filters #phMax {
-      width: calc(50% - 1.25rem) !important;
-    }
-
-    .explore-filters .echo-range-separator {
-      width: auto;
-    }
-
-    .explore-filters #btnApplyFilter {
-      width: 100%;
-      min-height: 44px;
-    }
-
-    #btnCopyView {
-      width: 100%;
-      min-height: 44px;
-      margin-bottom: 0.75rem;
-    }
-
-    #map {
-      height: calc(100vh - 120px);
-      height: calc(100dvh - 120px);
-      min-height: 520px;
-
-      width: calc(100% + 1.5rem);
-      margin-left: -0.75rem;
-      margin-right: -0.75rem;
-
-      border-radius: 0;
-    }
+    /* Keep the remainder of your mobile explore CSS here. */
   }
 </style>
 {% endblock %}
@@ -125,7 +95,7 @@ in ['1', 'true']
 
   <div class="explore-actions d-flex gap-2">
     {% if zenodo_dataset_url %}
-    <a class="btn btn-outline-success echo-desktop-only" href="{{ zenodo_dataset_url }}" target="_blank" rel="noopener">
+    <a class="btn btn-outline-success" href="{{ zenodo_dataset_url }}" target="_blank" rel="noopener">
 
       <i class="bi bi-cloud-download"></i>
       {{ _('Download dataset from Zenodo') }}

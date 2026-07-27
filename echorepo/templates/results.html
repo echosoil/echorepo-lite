@@ -5,8 +5,18 @@ request.args.get('desktop', '')
 |lower
 %}
 
+{% set desktop_param =
+request.args.get('desktop', '')
+|trim
+|lower
+%}
+
 {% set force_desktop_mode =
 desktop_param in ['1', 'true']
+%}
+
+{% set force_mobile_mode =
+desktop_param in ['0', 'false']
 %}
 
 {% set force_mobile_mode =
@@ -184,15 +194,14 @@ desktop_param in ['0', 'false']
   }
 </style>
 <style>
+  /*
+   * Desktop-only controls are visible by default.
+   * They are hidden only in automatic mobile mode or forced mobile mode.
+   */
   .echo-layout-switch {
     display: none;
     align-items: center;
     gap: 0.4rem;
-  }
-
-    {
-    # Explicit mobile mode,
-    including on a desktop-width browser #
   }
 
     {
@@ -209,10 +218,6 @@ desktop_param in ['0', 'false']
 
     {
     % endif %
-  }
-
-    {
-    # Show the return switch when desktop mode was explicitly requested #
   }
 
     {
@@ -1076,12 +1081,14 @@ desktop_param in ['0', 'false']
     ].includes(
       String(
         params.get('desktop') || ''
-      ).toLowerCase()
+      ).trim().toLowerCase()
     );
 
     if (desktopEnabled) {
+      // Explicitly force compact/mobile mode.
       params.set('desktop', '0');
     } else {
+      // Explicitly force full desktop mode.
       params.set('desktop', '1');
     }
 
