@@ -32,6 +32,17 @@
     );
 
   const cfg = window.ECHOREPO_CFG || {};
+
+  const BIODEV_MARKERS = new Set(
+    String(cfg.biodev_marker || '16S,ITS')
+      .split(',')
+      .map(marker => marker.trim().toUpperCase())
+      .filter(Boolean)
+  );
+
+  const BIODEV_LEVEL =
+    String(cfg.biodev_level || 'Phylum').trim() || 'Phylum';
+
   const LAT_KEY =
     cfg.lat_col || 'GPS_lat';
 
@@ -1251,7 +1262,7 @@
   }
 
 
-  async function fetchSamplePiechart(sampleId, marker = "16S", level = "Genus") {
+  async function fetchSamplePiechart(sampleId, marker = "16S", level = BIODEV_LEVEL) {
     if (!sampleId) return null;
     try {
       const r = await fetch(
@@ -1450,16 +1461,22 @@
       p.piechart_16s_url
         ? {
           url: p.piechart_16s_url,
-          caption: p.piechart_16s_caption || "16S · Family",
-          alt: "16S taxonomic pie chart"
+          caption:
+            p.piechart_16s_caption ||
+            `16S · ${BIODEV_LEVEL}`,
+          alt:
+            `16S ${BIODEV_LEVEL} taxonomic pie chart`
         }
         : null,
 
       p.piechart_its_url
         ? {
           url: p.piechart_its_url,
-          caption: p.piechart_its_caption || "ITS · Family",
-          alt: "ITS taxonomic pie chart"
+          caption:
+            p.piechart_its_caption ||
+            `ITS · ${BIODEV_LEVEL}`,
+          alt:
+            `ITS ${BIODEV_LEVEL} taxonomic pie chart`
         }
         : null,
 
@@ -2348,20 +2365,20 @@
 
             if (!p.__pie16_loaded && chartId) {
               p.__pie16_loaded = true;
-              const pie16 = await fetchSamplePiechart(chartId, "16S", "Family");
+              const pie16 = await fetchSamplePiechart(chartId, "16S", BIODEV_LEVEL);
               if (pie16) {
                 p.piechart_16s_url = pie16.url;
-                p.piechart_16s_caption = pie16.desc || "16S · Family";
+                p.piechart_16s_caption = pie16.desc || `16S · ${BIODEV_LEVEL}`;
                 changed = true;
               }
             }
 
             if (!p.__pieITS_loaded && chartId) {
               p.__pieITS_loaded = true;
-              const pieITS = await fetchSamplePiechart(chartId, "ITS", "Family");
+              const pieITS = await fetchSamplePiechart(chartId, "ITS", BIODEV_LEVEL);
               if (pieITS) {
                 p.piechart_its_url = pieITS.url;
-                p.piechart_its_caption = pieITS.desc || "ITS · Family";
+                p.piechart_its_caption = pieITS.desc || `ITS · ${BIODEV_LEVEL}`;
                 changed = true;
               }
             }
