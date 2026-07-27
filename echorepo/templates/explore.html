@@ -182,8 +182,9 @@ desktop_param in ['0', 'false']
 
     // /explore is public browsing only: no rectangle/polygon selection tools.
     disable_selection_tools: true,
-    disable_sample_toggles: true
-
+    disable_sample_toggles: true,
+    biodev_marker: {{ config.get("BIODEV_MARKER", "16S,ITS") | tojson }},
+    biodev_level: {{ config.get("BIODEV_LEVEL", "Phylum") | tojson }}
   });
 </script>
 <script src="{{ url_for('static', filename='js/map.js') }}?v=21"></script>
