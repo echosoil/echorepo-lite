@@ -193,6 +193,76 @@ def upload_file_to_minio(
         print(f"[WARN] could not upload {local_path} to MinIO as {object_name}: {e}")
         return None
 
+def normalize_taxonomic_level(level: str) -> str:
+    """
+    Normalize user/env level names.
+
+    Accepts:
+      Philum, phylum, Phylum, p, p__, p__Ascomycota
+
+    Returns one of:
+      Kingdom, Phylum, Class, Order, Family, Genus, Species
+    """
+    if level is None:
+        return "Phylum"
+
+    s = str(level).strip()
+
+    if not s:
+        return "Phylum"
+
+    s_lower = s.lower().strip()
+
+    aliases = {
+        "kingdom": "Kingdom",
+        "taxonomy": "Kingdom",
+        "k": "Kingdom",
+        "k__": "Kingdom",
+        "d": "Kingdom",
+        "d__": "Kingdom",
+
+        "phylum": "Phylum",
+        "philum": "Phylum",   # common typo
+        "p": "Phylum",
+        "p__": "Phylum",
+
+        "class": "Class",
+        "c": "Class",
+        "c__": "Class",
+
+        "order": "Order",
+        "o": "Order",
+        "o__": "Order",
+
+        "family": "Family",
+        "f": "Family",
+        "f__": "Family",
+
+        "genus": "Genus",
+        "g": "Genus",
+        "g__": "Genus",
+
+        "species": "Species",
+        "s": "Species",
+        "s__": "Species",
+    }
+
+    if s_lower in aliases:
+        return aliases[s_lower]
+
+    # If someone passes something like p__Ascomycota,
+    # infer the level from the prefix.
+    m = re.match(r"^([dkpcofgs])__", s_lower)
+    if m:
+        return aliases.get(m.group(1), "Phylum")
+
+    # If already correctly capitalized
+    for valid in ("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"):
+        if s_lower == valid.lower():
+            return valid
+
+    print(f"[WARN] Unknown BIODIV_LEVEL={level!r}; falling back to Phylum")
+    return "Phylum"
 
 def sanitize_filename(s: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", str(s).strip())
@@ -356,11 +426,14 @@ def taxa_to_normalized_dict(taxa) -> dict:
 
 
 def extract_taxon_label(row: pd.Series, level: str) -> str:
+    level = normalize_taxonomic_level(level)
     taxa = taxa_to_normalized_dict(row.get("taxa"))
 
     val = taxa.get(level)
-    if val:
-        return str(val).strip()
+    cleaned = clean_taxon_value(val)
+
+    if cleaned:
+        return cleaned
 
     return "Unclassified"
 
@@ -383,19 +456,70 @@ def make_piechart_for_sample(
     if grouped.empty:
         return False
 
-    # Keep top taxa, collapse the rest into "Other"
-    top_n = 10
+    # ---------- Collapse low-percentage taxa into Other ----------
+    # First calculate percentages against the full sample total.
+    total = grouped["count"].sum()
+    grouped["pct"] = grouped["count"] / total * 100.0
+
+    min_pct = float(os.getenv("BIODIV_MIN_TAXON_PCT", "1.0"))
+    other_label = os.getenv("BIODIV_OTHER_LABEL", "Other")
+
+    small = grouped[grouped["pct"] < min_pct].copy()
+    large = grouped[grouped["pct"] >= min_pct].copy()
+
+    other_count = small["count"].sum()
+
+    if other_count > 0:
+        other_row = pd.DataFrame(
+            [
+                {
+                    "taxon": other_label,
+                    "count": other_count,
+                    "pct": other_count / total * 100.0,
+                }
+            ]
+        )
+        grouped = pd.concat([large, other_row], ignore_index=True)
+    else:
+        grouped = large
+
+    # Sort again after adding Other.
+    grouped = grouped.sort_values("count", ascending=False).reset_index(drop=True)
+
+    # Optional: still limit the chart to top N visible labels.
+    # If there are more than top_n categories above 1%, collapse the rest into Other too.
+    top_n = int(os.getenv("BIODIV_TOP_N", "10"))
+
     if len(grouped) > top_n:
-        top = grouped.iloc[:top_n].copy()
-        other_sum = grouped.iloc[top_n:]["count"].sum()
-        if other_sum > 0:
+        existing_other = grouped[grouped["taxon"] == other_label].copy()
+        main = grouped[grouped["taxon"] != other_label].copy()
+
+        top = main.iloc[:top_n].copy()
+        rest_count = main.iloc[top_n:]["count"].sum()
+
+        if not existing_other.empty:
+            rest_count += existing_other["count"].sum()
+
+        if rest_count > 0:
             top = pd.concat(
-                [top, pd.DataFrame([{"taxon": "Other", "count": other_sum}])],
+                [
+                    top,
+                    pd.DataFrame(
+                        [
+                            {
+                                "taxon": other_label,
+                                "count": rest_count,
+                                "pct": rest_count / total * 100.0,
+                            }
+                        ]
+                    ),
+                ],
                 ignore_index=True,
             )
+
         grouped = top
 
-    total = grouped["count"].sum()
+    # Recalculate final percentages so labels always sum correctly.
     grouped["pct"] = grouped["count"] / total * 100.0
 
     # ---------- Figure ----------
@@ -1454,7 +1578,7 @@ def generate_fungal_guildplots(mclient) -> tuple[int, int]:
 
 def main():
     marker = os.getenv("BIODIV_MARKER", "16S")
-    level = os.getenv("BIODIV_LEVEL", "Family")
+    level = normalize_taxonomic_level(os.getenv("BIODIV_LEVEL", "Phylum"))
     out_dir = PROJECT_ROOT / "data" / "biodiversity_piecharts" / marker / level
     out_dir.mkdir(parents=True, exist_ok=True)
 
