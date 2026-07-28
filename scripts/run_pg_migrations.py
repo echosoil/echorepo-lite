@@ -75,29 +75,46 @@ def main():
     dsn = get_pg_dsn()
 
     with psycopg2.connect(dsn) as conn:
+        # Create and commit the migration tracking table first.
         with conn.cursor() as cur:
             ensure_migration_table(cur)
 
-            for path in sql_files:
-                filename = path.name
-
-                if migration_already_applied(cur, filename):
-                    print(f"[skip] {filename}")
-                    continue
-
-                print(f"[apply] {filename}")
-                sql = path.read_text(encoding="utf-8")
-                try:
-                    cur.execute(sql)
-                except psycopg2.errors.DuplicateTable as e:
-                    print(f"[warning] {filename}: {e}")
-                except Exception as e:
-                    print(f"[error] {filename}: {e}")
-                    raise
-                    
-                mark_migration_applied(cur, filename)
-
         conn.commit()
+
+        for path in sql_files:
+            filename = path.name
+
+            try:
+                with conn.cursor() as cur:
+                    if migration_already_applied(cur, filename):
+                        print(f"[skip] {filename}")
+                        conn.commit()
+                        continue
+
+                    print(f"[apply] {filename}")
+
+                    sql = path.read_text(
+                        encoding="utf-8"
+                    )
+
+                    cur.execute(sql)
+                    mark_migration_applied(
+                        cur,
+                        filename,
+                    )
+
+                # Each migration is committed independently.
+                conn.commit()
+
+            except Exception as e:
+                # Essential after any PostgreSQL error.
+                conn.rollback()
+
+                print(
+                    f"[error] {filename}: {e}"
+                )
+
+                raise
 
     print("Postgres migrations complete.")
 
