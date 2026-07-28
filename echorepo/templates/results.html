@@ -1,9 +1,5 @@
 {% extends 'base.html' %}
 
-{% set desktop_param = request.args.get('desktop', '')|trim|lower %}
-{% set force_desktop_mode = desktop_param in ['1', 'true'] %}
-{% set force_mobile_mode = desktop_param in ['0', 'false'] %}
-
 {% block title %}{{ _('ECHOrepo — Your Data') }}{% endblock %}
 
 {# navbar-left items (still here) #}
@@ -175,64 +171,82 @@
     color: #0d6efd;
   }
 </style>
-<style>
-  /*
-   * Normal behaviour:
-   *
-   * - desktop=1: force desktop mode
-   * - desktop=0: force compact/mobile mode
-   * - no parameter: choose automatically from screen width
-   */
+<script>
+  (function setEchoLayoutClass() {
+    const params = new URLSearchParams(window.location.search);
 
+    const desktopParam = String(
+      params.get('desktop') || ''
+    ).trim().toLowerCase();
+
+    const root = document.documentElement;
+
+    root.classList.remove(
+      'echo-desktop-layout',
+      'echo-mobile-layout'
+    );
+
+    if (
+      desktopParam === '1' ||
+      desktopParam === 'true'
+    ) {
+      root.classList.add('echo-desktop-layout');
+    } else if (
+      desktopParam === '0' ||
+      desktopParam === 'false'
+    ) {
+      root.classList.add('echo-mobile-layout');
+    }
+  })();
+</script>
+<style>
   .echo-layout-switch {
     display: none;
     align-items: center;
     gap: 0.4rem;
   }
 
-    {
-    % if force_mobile_mode %
-  }
-
-  /* Explicit ?desktop=0 */
-  .echo-desktop-only {
+  /* Explicit mobile mode */
+  html.echo-mobile-layout .echo-desktop-only {
     display: none !important;
   }
 
-  .echo-layout-switch {
+  html.echo-mobile-layout .echo-layout-switch {
     display: inline-flex !important;
   }
 
-    {
-    % elif force_desktop_mode %
-  }
-
-  /* Explicit ?desktop=1 */
-  .echo-desktop-only {
-    display: initial;
-  }
-
-  .echo-layout-switch {
+  /* Explicit desktop mode */
+  html.echo-desktop-layout .echo-layout-switch {
     display: inline-flex !important;
   }
 
-    {
-    % else %
-  }
-
-  /* Automatic mobile mode only on narrow screens */
+  /*
+   * Automatic mode: compact controls only on narrow screens.
+   * Explicit desktop mode overrides this.
+   */
   @media (max-width: 767.98px) {
-    .echo-desktop-only {
+    html:not(.echo-desktop-layout) .echo-desktop-only {
       display: none !important;
     }
 
-    .echo-layout-switch {
+    html:not(.echo-desktop-layout) .echo-layout-switch {
       display: inline-flex !important;
     }
   }
 
-    {
-    % endif %
+  /*
+   * Preserve correct element-specific display types in desktop mode.
+   */
+  html.echo-desktop-layout .btn-group.echo-desktop-only {
+    display: inline-flex !important;
+  }
+
+  html.echo-desktop-layout button.echo-desktop-only {
+    display: inline-block !important;
+  }
+
+  html.echo-desktop-layout li.echo-desktop-only {
+    display: list-item !important;
   }
 </style>
 {% endblock %}
@@ -522,7 +536,7 @@
 'biodev_level': biodev_level|default('Phylum')
 } %}
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
-<script src="{{ url_for('static', filename='js/map.js') }}?v=22"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=23"></script>
 
 {% if needs_privacy %}
 <script>
