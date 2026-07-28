@@ -10,6 +10,7 @@ import zipfile  # kept in case you later want to build ZIPs locally
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
+import hashlib
 
 import pandas as pd
 from flask import (
@@ -94,6 +95,128 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 # blueprint
 web_bp = Blueprint("web", __name__)
 
+def _archive_raw_biodiversity_upload(
+    xlsx_bytes: bytes,
+    filename: str,
+    uploader_id: str,
+) -> tuple[str, str]:
+    """
+    Store the unmodified biodiversity workbook inside a ZIP in MinIO.
+
+    Returns:
+        (object_name, sha256)
+    """
+    client = _get_minio_client()
+    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
+
+    if client is None:
+        abort(
+            503,
+            description=(
+                "MinIO is not configured. The biodiversity upload was not "
+                "imported because the raw source file could not be archived."
+            ),
+        )
+
+    try:
+        if not client.bucket_exists(bucket):
+            client.make_bucket(bucket)
+    except Exception as e:
+        abort(
+            503,
+            description=f"Cannot prepare MinIO bucket for raw biodiversity archive: {e}",
+        )
+
+    original_filename = (
+        os.path.basename(filename or "").strip()
+        or "biodiversity_upload.xlsx"
+    )
+
+    # Prevent path characters or unusual symbols inside the ZIP/object name.
+    safe_filename = re.sub(
+        r"[^A-Za-z0-9._-]+",
+        "_",
+        original_filename,
+    ).strip("._")
+
+    if not safe_filename:
+        safe_filename = "biodiversity_upload.xlsx"
+
+    sha256 = hashlib.sha256(xlsx_bytes).hexdigest()
+    uploaded_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    date_part = datetime.utcnow().date().isoformat()
+
+    zip_buffer = BytesIO()
+
+    manifest = {
+        "original_filename": original_filename,
+        "sha256": sha256,
+        "uploaded_at_utc": uploaded_at,
+        "uploaded_by": uploader_id,
+        "aggregation_level": "Phylum",
+        "markers": ["16S", "ITS"],
+        "processing_version": "phylum-aggregation-v1",
+    }
+
+    try:
+        with zipfile.ZipFile(
+            zip_buffer,
+            mode="w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as zf:
+            zf.writestr(
+                safe_filename,
+                xlsx_bytes,
+            )
+
+            zf.writestr(
+                "manifest.json",
+                json.dumps(
+                    manifest,
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+            )
+
+            zf.writestr(
+                "README.txt",
+                (
+                    "This archive contains the original, unmodified biodiversity "
+                    "laboratory upload.\n\n"
+                    "The ECHOrepo operational database stores only Phylum-level "
+                    "aggregate statistics. Full OTU-level source data are retained "
+                    "in this archive for publication and preservation through Zenodo.\n"
+                ),
+            )
+    except Exception as e:
+        abort(
+            500,
+            description=f"Cannot build raw biodiversity ZIP archive: {e}",
+        )
+
+    zip_buffer.seek(0)
+    zip_bytes = zip_buffer.getvalue()
+
+    object_name = (
+        f"biodiversity/raw/{date_part}/"
+        f"{sha256[:16]}_{safe_filename}.zip"
+    )
+
+    try:
+        client.put_object(
+            bucket,
+            object_name,
+            BytesIO(zip_bytes),
+            length=len(zip_bytes),
+            content_type="application/zip",
+        )
+    except Exception as e:
+        abort(
+            503,
+            description=f"Cannot store raw biodiversity ZIP in MinIO: {e}",
+        )
+
+    return object_name, sha256
 
 def _current_ui_i18n() -> dict:
     """
@@ -3286,155 +3409,760 @@ def _import_biodiversity_xlsx_bytes(xlsx_bytes: bytes, filename: str, uploader_i
     log.warning("BIOUPLOAD(auto): done, rows_inserted=%d", total_rows)
 
 
-def _import_biodiversity_xlsx_streaming(xlsx_bytes: bytes, filename: str, uploader_id: str):
-    sample_pat = re.compile(r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$", re.IGNORECASE)
+def _import_biodiversity_xlsx_streaming(
+    xlsx_bytes: bytes,
+    filename: str,
+    uploader_id: str,
+):
+    """
+    Import biodiversity data while retaining only Phylum-level statistics.
 
+    The XLSX is streamed row by row. OTU counts are aggregated into:
+
+        sample_id + marker + Phylum
+
+    No OTU IDs and no full taxonomy rows are stored in PostgreSQL.
+
+    The original XLSX is archived as a ZIP in MinIO for later Zenodo
+    publication.
+    """
+    log = logging.getLogger(__name__)
+
+    level = "Phylum"
+
+    sample_pat = re.compile(
+        r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$",
+        re.IGNORECASE,
+    )
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    def normalize_header(value) -> str:
+        return re.sub(
+            r"[^a-z0-9]+",
+            "",
+            str(value or "").strip().lower(),
+        )
+
+    def split_sample_marker(value: str) -> tuple[str, str]:
+        parts = str(value or "").strip().rsplit("-", 1)
+
+        if len(parts) != 2:
+            return "", ""
+
+        sample_id = parts[0].strip().upper()
+        marker = parts[1].strip().upper()
+
+        if marker not in {"16S", "ITS"}:
+            return "", ""
+
+        return sample_id, marker
+
+    def to_float_or_none(value):
+        if value is None:
+            return None
+
+        text = str(value).strip().replace(",", ".")
+
+        if not text:
+            return None
+
+        if text.lower() in {
+            "nan",
+            "none",
+            "null",
+            "na",
+            "n/a",
+        }:
+            return None
+
+        try:
+            result = float(text)
+        except (TypeError, ValueError):
+            return None
+
+        return result
+
+    def clean_phylum_value(value) -> str | None:
+        """
+        Accept values such as:
+
+            p__Ascomycota
+            Ascomycota
+            k__Fungi;p__Ascomycota;c__Dothideomycetes
+            ...|k__Fungi;p__Ascomycota;...|...
+
+        Returns:
+
+            Ascomycota
+        """
+        if value is None:
+            return None
+
+        raw = str(value).strip()
+
+        if not raw:
+            return None
+
+        if raw.lower() in {
+            "nan",
+            "none",
+            "null",
+            "na",
+            "n/a",
+            "unassigned",
+            "unknown",
+        }:
+            return None
+
+        # If this is a complete taxonomy string, locate the p__ token.
+        tokens = re.split(r"[;|]", raw)
+
+        phylum_token = None
+
+        for token in tokens:
+            token = token.strip()
+
+            if re.match(r"^p__", token, flags=re.IGNORECASE):
+                phylum_token = token
+                break
+
+        if phylum_token is not None:
+            raw = phylum_token
+
+        # Remove any one-letter taxonomy prefix such as p__.
+        raw = re.sub(
+            r"^[A-Za-z]__",
+            "",
+            raw,
+            flags=re.IGNORECASE,
+        ).strip()
+
+        if not raw:
+            return None
+
+        if raw.lower() in {
+            "unclassified",
+            "unassigned",
+            "unknown",
+            "uncultured",
+        }:
+            return None
+
+        return raw
+
+    # ------------------------------------------------------------------
+    # Open workbook
+    # ------------------------------------------------------------------
     try:
-        wb = load_workbook(BytesIO(xlsx_bytes), read_only=True, data_only=True)
+        wb = load_workbook(
+            BytesIO(xlsx_bytes),
+            read_only=True,
+            data_only=True,
+        )
     except Exception as e:
-        abort(400, description=f"Cannot open XLSX: {e}")
+        abort(
+            400,
+            description=f"Cannot open XLSX: {e}",
+        )
 
-    if "clean_phylum" not in wb.sheetnames:
-        abort(400, description="XLSX does not contain required sheet 'clean_phylum'")
+    sheet_lookup = {
+        str(sheet_name).strip().lower(): sheet_name
+        for sheet_name in wb.sheetnames
+    }
 
-    ws = wb["clean_phylum"]
+    real_sheet_name = sheet_lookup.get("clean_phylum")
 
+    if not real_sheet_name:
+        wb.close()
+        abort(
+            400,
+            description=(
+                "XLSX does not contain required sheet 'clean_phylum'. "
+                f"Available sheets: {wb.sheetnames}"
+            ),
+        )
+
+    ws = wb[real_sheet_name]
     rows_iter = ws.iter_rows(values_only=True)
 
     try:
-        header = next(rows_iter)
+        header_row = next(rows_iter)
     except StopIteration:
-        abort(400, description="Sheet 'clean_phylum' is empty")
+        wb.close()
+        abort(
+            400,
+            description="Sheet 'clean_phylum' is empty",
+        )
 
-    header = [("" if v is None else str(v).strip()) for v in header]
+    header = [
+        "" if value is None else str(value).strip()
+        for value in header_row
+    ]
 
-    if not header:
-        abort(400, description="Sheet header is empty")
+    if not any(header):
+        wb.close()
+        abort(
+            400,
+            description="Sheet header is empty",
+        )
 
+    # The first column remains the OTU ID column, but the ID will not be
+    # stored. It is used only to recognize valid data rows.
     otu_col_idx = 0
 
+    # ------------------------------------------------------------------
+    # Identify sample columns
+    # ------------------------------------------------------------------
     sample_cols = []
-    for idx, col in enumerate(header):
+
+    for idx, column_name in enumerate(header):
         if idx == otu_col_idx:
             continue
-        if sample_pat.match(col):
-            sample_cols.append((idx, col))
+
+        if not sample_pat.match(column_name):
+            continue
+
+        sample_id, marker = split_sample_marker(column_name)
+
+        if not sample_id or not marker:
+            continue
+
+        sample_cols.append(
+            {
+                "idx": idx,
+                "column_name": column_name,
+                "sample_id": sample_id,
+                "marker": marker,
+            }
+        )
 
     if not sample_cols:
-        abort(400, description="No sample columns found like ABCD-1234-16S or ABCD-1234-ITS")
+        wb.close()
+        abort(
+            400,
+            description=(
+                "No sample columns found. Expected column names such as "
+                "ABCD-1234-16S or ABCD-1234-ITS."
+            ),
+        )
 
-    taxa_cols = []
-    for idx, col in enumerate(header):
-        if idx == otu_col_idx:
-            continue
-        if any(idx == sidx for sidx, _ in sample_cols):
-            continue
-        taxa_cols.append((idx, col))
+    sample_col_indices = {
+        item["idx"]
+        for item in sample_cols
+    }
 
-    insert_sql = """
-        INSERT INTO sample_otu_counts
-            (sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file)
-        VALUES
-            (%s, %s, %s, %s, %s::jsonb, now(), %s, %s)
-        ON CONFLICT (sample_id, marker, otu_id) DO UPDATE SET
-            count       = EXCLUDED.count,
-            taxa        = COALESCE(EXCLUDED.taxa, sample_otu_counts.taxa),
-            uploaded_at = now(),
-            uploaded_by = EXCLUDED.uploaded_by,
-            source_file = EXCLUDED.source_file
-    """
+    taxonomy_cols = [
+        (idx, column_name)
+        for idx, column_name in enumerate(header)
+        if idx != otu_col_idx
+        and idx not in sample_col_indices
+    ]
 
-    def split_sample_marker(s: str):
-        parts = s.rsplit("-", 1)
-        if len(parts) != 2:
-            return s.strip().upper(), ""
-        return parts[0].strip().upper(), parts[1].strip().upper()
+    # ------------------------------------------------------------------
+    # Locate an explicit Phylum column
+    # ------------------------------------------------------------------
+    phylum_col_idx = None
 
-    def to_float_or_none(v):
-        if v is None:
-            return None
-        s = str(v).strip().replace(",", ".")
-        if not s:
-            return None
-        try:
-            return float(s)
-        except Exception:
-            return None
+    explicit_phylum_headers = {
+        "phylum",
+        "philum",  # tolerate the common misspelling
+        "p",
+    }
 
-    batch = []
-    batch_size = 5000
-    inserted = 0
+    for idx, column_name in taxonomy_cols:
+        if normalize_header(column_name) in explicit_phylum_headers:
+            phylum_col_idx = idx
+            break
+
+    # Support your earlier legacy layout:
+    #
+    #   Taxonomy | A | B | C | D | E | F
+    #
+    # where:
+    #   Taxonomy = Kingdom
+    #   A        = Phylum
+    #   B        = Class
+    #   ...
+    if phylum_col_idx is None:
+        normalized_headers = {
+            normalize_header(column_name): idx
+            for idx, column_name in taxonomy_cols
+        }
+
+        if (
+            "taxonomy" in normalized_headers
+            and "a" in normalized_headers
+        ):
+            phylum_col_idx = normalized_headers["a"]
+
+    def extract_phylum(row) -> str:
+        # Preferred route: a dedicated Phylum column.
+        if phylum_col_idx is not None:
+            value = (
+                row[phylum_col_idx]
+                if phylum_col_idx < len(row)
+                else None
+            )
+
+            cleaned = clean_phylum_value(value)
+
+            if cleaned:
+                return cleaned
+
+        # Fallback: inspect all taxonomy columns for a p__ token.
+        for idx, _column_name in taxonomy_cols:
+            value = row[idx] if idx < len(row) else None
+
+            if value is None:
+                continue
+
+            raw = str(value).strip()
+
+            if not raw:
+                continue
+
+            if re.search(
+                r"(^|[;|])\s*p__",
+                raw,
+                flags=re.IGNORECASE,
+            ):
+                cleaned = clean_phylum_value(raw)
+
+                if cleaned:
+                    return cleaned
+
+        return "Unclassified"
+
+    # ------------------------------------------------------------------
+    # Stream and aggregate
+    # ------------------------------------------------------------------
+    # Shape:
+    #
+    # {
+    #   ("ABCD-1234", "ITS"): {
+    #       "Ascomycota": 12345.0,
+    #       "Basidiomycota": 4567.0,
+    #   }
+    # }
+    aggregates: dict[
+        tuple[str, str],
+        dict[str, float],
+    ] = {}
+
+    source_rows = 0
+    nonzero_values = 0
 
     try:
+        for excel_row_number, row in enumerate(
+            rows_iter,
+            start=2,
+        ):
+            otu_id = (
+                ""
+                if row[otu_col_idx] is None
+                else str(row[otu_col_idx]).strip()
+            )
+
+            if not otu_id:
+                continue
+
+            source_rows += 1
+            phylum = extract_phylum(row)
+
+            for sample_info in sample_cols:
+                idx = sample_info["idx"]
+
+                value = row[idx] if idx < len(row) else None
+                count = to_float_or_none(value)
+
+                if count is None or count == 0:
+                    continue
+
+                if count < 0:
+                    raise ValueError(
+                        f"Negative abundance at Excel row "
+                        f"{excel_row_number}, column "
+                        f"{sample_info['column_name']}: {count}"
+                    )
+
+                key = (
+                    sample_info["sample_id"],
+                    sample_info["marker"],
+                )
+
+                taxon_counts = aggregates.setdefault(
+                    key,
+                    {},
+                )
+
+                taxon_counts[phylum] = (
+                    taxon_counts.get(phylum, 0.0)
+                    + count
+                )
+
+                nonzero_values += 1
+
+    except ValueError as e:
+        wb.close()
+        abort(
+            400,
+            description=str(e),
+        )
+    finally:
+        wb.close()
+
+    if not aggregates:
+        abort(
+            400,
+            description=(
+                "No non-zero biodiversity abundances were found "
+                "in the uploaded workbook."
+            ),
+        )
+
+    # ------------------------------------------------------------------
+    # Archive the original workbook before committing statistics
+    # ------------------------------------------------------------------
+    raw_archive_object, source_sha256 = (
+        _archive_raw_biodiversity_upload(
+            xlsx_bytes=xlsx_bytes,
+            filename=filename,
+            uploader_id=uploader_id,
+        )
+    )
+
+    upload_id = source_sha256
+
+    # ------------------------------------------------------------------
+    # Prepare compact rows
+    # ------------------------------------------------------------------
+    aggregate_rows = []
+
+    for (sample_id, marker), taxon_counts in sorted(
+        aggregates.items()
+    ):
+        total_count = sum(taxon_counts.values())
+
+        if total_count <= 0:
+            continue
+
+        for taxon, read_count in sorted(
+            taxon_counts.items(),
+            key=lambda item: item[1],
+            reverse=True,
+        ):
+            relative_abundance_pct = (
+                read_count / total_count * 100.0
+            )
+
+            aggregate_rows.append(
+                (
+                    sample_id,
+                    marker,
+                    level,
+                    taxon,
+                    float(read_count),
+                    float(relative_abundance_pct),
+                    upload_id,
+                    uploader_id,
+                    filename,
+                )
+            )
+
+    if not aggregate_rows:
+        abort(
+            400,
+            description="No Phylum-level statistics could be produced.",
+        )
+
+    affected_sample_markers = sorted(
+        aggregates.keys()
+    )
+
+    sample_count = len(
+        {
+            sample_id
+            for sample_id, _marker
+            in affected_sample_markers
+        }
+    )
+
+    marker_count = len(
+        {
+            marker
+            for _sample_id, marker
+            in affected_sample_markers
+        }
+    )
+
+    # ------------------------------------------------------------------
+    # Replace statistics transactionally
+    # ------------------------------------------------------------------
+    try:
         with get_pg_conn() as conn, conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS sample_otu_counts (
+            # Upload provenance only; no raw OTUs.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS biodiversity_uploads (
+                    upload_id TEXT PRIMARY KEY,
+                    original_filename TEXT NOT NULL,
+                    archive_object_name TEXT NOT NULL,
+                    sha256 TEXT NOT NULL UNIQUE,
+                    aggregation_level TEXT NOT NULL,
+                    sample_count INTEGER NOT NULL,
+                    marker_count INTEGER NOT NULL,
+                    source_row_count INTEGER NOT NULL,
+                    nonzero_value_count INTEGER NOT NULL,
+                    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    uploaded_by TEXT
+                )
+                """
+            )
+
+            # Compact operational statistics.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sample_taxon_abundance (
                     sample_id TEXT NOT NULL,
                     marker TEXT NOT NULL,
-                    otu_id TEXT NOT NULL,
-                    count DOUBLE PRECISION,
-                    taxa JSONB,
+                    level TEXT NOT NULL,
+                    taxon TEXT NOT NULL,
+                    read_count DOUBLE PRECISION NOT NULL,
+                    relative_abundance_pct DOUBLE PRECISION NOT NULL,
+                    source_upload_id TEXT,
                     uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                     uploaded_by TEXT,
                     source_file TEXT,
-                    PRIMARY KEY (sample_id, marker, otu_id)
-                )
-            """)
 
-            cur.execute("""
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_name='sample_otu_counts' AND column_name='taxa'
-            """)
-            if cur.fetchone() is None:
-                cur.execute("ALTER TABLE sample_otu_counts ADD COLUMN taxa JSONB")
+                    PRIMARY KEY (
+                        sample_id,
+                        marker,
+                        level,
+                        taxon
+                    ),
 
-            for row in rows_iter:
-                otu_id = "" if row[otu_col_idx] is None else str(row[otu_col_idx]).strip()
-                if not otu_id:
-                    continue
+                    FOREIGN KEY (source_upload_id)
+                        REFERENCES biodiversity_uploads(upload_id),
 
-                taxa_dict = {}
-                for idx, col_name in taxa_cols:
-                    val = row[idx] if idx < len(row) else None
-                    if val is None:
-                        continue
-                    sval = str(val).strip()
-                    if sval:
-                        taxa_dict[col_name] = sval
+                    CHECK (read_count >= 0),
 
-                taxa_json = json.dumps(taxa_dict, ensure_ascii=False) if taxa_dict else None
-
-                for idx, sample_col in sample_cols:
-                    val = row[idx] if idx < len(row) else None
-                    count = to_float_or_none(val)
-                    if count is None or count == 0:
-                        continue
-
-                    sample_id, marker = split_sample_marker(sample_col)
-                    if not sample_id or not marker:
-                        continue
-
-                    batch.append(
-                        (sample_id, marker, otu_id, count, taxa_json, uploader_id, filename)
+                    CHECK (
+                        relative_abundance_pct >= 0
+                        AND relative_abundance_pct <= 100.000001
                     )
+                )
+                """
+            )
 
-                    if len(batch) >= batch_size:
-                        cur.executemany(insert_sql, batch)
-                        inserted += len(batch)
-                        batch.clear()
+            cur.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                    idx_sample_taxon_abundance_lookup
+                ON sample_taxon_abundance (
+                    sample_id,
+                    marker,
+                    level
+                )
+                """
+            )
 
-            if batch:
-                cur.executemany(insert_sql, batch)
-                inserted += len(batch)
+            cur.execute(
+                """
+                INSERT INTO biodiversity_uploads (
+                    upload_id,
+                    original_filename,
+                    archive_object_name,
+                    sha256,
+                    aggregation_level,
+                    sample_count,
+                    marker_count,
+                    source_row_count,
+                    nonzero_value_count,
+                    uploaded_at,
+                    uploaded_by
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    now(),
+                    %s
+                )
+                ON CONFLICT (upload_id) DO UPDATE SET
+                    original_filename   = EXCLUDED.original_filename,
+                    archive_object_name = EXCLUDED.archive_object_name,
+                    aggregation_level   = EXCLUDED.aggregation_level,
+                    sample_count        = EXCLUDED.sample_count,
+                    marker_count        = EXCLUDED.marker_count,
+                    source_row_count    = EXCLUDED.source_row_count,
+                    nonzero_value_count = EXCLUDED.nonzero_value_count,
+                    uploaded_at         = now(),
+                    uploaded_by         = EXCLUDED.uploaded_by
+                """,
+                (
+                    upload_id,
+                    filename,
+                    raw_archive_object,
+                    source_sha256,
+                    level,
+                    sample_count,
+                    marker_count,
+                    source_rows,
+                    nonzero_values,
+                    uploader_id,
+                ),
+            )
+
+            # Replace the complete Phylum result for each affected
+            # sample/marker. This prevents stale taxa remaining after
+            # a re-upload.
+            cur.executemany(
+                """
+                DELETE FROM sample_taxon_abundance
+                WHERE sample_id = %s
+                  AND marker = %s
+                  AND level = %s
+                """,
+                [
+                    (
+                        sample_id,
+                        marker,
+                        level,
+                    )
+                    for sample_id, marker
+                    in affected_sample_markers
+                ],
+            )
+
+            cur.executemany(
+                """
+                INSERT INTO sample_taxon_abundance (
+                    sample_id,
+                    marker,
+                    level,
+                    taxon,
+                    read_count,
+                    relative_abundance_pct,
+                    source_upload_id,
+                    uploaded_at,
+                    uploaded_by,
+                    source_file
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    now(),
+                    %s,
+                    %s
+                )
+                ON CONFLICT (
+                    sample_id,
+                    marker,
+                    level,
+                    taxon
+                )
+                DO UPDATE SET
+                    read_count =
+                        EXCLUDED.read_count,
+
+                    relative_abundance_pct =
+                        EXCLUDED.relative_abundance_pct,
+
+                    source_upload_id =
+                        EXCLUDED.source_upload_id,
+
+                    uploaded_at =
+                        now(),
+
+                    uploaded_by =
+                        EXCLUDED.uploaded_by,
+
+                    source_file =
+                        EXCLUDED.source_file
+                """,
+                aggregate_rows,
+            )
 
             conn.commit()
 
     except Exception as e:
-        abort(500, description=f"Postgres biodiversity import failed: {e}")
+        log.exception(
+            "Phylum-level biodiversity import failed"
+        )
+
+        abort(
+            500,
+            description=(
+                "Postgres Phylum-level biodiversity import "
+                f"failed: {e}"
+            ),
+        )
+
+    # ------------------------------------------------------------------
+    # Invalidate cached chart images
+    # ------------------------------------------------------------------
+    client = _get_minio_client()
+    bucket = os.getenv(
+        "MINIO_BUCKET",
+        "echorepo-uploads",
+    )
+
+    if client is not None:
+        for sample_id, marker in affected_sample_markers:
+            object_name = (
+                f"biodiversity/piecharts/"
+                f"{marker}/{level}/{sample_id}.png"
+            )
+
+            try:
+                client.remove_object(
+                    bucket,
+                    object_name,
+                )
+            except Exception as e:
+                # Chart-cache deletion must not roll back a successful
+                # statistical import.
+                log.warning(
+                    "Could not invalidate biodiversity chart %s: %s",
+                    object_name,
+                    e,
+                )
+
+    inserted = len(aggregate_rows)
+
+    log.warning(
+        (
+            "BIOUPLOAD: stored %d Phylum aggregate rows "
+            "for %d samples; markers=%s; "
+            "raw_archive=%s"
+        ),
+        inserted,
+        sample_count,
+        sorted(
+            {
+                marker
+                for _sample_id, marker
+                in affected_sample_markers
+            }
+        ),
+        raw_archive_object,
+    )
 
     return inserted
-
+    
 
 @web_bp.get("/public/sample_piechart/<sample_id>")
 def public_sample_piechart(sample_id: str):
