@@ -87,7 +87,14 @@ def main():
 
                 print(f"[apply] {filename}")
                 sql = path.read_text(encoding="utf-8")
-                cur.execute(sql)
+                try:
+                    cur.execute(sql)
+                except psycopg2.errors.DuplicateTable as e:
+                    print(f"[warning] {filename}: {e}")
+                except Exception as e:
+                    print(f"[error] {filename}: {e}")
+                    raise
+                    
                 mark_migration_applied(cur, filename)
 
         conn.commit()
