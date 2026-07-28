@@ -1,5 +1,3 @@
-BEGIN;
-
 CREATE TABLE IF NOT EXISTS biodiversity_uploads (
     upload_id TEXT PRIMARY KEY,
     original_filename TEXT NOT NULL,
@@ -66,5 +64,3 @@ CREATE INDEX IF NOT EXISTS
 ON sample_taxon_abundance (
     source_upload_id
 );
-
-COMMIT;
