@@ -1,27 +1,9 @@
 {% extends 'base.html' %}
-{% set desktop_param =
-request.args.get('desktop', '')
-|trim
-|lower
-%}
 
-{% set desktop_param =
-request.args.get('desktop', '')
-|trim
-|lower
-%}
+{% set desktop_param = request.args.get('desktop', '')|trim|lower %}
+{% set force_desktop_mode = desktop_param in ['1', 'true'] %}
+{% set force_mobile_mode = desktop_param in ['0', 'false'] %}
 
-{% set force_desktop_mode =
-desktop_param in ['1', 'true']
-%}
-
-{% set force_mobile_mode =
-desktop_param in ['0', 'false']
-%}
-
-{% set force_mobile_mode =
-desktop_param in ['0', 'false']
-%}
 {% block title %}{{ _('ECHOrepo — Your Data') }}{% endblock %}
 
 {# navbar-left items (still here) #}
@@ -195,9 +177,13 @@ desktop_param in ['0', 'false']
 </style>
 <style>
   /*
-   * Desktop-only controls are visible by default.
-   * They are hidden only in automatic mobile mode or forced mobile mode.
+   * Normal behaviour:
+   *
+   * - desktop=1: force desktop mode
+   * - desktop=0: force compact/mobile mode
+   * - no parameter: choose automatically from screen width
    */
+
   .echo-layout-switch {
     display: none;
     align-items: center;
@@ -208,6 +194,7 @@ desktop_param in ['0', 'false']
     % if force_mobile_mode %
   }
 
+  /* Explicit ?desktop=0 */
   .echo-desktop-only {
     display: none !important;
   }
@@ -217,11 +204,12 @@ desktop_param in ['0', 'false']
   }
 
     {
-    % endif %
+    % elif force_desktop_mode %
   }
 
-    {
-    % if force_desktop_mode %
+  /* Explicit ?desktop=1 */
+  .echo-desktop-only {
+    display: initial;
   }
 
   .echo-layout-switch {
@@ -229,25 +217,22 @@ desktop_param in ['0', 'false']
   }
 
     {
-    % endif %
+    % else %
   }
 
+  /* Automatic mobile mode only on narrow screens */
   @media (max-width: 767.98px) {
-      {
-      % if not force_desktop_mode %
-    }
-
     .echo-desktop-only {
       display: none !important;
-    }
-
-      {
-      % endif %
     }
 
     .echo-layout-switch {
       display: inline-flex !important;
     }
+  }
+
+    {
+    % endif %
   }
 </style>
 {% endblock %}
@@ -537,7 +522,7 @@ desktop_param in ['0', 'false']
 'biodev_level': biodev_level|default('Phylum')
 } %}
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
-<script src="{{ url_for('static', filename='js/map.js') }}?v=21"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=22"></script>
 
 {% if needs_privacy %}
 <script>
