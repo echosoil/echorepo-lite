@@ -1412,7 +1412,6 @@
     const contaminationNotes = pick(
       p.SOIL_CONTAMINATION_comments,
       p.contamination_other_en, p.contamination_other_orig,
-      p.observations_en, p.observations_orig,
       p.notes
     );
 
