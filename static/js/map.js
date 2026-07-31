@@ -1370,8 +1370,26 @@
     const qrLike = pick(p.QR_qrCode, p.qr_code, p.qr, sampleId);
 
     const phVal = pick(p.PH_ph, p.ph, p.pH, p.PH_value, p.ph_value);
+    const countryCode = pick(
+      p.country_code,
+      p.countryCode
+    );
 
-    const soilColor = pick(p.SOIL_COLOR_color, p.soil_color, p.color);
+    const locationAccuracy = pick(
+      p.location_accuracy_m,
+      p.locationAccuracyM
+    );
+
+    const pollutantsCount = pick(
+      p.pollutants_count,
+      p.pollutantsCount
+    );
+
+    const observations = pick(
+      p.observations_en,
+      p.observations_orig,
+      p.observations
+    );
 
     const texture = pick(
       p.SOIL_TEXTURE_texture,
@@ -1408,11 +1426,65 @@
     // Clean & format metals (oxide-free, 2 sig figs, <br> separators)
     const metals = cleanMetalsInfo(metalsRaw);
 
+    const locationAccuracyText = (
+      locationAccuracy == null ||
+      String(locationAccuracy).trim() === ""
+    )
+      ? null
+      : `${String(locationAccuracy).trim()} m`;
+
+    const soilOrganicMatter = pick(
+      p.organic_carbon_pct,
+      p.organicCarbonPct,
+      p.SOIL_COLOR_color,
+      p.soil_organic_matter_pct,
+      p.organic_matter_pct,
+      p.soilColor,
+      p.soil_color,
+      p.color
+    );
+
+    const soilOrganicMatterText = (() => {
+      if (
+        soilOrganicMatter == null ||
+        String(soilOrganicMatter).trim() === ""
+      ) {
+        return null;
+      }
+
+      const raw = String(
+        soilOrganicMatter
+      ).trim();
+
+      // Do not add a second % when the value already contains one.
+      if (raw.endsWith("%")) {
+        return raw.replace(/\s+%$/, "%");
+      }
+
+      // Support both decimal dot and decimal comma.
+      const numeric = Number(
+        raw.replace(",", ".")
+      );
+
+      // Numeric values are percentages. Preserve unexpected
+      // non-numeric legacy labels as they are.
+      return Number.isFinite(numeric)
+        ? `${numeric}%`
+        : raw;
+    })();
     const rows = [
       ['<i class="bi bi-calendar"></i> ' + T('date', {}, 'Date'), formatDate(dateIso)],
       ['<i class="bi bi-qr-code-scan"></i> ' + T('qr', {}, 'QR code'), qrLike],
       ['<i class="bi bi-droplet-half"></i> ' + T('ph', {}, 'pH'), phVal],
-      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter', {}, 'Soil organic matter'), soilColor],
+      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter', {}, 'Soil organic matter'), soilColor[
+        '<i class="bi bi-percent"></i> ' +
+        T(
+          'soilOrganicMatter',
+          {},
+          'Soil organic matter'
+        ),
+        soilOrganicMatterText
+      ],
       ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture', {}, 'Texture'), texture],
       ['<i class="bi bi-diagram-3"></i> ' + T('structure', {}, 'Structure'), structure],
       ['<i class="bi bi-bug"></i> ' + T('earthworms', {}, 'Earthworms'), fmtInt(earthworms)],
@@ -1424,7 +1496,17 @@
         metals,
         true
       ],
-    ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
+      [
+        '<i class="bi bi-chat-left-text"></i> ' +
+        T('observations', {}, 'Observations'),
+        observations
+      ],
+      [
+        '<i class="bi bi-exclamation-diamond"></i> ' +
+        T('pollutantsCount', {}, 'Pollutants'),
+        fmtInt(pollutantsCount)
+      ],
+      ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
 
     const tableHtml = `<table class="table table-sm popup-table mb-2">${rows.map(([k, v, trustedHtml]) => {
       const value = fmt(v);
