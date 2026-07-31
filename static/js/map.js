@@ -1473,10 +1473,22 @@
         : raw;
     })();
     const rows = [
-      ['<i class="bi bi-calendar"></i> ' + T('date', {}, 'Date'), formatDate(dateIso)],
-      ['<i class="bi bi-qr-code-scan"></i> ' + T('qr', {}, 'QR code'), qrLike],
-      ['<i class="bi bi-droplet-half"></i> ' + T('ph', {}, 'pH'), phVal],
-      ['<i class="bi bi-palette"></i> ' + T('soilOrganicMatter', {}, 'Soil organic matter'), soilColor[
+      [
+        '<i class="bi bi-calendar"></i> ' +
+        T('date', {}, 'Date'),
+        formatDate(dateIso)
+      ],
+      [
+        '<i class="bi bi-qr-code-scan"></i> ' +
+        T('qr', {}, 'QR code'),
+        qrLike
+      ],
+      [
+        '<i class="bi bi-droplet-half"></i> ' +
+        T('ph', {}, 'pH'),
+        phVal
+      ],
+      [
         '<i class="bi bi-percent"></i> ' +
         T(
           'soilOrganicMatter',
@@ -1485,12 +1497,36 @@
         ),
         soilOrganicMatterText
       ],
-      ['<i class="bi bi-grid-3x3-gap"></i> ' + T('texture', {}, 'Texture'), texture],
-      ['<i class="bi bi-diagram-3"></i> ' + T('structure', {}, 'Structure'), structure],
-      ['<i class="bi bi-bug"></i> ' + T('earthworms', {}, 'Earthworms'), fmtInt(earthworms)],
-      ['<i class="bi bi-bag"></i> ' + T('plastic', {}, 'Plastic'), fmtInt(plastic)],
-      ['<i class="bi bi-bricks"></i> ' + T('debris', {}, 'Debris'), fmtInt(debris)],
-      ['<i class="bi bi-exclamation-triangle"></i> ' + T('contamination', {}, 'Contamination'), contaminationNotes],
+      [
+        '<i class="bi bi-grid-3x3-gap"></i> ' +
+        T('texture', {}, 'Texture'),
+        texture
+      ],
+      [
+        '<i class="bi bi-diagram-3"></i> ' +
+        T('structure', {}, 'Structure'),
+        structure
+      ],
+      [
+        '<i class="bi bi-bug"></i> ' +
+        T('earthworms', {}, 'Earthworms'),
+        fmtInt(earthworms)
+      ],
+      [
+        '<i class="bi bi-bag"></i> ' +
+        T('plastic', {}, 'Plastic'),
+        fmtInt(plastic)
+      ],
+      [
+        '<i class="bi bi-bricks"></i> ' +
+        T('debris', {}, 'Debris'),
+        fmtInt(debris)
+      ],
+      [
+        '<i class="bi bi-exclamation-triangle"></i> ' +
+        T('contamination', {}, 'Contamination'),
+        contaminationNotes
+      ],
       [
         elementalConcentrationsHeaderHtml(),
         metals,
@@ -1505,8 +1541,15 @@
         '<i class="bi bi-exclamation-diamond"></i> ' +
         T('pollutantsCount', {}, 'Pollutants'),
         fmtInt(pollutantsCount)
-      ],
-      ].filter(([_, v]) => !(v == null || (typeof v === "string" && v.trim() === "") || v === "—"));
+      ]
+    ].filter(([_, value]) => !(
+      value == null ||
+      (
+        typeof value === "string" &&
+        value.trim() === ""
+      ) ||
+      value === "—"
+    ));
 
     const tableHtml = `<table class="table table-sm popup-table mb-2">${rows.map(([k, v, trustedHtml]) => {
       const value = fmt(v);
