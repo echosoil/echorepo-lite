@@ -1664,18 +1664,24 @@ def canonical_map_geojson():
         "lat",
         "lon",
         "country_code",
+        "location_accuracy_m",
         "ph",
         "organic_carbon_pct",
         "earthworms_count",
         "contamination_debris",
         "contamination_plastic",
+        "contamination_other_orig",
         "contamination_other_en",
         "pollutants_count",
+        "soil_structure_orig",
         "soil_structure_en",
+        "soil_texture_orig",
         "soil_texture_en",
+        "observations_orig",
         "observations_en",
         "metals_info_orig",
         "metals_info_en",
+        "data_source",
         "qa_status",
         "licence",
     ]
@@ -1744,12 +1750,23 @@ def canonical_map_geojson():
         props["QR_qrCode"] = props.get("sample_id")
         props["collectedAt"] = props.get("timestamp_utc")
         props["PH_ph"] = props.get("ph")
-        props["SOIL_STRUCTURE_structure"] = props.get("soil_structure_en")
-        props["SOIL_TEXTURE_texture"] = props.get("soil_texture_en")
+        props["SOIL_STRUCTURE_structure"] = (
+            props.get("soil_structure_en")
+            or props.get("soil_structure_orig")
+        )
+
+        props["SOIL_TEXTURE_texture"] = (
+            props.get("soil_texture_en")
+            or props.get("soil_texture_orig")
+        )
+
+        props["SOIL_CONTAMINATION_comments"] = (
+            props.get("contamination_other_en")
+            or props.get("contamination_other_orig")
+        )
         props["SOIL_DIVER_earthworms"] = props.get("earthworms_count")
         props["SOIL_CONTAMINATION_plastic"] = props.get("contamination_plastic")
         props["SOIL_CONTAMINATION_debris"] = props.get("contamination_debris")
-        props["SOIL_CONTAMINATION_comments"] = props.get("contamination_other_en")
         def _usable_metals_value(v):
             if v is None:
                 return ""
