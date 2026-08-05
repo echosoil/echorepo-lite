@@ -96,7 +96,7 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 web_bp = Blueprint("web", __name__)
 
 def _archive_raw_biodiversity_upload(
-    xlsx_bytes: bytes,
+    file_bytes: bytes,
     filename: str,
     uploader_id: str,
 ) -> tuple[str, str]:
@@ -142,7 +142,7 @@ def _archive_raw_biodiversity_upload(
     if not safe_filename:
         safe_filename = "biodiversity_upload.xlsx"
 
-    sha256 = hashlib.sha256(xlsx_bytes).hexdigest()
+    sha256 = hashlib.sha256(file_bytes).hexdigest()
     uploaded_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
     date_part = datetime.utcnow().date().isoformat()
 
@@ -166,7 +166,7 @@ def _archive_raw_biodiversity_upload(
         ) as zf:
             zf.writestr(
                 safe_filename,
-                xlsx_bytes,
+                file_bytes,
             )
 
             zf.writestr(
@@ -3074,54 +3074,353 @@ def lab_import_biodiversity():
     log.warning("BIOUPLOAD: done, rows_inserted=%d", total_rows)
     return redirect(url_for("web.home"))
 
+BIODIVERSITY_SAMPLE_RE = re.compile(
+    r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$",
+    re.IGNORECASE,
+)
+
+
+def _normalise_biodiversity_header(value) -> str:
+    return re.sub(
+        r"[^a-z0-9]+",
+        "",
+        str(value or "").strip().lower(),
+    )
+
+
+def _is_biodiversity_header(header) -> bool:
+    """
+    Recognise wide OTU files such as:
+
+        OTU ID,AAAA-1111-16S,...,Kingdom,Phylum,...,Species
+
+    or:
+
+        OTU ID,AAAA-1111-ITS,...,Kingdom,Phylum,...,Species
+    """
+    if not header:
+        return False
+
+    cleaned = [
+        "" if value is None else str(value).strip()
+        for value in header
+    ]
+
+    normalised = {
+        _normalise_biodiversity_header(value)
+        for value in cleaned
+    }
+
+    has_otu_id = bool(
+        normalised.intersection(
+            {
+                "otuid",
+                "otu",
+            }
+        )
+    )
+
+    has_sample_column = any(
+        BIODIVERSITY_SAMPLE_RE.fullmatch(value)
+        for value in cleaned
+        if value
+    )
+
+    # Normal format:
+    # Kingdom, Phylum, Class, Order, Family, Genus, Species
+    has_phylum = "phylum" in normalised
+
+    # Legacy format:
+    # Taxonomy, A, B, C, D, E, F
+    has_legacy_phylum = (
+        "taxonomy" in normalised
+        and "a" in normalised
+    )
+
+    return (
+        has_otu_id
+        and has_sample_column
+        and (has_phylum or has_legacy_phylum)
+    )
+
+
+def _open_biodiversity_rows(
+    file_bytes: bytes,
+    filename: str,
+):
+    """
+    Open either:
+
+      - XLSX biodiversity workbook;
+      - CSV biodiversity file;
+      - TSV biodiversity file.
+
+    Returns:
+
+        header, rows_iterator, close_function, source_description
+    """
+    suffix = Path(filename or "").suffix.lower()
+
+    # --------------------------------------------------------------
+    # XLSX
+    # --------------------------------------------------------------
+    if suffix == ".xlsx":
+        try:
+            wb = load_workbook(
+                BytesIO(file_bytes),
+                read_only=True,
+                data_only=True,
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Cannot open biodiversity XLSX: {e}"
+            ) from e
+
+        sheet_lookup = {
+            str(sheet_name).strip().lower(): sheet_name
+            for sheet_name in wb.sheetnames
+        }
+
+        selected_sheet = sheet_lookup.get("clean_phylum")
+
+        # Also support an XLSX whose biodiversity data are in another
+        # sheet, provided the header is recognisable.
+        if not selected_sheet:
+            for sheet_name in wb.sheetnames:
+                ws_candidate = wb[sheet_name]
+
+                first_row = next(
+                    ws_candidate.iter_rows(
+                        min_row=1,
+                        max_row=1,
+                        values_only=True,
+                    ),
+                    None,
+                )
+
+                if _is_biodiversity_header(first_row):
+                    selected_sheet = sheet_name
+                    break
+
+        if not selected_sheet:
+            available = ", ".join(wb.sheetnames)
+            wb.close()
+
+            raise ValueError(
+                "No biodiversity sheet was found. Expected "
+                "'clean_phylum' or a sheet containing OTU ID, "
+                "sample-marker columns and Phylum. "
+                f"Available sheets: {available}"
+            )
+
+        ws = wb[selected_sheet]
+        rows_iter = ws.iter_rows(values_only=True)
+
+        try:
+            header = next(rows_iter)
+        except StopIteration:
+            wb.close()
+            raise ValueError(
+                f"Biodiversity sheet '{selected_sheet}' is empty"
+            )
+
+        return (
+            list(header),
+            rows_iter,
+            wb.close,
+            f"XLSX sheet '{selected_sheet}'",
+        )
+
+    # --------------------------------------------------------------
+    # CSV / TSV / TXT
+    # --------------------------------------------------------------
+    if suffix not in {".csv", ".tsv", ".txt"}:
+        raise ValueError(
+            "Unsupported biodiversity file type. "
+            "Use .xlsx, .csv or .tsv."
+        )
+
+    byte_stream = BytesIO(file_bytes)
+
+    try:
+        text_stream = io.TextIOWrapper(
+            byte_stream,
+            encoding="utf-8-sig",
+            newline="",
+        )
+
+        probe = text_stream.read(65536)
+        text_stream.seek(0)
+
+    except UnicodeDecodeError as e:
+        byte_stream.close()
+
+        raise ValueError(
+            "Cannot decode biodiversity text file as UTF-8"
+        ) from e
+
+    if suffix == ".tsv":
+        dialect = csv.excel_tab
+        delimiter_name = "tab"
+    else:
+        try:
+            dialect = csv.Sniffer().sniff(
+                probe,
+                delimiters=",\t;",
+            )
+            delimiter_name = repr(dialect.delimiter)
+        except csv.Error:
+            # Normal CSV fallback.
+            dialect = csv.excel
+            delimiter_name = "comma"
+
+    reader = csv.reader(
+        text_stream,
+        dialect=dialect,
+    )
+
+    try:
+        header = next(reader)
+    except StopIteration:
+        text_stream.close()
+        raise ValueError(
+            "Biodiversity CSV/TSV is empty"
+        )
+
+    return (
+        header,
+        reader,
+        text_stream.close,
+        f"delimited text, delimiter={delimiter_name}",
+    )
+
+
+def _looks_like_biodiversity_file(
+    file_bytes: bytes,
+    filename: str,
+) -> bool:
+    close_source = None
+
+    try:
+        (
+            header,
+            _rows_iter,
+            close_source,
+            _source_description,
+        ) = _open_biodiversity_rows(
+            file_bytes,
+            filename,
+        )
+
+        return _is_biodiversity_header(header)
+
+    except Exception:
+        return False
+
+    finally:
+        if close_source is not None:
+            try:
+                close_source()
+            except Exception:
+                pass
 
 @web_bp.post("/lab-import-auto")
 @login_required
 def lab_import_auto():
-    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    user_key = (
+        session.get("user")
+        or session.get("kc", {})
+        .get("profile", {})
+        .get("email")
+    )
+
     if not can_upload_lab_data(user_key):
-        abort(403, description="Not authorised to upload lab data")
+        abort(
+            403,
+            description="Not authorised to upload lab data",
+        )
 
     file = request.files.get("file")
+
     if not file:
-        abort(400, description="No file uploaded")
+        abort(
+            400,
+            description="No file uploaded",
+        )
 
-    filename = (file.filename or "").strip()
+    filename = (
+        file.filename
+        or ""
+    ).strip()
+
     data = file.read()
+
     if not data:
-        abort(400, description="Uploaded file is empty")
+        abort(
+            400,
+            description="Uploaded file is empty",
+        )
 
-    kc_profile = (session.get("kc") or {}).get("profile") or {}
-    uploader_id = kc_profile.get("id") or kc_profile.get("sub") or session.get("user") or "unknown"
+    kc_profile = (
+        session.get("kc")
+        or {}
+    ).get("profile") or {}
 
-    # XLSX can be either biodiversity OR metals
-    if filename.lower().endswith(".xlsx"):
-        if _looks_like_biodiversity_xlsx(data):
-            inserted = _import_biodiversity_xlsx_streaming(data, filename, uploader_id)
+    uploader_id = (
+        kc_profile.get("id")
+        or kc_profile.get("sub")
+        or session.get("user")
+        or "unknown"
+    )
 
-            g._analytics_extra = {
-                "upload_type": "biodiversity_otu_xlsx",
-                "filename": filename,
-                "rows_inserted": inserted,
-            }
-            return redirect(url_for("web.home"))
+    # Biodiversity can now be XLSX, CSV or TSV.
+    if _looks_like_biodiversity_file(
+        data,
+        filename,
+    ):
+        inserted = _import_biodiversity_streaming(
+            data,
+            filename,
+            uploader_id,
+        )
 
-        # otherwise treat XLSX as normal lab/metals file
-        _import_metals_file_bytes(data, filename, uploader_id)
+        extension = (
+            Path(filename).suffix.lower().lstrip(".")
+            or "unknown"
+        )
+
         g._analytics_extra = {
-            "upload_type": "lab_xlsx",
+            "upload_type": (
+                f"biodiversity_phylum_{extension}"
+            ),
             "filename": filename,
+            "rows_inserted": inserted,
         }
-        return redirect(url_for("web.home"))
 
-    # non-XLSX fallback: CSV/TSV metals importer
-    _import_metals_file_bytes(data, filename, uploader_id)
+        return redirect(
+            url_for("web.home")
+        )
+
+    # Otherwise process it as the normal metals/lab file.
+    _import_metals_file_bytes(
+        data,
+        filename,
+        uploader_id,
+    )
+
+    extension = (
+        Path(filename).suffix.lower().lstrip(".")
+        or "unknown"
+    )
+
     g._analytics_extra = {
-        "upload_type": "lab_csv",
+        "upload_type": f"lab_{extension}",
         "filename": filename,
     }
-    return redirect(url_for("web.home"))
 
+    return redirect(
+        url_for("web.home")
+    )
 
 def _looks_like_biodiversity_xlsx(xlsx_bytes: bytes) -> bool:
     """
@@ -3409,31 +3708,26 @@ def _import_biodiversity_xlsx_bytes(xlsx_bytes: bytes, filename: str, uploader_i
     log.warning("BIOUPLOAD(auto): done, rows_inserted=%d", total_rows)
 
 
-def _import_biodiversity_xlsx_streaming(
-    xlsx_bytes: bytes,
+def _import_biodiversity_streaming(
+    file_bytes: bytes,
     filename: str,
     uploader_id: str,
 ):
     """
-    Import biodiversity data while retaining only Phylum-level statistics.
+    Import XLSX, CSV or TSV biodiversity data while retaining only
+    Phylum-level statistics.
 
-    The XLSX is streamed row by row. OTU counts are aggregated into:
+    Rows are processed sequentially and OTU counts are aggregated into:
 
         sample_id + marker + Phylum
 
-    No OTU IDs and no full taxonomy rows are stored in PostgreSQL.
-
-    The original XLSX is archived as a ZIP in MinIO for later Zenodo
+    No OTU IDs and no full taxonomy records are stored in PostgreSQL.
+    The original upload is archived as a ZIP in MinIO for later Zenodo
     publication.
     """
     log = logging.getLogger(__name__)
 
     level = "Phylum"
-
-    sample_pat = re.compile(
-        r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$",
-        re.IGNORECASE,
-    )
 
     # ------------------------------------------------------------------
     # Helpers
@@ -3553,59 +3847,63 @@ def _import_biodiversity_xlsx_streaming(
         return raw
 
     # ------------------------------------------------------------------
-    # Open workbook
+    # Open XLSX, CSV or TSV source
     # ------------------------------------------------------------------
     try:
-        wb = load_workbook(
-            BytesIO(xlsx_bytes),
-            read_only=True,
-            data_only=True,
-        )
-    except Exception as e:
-        abort(
-            400,
-            description=f"Cannot open XLSX: {e}",
-        )
-
-    sheet_lookup = {
-        str(sheet_name).strip().lower(): sheet_name
-        for sheet_name in wb.sheetnames
-    }
-
-    real_sheet_name = sheet_lookup.get("clean_phylum")
-
-    if not real_sheet_name:
-        wb.close()
-        abort(
-            400,
-            description=(
-                "XLSX does not contain required sheet 'clean_phylum'. "
-                f"Available sheets: {wb.sheetnames}"
-            ),
+        (
+            raw_header,
+            rows_iter,
+            close_source,
+            source_description,
+        ) = _open_biodiversity_rows(
+            file_bytes,
+            filename,
         )
 
-    ws = wb[real_sheet_name]
-    rows_iter = ws.iter_rows(values_only=True)
-
-    try:
-        header_row = next(rows_iter)
-    except StopIteration:
-        wb.close()
+    except ValueError as e:
         abort(
             400,
-            description="Sheet 'clean_phylum' is empty",
+            description=str(e),
         )
 
     header = [
-        "" if value is None else str(value).strip()
-        for value in header_row
+        ""
+        if value is None
+        else str(value).strip()
+        for value in raw_header
     ]
 
     if not any(header):
-        wb.close()
+        close_source()
+
         abort(
             400,
-            description="Sheet header is empty",
+            description="Biodiversity file header is empty",
+        )
+
+    if not _is_biodiversity_header(header):
+        close_source()
+
+        abort(
+            400,
+            description=(
+                "The file does not look like biodiversity data. "
+                "Expected OTU ID, one or more columns such as "
+                "ABCD-1234-16S or ABCD-1234-ITS, and a Phylum column."
+            ),
+        )
+
+    log.warning(
+        "BIOUPLOAD: opened %s from file=%s",
+        source_description,
+        filename,
+    )
+
+    if not any(header):
+        close_source()
+        abort(
+            400,
+            description="Biodiversity file header is empty",
         )
 
     # The first column remains the OTU ID column, but the ID will not be
@@ -3621,7 +3919,9 @@ def _import_biodiversity_xlsx_streaming(
         if idx == otu_col_idx:
             continue
 
-        if not sample_pat.match(column_name):
+        if not BIODIVERSITY_SAMPLE_RE.fullmatch(
+            str(column_name).strip()
+        ):
             continue
 
         sample_id, marker = split_sample_marker(column_name)
@@ -3639,12 +3939,13 @@ def _import_biodiversity_xlsx_streaming(
         )
 
     if not sample_cols:
-        wb.close()
+        close_source()
+
         abort(
             400,
             description=(
-                "No sample columns found. Expected column names such as "
-                "ABCD-1234-16S or ABCD-1234-ITS."
+                "No sample columns found. Expected column names "
+                "such as ABCD-1234-16S or ABCD-1234-ITS."
             ),
         )
 
@@ -3755,7 +4056,7 @@ def _import_biodiversity_xlsx_streaming(
     nonzero_values = 0
 
     try:
-        for excel_row_number, row in enumerate(
+        for source_row_number, row in enumerate(
             rows_iter,
             start=2,
         ):
@@ -3782,8 +4083,8 @@ def _import_biodiversity_xlsx_streaming(
 
                 if count < 0:
                     raise ValueError(
-                        f"Negative abundance at Excel row "
-                        f"{excel_row_number}, column "
+                        f"Negative abundance at source row "
+                        f"{source_row_number}, column "
                         f"{sample_info['column_name']}: {count}"
                     )
 
@@ -3805,20 +4106,20 @@ def _import_biodiversity_xlsx_streaming(
                 nonzero_values += 1
 
     except ValueError as e:
-        wb.close()
         abort(
             400,
             description=str(e),
         )
+
     finally:
-        wb.close()
+        close_source()
 
     if not aggregates:
         abort(
             400,
             description=(
                 "No non-zero biodiversity abundances were found "
-                "in the uploaded workbook."
+                "in the uploaded file."
             ),
         )
 
@@ -3827,7 +4128,7 @@ def _import_biodiversity_xlsx_streaming(
     # ------------------------------------------------------------------
     raw_archive_object, source_sha256 = (
         _archive_raw_biodiversity_upload(
-            xlsx_bytes=xlsx_bytes,
+            file_bytes=file_bytes,
             filename=filename,
             uploader_id=uploader_id,
         )
