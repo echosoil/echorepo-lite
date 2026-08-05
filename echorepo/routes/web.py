@@ -3324,6 +3324,60 @@ def _looks_like_biodiversity_file(
             except Exception:
                 pass
 
+
+def _process_lab_upload_file(
+    uploaded_file,
+    uploader_id: str,
+) -> dict:
+    """
+    Process one uploaded laboratory file.
+
+    Returns a small result dictionary for logging/analytics.
+    """
+    filename = (
+        uploaded_file.filename
+        or ""
+    ).strip()
+
+    if not filename:
+        raise ValueError("Uploaded file has no filename")
+
+    data = uploaded_file.read()
+
+    if not data:
+        raise ValueError(
+            f"{filename}: uploaded file is empty"
+        )
+
+    if _looks_like_biodiversity_file(
+        data,
+        filename,
+    ):
+        inserted = _import_biodiversity_streaming(
+            data,
+            filename,
+            uploader_id,
+        )
+
+        return {
+            "filename": filename,
+            "type": "biodiversity",
+            "rows_inserted": inserted,
+        }
+
+    _import_metals_file_bytes(
+        data,
+        filename,
+        uploader_id,
+    )
+
+    return {
+        "filename": filename,
+        "type": "lab",
+        "rows_inserted": None,
+    }
+
+
 @web_bp.post("/lab-import-auto")
 @login_required
 def lab_import_auto():
@@ -3340,25 +3394,18 @@ def lab_import_auto():
             description="Not authorised to upload lab data",
         )
 
-    file = request.files.get("file")
+    uploaded_files = [
+        uploaded_file
+        for uploaded_file
+        in request.files.getlist("file")
+        if uploaded_file
+        and (uploaded_file.filename or "").strip()
+    ]
 
-    if not file:
+    if not uploaded_files:
         abort(
             400,
-            description="No file uploaded",
-        )
-
-    filename = (
-        file.filename
-        or ""
-    ).strip()
-
-    data = file.read()
-
-    if not data:
-        abort(
-            400,
-            description="Uploaded file is empty",
+            description="No files uploaded",
         )
 
     kc_profile = (
@@ -3373,54 +3420,66 @@ def lab_import_auto():
         or "unknown"
     )
 
-    # Biodiversity can now be XLSX, CSV or TSV.
-    if _looks_like_biodiversity_file(
-        data,
-        filename,
-    ):
-        inserted = _import_biodiversity_streaming(
-            data,
+    results = []
+
+    for uploaded_file in uploaded_files:
+        filename = (
+            uploaded_file.filename
+            or ""
+        ).strip()
+
+        logging.getLogger(__name__).warning(
+            "LABUPLOAD: processing file %s",
             filename,
-            uploader_id,
         )
 
-        extension = (
-            Path(filename).suffix.lower().lstrip(".")
-            or "unknown"
+        try:
+            result = _process_lab_upload_file(
+                uploaded_file,
+                uploader_id,
+            )
+
+        except ValueError as e:
+            abort(
+                400,
+                description=str(e),
+            )
+
+        results.append(result)
+
+        logging.getLogger(__name__).warning(
+            "LABUPLOAD: completed file=%s type=%s rows=%s",
+            result["filename"],
+            result["type"],
+            result["rows_inserted"],
         )
-
-        g._analytics_extra = {
-            "upload_type": (
-                f"biodiversity_phylum_{extension}"
-            ),
-            "filename": filename,
-            "rows_inserted": inserted,
-        }
-
-        return redirect(
-            url_for("web.home")
-        )
-
-    # Otherwise process it as the normal metals/lab file.
-    _import_metals_file_bytes(
-        data,
-        filename,
-        uploader_id,
-    )
-
-    extension = (
-        Path(filename).suffix.lower().lstrip(".")
-        or "unknown"
-    )
 
     g._analytics_extra = {
-        "upload_type": f"lab_{extension}",
-        "filename": filename,
+        "upload_type": "multiple_lab_files",
+        "file_count": len(results),
+        "biodiversity_file_count": sum(
+            result["type"] == "biodiversity"
+            for result in results
+        ),
+        "lab_file_count": sum(
+            result["type"] == "lab"
+            for result in results
+        ),
+        "files": [
+            result["filename"]
+            for result in results
+        ],
+        "biodiversity_rows_inserted": sum(
+            result["rows_inserted"] or 0
+            for result in results
+            if result["type"] == "biodiversity"
+        ),
     }
 
     return redirect(
         url_for("web.home")
     )
+    
 
 def _looks_like_biodiversity_xlsx(xlsx_bytes: bytes) -> bool:
     """
