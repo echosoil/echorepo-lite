@@ -1345,7 +1345,7 @@ def download_canonical_zip():
                 df_params,
                 threshold=0.01,
             )
-            
+
         buf3 = io.StringIO()
         df_params.to_csv(buf3, index=False)
         body_params = buf3.getvalue()
@@ -4590,12 +4590,10 @@ def public_sample_piechart(sample_id: str):
     bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
 
     # The taxonomic pie chart always depends on the imported data.
-    object_names = [
-        (
-            f"biodiversity/piecharts/"
-            f"{marker}/{level}/{sample_id}.png"
-        )
-    ]
+    object_name = (
+        f"biodiversity/piecharts/"
+        f"{marker}/{level}/{sample_id}.png"
+    )
 
     if client is None:
         return jsonify({"ok": True, "image_url": None, "caption": ""})
