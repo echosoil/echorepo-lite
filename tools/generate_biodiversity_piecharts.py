@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import io
 import json
 import math
@@ -193,6 +194,52 @@ def upload_file_to_minio(
         print(f"[WARN] could not upload {local_path} to MinIO as {object_name}: {e}")
         return None
 
+
+def list_existing_minio_objects(mclient, prefix: str) -> set[str]:
+    """
+    Return all existing object names below a MinIO prefix.
+
+    The generator calls this once per chart family, rather than issuing one
+    stat/HEAD request per sample. If MinIO is configured but listing fails,
+    abort instead of accidentally regenerating the complete dataset.
+    """
+    if mclient is None:
+        raise RuntimeError(
+            "MinIO is unavailable, so existing charts cannot be checked safely. "
+            "Configure MinIO or run with --force to regenerate local files intentionally."
+        )
+
+    try:
+        existing = {
+            obj.object_name
+            for obj in mclient.list_objects(
+                MINIO_BUCKET,
+                prefix=prefix,
+                recursive=True,
+            )
+        }
+    except Exception as e:
+        raise RuntimeError(
+            f"Could not list existing MinIO objects under {prefix!r}: {e}"
+        ) from e
+
+    print(f"[INFO] Found {len(existing)} existing MinIO objects under {prefix}")
+    return existing
+
+
+def normalize_sample_filter(values: list[str] | None) -> set[str] | None:
+    """Normalize repeated/comma-separated --sample-id arguments."""
+    if not values:
+        return None
+
+    result: set[str] = set()
+    for value in values:
+        for token in re.split(r"[,;\s]+", str(value or "").strip()):
+            if token:
+                result.add(token.upper())
+
+    return result or None
+
 def normalize_taxonomic_level(level: str) -> str:
     """
     Normalize user/env level names.
@@ -269,6 +316,12 @@ def sanitize_filename(s: str) -> str:
 
 
 def fetch_otu_data(marker: str = "16S") -> pd.DataFrame:
+    """
+    Fetch legacy OTU-level data.
+
+    This is still required by FUNGuild/FAPROTAX helpers, but newly imported
+    taxonomic pie charts use sample_taxon_abundance instead.
+    """
     sql = """
         SELECT sample_id, otu_id, count, taxa
         FROM sample_otu_counts
@@ -277,6 +330,33 @@ def fetch_otu_data(marker: str = "16S") -> pd.DataFrame:
     with get_pg_conn() as conn:
         df = pd.read_sql(sql, conn, params=[marker])
     return df
+
+
+def fetch_taxon_abundance(
+    marker: str = "16S",
+    level: str = "Phylum",
+) -> pd.DataFrame:
+    """
+    Fetch compact taxonomic statistics produced by the current biodiversity
+    importer.
+    """
+    sql = """
+        SELECT
+            sample_id,
+            taxon,
+            read_count AS count,
+            relative_abundance_pct
+        FROM sample_taxon_abundance
+        WHERE marker = %s
+          AND level = %s
+        ORDER BY sample_id, read_count DESC, taxon
+    """
+    with get_pg_conn() as conn:
+        return pd.read_sql(
+            sql,
+            conn,
+            params=[marker.upper(), level],
+        )
 
 
 TAX_PREFIX_TO_RANK = {
@@ -442,8 +522,27 @@ def make_piechart_for_sample(
     sample_df: pd.DataFrame, sample_id: str, marker: str, level: str, out_path: Path
 ):
     plot_df = sample_df.copy()
-    plot_df["taxon"] = plot_df.apply(lambda r: extract_taxon_label(r, level), axis=1)
-    plot_df["count"] = pd.to_numeric(plot_df["count"], errors="coerce").fillna(0)
+
+    # Current importer: taxon/read_count are already aggregated in
+    # sample_taxon_abundance. Legacy OTU rows still need taxonomy extraction.
+    if "taxon" in plot_df.columns:
+        plot_df["taxon"] = (
+            plot_df["taxon"]
+            .fillna("Unclassified")
+            .astype(str)
+            .str.strip()
+            .replace("", "Unclassified")
+        )
+    else:
+        plot_df["taxon"] = plot_df.apply(
+            lambda r: extract_taxon_label(r, level),
+            axis=1,
+        )
+
+    plot_df["count"] = pd.to_numeric(
+        plot_df["count"],
+        errors="coerce",
+    ).fillna(0)
 
     grouped = (
         plot_df.groupby("taxon", dropna=False)["count"]
@@ -1433,9 +1532,17 @@ def make_fungal_guildplot_for_sample(
     return True
 
 
-def generate_bacterial_guildplots_from_faprotax(mclient) -> tuple[int, int]:
+def generate_bacterial_guildplots_from_faprotax(
+    mclient,
+    *,
+    force: bool = False,
+    sample_ids: set[str] | None = None,
+    dry_run: bool = False,
+) -> tuple[int, int]:
     """
     Generate bacterial ecological guild plots from a FAPROTAX sample x function CSV.
+
+    Existing MinIO objects are skipped unless force=True.
 
     Expected input:
       rows    = sample IDs
@@ -1473,18 +1580,37 @@ def generate_bacterial_guildplots_from_faprotax(mclient) -> tuple[int, int]:
         print("[WARN] No expected FAPROTAX soil functions found in the CSV.")
         return 0, 0
 
+    prefix = "biodiversity/guildplots/bacteria/"
+    existing_objects = set() if force else list_existing_minio_objects(mclient, prefix)
+
     out_dir = PROJECT_ROOT / "data" / "bacterial_guildplots"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     generated = 0
     uploaded = 0
+    skipped_existing = 0
+    selected_samples = 0
 
     for sample_id, row in func_sxf.iterrows():
         sample_id = str(sample_id).strip()
         if not sample_id:
             continue
 
+        if sample_ids and sample_id.upper() not in sample_ids:
+            continue
+
+        selected_samples += 1
         safe_id = sanitize_filename(sample_id)
+        object_name = f"{prefix}{safe_id}.png"
+
+        if not force and object_name in existing_objects:
+            skipped_existing += 1
+            continue
+
+        if dry_run:
+            print(f"[NEW] would generate {object_name}")
+            continue
+
         local_png = out_dir / f"{safe_id}.png"
 
         ok = make_bacterial_guildplot_for_sample(
@@ -1497,7 +1623,6 @@ def generate_bacterial_guildplots_from_faprotax(mclient) -> tuple[int, int]:
 
         generated += 1
 
-        object_name = f"biodiversity/guildplots/bacteria/{safe_id}.png"
         uploaded_url = upload_file_to_minio(
             mclient,
             local_png,
@@ -1507,14 +1632,25 @@ def generate_bacterial_guildplots_from_faprotax(mclient) -> tuple[int, int]:
         if uploaded_url:
             uploaded += 1
 
+    print(f"[OK] Considered {selected_samples} bacterial guild samples")
+    print(f"[OK] Skipped {skipped_existing} existing bacterial guild plots")
     print(f"[OK] Generated {generated} bacterial guild plots")
     print(f"[OK] Uploaded {uploaded} bacterial guild plots to MinIO")
     return generated, uploaded
 
 
-def generate_fungal_guildplots(mclient) -> tuple[int, int]:
+def generate_fungal_guildplots(
+    mclient,
+    *,
+    force: bool = False,
+    sample_ids: set[str] | None = None,
+    dry_run: bool = False,
+) -> tuple[int, int]:
     """
-    Generate fungal ecological guild plots from marker ITS.
+    Generate fungal ecological guild plots from legacy OTU-level ITS data.
+
+    Existing MinIO objects are skipped unless force=True.
+
     Uploads to:
       biodiversity/guildplots/fungi/<sample_id>.png
     """
@@ -1524,6 +1660,19 @@ def generate_fungal_guildplots(mclient) -> tuple[int, int]:
     df = fetch_otu_data(marker=marker)
     if df.empty:
         print("[INFO] No ITS OTU rows found; skipping fungal guild plots.")
+        return 0, 0
+
+    if sample_ids:
+        df = df[
+            df["sample_id"]
+            .fillna("")
+            .astype(str)
+            .str.upper()
+            .isin(sample_ids)
+        ].copy()
+
+    if df.empty:
+        print("[INFO] No ITS OTU rows match the requested sample filter.")
         return 0, 0
 
     funguild_by_genus = load_funguild_best_by_genus()
@@ -1536,11 +1685,15 @@ def generate_fungal_guildplots(mclient) -> tuple[int, int]:
     print(f"[DEBUG] Unique extracted genera: {nonempty.nunique()}")
     print(f"[DEBUG] FUNGuild genus matches: {matched.sum()} / {len(nonempty)}")
 
+    prefix = "biodiversity/guildplots/fungi/"
+    existing_objects = set() if force else list_existing_minio_objects(mclient, prefix)
+
     out_dir = PROJECT_ROOT / "data" / "biodiversity_guildplots" / "fungi"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     generated = 0
     uploaded = 0
+    skipped_existing = 0
 
     for sample_id, sample_df in df.groupby("sample_id"):
         sample_id = str(sample_id).strip()
@@ -1548,6 +1701,16 @@ def generate_fungal_guildplots(mclient) -> tuple[int, int]:
             continue
 
         safe_id = sanitize_filename(sample_id)
+        object_name = f"{prefix}{safe_id}.png"
+
+        if not force and object_name in existing_objects:
+            skipped_existing += 1
+            continue
+
+        if dry_run:
+            print(f"[NEW] would generate {object_name}")
+            continue
+
         local_png = out_dir / f"{safe_id}.png"
 
         ok = make_fungal_guildplot_for_sample(
@@ -1561,7 +1724,6 @@ def generate_fungal_guildplots(mclient) -> tuple[int, int]:
 
         generated += 1
 
-        object_name = f"biodiversity/guildplots/fungi/{safe_id}.png"
         uploaded_url = upload_file_to_minio(
             mclient,
             local_png,
@@ -1571,19 +1733,83 @@ def generate_fungal_guildplots(mclient) -> tuple[int, int]:
         if uploaded_url:
             uploaded += 1
 
+    print(f"[OK] Skipped {skipped_existing} existing fungal guild plots")
     print(f"[OK] Generated {generated} fungal guild plots")
     print(f"[OK] Uploaded {uploaded} fungal guild plots to MinIO")
     return generated, uploaded
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description=(
+            "Generate biodiversity charts that are missing from MinIO. "
+            "Existing objects are skipped by default."
+        )
+    )
+    parser.add_argument(
+        "--marker",
+        default=os.getenv("BIODIV_MARKER", "16S"),
+        choices=("16S", "ITS", "16s", "its"),
+        help="Marker for taxonomic pie charts (default: BIODIV_MARKER or 16S).",
+    )
+    parser.add_argument(
+        "--level",
+        default=os.getenv("BIODIV_LEVEL", "Phylum"),
+        help="Taxonomic level (current compact importer stores Phylum).",
+    )
+    parser.add_argument(
+        "--sample-id",
+        action="append",
+        help=(
+            "Generate only selected sample IDs. May be repeated or contain "
+            "comma-separated IDs."
+        ),
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        default=os.getenv("BIODIV_FORCE_REGENERATE", "0") == "1",
+        help="Regenerate and overwrite charts even when they already exist.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show missing chart objects without creating or uploading them.",
+    )
+    return parser.parse_args()
+
+
 def main():
-    marker = os.getenv("BIODIV_MARKER", "16S")
-    level = normalize_taxonomic_level(os.getenv("BIODIV_LEVEL", "Phylum"))
+    args = parse_args()
+
+    marker = args.marker.upper()
+    level = normalize_taxonomic_level(args.level)
+    sample_ids = normalize_sample_filter(args.sample_id)
+
     out_dir = PROJECT_ROOT / "data" / "biodiversity_piecharts" / marker / level
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"[INFO] marker={marker} level={level}")
-    df = fetch_otu_data(marker=marker)
+    print(
+        f"[INFO] marker={marker} level={level} "
+        f"force={args.force} dry_run={args.dry_run}"
+    )
+    if sample_ids:
+        print(f"[INFO] sample filter: {sorted(sample_ids)}")
+
+    # Current ingestion stores compact Phylum statistics here.
+    df = fetch_taxon_abundance(
+        marker=marker,
+        level=level,
+    )
+
+    if sample_ids and not df.empty:
+        df = df[
+            df["sample_id"]
+            .fillna("")
+            .astype(str)
+            .str.upper()
+            .isin(sample_ids)
+        ].copy()
 
     mclient = init_minio()
 
@@ -1597,25 +1823,53 @@ def main():
 
     generated = 0
     uploaded = 0
+    skipped_existing = 0
+    missing = 0
+
+    prefix = f"biodiversity/piecharts/{marker}/{level}/"
+    existing_objects = set() if args.force else list_existing_minio_objects(
+        mclient,
+        prefix,
+    )
 
     if df.empty:
-        print("[INFO] No OTU rows found for taxonomic piecharts.")
+        print(
+            "[INFO] No compact taxonomic rows found for "
+            f"marker={marker}, level={level}."
+        )
     else:
         for sample_id, sample_df in df.groupby("sample_id"):
             sample_id = str(sample_id).strip()
             if not sample_id:
                 continue
 
-            local_png = out_dir / f"{sanitize_filename(sample_id)}.png"
-            ok = make_piechart_for_sample(sample_df, sample_id, marker, level, local_png)
+            safe_id = sanitize_filename(sample_id)
+            object_name = f"{prefix}{safe_id}.png"
+
+            if not args.force and object_name in existing_objects:
+                skipped_existing += 1
+                continue
+
+            missing += 1
+
+            if args.dry_run:
+                print(f"[NEW] would generate {object_name}")
+                continue
+
+            local_png = out_dir / f"{safe_id}.png"
+            ok = make_piechart_for_sample(
+                sample_df,
+                sample_id,
+                marker,
+                level,
+                local_png,
+            )
             if not ok:
+                print(f"[WARN] No positive chart data for {sample_id}")
                 continue
 
             generated += 1
 
-            object_name = (
-                f"biodiversity/piecharts/{marker}/{level}/{sanitize_filename(sample_id)}.png"
-            )
             uploaded_url = upload_file_to_minio(
                 mclient,
                 local_png,
@@ -1625,14 +1879,26 @@ def main():
             if uploaded_url:
                 uploaded += 1
 
+    print(f"[OK] Missing taxonomic charts: {missing}")
+    print(f"[OK] Skipped existing taxonomic charts: {skipped_existing}")
     print(f"[OK] Generated {generated} taxonomic charts")
     print(f"[OK] Uploaded {uploaded} taxonomic charts to MinIO")
 
     if GENERATE_FUNGAL_GUILDS:
-        generate_fungal_guildplots(mclient)
+        generate_fungal_guildplots(
+            mclient,
+            force=args.force,
+            sample_ids=sample_ids,
+            dry_run=args.dry_run,
+        )
 
     if GENERATE_BACTERIAL_GUILDS:
-        generate_bacterial_guildplots_from_faprotax(mclient)
+        generate_bacterial_guildplots_from_faprotax(
+            mclient,
+            force=args.force,
+            sample_ids=sample_ids,
+            dry_run=args.dry_run,
+        )
 
 
 if __name__ == "__main__":
