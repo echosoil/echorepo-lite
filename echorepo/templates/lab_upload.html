@@ -9,7 +9,7 @@
 </p>
 
 <form method="post" enctype="multipart/form-data" action="{{ url_for('web.lab_import_auto') }}">
-  <input type="file" name="file" accept=".xlsx,.csv,.tsv,.txt" multiple required>
+  <input type="file" name="file" accept=".xlsx,.csv,.tsv,.txt" multiple required class="form-control mb-2">
   <button class="btn btn-primary">{{ _('Upload') }}</button>
 </form>
 {% endblock %}
