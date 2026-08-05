@@ -257,6 +257,33 @@ def _looks_like_oxide(label: str) -> bool:
     return any(t.startswith("O") for t in tokens)
 
 
+def _drop_parameter_values_below(
+    df: pd.DataFrame,
+    threshold: float = 0.01,
+    value_col: str = "value",
+) -> pd.DataFrame:
+    """
+    Remove rows whose numeric value is strictly below threshold.
+
+    Non-numeric values are retained.
+    A value equal to the threshold is retained.
+    """
+    if df is None or df.empty or value_col not in df.columns:
+        return df
+
+    numeric_values = pd.to_numeric(
+        df[value_col],
+        errors="coerce",
+    )
+
+    keep = (
+        numeric_values.isna()
+        | (numeric_values >= threshold)
+    )
+
+    return df.loc[keep].copy()
+
+
 def _drop_oxide_rows(
     df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name"
 ) -> pd.DataFrame:
@@ -1139,7 +1166,8 @@ def download_canonical_sample_parameters():
 
     df = pd.DataFrame(rows)
     df = _drop_oxide_rows(df)
-
+    df = _drop_parameter_values_below(df, threshold=0.01,)
+    
     # build CSV body into text
     buf_txt = io.StringIO()
     df.to_csv(buf_txt, index=False)
@@ -1313,7 +1341,11 @@ def download_canonical_zip():
             cur.execute("SELECT * FROM sample_parameters ORDER BY sample_id, parameter_code")
             df_params = pd.DataFrame(cur.fetchall())
             df_params = _drop_oxide_rows(df_params)
-
+            df_params = _drop_parameter_values_below(
+                df_params,
+                threshold=0.01,
+            )
+            
         buf3 = io.StringIO()
         df_params.to_csv(buf3, index=False)
         body_params = buf3.getvalue()
@@ -3479,7 +3511,7 @@ def lab_import_auto():
     return redirect(
         url_for("web.home")
     )
-    
+
 
 def _looks_like_biodiversity_xlsx(xlsx_bytes: bytes) -> bool:
     """
@@ -4482,24 +4514,31 @@ def _import_biodiversity_streaming(
 
     if client is not None:
         for sample_id, marker in affected_sample_markers:
-            object_name = (
-                f"biodiversity/piecharts/"
-                f"{marker}/{level}/{sample_id}.png"
-            )
+            # Guild charts also depend on the same raw source data. Removing
+            # them makes the incremental generator rebuild only affected
+            # samples, including old charts without metadata.
+            if marker == "ITS":
+                object_names.append(
+                    f"biodiversity/guildplots/fungi/{sample_id}.png"
+                )
+            elif marker == "16S":
+                object_names.append(
+                    f"biodiversity/guildplots/bacteria/{sample_id}.png"
+                 )
 
-            try:
-                client.remove_object(
-                    bucket,
-                    object_name,
-                )
-            except Exception as e:
-                # Chart-cache deletion must not roll back a successful
-                # statistical import.
-                log.warning(
-                    "Could not invalidate biodiversity chart %s: %s",
-                    object_name,
-                    e,
-                )
+            for object_name in object_names:
+                try:
+                    client.remove_object(
+                        bucket,
+                        object_name,
+                    )
+                except Exception as e:
+                    # Cache deletion must not roll back a successful import.
+                    log.warning(
+                        "Could not invalidate biodiversity chart %s: %s",
+                        object_name,
+                        e,
+                    )
 
     inserted = len(aggregate_rows)
 
@@ -4526,12 +4565,37 @@ def _import_biodiversity_streaming(
 
 @web_bp.get("/public/sample_piechart/<sample_id>")
 def public_sample_piechart(sample_id: str):
-    marker = (request.args.get("marker") or "16S").strip()
-    level = (request.args.get("level") or "Genus").strip()
+    sample_id = str(sample_id or "").strip().upper()
+    if not re.fullmatch(r"[A-Z0-9]{4}-[A-Z0-9]{4,}", sample_id):
+        abort(400, description="Invalid sample ID")
+
+    marker = (request.args.get("marker") or "16S").strip().upper()
+    if marker not in {"16S", "ITS"}:
+        abort(400, description="marker must be 16S or ITS")
+
+    level_raw = (request.args.get("level") or "Phylum").strip().lower()
+    level_aliases = {
+        "kingdom": "Kingdom",
+        "phylum": "Phylum",
+        "philum": "Phylum",
+        "class": "Class",
+        "order": "Order",
+        "family": "Family",
+        "genus": "Genus",
+        "species": "Species",
+    }
+    level = level_aliases.get(level_raw, "Phylum")
 
     client = _get_minio_client()
     bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-    object_name = f"biodiversity/piecharts/{marker}/{level}/{sample_id}.png"
+
+    # The taxonomic pie chart always depends on the imported data.
+    object_names = [
+        (
+            f"biodiversity/piecharts/"
+            f"{marker}/{level}/{sample_id}.png"
+        )
+    ]
 
     if client is None:
         return jsonify({"ok": True, "image_url": None, "caption": ""})
