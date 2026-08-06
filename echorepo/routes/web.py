@@ -5,7 +5,6 @@ import logging
 import os
 import pathlib
 import re
-import sqlite3
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
@@ -35,7 +34,7 @@ from echorepo.services.i18n_overrides import (
 
 from ..auth.decorators import login_required
 from ..config import settings
-from ..services.db import _ensure_lab_enrichment, get_pg_conn, query_user_df
+from ..services.db import get_pg_conn, query_user_df
 from ..services.lab_permissions import can_upload_lab_data
 from ..services.storage.minio import (
     StorageError,
@@ -59,14 +58,11 @@ from ..services.canonical_exports import (
     build_snapshot_bundle,
     looks_like_oxide as _looks_like_oxide,
 )
-
-try:
-    from echorepo.routes.data_api import _oxide_to_metal
-except Exception:
-    # Fallback: if the conversion helper cannot be imported,
-    # preserve the raw laboratory value without adding an elemental value.
-    def _oxide_to_metal(param, value):
-        return None
+from ..services.lab_uploads import (
+    InvalidLabUpload,
+    LabImportError,
+    import_metals_file,
+)
 
 # Zenodo sync log path (can also be set via env var)
 ZENODO_LOG_DEFAULT = os.getenv("ZENODO_LOG_FILE", "/data/zenodo_sync_log.csv")
@@ -309,18 +305,7 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     # return f"{base}{sep}l={sosci_lang}&r={user_id}"
     return f"{base}{sep}r={user_id}"
 
-# --------------------------------------------------------------------------
-# helpers for lab upload / QR
-# --------------------------------------------------------------------------
-def _normalize_qr(raw: str) -> str:
-    if not raw:
-        return ""
-    raw = str(raw).strip()
-    if raw.upper().startswith("ECHO-"):
-        raw = raw[5:]
-    if "-" not in raw and len(raw) >= 5:
-        raw = raw[:4] + "-" + raw[4:]
-    return raw
+
 
 
 # --------- Biodiversity helpers
@@ -2035,7 +2020,7 @@ def _process_lab_upload_file(
     """
     Process one uploaded laboratory file.
 
-    Returns a small result dictionary for logging/analytics.
+    Returns a small result dictionary for logging and analytics.
     """
     filename = (
         uploaded_file.filename
@@ -2043,12 +2028,14 @@ def _process_lab_upload_file(
     ).strip()
 
     if not filename:
-        raise ValueError("Uploaded file has no filename")
+        raise InvalidLabUpload(
+            "Uploaded file has no filename"
+        )
 
     data = uploaded_file.read()
 
     if not data:
-        raise ValueError(
+        raise InvalidLabUpload(
             f"{filename}: uploaded file is empty"
         )
 
@@ -2068,16 +2055,16 @@ def _process_lab_upload_file(
             "rows_inserted": inserted,
         }
 
-    _import_metals_file_bytes(
-        data,
-        filename,
-        uploader_id,
+    inserted = import_metals_file(
+        data=data,
+        filename=filename,
+        uploader_id=uploader_id,
     )
 
     return {
         "filename": filename,
-        "type": "lab",
-        "rows_inserted": None,
+        "type": "metals",
+        "rows_inserted": inserted,
     }
 
 
@@ -2142,10 +2129,20 @@ def lab_import_auto():
                 uploader_id,
             )
 
-        except ValueError as e:
+        except InvalidLabUpload as exc:
             abort(
                 400,
-                description=str(e),
+                description=str(exc),
+            )
+        except LabImportError as exc:
+            logging.getLogger(__name__).exception(
+                "Laboratory import failed for %s",
+                filename,
+            )
+
+            abort(
+                500,
+                description=str(exc),
             )
 
         results.append(result)
@@ -2158,20 +2155,35 @@ def lab_import_auto():
         )
 
     g._analytics_extra = {
-        "upload_type": "multiple_lab_files",
+        "upload_type": (
+            "multiple_lab_files"
+            if len(results) > 1
+            else "single_lab_file"
+        ),
+
         "file_count": len(results),
+        
         "biodiversity_file_count": sum(
             result["type"] == "biodiversity"
             for result in results
         ),
-        "lab_file_count": sum(
-            result["type"] == "lab"
+        
+        "metals_file_count": sum(
+            result["type"] == "metals"
             for result in results
         ),
+        
+        "metals_values_upserted": sum(
+            result["rows_inserted"] or 0
+            for result in results
+            if result["type"] == "metals"
+        ),
+        
         "files": [
             result["filename"]
             for result in results
         ],
+        
         "biodiversity_rows_inserted": sum(
             result["rows_inserted"] or 0
             for result in results
@@ -2184,110 +2196,7 @@ def lab_import_auto():
     )
 
 
-def _import_metals_file_bytes(data: bytes, filename: str, uploader_id: str):
-    """
-    Preserve your existing /lab-import behavior, but operate on bytes.
-    """
-    # parse to dataframe like before
-    try:
-        if filename.lower().endswith(".xlsx"):
-            df = pd.read_excel(io.BytesIO(data))
-        else:
-            # try TSV then CSV
-            try:
-                df = pd.read_csv(io.BytesIO(data), sep="\t")
-            except Exception:
-                df = pd.read_csv(io.BytesIO(data))
-    except Exception as e:
-        abort(400, description=f"Cannot read file: {e}")
 
-    if df.empty:
-        abort(400, description="Uploaded file has no rows")
-
-    db_path = settings.SQLITE_PATH
-    if not os.path.exists(db_path):
-        abort(500, description=f"SQLite database not found at {db_path}")
-
-    conn = sqlite3.connect(db_path)
-    _ensure_lab_enrichment(conn)
-    cur = conn.cursor()
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS lab_enrichment (
-          qr_code    TEXT NOT NULL,
-          param      TEXT NOT NULL,
-          value      TEXT,
-          unit       TEXT,
-          user_id    TEXT,
-          raw_row    TEXT,
-          updated_at TEXT DEFAULT (datetime('now')),
-          PRIMARY KEY (qr_code, param)
-        )
-    """)
-
-    fieldnames = list(df.columns)
-
-    for __idx, row in df.iterrows():
-        raw_dict = row.to_dict()
-        qr = _normalize_qr(raw_dict.get("ID") or raw_dict.get("id") or "")
-        if not qr:
-            continue
-
-        clean_raw = {k: ("" if pd.isna(v) else v) for k, v in raw_dict.items()}
-        raw_json = json.dumps(clean_raw, ensure_ascii=False)
-
-        for idx, col in enumerate(fieldnames):
-            if col in ("ID", "id"):
-                continue
-            val = row.get(col)
-            if pd.isna(val) or val == "":
-                continue
-            if str(col).lower().startswith("unit"):
-                continue
-
-            param = str(col).strip()
-            unit = ""
-
-            if idx + 1 < len(fieldnames):
-                maybe_unit_col = fieldnames[idx + 1]
-                if str(maybe_unit_col).lower().startswith("unit"):
-                    uval = row.get(maybe_unit_col)
-                    if not pd.isna(uval):
-                        unit = str(uval).strip()
-
-            cur.execute(
-                """
-                INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-                ON CONFLICT(qr_code, param) DO UPDATE SET
-                  value=excluded.value,
-                  unit=excluded.unit,
-                  user_id=excluded.user_id,
-                  raw_row=excluded.raw_row,
-                  updated_at=datetime('now')
-            """,
-                (qr, param, str(val), unit, uploader_id, raw_json),
-            )
-
-            conv = _oxide_to_metal(param, val)
-            if conv is not None:
-                metal_param, metal_val = conv
-                cur.execute(
-                    """
-                    INSERT INTO lab_enrichment (qr_code, param, value, unit, user_id, raw_row, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-                    ON CONFLICT(qr_code, param) DO UPDATE SET
-                      value=excluded.value,
-                      unit=excluded.unit,
-                      user_id=excluded.user_id,
-                      raw_row=excluded.raw_row,
-                      updated_at=datetime('now')
-                """,
-                    (qr, metal_param, str(metal_val), unit, uploader_id, raw_json),
-                )
-
-    conn.commit()
-    conn.close()
 
 
 def _import_biodiversity_streaming(
