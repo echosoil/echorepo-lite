@@ -26,7 +26,6 @@ from flask import (
     url_for,
 )
 from flask_babel import get_locale
-from flask_babel import gettext as _
 from openpyxl import load_workbook
 from psycopg2.extras import RealDictCursor
 
@@ -43,42 +42,20 @@ from ..services.lab_permissions import can_upload_lab_data
 from ..services.validation import find_default_coord_rows, select_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
 
+from ..services.canonical_exports import (
+    SAMPLE_COLUMNS as CANONICAL_SAMPLE_COLS,
+    build_live_csv,
+    build_snapshot_bundle,
+    looks_like_oxide as _looks_like_oxide,
+)
+
 try:
-    from echorepo.routes.data_api import CANONICAL_SAMPLE_COLS, _oxide_to_metal
+    from echorepo.routes.data_api import _oxide_to_metal
 except Exception:
-    # fallback – if import fails, just no conversion
+    # Fallback: if the conversion helper cannot be imported,
+    # preserve the raw laboratory value without adding an elemental value.
     def _oxide_to_metal(param, value):
         return None
-
-    # fallback canonical columns (same as in data_api.py)
-    CANONICAL_SAMPLE_COLS = [
-        "sample_id",
-        "timestamp_utc",
-        "lat",
-        "lon",
-        "country_code",
-        "location_accuracy_m",
-        "ph",
-        "organic_carbon_pct",
-        "earthworms_count",
-        "contamination_debris",
-        "contamination_plastic",
-        "contamination_other_orig",
-        "contamination_other_en",
-        "pollutants_count",
-        "soil_structure_orig",
-        "soil_structure_en",
-        "soil_texture_orig",
-        "soil_texture_en",
-        "observations_orig",
-        "observations_en",
-        "metals_info_orig",
-        "metals_info_en",
-        "collected_by",
-        "data_source",
-        "qa_status",
-        "licence",
-    ]
 
 # Zenodo sync log path (can also be set via env var)
 ZENODO_LOG_DEFAULT = os.getenv("ZENODO_LOG_FILE", "/data/zenodo_sync_log.csv")
@@ -240,61 +217,10 @@ def _current_ui_i18n() -> dict:
         "locale": loc,
     }
 
-def _looks_like_oxide(label: str) -> bool:
-    """
-    True for formulas like SiO2, Al2O3, FeO, K2O, P2O5, CaO, etc.
-    (Any multi-token formula that contains an O-token.)
-    """
-    if not label:
-        return False
-    s = str(label).strip()
-    s = re.sub(r"\(.*?\)", "", s)  # strip units like "(ppm)"
-    # tokenize into element(+optional digits) chunks
-    tokens = re.findall(r"[A-Z][a-z]?\d*", s)
-    if len(tokens) < 2:
-        return False
-    # oxide if one of the tokens is 'O', 'O2', 'O3', ...
-    return any(t.startswith("O") for t in tokens)
 
 
-def _drop_parameter_values_below(
-    df: pd.DataFrame,
-    threshold: float = 0.01,
-    value_col: str = "value",
-) -> pd.DataFrame:
-    """
-    Remove rows whose numeric value is strictly below threshold.
-
-    Non-numeric values are retained.
-    A value equal to the threshold is retained.
-    """
-    if df is None or df.empty or value_col not in df.columns:
-        return df
-
-    numeric_values = pd.to_numeric(
-        df[value_col],
-        errors="coerce",
-    )
-
-    keep = (
-        numeric_values.isna()
-        | (numeric_values >= threshold)
-    )
-
-    return df.loc[keep].copy()
 
 
-def _drop_oxide_rows(
-    df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name"
-) -> pd.DataFrame:
-    if df is None or df.empty:
-        return df
-    mask = pd.Series(False, index=df.index)
-    if code_col in df.columns:
-        mask |= df[code_col].fillna("").map(_looks_like_oxide)
-    if name_col in df.columns:
-        mask |= df[name_col].fillna("").map(_looks_like_oxide)
-    return df.loc[~mask].copy()
 
 
 def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -322,7 +248,6 @@ def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-OXIDE_NAMES = {"MN2O3", "AL2O3", "CAO", "FE2O3", "MGO", "SIO2", "P2O5", "TIO2", "K2O", "SO3"}
 
 
 # --------------------------------------------------------------------------
@@ -660,68 +585,8 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
             logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
 
 # --------- Biodiversity helpers
-CANONICAL_BIODIVERSITY_COLUMNS = [
-    "sample_id",
-    "country_code",
-    "marker",
-    "taxonomic_level",
-    "taxon",
-    "read_count",
-    "relative_abundance_pct",
-    "analysis_date",
-    "source_file",
-    "licence",
-]
 
 
-def _get_canonical_biodiversity_df() -> pd.DataFrame:
-    """
-    Return compact taxonomic biodiversity statistics.
-
-    Raw OTU IDs and raw taxonomy records are deliberately excluded.
-    Raw source files remain preserved separately in MinIO.
-    """
-    sql = """
-        SELECT
-            sta.sample_id,
-            s.country_code,
-            sta.marker,
-            sta.level AS taxonomic_level,
-            sta.taxon,
-            sta.read_count,
-            sta.relative_abundance_pct,
-            sta.uploaded_at AS analysis_date,
-            sta.source_file,
-            COALESCE(
-                NULLIF(s.licence, ''),
-                'CC-BY-4.0'
-            ) AS licence
-        FROM sample_taxon_abundance AS sta
-        LEFT JOIN samples AS s
-          ON s.sample_id = sta.sample_id
-        ORDER BY
-            sta.sample_id,
-            sta.marker,
-            sta.level,
-            sta.read_count DESC,
-            sta.taxon
-    """
-
-    with get_pg_conn() as conn, conn.cursor(
-        cursor_factory=RealDictCursor
-    ) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    if not rows:
-        return pd.DataFrame(
-            columns=CANONICAL_BIODIVERSITY_COLUMNS
-        )
-
-    return pd.DataFrame(
-        rows,
-        columns=CANONICAL_BIODIVERSITY_COLUMNS,
-    )
 
 # --------- Search helpers
 def _coordinate_approved_csv_path() -> Path:
@@ -894,311 +759,92 @@ def privacy_accept():
 # --------------------------------------------------------------------------
 
 
-@web_bp.route("/download/canonical/samples.csv")
-@login_required
-def download_canonical_samples():
-    g._analytics_extra = {
+# --------------------------------------------------------------------------
+# Canonical downloads
+# --------------------------------------------------------------------------
+
+_CANONICAL_EXPORTS = {
+    "samples.csv": {
         "dataset": "canonical_samples",
-        "file_name": "samples.csv",
-        "kind": "canonical_export",
-    }
-    sql = """
-        SELECT
-            sample_id,
-            timestamp_utc,
-            lat,
-            lon,
-            country_code,
-            location_accuracy_m,
-            ph,
-            organic_carbon_pct,
-            earthworms_count,
-            contamination_debris,
-            contamination_plastic,
-            contamination_other_orig,
-            contamination_other_en,
-            pollutants_count,
-            soil_structure_orig,
-            soil_structure_en,
-            soil_texture_orig,
-            soil_texture_en,
-            observations_orig,
-            observations_en,
-            metals_info_orig,
-            metals_info_en,
-            collected_by,
-            data_source,
-            qa_status,
-            licence
-        FROM samples
-        ORDER BY timestamp_utc DESC, sample_id
-    """
-    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    if not rows:
-        abort(404, description="No canonical samples found in database")
-
-    df = pd.DataFrame(rows)
-
-    # build CSV body into text
-    buf_txt = io.StringIO()
-    df.to_csv(buf_txt, index=False)
-    body = buf_txt.getvalue()
-
-    # simple "live export" header
-    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    base_url = request.url_root.rstrip("/")
-
-    # latest citable snapshot date (may be None if not yet created)
-    snapshot_date = _get_latest_canonical_snapshot_date()
-    if snapshot_date:
-        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
-        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/samples.csv"
-        snapshot_lines = [
-            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
-            f"# Latest citable snapshot (samples.csv): {snapshot_csv_url}",
-        ]
-    else:
-        snapshot_lines = [
-            "# Latest citable snapshot: (not available yet on this instance)",
-        ]
-
-    header = [
-        "# ECHOrepo Canonical Dataset",
-        "# File: samples.csv",
-        f"# Generated at: {generated_at}",
-        f"# Downloaded from: {base_url}/download/canonical/samples.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
-        *snapshot_lines,
-        "",
-    ]
-    csv_text = "\n".join(header) + body
-
-    data = csv_text.encode("utf-8")
-    buf = BytesIO(data)
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name="samples.csv",
-        mimetype="text/csv",
-    )
-
-
-@web_bp.route("/download/canonical/sample_images.csv")
-@login_required
-def download_canonical_sample_images():
-    g._analytics_extra = {
+        "empty_message": "No canonical samples found in database",
+    },
+    "sample_images.csv": {
         "dataset": "canonical_sample_images",
-        "file_name": "sample_images.csv",
-        "kind": "canonical_export",
-    }
-    sql = """
-        SELECT
-            sample_id,
-            country_code,
-            image_id,
-            image_url,
-            image_description_orig,
-            image_description_en,
-            collected_by,
-            timestamp_utc,
-            licence
-        FROM sample_images
-        ORDER BY sample_id, image_id
-    """
-    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    if not rows:
-        abort(404, description="No canonical sample_images found in database")
-
-    df = pd.DataFrame(rows)
-
-    # build CSV body into text
-    buf_txt = io.StringIO()
-    df.to_csv(buf_txt, index=False)
-    body = buf_txt.getvalue()
-
-    # simple "live export" header
-    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    base_url = request.url_root.rstrip("/")
-
-    snapshot_date = _get_latest_canonical_snapshot_date()
-    if snapshot_date:
-        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
-        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_images.csv"
-        snapshot_lines = [
-            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
-            f"# Latest citable snapshot (sample_images.csv): {snapshot_csv_url}",
-        ]
-    else:
-        snapshot_lines = [
-            "# Latest citable snapshot: (not available yet on this instance)",
-        ]
-
-    header = [
-        "# ECHOrepo Canonical Dataset",
-        "# File: sample_images.csv",
-        f"# Generated at: {generated_at}",
-        f"# Downloaded from: {base_url}/download/canonical/sample_images.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
-        *snapshot_lines,
-        "",
-    ]
-    csv_text = "\n".join(header) + body
-
-    data = csv_text.encode("utf-8")
-    buf = BytesIO(data)
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name="sample_images.csv",
-        mimetype="text/csv",
-    )
-
-
-@web_bp.route("/download/canonical/sample_parameters.csv")
-@login_required
-def download_canonical_sample_parameters():
-    g._analytics_extra = {
+        "empty_message": "No canonical sample_images found in database",
+    },
+    "sample_parameters.csv": {
         "dataset": "canonical_sample_parameters",
-        "file_name": "sample_parameters.csv",
-        "kind": "canonical_export",
-    }
-    sql = """
-        SELECT
-            sample_id,
-            country_code,
-            parameter_code,
-            parameter_name,
-            value,
-            uom,
-            analysis_method,
-            analysis_date,
-            lab_id,
-            created_by,
-            licence,
-            parameter_uri
-        FROM sample_parameters
-        ORDER BY sample_id, parameter_code
-    """
-    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    if not rows:
-        abort(404, description="No canonical sample_parameters found in database")
-
-    df = pd.DataFrame(rows)
-    df = _drop_oxide_rows(df)
-    df = _drop_parameter_values_below(df, threshold=0.01,)
-    
-    # build CSV body into text
-    buf_txt = io.StringIO()
-    df.to_csv(buf_txt, index=False)
-    body = buf_txt.getvalue()
-
-    # simple "live export" header
-    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    base_url = request.url_root.rstrip("/")
-
-    snapshot_date = _get_latest_canonical_snapshot_date()
-    if snapshot_date:
-        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
-        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_parameters.csv"
-        snapshot_lines = [
-            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
-            f"# Latest citable snapshot (sample_parameters.csv): {snapshot_csv_url}",
-        ]
-    else:
-        snapshot_lines = [
-            "# Latest citable snapshot: (not available yet on this instance)",
-        ]
-
-    header = [
-        "# ECHOrepo Canonical Dataset",
-        "# File: sample_parameters.csv",
-        f"# Generated at: {generated_at}",
-        f"# Downloaded from: {base_url}/download/canonical/sample_parameters.csv",
-        f"# Description: Canonical sample parameter data on: As, Ca, Cd, Cu, Fe, K, Mg, Mn, Mo, Ni, P, Pb, S, Zn.",
-        f"# Note: Absence of a parameter means it has been filtered out due to low abundance below the measuring equipment's threshold.",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
-        *snapshot_lines,
-        "",
-    ]
-    csv_text = "\n".join(header) + body
-
-    data = csv_text.encode("utf-8")
-    buf = BytesIO(data)
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name="sample_parameters.csv",
-        mimetype="text/csv",
-    )
-
-
-@web_bp.route("/download/canonical/sample_biodiversity.csv")
-@login_required
-def download_canonical_sample_biodiversity():
-    g._analytics_extra = {
+        "empty_message": "No canonical sample_parameters found in database",
+    },
+    "sample_biodiversity.csv": {
         "dataset": "canonical_sample_biodiversity",
-        "file_name": "sample_biodiversity.csv",
+        "empty_message": (
+            "No compact biodiversity statistics found in database"
+        ),
+    },
+}
+
+
+def _send_live_canonical_csv(filename: str):
+    config = _CANONICAL_EXPORTS[filename]
+
+    g._analytics_extra = {
+        "dataset": config["dataset"],
+        "file_name": filename,
         "kind": "canonical_export",
     }
 
-    df = _get_canonical_biodiversity_df()
+    df, csv_text = build_live_csv(
+        filename=filename,
+        base_url=request.url_root.rstrip("/"),
+        snapshot_date=_get_latest_canonical_snapshot_date(),
+    )
 
     if df.empty:
         abort(
             404,
-            description=(
-                "No compact biodiversity statistics "
-                "found in database"
-            ),
+            description=config["empty_message"],
         )
 
-    buf_txt = io.StringIO()
-    df.to_csv(buf_txt, index=False)
-    body = buf_txt.getvalue()
-
-    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    base_url = request.url_root.rstrip("/")
-
-    header = [
-        "# ECHOrepo Canonical Dataset",
-        "# File: sample_biodiversity.csv",
-        f"# Generated at: {generated_at}",
-        f"# Downloaded from: {base_url}/download/canonical/sample_biodiversity.csv",
-        (
-            "# Description: Phylum-level taxonomic abundance "
-            "statistics per sample and marker."
-        ),
-        (
-            "# Note: Raw OTU-level source data are not included "
-            "in this canonical export."
-        ),
-        "",
-    ]
-    csv_text = "\n".join(header) + body
-
-    data = csv_text.encode("utf-8")
-    buf = BytesIO(data)
     return send_file(
-        buf,
+        BytesIO(csv_text.encode("utf-8")),
         as_attachment=True,
-        download_name="sample_biodiversity.csv",
+        download_name=filename,
         mimetype="text/csv",
     )
 
 
-@web_bp.route("/download/canonical/all.zip")
+@web_bp.get("/download/canonical/samples.csv")
+@login_required
+def download_canonical_samples():
+    return _send_live_canonical_csv("samples.csv")
+
+
+@web_bp.get("/download/canonical/sample_images.csv")
+@login_required
+def download_canonical_sample_images():
+    return _send_live_canonical_csv(
+        "sample_images.csv"
+    )
+
+
+@web_bp.get("/download/canonical/sample_parameters.csv")
+@login_required
+def download_canonical_sample_parameters():
+    return _send_live_canonical_csv(
+        "sample_parameters.csv"
+    )
+
+
+@web_bp.get("/download/canonical/sample_biodiversity.csv")
+@login_required
+def download_canonical_sample_biodiversity():
+    return _send_live_canonical_csv(
+        "sample_biodiversity.csv"
+    )
+
+
+@web_bp.get("/download/canonical/all.zip")
 @login_required
 def download_canonical_zip():
     g._analytics_extra = {
@@ -1207,151 +853,29 @@ def download_canonical_zip():
         "kind": "canonical_export",
     }
 
-    # Version date for this canonical snapshot
-    version_date = datetime.utcnow().date().isoformat()
-    # Base URL for building reference links in headers
-    base_url = request.url_root.rstrip("/")
+    version_date = (
+        datetime.utcnow()
+        .date()
+        .isoformat()
+    )
 
-    # We'll collect the final CSV text for MinIO upload
-    csv_contents: dict[str, str] = {}
+    bundle = build_snapshot_bundle(
+        base_url=request.url_root.rstrip("/"),
+        version_date=version_date,
+    )
 
-    mem = BytesIO()
-    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        # 1) samples.csv
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM samples ORDER BY timestamp_utc DESC, sample_id")
-            df_samples = pd.DataFrame(cur.fetchall())
+    _upload_canonical_csvs_to_minio(
+        bundle.csv_contents,
+        version_date,
+    )
 
-        buf1 = io.StringIO()
-        df_samples.to_csv(buf1, index=False)
-        body_samples = buf1.getvalue()
+    _upload_canonical_all_zip_to_minio(
+        bundle.zip_bytes,
+        version_date,
+    )
 
-        header_samples = [
-            "# ECHOrepo Canonical Dataset",
-            "# File: samples.csv",
-            f"# Version date: {version_date}",
-            f"# Version URL: {base_url}/download/canonical/{version_date}/samples.csv",
-            f"# Latest canonical: {base_url}/download/canonical/samples.csv",
-            "# Description: Canonical sample-level data (locations, pH, texture, structure, etc.).",
-            "",
-        ]
-        csv_samples = "\n".join(header_samples) + body_samples
-
-        csv_contents["samples.csv"] = csv_samples
-        zf.writestr("samples.csv", csv_samples)
-
-        # 2) sample_images.csv
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM sample_images ORDER BY sample_id, image_id")
-            df_imgs = pd.DataFrame(cur.fetchall())
-
-        buf2 = io.StringIO()
-        df_imgs.to_csv(buf2, index=False)
-        body_imgs = buf2.getvalue()
-
-        header_imgs = [
-            "# ECHOrepo Canonical Dataset",
-            "# File: sample_images.csv",
-            f"# Version date: {version_date}",
-            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_images.csv",
-            f"# Latest canonical: {base_url}/download/canonical/sample_images.csv",
-            "# Description: Canonical image metadata linked to samples (IDs, URLs, descriptions).",
-            "",
-        ]
-        csv_imgs = "\n".join(header_imgs) + body_imgs
-
-        csv_contents["sample_images.csv"] = csv_imgs
-        zf.writestr("sample_images.csv", csv_imgs)
-
-        # 3) sample_parameters.csv
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM sample_parameters ORDER BY sample_id, parameter_code")
-            df_params = pd.DataFrame(cur.fetchall())
-            df_params = _drop_oxide_rows(df_params)
-            df_params = _drop_parameter_values_below(
-                df_params,
-                threshold=0.01,
-            )
-
-        buf3 = io.StringIO()
-        df_params.to_csv(buf3, index=False)
-        body_params = buf3.getvalue()
-
-        header_params = [
-            "# ECHOrepo Canonical Dataset",
-            "# File: sample_parameters.csv",
-            f"# Version date: {version_date}",
-            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_parameters.csv",
-            f"# Latest canonical: {base_url}/download/canonical/sample_parameters.csv",
-            f"# Description: Canonical sample parameter data on: As, Ca, Cd, Cu, Fe, K, Mg, Mn, Mo, Ni, P, Pb, S, Zn.",
-            f"# Note: Absence of a parameter means it has been filtered out due to low abundance below the measuring equipment's threshold.",
-            "",
-        ]
-        csv_params = "\n".join(header_params) + body_params
-
-        csv_contents["sample_parameters.csv"] = csv_params
-        zf.writestr("sample_parameters.csv", csv_params)
-
-        df_biodiv = _get_canonical_biodiversity_df()
-
-        buf4 = io.StringIO()
-        df_biodiv.to_csv(
-            buf4,
-            index=False,
-        )
-        body_biodiv = buf4.getvalue()
-
-        header_biodiv = [
-            "# ECHOrepo Canonical Dataset",
-            "# File: sample_biodiversity.csv",
-            f"# Version date: {version_date}",
-            (
-                "# Version URL: "
-                f"{base_url}/download/canonical/"
-                f"{version_date}/sample_biodiversity.csv"
-            ),
-            (
-                "# Latest canonical: "
-                f"{base_url}/download/canonical/"
-                "sample_biodiversity.csv"
-            ),
-            (
-                "# Description: Phylum-level taxonomic "
-                "abundance statistics per sample and marker."
-            ),
-            (
-                "# Note: Raw OTU-level source data are not "
-                "included in this canonical snapshot."
-            ),
-            "",
-        ]
-
-        csv_biodiv = (
-            "\n".join(header_biodiv)
-            + body_biodiv
-        )
-
-        csv_contents[
-            "sample_biodiversity.csv"
-        ] = csv_biodiv
-
-        zf.writestr(
-            "sample_biodiversity.csv",
-            csv_biodiv,
-        )
-
-    _upload_canonical_csvs_to_minio(csv_contents, version_date)
-
-    # Prepare ZIP bytes once
-    mem.seek(0)
-    zip_bytes = mem.getvalue()
-
-    # Also upload all.zip snapshot to MinIO
-    _upload_canonical_all_zip_to_minio(zip_bytes, version_date)
-
-    # Send to user
     return send_file(
-        BytesIO(zip_bytes),
+        BytesIO(bundle.zip_bytes),
         as_attachment=True,
         download_name="all_canonical.zip",
         mimetype="application/zip",
