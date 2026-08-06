@@ -578,3 +578,103 @@ def build_snapshot_bundle(
         csv_contents=csv_contents,
         zip_bytes=zip_buffer.getvalue(),
     )
+
+FILTERED_EXPORT_FILENAMES = {
+    "samples.csv": "samples_filtered.csv",
+    "sample_images.csv": "sample_images_filtered.csv",
+    "sample_parameters.csv": "sample_parameters_filtered.csv",
+    "sample_biodiversity.csv": "sample_biodiversity_filtered.csv",
+}
+
+FILTERED_SOURCE_TABLES = {
+    "samples.csv": "samples",
+    "sample_images.csv": "sample_images",
+    "sample_parameters.csv": "sample_parameters",
+    "sample_biodiversity.csv": "sample_taxon_abundance",
+}
+
+
+def build_filtered_csv(
+    *,
+    filename: str,
+    df: pd.DataFrame,
+    snapshot_url: str,
+    query_string: str,
+    generated_at: str | None = None,
+) -> str:
+    """Build one non-citable filtered CSV export."""
+    spec = EXPORT_SPECS[filename]
+    filtered_filename = FILTERED_EXPORT_FILENAMES[filename]
+    source_table = FILTERED_SOURCE_TABLES[filename]
+
+    header = [
+        "# ECHOrepo Filtered Dataset",
+        f"# File: {filtered_filename}",
+        f"# Source table: {source_table} (filtered subset)",
+        f"# Download full dataset snapshot: {snapshot_url}",
+        f"# Generated at: {generated_at or _utc_now_iso()}",
+        f"# Query: {query_string}",
+        f"# Description: {spec.description}",
+    ]
+
+    header.extend(
+        f"# Note: {note}"
+        for note in spec.notes
+    )
+
+    header.extend(
+        [
+            (
+                "# Note: This is a filtered export for user inspection. "
+                "It is not a stable or citable dataset."
+            ),
+            f"# DOI for latest citable snapshot: {ZENODO_DOI}",
+            "",
+        ]
+    )
+
+    return (
+        "\n".join(header)
+        + dataframe_to_csv_body(df)
+    )
+
+
+def build_filtered_bundle(
+    *,
+    sample_ids: Sequence[str],
+    snapshot_url: str,
+    query_string: str,
+) -> CanonicalBundle:
+    """Build the four-file ZIP returned by the filtered search export."""
+    csv_contents: dict[str, str] = {}
+    generated_at = _utc_now_iso()
+
+    for filename in EXPORT_SPECS:
+        df = get_export_df(
+            filename,
+            sample_ids=sample_ids,
+        )
+        filtered_filename = FILTERED_EXPORT_FILENAMES[filename]
+        csv_contents[filtered_filename] = build_filtered_csv(
+            filename=filename,
+            df=df,
+            snapshot_url=snapshot_url,
+            query_string=query_string,
+            generated_at=generated_at,
+        )
+
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(
+        zip_buffer,
+        mode="w",
+        compression=zipfile.ZIP_DEFLATED,
+    ) as archive:
+        for filename, csv_text in csv_contents.items():
+            archive.writestr(filename, csv_text)
+
+    return CanonicalBundle(
+        csv_contents=csv_contents,
+        zip_bytes=zip_buffer.getvalue(),
+    )
+
