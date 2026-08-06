@@ -7,7 +7,6 @@ import time
 
 from flask import (
     Flask,
-    current_app,
     g,
     jsonify,
     make_response,
@@ -30,6 +29,7 @@ from .routes.i18n_admin import bp as i18n_admin_bp
 from .routes.web import web_bp
 from .services.db import init_db_sanity
 from .services.i18n_overrides import get_overrides, get_overrides_msgid
+from .routes.storage import storage_bp
 
 # ---------- Logging ----------
 logger = logging.getLogger(__name__)
@@ -127,6 +127,24 @@ def _build_labels_for_locale(loc: str) -> dict:
     return labels
 
 
+def request_duration_ms() -> int | None:
+    started_at = getattr(
+        g,
+        "request_started_at",
+        None,
+    )
+
+    if started_at is None:
+        return None
+
+    return int(
+        (
+            time.perf_counter()
+            - started_at
+        )
+        * 1000
+    )
+
 # ---------- create app ----------
 def create_app() -> Flask:
     pkg_dir = os.path.dirname(__file__)
@@ -153,28 +171,54 @@ def create_app() -> Flask:
         "/download/canonical/samples.csv",
         "/download/canonical/sample_images.csv",
         "/download/canonical/sample_parameters.csv",
+        "/download/canonical/sample_biodiversity.csv",
         "/download/sample_csv",  # old alias
         "/download/all_csv",  # old alias
     )
 
+    ENABLE_DEBUG_ROUTES = (
+        app.debug
+        or os.getenv(
+            "ENABLE_DEBUG_ROUTES",
+            "0",
+        ) == "1"
+    )
+
     # ---- Request timing logging, see /tmp/echorepo-slow.log ----
     @app.before_request
-    def _start_timer():
-        request._t0 = time.time()
+    def start_request_timer():
+        g.request_started_at = time.perf_counter()
 
+    
     @app.after_request
-    def _log_time(response):
-        t0 = getattr(request, "_t0", None)
-        if t0 is not None:
-            dt = (time.time() - t0) * 1000
-            if dt > 100:  # only log slow ones
-                current_app.logger.info("SLOW %s %s %.1f ms", request.method, request.path, dt)
-                logger.warning("SLOW %s %s %.1f ms", request.method, request.path, dt)
-        return response
+    def log_slow_request(response):
+        duration_ms = request_duration_ms()
 
+        if (
+            duration_ms is not None
+            and duration_ms > 100
+        ):
+            app.logger.info(
+                "SLOW %s %s %d ms",
+                request.method,
+                request.path,
+                duration_ms,
+            )
+
+        return response
+    
     # Base config
-    app.secret_key = settings.SECRET_KEY
-    app.config.from_mapping(SECRET_KEY=os.environ.get("SECRET_KEY", "dev-secret"))
+    secret_key = (
+        os.environ.get("SECRET_KEY")
+        or settings.SECRET_KEY
+    )
+
+    if not secret_key:
+        raise RuntimeError(
+            "SECRET_KEY is not configured"
+        )
+
+    app.config["SECRET_KEY"] = secret_key 
 
     app.config.update(
         SESSION_COOKIE_SAMESITE=settings.SESSION_COOKIE_SAMESITE,
@@ -245,42 +289,31 @@ def create_app() -> Flask:
         # Fall back to Babel plural handling
         return _real_ngettext(singular, plural, n, **kwargs)
 
-    def _install_callables():
-        # Install override-aware gettext/ngettext into the Jinja env
+    def install_gettext_callables():
         app.jinja_env.install_gettext_callables(
             _gettext_with_overrides,
             _ngettext_with_overrides,
             newstyle=True,
         )
-        # Also expose names that templates might use directly
-        app.jinja_env.globals["_"] = _gettext_with_overrides
-        app.jinja_env.globals["gettext"] = _gettext_with_overrides
-        app.jinja_env.globals["ngettext"] = _ngettext_with_overrides
 
-    # Install once now…
-    _install_callables()
-
-    # …and also re-install on every request in case something rebinds them later.
-    @app.before_request
-    def _force_i18n_install_every_time():
-        _install_callables()
-
-    # Make Jinja use our override-aware functions everywhere
-    app.jinja_env.install_gettext_callables(
-        _gettext_with_overrides,
-        _ngettext_with_overrides,
-        newstyle=True,  # enables %(name)s formatting
-    )
-
-    app.jinja_env.globals["_"] = _gettext_with_overrides
-
-    # ✅ Ensure our binding persists *after* Babel hooks per-request
-    @app.before_request
-    def _rebind_gettext_per_request():
-        app.jinja_env.install_gettext_callables(
-            _gettext_with_overrides, _ngettext_with_overrides, newstyle=True
+        app.jinja_env.globals.update(
+            {
+                "_": _gettext_with_overrides,
+                "gettext": _gettext_with_overrides,
+                "ngettext": _ngettext_with_overrides,
+            }
         )
-        app.jinja_env.globals["_"] = _gettext_with_overrides
+
+
+    # Install once during application creation.
+    install_gettext_callables()
+
+
+    # Keep this only if Babel genuinely overwrites the callables per request.
+    @app.before_request
+    def restore_gettext_callables():
+        install_gettext_callables()
+
 
     @app.before_request
     def inject_current_user():
@@ -332,14 +365,12 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp)
     app.register_blueprint(errors_bp)
     app.register_blueprint(data_api.data_api, url_prefix="/api/v1")  # or url_prefix="/api"
-    from echorepo.routes.storage import storage_bp
 
     app.register_blueprint(storage_bp)  # ← add this
 
     # ---- Back-compat endpoint aliases ----
     alias_map = [
         # web
-        ("home", "web.home", "/", ["GET"]),
         ("download_csv", "web.download_csv", "/download/csv", ["POST"]),
         ("download_xlsx", "web.download_xlsx", "/download/xlsx", ["POST"]),
         ("download_all_csv", "web.download_all_csv", "/download/all_csv", ["GET"]),
@@ -354,11 +385,23 @@ def create_app() -> Flask:
         ("logout", "auth.logout", "/logout", ["GET"]),
         ("sso_callback", "auth.sso_callback", "/sso/callback", ["GET"]),
     ]
-    for ep, target, rule, methods in alias_map:
+
+    for endpoint, target, rule, methods in alias_map:
+        view_func = app.view_functions.get(target)
+
+        if view_func is None:
+            app.logger.warning(
+                "Skipping alias %s: target %s "
+                "does not exist",
+                endpoint,
+                target,
+            )
+            continue
+
         app.add_url_rule(
             rule,
-            endpoint=ep,
-            view_func=app.view_functions[target],
+            endpoint=endpoint,
+            view_func=view_func,
             methods=methods,
         )
 
@@ -378,25 +421,6 @@ def create_app() -> Flask:
         resp.headers["Cache-Control"] = "no-store"
         return resp
 
-    @app.get("/i18n/probe-json")
-    def i18n_probe_json():
-        s = request.args.get("s", "About")
-        loc = _canon_locale(str(get_locale() or "en"))
-        return jsonify(
-            {
-                "locale": loc,
-                "override": get_overrides_msgid(loc).get(s),
-                "gettext_with_overrides": _gettext_with_overrides(s),
-                "babel_gettext": _real_gettext(s),
-            }
-        )
-
-    @app.get("/i18n/probe-tpl")
-    def i18n_probe_tpl():
-        s = request.args.get("s", "About")
-        # Render via Jinja so we test what templates *actually* call.
-        out = render_template_string("{{ _('" + s.replace('"', '\\"') + "') }}")
-        return out
 
     @app.get("/i18n/labels.js")
     def i18n_labels_js():
@@ -418,16 +442,11 @@ def create_app() -> Flask:
             resp.headers["Cache-Control"] = "no-store"
         return resp
 
-    @app.before_request
-    def _start_timer():
-        g._start_time = time.time()
 
     @app.after_request
     def _log_usage(response):
         try:
-            start = getattr(g, "_start_time", None)
-            duration_ms = int((time.time() - start) * 1000) if start is not None else None
-
+            duration_ms = request_duration_ms()
             path = request.path
 
             # ---- 1) Skip noisy / internal endpoints completely ----
@@ -443,16 +462,7 @@ def create_app() -> Flask:
             # ---- 2) Identify user ----
             user_id = _get_current_user_id()
 
-            # ---- 3) Classify event type (only "essential" ones) ----
-            if path in ESSENTIAL_DOWNLOAD_PATHS:
-                event_type = "download"
-            elif path.startswith("/api/"):
-                event_type = "api_call"
-            else:
-                # Treat everything else as a "page view" (HTML pages)
-                event_type = "page_view"
-
-            # ---- 4) Collect other fields ----
+            # ---- 3) Collect other fields ----
             ip = request.headers.get("X-Forwarded-For", request.remote_addr)
             ip_h = hash_ip(ip)
 
@@ -470,9 +480,15 @@ def create_app() -> Flask:
             elif path == "/search":
                 event_type = "search"
 
-            elif path.startswith("/lab-upload") or path.startswith("/lab-enrichment"):
-                # web: /lab-upload
-                # api: /api/v1/lab-enrichment
+            elif path in {
+                "/lab-upload",
+                "/lab-import-auto",
+            }:
+                event_type = "upload"
+
+            elif path.startswith(
+                "/api/v1/lab-enrichment"
+            ):
                 event_type = "upload"
 
             elif path.startswith("/api/"):
@@ -519,70 +535,92 @@ def create_app() -> Flask:
 
         return response
 
+
     # ----- Debug routes --------------------------------------------
-    @app.get("/debug/whoami")
-    def debug_whoami():
-        # WARNING: remove or restrict this in production
-        from flask import jsonify
+    if ENABLE_DEBUG_ROUTES:
+        @app.get("/i18n/probe-json")
+        def i18n_probe_json():
+            s = request.args.get("s", "About")
+            loc = _canon_locale(str(get_locale() or "en"))
+            return jsonify(
+                {
+                    "locale": loc,
+                    "override": get_overrides_msgid(loc).get(s),
+                    "gettext_with_overrides": _gettext_with_overrides(s),
+                    "babel_gettext": _real_gettext(s),
+                }
+            )
 
-        # snapshot of session (but shortened so we don't print full tokens)
-        sess_snapshot = {}
-        for k in list(session.keys()):
-            v = session.get(k)
-            if isinstance(v, str | bytes):
-                s = v.decode("utf-8", errors="ignore") if isinstance(v, bytes) else v
-                if len(s) > 120:
-                    sess_snapshot[k] = s[:60] + "... (len=" + str(len(s)) + ")"
+        @app.get("/i18n/probe-tpl")
+        def i18n_probe_tpl():
+            s = request.args.get("s", "About")
+            # Render via Jinja so we test what templates *actually* call.
+            out = render_template_string("{{ _('" + s.replace('"', '\\"') + "') }}")
+            return out
+
+        @app.get("/debug/whoami")
+        def debug_whoami():
+            # WARNING: remove or restrict this in production
+            from flask import jsonify
+
+            # snapshot of session (but shortened so we don't print full tokens)
+            sess_snapshot = {}
+            for k in list(session.keys()):
+                v = session.get(k)
+                if isinstance(v, str | bytes):
+                    s = v.decode("utf-8", errors="ignore") if isinstance(v, bytes) else v
+                    if len(s) > 120:
+                        sess_snapshot[k] = s[:60] + "... (len=" + str(len(s)) + ")"
+                    else:
+                        sess_snapshot[k] = s
+                elif isinstance(v, dict):
+                    # show only first few keys, with repr of values
+                    small = {}
+                    for kk, vv in list(v.items())[:10]:
+                        r = repr(vv)
+                        small[kk] = r[:80] + ("..." if len(r) > 80 else "")
+                    sess_snapshot[k] = small
                 else:
-                    sess_snapshot[k] = s
-            elif isinstance(v, dict):
-                # show only first few keys, with repr of values
-                small = {}
-                for kk, vv in list(v.items())[:10]:
-                    r = repr(vv)
-                    small[kk] = r[:80] + ("..." if len(r) > 80 else "")
-                sess_snapshot[k] = small
-            else:
-                # for lists/objects, just show repr
-                r = repr(v)
-                sess_snapshot[k] = r[:120] + ("..." if len(r) > 120 else "")
+                    # for lists/objects, just show repr
+                    r = repr(v)
+                    sess_snapshot[k] = r[:120] + ("..." if len(r) > 120 else "")
 
-        return jsonify(
-            {
-                "user_id_from_helper": _get_current_user_id(),
-                "session_keys": list(session.keys()),
-                "session_snapshot": sess_snapshot,
-            }
-        )
+            return jsonify(
+                {
+                    "user_id_from_helper": _get_current_user_id(),
+                    "session_keys": list(session.keys()),
+                    "session_snapshot": sess_snapshot,
+                }
+            )
 
-    @app.get("/i18n/debug")
-    def i18n_debug():
-        try:
-            loc_raw = str(get_locale() or "en")
-        except Exception:
-            loc_raw = "en"
-        loc = _canon_locale(loc_raw)
-        labels = _build_labels_for_locale(loc)
-        return jsonify(
-            {
-                "locale_raw": loc_raw,
-                "locale_canon": loc,
-                "labels_count": len(labels),
-                "labels_sample": {k: labels[k] for k in list(labels)[:10]},
-                "has_privacyRadius": "privacyRadius" in labels,
-                "privacyRadius": labels.get("privacyRadius"),
-            }
-        )
+        @app.get("/i18n/debug")
+        def i18n_debug():
+            try:
+                loc_raw = str(get_locale() or "en")
+            except Exception:
+                loc_raw = "en"
+            loc = _canon_locale(loc_raw)
+            labels = _build_labels_for_locale(loc)
+            return jsonify(
+                {
+                    "locale_raw": loc_raw,
+                    "locale_canon": loc,
+                    "labels_count": len(labels),
+                    "labels_sample": {k: labels[k] for k in list(labels)[:10]},
+                    "has_privacyRadius": "privacyRadius" in labels,
+                    "privacyRadius": labels.get("privacyRadius"),
+                }
+            )
 
-    @app.get("/i18n/check-overrides")
-    def i18n_check_overrides():
-        loc = _canon_locale(str(get_locale() or "en"))
-        return jsonify(
-            {
-                "locale": loc,
-                "by_key": get_overrides(loc),
-                "by_msgid": get_overrides_msgid(loc),
-            }
-        )
+        @app.get("/i18n/check-overrides")
+        def i18n_check_overrides():
+            loc = _canon_locale(str(get_locale() or "en"))
+            return jsonify(
+                {
+                    "locale": loc,
+                    "by_key": get_overrides(loc),
+                    "by_msgid": get_overrides_msgid(loc),
+                }
+            )
 
     return app
