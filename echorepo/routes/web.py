@@ -44,6 +44,7 @@ from ..utils.table import make_table_html, strip_orig_cols
 
 from ..services.canonical_exports import (
     SAMPLE_COLUMNS as CANONICAL_SAMPLE_COLS,
+    build_filtered_bundle,
     build_live_csv,
     build_snapshot_bundle,
     looks_like_oxide as _looks_like_oxide,
@@ -1730,268 +1731,47 @@ def search_samples():
 
     # ---- special case: export as ZIP ----
     if fmt == "zip":
-        query_string = request.query_string.decode("utf-8")
-        generated = datetime.utcnow().isoformat() + "Z"
+        query_string = request.query_string.decode(
+            "utf-8",
+            errors="replace",
+        )
 
-        # Must match the date used when uploading all.zip in canonical_all_zip
         base_url = request.url_root.rstrip("/")
-        version_date_current = date.today().isoformat()
         snapshot_date = _get_latest_canonical_snapshot_date()
-        version_date = snapshot_date or version_date_current
+        version_date = (
+            snapshot_date
+            or date.today().isoformat()
+        )
+        snapshot_url = (
+            f"{base_url}/download/canonical/"
+            f"{version_date}/all.zip"
+        )
 
-        snapshot_url = f"{base_url}/download/canonical/{version_date}/all.zip"
-
-        # Use the full canonical column set from data_api.py
-        cols_sql = ", ".join(CANONICAL_SAMPLE_COLS)
-        sql_all = f"""
-            SELECT {cols_sql}
+        # Determine only which samples match the search criteria.
+        # The canonical export service fetches and formats all four datasets.
+        sql_ids = f"""
+            SELECT sample_id
             FROM samples
             WHERE {where_sql}
-            ORDER BY timestamp_utc DESC
+            ORDER BY timestamp_utc DESC, sample_id
         """
 
         with get_pg_conn() as conn, conn.cursor() as cur:
-            # 1) get all matching samples
-            cur.execute(sql_all, params)
-            samples = cur.fetchall()
-
-            # sample_id is the first canonical column
+            cur.execute(sql_ids, params)
             sample_ids = [
-                row[CANONICAL_SAMPLE_COLS.index("sample_id")]
-                for row in samples
-                if row[CANONICAL_SAMPLE_COLS.index("sample_id")]
+                row[0]
+                for row in cur.fetchall()
+                if row and row[0]
             ]
-            # to avoid "IN ()" when no results
-            if not sample_ids:
-                # return empty zip
-                mem = io.BytesIO()
-                with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-                    zf.writestr(
-                        "samples_filtered.csv",
-                        "sample_id,timestamp_utc,country_code,ph,lat,lon,collected_by\n",
-                    )
-                    zf.writestr(
-                        "sample_images_filtered.csv",
-                        "sample_id,country_code,image_id,image_url,image_description_orig,image_description_en,collected_by,timestamp_utc,licence\n",
-                    )
-                    zf.writestr(
-                        "sample_parameters_filtered.csv",
-                        "sample_id,country_code,parameter_code,parameter_name,value,uom,analysis_method,analysis_date,lab_id,created_by,licence,parameter_uri\n",
-                    )
-                    zf.writestr(
-                        "sample_biodiversity_filtered.csv",
-                        (
-                            "sample_id,country_code,marker,taxonomic_level,"
-                            "taxon,read_count,relative_abundance_pct,"
-                            "analysis_date,source_file,licence\n"
-                        ),
-                    )
-                mem.seek(0)
-                return send_file(
-                    mem,
-                    as_attachment=True,
-                    download_name="search_export.zip",
-                    mimetype="application/zip",
-                )
 
-            # 2) fetch images for those sample_ids
-            sql_imgs = """
-                SELECT sample_id, country_code, image_id, image_url,
-                       image_description_orig, image_description_en,
-                       collected_by, timestamp_utc, licence
-                FROM sample_images
-                WHERE sample_id = ANY(%s)
-                ORDER BY sample_id, image_id
-            """
-            cur.execute(sql_imgs, (sample_ids,))
-            images = cur.fetchall()
+        bundle = build_filtered_bundle(
+            sample_ids=sample_ids,
+            snapshot_url=snapshot_url,
+            query_string=query_string,
+        )
 
-            # 3) fetch parameters for those sample_ids
-            sql_params = """
-                SELECT sample_id, country_code, parameter_code, parameter_name,
-                       value, uom, analysis_method, analysis_date,
-                       lab_id, created_by, licence, parameter_uri
-                FROM sample_parameters
-                WHERE sample_id = ANY(%s)
-                ORDER BY sample_id, parameter_code
-            """
-            cur.execute(sql_params, (sample_ids,))
-            params_rows = cur.fetchall()
-
-            # 4) fetch biodiversity data for those sample_ids (if any)
-            sql_biodiv = """
-                SELECT
-                    sta.sample_id,
-                    s.country_code,
-                    sta.marker,
-                    sta.level AS taxonomic_level,
-                    sta.taxon,
-                    sta.read_count,
-                    sta.relative_abundance_pct,
-                    sta.uploaded_at AS analysis_date,
-                    sta.source_file,
-                    COALESCE(
-                        NULLIF(s.licence, ''),
-                        'CC-BY-4.0'
-                    ) AS licence
-                FROM sample_taxon_abundance AS sta
-                LEFT JOIN samples AS s
-                ON s.sample_id = sta.sample_id
-                WHERE sta.sample_id = ANY(%s)
-                ORDER BY
-                    sta.sample_id,
-                    sta.marker,
-                    sta.level,
-                    sta.read_count DESC,
-                    sta.taxon
-            """
-
-            cur.execute(
-                sql_biodiv,
-                (sample_ids,),
-            )
-            biodiv_rows = cur.fetchall()
-
-        # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
-        def _row_is_oxide(t):
-            code = (t[2] or "").strip()
-            name = (t[3] or "").strip()
-            return _looks_like_oxide(code) or _looks_like_oxide(name)
-
-        params_rows = [r for r in params_rows if not _row_is_oxide(r)]
-
-        # build zip in-memory
-        mem = io.BytesIO()
-        with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-            # samples_filtered.csv
-            out1 = io.StringIO()
-
-            # ----- METADATA HEADER -----
-            out1.write("# ECHOrepo Filtered Dataset\n")
-            out1.write("# Source table: samples (filtered subset)\n")
-            out1.write(f"# Download full dataset snapshot: {snapshot_url}\n")
-            out1.write(f"# Generated at: {generated}\n")
-            out1.write(f"# Query: {query_string}\n")
-            out1.write(
-                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
-                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            )
-            out1.write("\n")
-
-            w1 = csv.writer(out1)
-
-            # header: all canonical sample columns
-            w1.writerow(CANONICAL_SAMPLE_COLS)
-
-            # rows come from SELECT {cols_sql} in the same order
-            for r in samples:
-                w1.writerow(r)
-
-            zf.writestr("samples_filtered.csv", out1.getvalue())
-
-            # sample_images_filtered.csv
-            out2 = io.StringIO()
-
-            # ----- METADATA HEADER -----
-            out2.write("# ECHOrepo Filtered Dataset\n")
-            out2.write("# Source table: sample_images (filtered subset)\n")
-            out2.write(f"# Download full dataset snapshot: {snapshot_url}\n")
-            out2.write(f"# Generated at: {generated}\n")
-            out2.write(f"# Query: {query_string}\n")
-            out2.write(
-                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
-                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            )
-            out2.write("\n")
-
-            w2 = csv.writer(out2)
-            w2.writerow(
-                [
-                    "sample_id",
-                    "country_code",
-                    "image_id",
-                    "image_url",
-                    "image_description_orig",
-                    "image_description_en",
-                    "collected_by",
-                    "timestamp_utc",
-                    "licence",
-                ]
-            )
-            for r in images:
-                w2.writerow(r)
-            zf.writestr("sample_images_filtered.csv", out2.getvalue())
-
-            # sample_parameters_filtered.csv
-            out3 = io.StringIO()
-
-            # ----- METADATA HEADER -----
-            out3.write("# ECHOrepo Filtered Dataset\n")
-            out3.write("# Source table: samples (filtered subset)\n")
-            out3.write(f"# Download full dataset snapshot: {snapshot_url}\n")
-            out3.write(f"# Generated at: {generated}\n")
-            out3.write(f"# Query: {query_string}\n")
-            out3.write(
-                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
-            )
-            out3.write("\n")
-
-            w3 = csv.writer(out3)
-            w3.writerow(
-                [
-                    "sample_id",
-                    "country_code",
-                    "parameter_code",
-                    "parameter_name",
-                    "value",
-                    "uom",
-                    "analysis_method",
-                    "analysis_date",
-                    "lab_id",
-                    "created_by",
-                    "licence",
-                    "parameter_uri",
-                ]
-            )
-            for r in params_rows:
-                w3.writerow(r)
-            zf.writestr("sample_parameters_filtered.csv", out3.getvalue())
-
-            out4 = io.StringIO()
-
-            out4.write("# ECHOrepo Filtered Dataset\n")
-            out4.write("# Source table: sample_taxon_abundance (filtered subset)\n")
-            out4.write(f"# Download full dataset snapshot: {snapshot_url}\n")
-            out4.write(f"# Generated at: {generated}\n")
-            out4.write(f"# Query: {query_string}\n")
-            out4.write(
-                "# Note: This is a filtered export for user inspection. It is NOT a stable or citable dataset.\n"
-                "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            )
-            out4.write("\n")
-
-            w4 = csv.writer(out4)
-            w4.writerow(
-                [
-                    "sample_id",
-                    "country_code",
-                    "marker",
-                    "taxonomic_level",
-                    "taxon",
-                    "read_count",
-                    "relative_abundance_pct",
-                    "analysis_date",
-                    "source_file",
-                    "licence",
-                ]
-            )
-            for r in biodiv_rows:
-                w4.writerow(r)
-
-            zf.writestr("sample_biodiversity_filtered.csv", out4.getvalue())
-        mem.seek(0)
         return send_file(
-            mem,
+            BytesIO(bundle.zip_bytes),
             as_attachment=True,
             download_name="search_export.zip",
             mimetype="application/zip",
