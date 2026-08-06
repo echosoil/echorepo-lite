@@ -538,6 +538,41 @@ def infer_csvw_datatype(column_name: str, values: list[str]) -> str:
     return "string"
 
 
+def _open_csv_reader(
+    text: str,
+    filename: str,
+) -> tuple[csv._reader, str]:
+    """Return a reader and delimiter for one CSV resource.
+
+    ECHOREPO canonical exports have a fixed RFC-4180-style dialect: comma
+    delimiter, double-quote quote character, and doubled quotes inside quoted
+    fields. Do not run ``csv.Sniffer`` on these files: free-text image
+    descriptions may contain many apostrophes, causing Sniffer to incorrectly
+    choose a single quote as the quote character and then split quoted commas
+    into extra cells.
+
+    Non-canonical CSVs retain dialect detection for backwards compatibility.
+    """
+    stream = io.StringIO(text, newline="")
+
+    if filename in CANONICAL_RESOURCE_SCHEMAS:
+        return (
+            csv.reader(
+                stream,
+                delimiter=",",
+                quotechar='"',
+                doublequote=True,
+                escapechar=None,
+                skipinitialspace=False,
+                strict=True,
+            ),
+            ",",
+        )
+
+    dialect = detect_csv_dialect(text)
+    return csv.reader(stream, dialect=dialect, strict=True), dialect.delimiter
+
+
 def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
     raw = path.read_bytes()
     if not raw:
@@ -547,13 +582,16 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
     if "\x00" in text:
         raise ValueError(f"CSV contains NUL bytes: {path.name}")
 
-    dialect = detect_csv_dialect(text)
-    reader = csv.reader(io.StringIO(text, newline=""), dialect)
+    reader, delimiter = _open_csv_reader(text, path.name)
 
     try:
         headers = next(reader)
     except StopIteration as exc:
         raise ValueError(f"CSV has no header row: {path.name}") from exc
+    except csv.Error as exc:
+        raise ValueError(
+            f"Cannot parse the header of {path.name}: {exc}"
+        ) from exc
 
     headers = [header.lstrip("\ufeff").strip() for header in headers]
     if not headers or any(not header for header in headers):
@@ -563,21 +601,34 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
 
     values_by_column: dict[str, list[str]] = {header: [] for header in headers}
     row_count = 0
-    physical_row_number = 1
 
-    for row in reader:
-        physical_row_number += 1
-        if not row or all(not cell.strip() for cell in row):
-            continue
-        row_count += 1
-        if len(row) != len(headers):
-            raise ValueError(
-                f"CSV row {physical_row_number} in {path.name} has "
-                f"{len(row)} cells; expected {len(headers)}"
-            )
-        if row_count <= sample_rows:
-            for header, value in zip(headers, row):
-                values_by_column[header].append(value)
+    try:
+        for row in reader:
+            if not row or all(not cell.strip() for cell in row):
+                continue
+
+            row_count += 1
+            if len(row) != len(headers):
+                preview = " | ".join(
+                    cell.replace("\r", "\\r").replace("\n", "\\n")[:120]
+                    for cell in row[: min(len(row), 6)]
+                )
+                raise ValueError(
+                    f"CSV record {row_count + 1} in {path.name} has "
+                    f"{len(row)} cells; expected {len(headers)}. "
+                    f"The record ends near physical line {reader.line_num}. "
+                    f"Parsed preview: {preview!r}"
+                )
+
+            if row_count <= sample_rows:
+                for header, value in zip(headers, row):
+                    values_by_column[header].append(value)
+
+    except csv.Error as exc:
+        raise ValueError(
+            f"Malformed CSV in {path.name} near physical line "
+            f"{reader.line_num}: {exc}"
+        ) from exc
 
     inferred = {
         header: infer_csvw_datatype(header, values_by_column[header])
@@ -590,7 +641,7 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
         "headers": headers,
         "row_count": row_count,
         "encoding": "utf-8" if encoding.startswith("utf-8") else encoding,
-        "delimiter": dialect.delimiter,
+        "delimiter": delimiter,
         "inferred_datatypes": inferred,
         "size_bytes": path.stat().st_size,
         "sha256": sha256_file(path),
