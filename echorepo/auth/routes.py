@@ -275,7 +275,6 @@ def sso_login():
     """
     Start the browser-based Keycloak/OIDC login.
     """
-    # This supports calling /sso/login?next=... directly.
     remember_next_url(
         request.args.get("next")
     )
@@ -283,6 +282,7 @@ def sso_login():
     redirect_uri = url_for(
         "auth.sso_callback",
         _external=True,
+        _scheme="https",
     )
 
     return oauth.keycloak.authorize_redirect(
