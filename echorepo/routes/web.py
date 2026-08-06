@@ -792,6 +792,69 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
         except Exception as e:
             logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
 
+# --------- Biodiversity helpers
+CANONICAL_BIODIVERSITY_COLUMNS = [
+    "sample_id",
+    "country_code",
+    "marker",
+    "taxonomic_level",
+    "taxon",
+    "read_count",
+    "relative_abundance_pct",
+    "analysis_date",
+    "source_file",
+    "licence",
+]
+
+
+def _get_canonical_biodiversity_df() -> pd.DataFrame:
+    """
+    Return compact taxonomic biodiversity statistics.
+
+    Raw OTU IDs and raw taxonomy records are deliberately excluded.
+    Raw source files remain preserved separately in MinIO.
+    """
+    sql = """
+        SELECT
+            sta.sample_id,
+            s.country_code,
+            sta.marker,
+            sta.level AS taxonomic_level,
+            sta.taxon,
+            sta.read_count,
+            sta.relative_abundance_pct,
+            sta.uploaded_at AS analysis_date,
+            sta.source_file,
+            COALESCE(
+                NULLIF(s.licence, ''),
+                'CC-BY-4.0'
+            ) AS licence
+        FROM sample_taxon_abundance AS sta
+        LEFT JOIN samples AS s
+          ON s.sample_id = sta.sample_id
+        ORDER BY
+            sta.sample_id,
+            sta.marker,
+            sta.level,
+            sta.read_count DESC,
+            sta.taxon
+    """
+
+    with get_pg_conn() as conn, conn.cursor(
+        cursor_factory=RealDictCursor
+    ) as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    if not rows:
+        return pd.DataFrame(
+            columns=CANONICAL_BIODIVERSITY_COLUMNS
+        )
+
+    return pd.DataFrame(
+        rows,
+        columns=CANONICAL_BIODIVERSITY_COLUMNS,
+    )
 
 # --------- Search helpers
 def _coordinate_approved_csv_path() -> Path:
@@ -1196,6 +1259,8 @@ def download_canonical_sample_parameters():
         "# File: sample_parameters.csv",
         f"# Generated at: {generated_at}",
         f"# Downloaded from: {base_url}/download/canonical/sample_parameters.csv",
+        f"# Description: Canonical sample parameter data on: As, Ca, Cd, Cu, Fe, K, Mg, Mn, Mo, Ni, P, Pb, S, Zn.",
+        f"# Note: Absence of a parameter means it has been filtered out due to low abundance below the measuring equipment's threshold.",
         "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
         *snapshot_lines,
         "",
@@ -1235,14 +1300,16 @@ def download_canonical_sample_biodiversity():
         ORDER BY sample_id, marker, otu_id
     """
 
-    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
+    df = _get_canonical_biodiversity_df()
 
-    if not rows:
-        abort(404, description="No biodiversity rows found in database")
-
-    df = pd.DataFrame(rows)
+    if df.empty:
+        abort(
+            404,
+            description=(
+                "No compact biodiversity statistics "
+                "found in database"
+            ),
+        )
 
     buf_txt = io.StringIO()
     df.to_csv(buf_txt, index=False)
@@ -1364,39 +1431,53 @@ def download_canonical_zip():
         csv_contents["sample_parameters.csv"] = csv_params
         zf.writestr("sample_parameters.csv", csv_params)
 
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT
-                    sample_id,
-                    marker,
-                    otu_id,
-                    count,
-                    taxa,
-                    uploaded_at,
-                    uploaded_by,
-                    source_file
-                FROM sample_otu_counts
-                ORDER BY sample_id, marker, otu_id
-            """)
-            df_biodiv = pd.DataFrame(cur.fetchall())
+        df_biodiv = _get_canonical_biodiversity_df()
 
         buf4 = io.StringIO()
-        df_biodiv.to_csv(buf4, index=False)
+        df_biodiv.to_csv(
+            buf4,
+            index=False,
+        )
         body_biodiv = buf4.getvalue()
 
         header_biodiv = [
             "# ECHOrepo Canonical Dataset",
             "# File: sample_biodiversity.csv",
             f"# Version date: {version_date}",
-            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_biodiversity.csv",
-            f"# Latest canonical: {base_url}/download/canonical/sample_biodiversity.csv",
-            "# Description: Biodiversity OTU abundance data per sample.",
+            (
+                "# Version URL: "
+                f"{base_url}/download/canonical/"
+                f"{version_date}/sample_biodiversity.csv"
+            ),
+            (
+                "# Latest canonical: "
+                f"{base_url}/download/canonical/"
+                "sample_biodiversity.csv"
+            ),
+            (
+                "# Description: Phylum-level taxonomic "
+                "abundance statistics per sample and marker."
+            ),
+            (
+                "# Note: Raw OTU-level source data are not "
+                "included in this canonical snapshot."
+            ),
             "",
         ]
-        csv_biodiv = "\n".join(header_biodiv) + body_biodiv
 
-        csv_contents["sample_biodiversity.csv"] = csv_biodiv
-        zf.writestr("sample_biodiversity.csv", csv_biodiv)
+        csv_biodiv = (
+            "\n".join(header_biodiv)
+            + body_biodiv
+        )
+
+        csv_contents[
+            "sample_biodiversity.csv"
+        ] = csv_biodiv
+
+        zf.writestr(
+            "sample_biodiversity.csv",
+            csv_biodiv,
+        )
 
     _upload_canonical_csvs_to_minio(csv_contents, version_date)
 
