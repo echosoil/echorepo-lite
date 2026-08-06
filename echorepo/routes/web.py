@@ -26,7 +26,6 @@ from flask import (
     url_for,
 )
 from flask_babel import get_locale
-from flask_babel import gettext as _
 from openpyxl import load_workbook
 from psycopg2.extras import RealDictCursor
 
@@ -38,47 +37,25 @@ from echorepo.services.i18n_overrides import (
 
 from ..auth.decorators import login_required
 from ..config import settings
-from ..services.db import _ensure_lab_enrichment, get_pg_conn, query_sample, query_user_df
+from ..services.db import _ensure_lab_enrichment, get_pg_conn, query_user_df
 from ..services.lab_permissions import can_upload_lab_data
 from ..services.validation import find_default_coord_rows, select_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
 
+from ..services.canonical_exports import (
+    SAMPLE_COLUMNS as CANONICAL_SAMPLE_COLS,
+    build_live_csv,
+    build_snapshot_bundle,
+    looks_like_oxide as _looks_like_oxide,
+)
+
 try:
-    from echorepo.routes.data_api import CANONICAL_SAMPLE_COLS, _oxide_to_metal
+    from echorepo.routes.data_api import _oxide_to_metal
 except Exception:
-    # fallback – if import fails, just no conversion
+    # Fallback: if the conversion helper cannot be imported,
+    # preserve the raw laboratory value without adding an elemental value.
     def _oxide_to_metal(param, value):
         return None
-
-    # fallback canonical columns (same as in data_api.py)
-    CANONICAL_SAMPLE_COLS = [
-        "sample_id",
-        "timestamp_utc",
-        "lat",
-        "lon",
-        "country_code",
-        "location_accuracy_m",
-        "ph",
-        "organic_carbon_pct",
-        "earthworms_count",
-        "contamination_debris",
-        "contamination_plastic",
-        "contamination_other_orig",
-        "contamination_other_en",
-        "pollutants_count",
-        "soil_structure_orig",
-        "soil_structure_en",
-        "soil_texture_orig",
-        "soil_texture_en",
-        "observations_orig",
-        "observations_en",
-        "metals_info_orig",
-        "metals_info_en",
-        "collected_by",
-        "data_source",
-        "qa_status",
-        "licence",
-    ]
 
 # Zenodo sync log path (can also be set via env var)
 ZENODO_LOG_DEFAULT = os.getenv("ZENODO_LOG_FILE", "/data/zenodo_sync_log.csv")
@@ -240,61 +217,10 @@ def _current_ui_i18n() -> dict:
         "locale": loc,
     }
 
-def _looks_like_oxide(label: str) -> bool:
-    """
-    True for formulas like SiO2, Al2O3, FeO, K2O, P2O5, CaO, etc.
-    (Any multi-token formula that contains an O-token.)
-    """
-    if not label:
-        return False
-    s = str(label).strip()
-    s = re.sub(r"\(.*?\)", "", s)  # strip units like "(ppm)"
-    # tokenize into element(+optional digits) chunks
-    tokens = re.findall(r"[A-Z][a-z]?\d*", s)
-    if len(tokens) < 2:
-        return False
-    # oxide if one of the tokens is 'O', 'O2', 'O3', ...
-    return any(t.startswith("O") for t in tokens)
 
 
-def _drop_parameter_values_below(
-    df: pd.DataFrame,
-    threshold: float = 0.01,
-    value_col: str = "value",
-) -> pd.DataFrame:
-    """
-    Remove rows whose numeric value is strictly below threshold.
-
-    Non-numeric values are retained.
-    A value equal to the threshold is retained.
-    """
-    if df is None or df.empty or value_col not in df.columns:
-        return df
-
-    numeric_values = pd.to_numeric(
-        df[value_col],
-        errors="coerce",
-    )
-
-    keep = (
-        numeric_values.isna()
-        | (numeric_values >= threshold)
-    )
-
-    return df.loc[keep].copy()
 
 
-def _drop_oxide_rows(
-    df: pd.DataFrame, code_col="parameter_code", name_col="parameter_name"
-) -> pd.DataFrame:
-    if df is None or df.empty:
-        return df
-    mask = pd.Series(False, index=df.index)
-    if code_col in df.columns:
-        mask |= df[code_col].fillna("").map(_looks_like_oxide)
-    if name_col in df.columns:
-        mask |= df[name_col].fillna("").map(_looks_like_oxide)
-    return df.loc[~mask].copy()
 
 
 def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -322,21 +248,6 @@ def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-OXIDE_NAMES = {"MN2O3", "AL2O3", "CAO", "FE2O3", "MGO", "SIO2", "P2O5", "TIO2", "K2O", "SO3"}
-
-
-def _strip_oxides_from_info_str(s: str) -> str:
-    if not isinstance(s, str) or not s.strip():
-        return ""
-    parts = [p.strip() for p in s.split(";") if p.strip()]
-    keep = []
-    for token in parts:
-        left = token.split("=", 1)[0]
-        norm = re.sub(r"\s+", "", left).upper()
-        if norm in OXIDE_NAMES:
-            continue
-        keep.append(token)
-    return "; ".join(keep)
 
 
 # --------------------------------------------------------------------------
@@ -370,26 +281,6 @@ def _get_repo_user_id_from_db() -> str | None:
                 return val
 
     return user_key
-
-
-def _current_user_id() -> str | None:
-    kc_profile = (session.get("kc") or {}).get("profile") or {}
-
-    # prefer a stable internal KC id
-    if kc_profile.get("id"):
-        return kc_profile["id"]
-    if kc_profile.get("sub"):
-        return kc_profile["sub"]
-
-    # then fall back to whatever you used before
-    if session.get("user"):
-        return session["user"]
-
-    # last resort: email
-    if kc_profile.get("email"):
-        return kc_profile["email"]
-
-    return None
 
 
 def _has_accepted_privacy(user_id: str) -> bool:
@@ -474,7 +365,7 @@ def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
         return False
 
 
-def _user_has_metals_legacy(df: pd.DataFrame) -> bool:
+def _dataframe_has_metals(df: pd.DataFrame) -> bool:
     if df is None or df.empty:
         return False
     candidates = [
@@ -530,61 +421,6 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     # return f"{base}{sep}l={sosci_lang}&r={user_id}"
     return f"{base}{sep}r={user_id}"
 
-
-# --------------------------------------------------------------------------
-# labels for front-end
-# --------------------------------------------------------------------------
-def _js_base_labels() -> dict:
-    return {
-        "privacyRadius": _("Privacy radius (~±{km} km)"),
-        "soilPh": _("Soil pH"),
-        "acid": _("Acidic (≤5.5)"),
-        "slightlyAcid": _("Slightly acidic (5.5–6.5)"),
-        "neutral": _("Neutral (6.5–7.5)"),
-        "slightlyAlkaline": _("Slightly alkaline (7.5–8.5)"),
-        "alkaline": _("Alkaline (≥8.5)"),
-        "yourSamples": _("Your samples"),
-        "otherSamples": _("Other samples"),
-        "export": _("Export"),
-        "clear": _("Clear"),
-        "exportFiltered": _("Export filtered ({n})"),
-        "date": _("Date"),
-        "qr": _("QR code"),
-        "ph": _("pH"),
-        "colour": _("Colour"),
-        "soilOrganicMatter": _("Soil organic matter"),
-        "texture": _("Texture"),
-        "structure": _("Structure"),
-        "earthworms": _("Earthworms"),
-        "plastic": _("Plastic"),
-        "debris": _("Debris"),
-        "contamination": _("Contamination"),
-        "metals": _("Metals"),
-        "elementalConcentrations": _("Elemental concentrations"),
-        "drawRectangle": _("Draw a selection rectangle"),
-        "cancelDrawing": _("Cancel drawing"),
-        "cancel": _("Cancel"),
-        "deleteLastPoint": _("Delete last point"),
-        "drawRectangleHint": _("Click and drag to draw a selection rectangle."),
-        "releaseToFinish": _("Release mouse to add this rectangle to the selection."),
-        "selectionExport": _("Selection export to a file"),
-        "selectionExport2": _("Selection export"),
-        "selectionExportHintBefore": _("Use selection tool"),
-        "selectionExportHintAfter": _("to draw one or more areas"),
-        "exportSelection": _("Export selection"),
-        "exportSelectionTitle": _("Export selected samples"),
-        "clearSelection": _("Clear selection"),
-        "clearSelectionTitle": _("Clear all selection rectangles"),
-        "drawSelectionRectangle": _("Draw selection rectangle"),
-        "notAvailable": _("Not available"),
-        "zenodoDownload": _("Download dataset from Zenodo"),
-        "elementalConcentrationsHelp": _("Percentage values (%) can be converted to mg/kg by multiplying by 10000."),
-        "unitConversionHelp": _("Unit conversion help"),
-        "streetMap": _("Street map"),
-        "satellite": _("Satellite"),
-    }
-
-
 # --------------------------------------------------------------------------
 # helpers for lab upload / QR
 # --------------------------------------------------------------------------
@@ -597,50 +433,6 @@ def _normalize_qr(raw: str) -> str:
     if "-" not in raw and len(raw) >= 5:
         raw = raw[:4] + "-" + raw[4:]
     return raw
-
-
-def _user_has_metals(df: pd.DataFrame) -> bool:
-    if df is None or df.empty:
-        return False
-
-    cols = list(df.columns)
-    # Common exact names across old/new pipelines
-    exact = {
-        "METALS_info",
-        "lab_METALS_info",
-        "METALS",
-        "metals",
-        "metals_info",
-        "metals_info_en",
-        "metals_info_orig",
-        "elemental_concentrations",
-        "elemental_concentrations_en",
-        "elemental_concentrations_orig",
-    }
-
-    def _series_has_assignments(series: pd.Series) -> bool:
-        s = (
-            series.fillna("")
-            .astype(str)
-            .str.replace("<br>", ";", regex=False)
-            .str.strip()
-            .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
-        )
-        # our metals blob looks like "Cu=12; Zn=5" etc.
-        return s.str.contains("=", regex=False).any()
-
-    # 1) Fast path: exact column name matches
-    for c in cols:
-        if c in exact and _series_has_assignments(df[c]):
-            return True
-
-    # 2) Fallback: any column whose name suggests metals/elemental info
-    for c in cols:
-        name = str(c).lower()
-        if ("metals" in name) or ("elemental" in name and "concentration" in name):
-            if _series_has_assignments(df[c]):
-                return True
-    return False
 
 
 # --------------------------------------------------------------------------
@@ -793,68 +585,8 @@ def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
             logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
 
 # --------- Biodiversity helpers
-CANONICAL_BIODIVERSITY_COLUMNS = [
-    "sample_id",
-    "country_code",
-    "marker",
-    "taxonomic_level",
-    "taxon",
-    "read_count",
-    "relative_abundance_pct",
-    "analysis_date",
-    "source_file",
-    "licence",
-]
 
 
-def _get_canonical_biodiversity_df() -> pd.DataFrame:
-    """
-    Return compact taxonomic biodiversity statistics.
-
-    Raw OTU IDs and raw taxonomy records are deliberately excluded.
-    Raw source files remain preserved separately in MinIO.
-    """
-    sql = """
-        SELECT
-            sta.sample_id,
-            s.country_code,
-            sta.marker,
-            sta.level AS taxonomic_level,
-            sta.taxon,
-            sta.read_count,
-            sta.relative_abundance_pct,
-            sta.uploaded_at AS analysis_date,
-            sta.source_file,
-            COALESCE(
-                NULLIF(s.licence, ''),
-                'CC-BY-4.0'
-            ) AS licence
-        FROM sample_taxon_abundance AS sta
-        LEFT JOIN samples AS s
-          ON s.sample_id = sta.sample_id
-        ORDER BY
-            sta.sample_id,
-            sta.marker,
-            sta.level,
-            sta.read_count DESC,
-            sta.taxon
-    """
-
-    with get_pg_conn() as conn, conn.cursor(
-        cursor_factory=RealDictCursor
-    ) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    if not rows:
-        return pd.DataFrame(
-            columns=CANONICAL_BIODIVERSITY_COLUMNS
-        )
-
-    return pd.DataFrame(
-        rows,
-        columns=CANONICAL_BIODIVERSITY_COLUMNS,
-    )
 
 # --------- Search helpers
 def _coordinate_approved_csv_path() -> Path:
@@ -1027,318 +759,92 @@ def privacy_accept():
 # --------------------------------------------------------------------------
 
 
-@web_bp.route("/download/canonical/samples.csv")
-@login_required
-def download_canonical_samples():
-    g._analytics_extra = {
+# --------------------------------------------------------------------------
+# Canonical downloads
+# --------------------------------------------------------------------------
+
+_CANONICAL_EXPORTS = {
+    "samples.csv": {
         "dataset": "canonical_samples",
-        "file_name": "samples.csv",
-        "kind": "canonical_export",
-    }
-    sql = """
-        SELECT
-            sample_id,
-            timestamp_utc,
-            lat,
-            lon,
-            country_code,
-            location_accuracy_m,
-            ph,
-            organic_carbon_pct,
-            earthworms_count,
-            contamination_debris,
-            contamination_plastic,
-            contamination_other_orig,
-            contamination_other_en,
-            pollutants_count,
-            soil_structure_orig,
-            soil_structure_en,
-            soil_texture_orig,
-            soil_texture_en,
-            observations_orig,
-            observations_en,
-            metals_info_orig,
-            metals_info_en,
-            collected_by,
-            data_source,
-            qa_status,
-            licence
-        FROM samples
-        ORDER BY timestamp_utc DESC, sample_id
-    """
-    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    if not rows:
-        abort(404, description="No canonical samples found in database")
-
-    df = pd.DataFrame(rows)
-
-    # build CSV body into text
-    buf_txt = io.StringIO()
-    df.to_csv(buf_txt, index=False)
-    body = buf_txt.getvalue()
-
-    # simple "live export" header
-    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    base_url = request.url_root.rstrip("/")
-
-    # latest citable snapshot date (may be None if not yet created)
-    snapshot_date = _get_latest_canonical_snapshot_date()
-    if snapshot_date:
-        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
-        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/samples.csv"
-        snapshot_lines = [
-            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
-            f"# Latest citable snapshot (samples.csv): {snapshot_csv_url}",
-        ]
-    else:
-        snapshot_lines = [
-            "# Latest citable snapshot: (not available yet on this instance)",
-        ]
-
-    header = [
-        "# ECHOrepo Canonical Dataset",
-        "# File: samples.csv",
-        f"# Generated at: {generated_at}",
-        f"# Downloaded from: {base_url}/download/canonical/samples.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
-        *snapshot_lines,
-        "",
-    ]
-    csv_text = "\n".join(header) + body
-
-    data = csv_text.encode("utf-8")
-    buf = BytesIO(data)
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name="samples.csv",
-        mimetype="text/csv",
-    )
-
-
-@web_bp.route("/download/canonical/sample_images.csv")
-@login_required
-def download_canonical_sample_images():
-    g._analytics_extra = {
+        "empty_message": "No canonical samples found in database",
+    },
+    "sample_images.csv": {
         "dataset": "canonical_sample_images",
-        "file_name": "sample_images.csv",
-        "kind": "canonical_export",
-    }
-    sql = """
-        SELECT
-            sample_id,
-            country_code,
-            image_id,
-            image_url,
-            image_description_orig,
-            image_description_en,
-            collected_by,
-            timestamp_utc,
-            licence
-        FROM sample_images
-        ORDER BY sample_id, image_id
-    """
-    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    if not rows:
-        abort(404, description="No canonical sample_images found in database")
-
-    df = pd.DataFrame(rows)
-
-    # build CSV body into text
-    buf_txt = io.StringIO()
-    df.to_csv(buf_txt, index=False)
-    body = buf_txt.getvalue()
-
-    # simple "live export" header
-    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    base_url = request.url_root.rstrip("/")
-
-    snapshot_date = _get_latest_canonical_snapshot_date()
-    if snapshot_date:
-        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
-        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_images.csv"
-        snapshot_lines = [
-            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
-            f"# Latest citable snapshot (sample_images.csv): {snapshot_csv_url}",
-        ]
-    else:
-        snapshot_lines = [
-            "# Latest citable snapshot: (not available yet on this instance)",
-        ]
-
-    header = [
-        "# ECHOrepo Canonical Dataset",
-        "# File: sample_images.csv",
-        f"# Generated at: {generated_at}",
-        f"# Downloaded from: {base_url}/download/canonical/sample_images.csv",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
-        *snapshot_lines,
-        "",
-    ]
-    csv_text = "\n".join(header) + body
-
-    data = csv_text.encode("utf-8")
-    buf = BytesIO(data)
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name="sample_images.csv",
-        mimetype="text/csv",
-    )
-
-
-@web_bp.route("/download/canonical/sample_parameters.csv")
-@login_required
-def download_canonical_sample_parameters():
-    g._analytics_extra = {
+        "empty_message": "No canonical sample_images found in database",
+    },
+    "sample_parameters.csv": {
         "dataset": "canonical_sample_parameters",
-        "file_name": "sample_parameters.csv",
-        "kind": "canonical_export",
-    }
-    sql = """
-        SELECT
-            sample_id,
-            country_code,
-            parameter_code,
-            parameter_name,
-            value,
-            uom,
-            analysis_method,
-            analysis_date,
-            lab_id,
-            created_by,
-            licence,
-            parameter_uri
-        FROM sample_parameters
-        ORDER BY sample_id, parameter_code
-    """
-    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    if not rows:
-        abort(404, description="No canonical sample_parameters found in database")
-
-    df = pd.DataFrame(rows)
-    df = _drop_oxide_rows(df)
-    df = _drop_parameter_values_below(df, threshold=0.01,)
-    
-    # build CSV body into text
-    buf_txt = io.StringIO()
-    df.to_csv(buf_txt, index=False)
-    body = buf_txt.getvalue()
-
-    # simple "live export" header
-    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    base_url = request.url_root.rstrip("/")
-
-    snapshot_date = _get_latest_canonical_snapshot_date()
-    if snapshot_date:
-        snapshot_zip_url = f"{base_url}/download/canonical/{snapshot_date}/all.zip"
-        snapshot_csv_url = f"{base_url}/download/canonical/{snapshot_date}/sample_parameters.csv"
-        snapshot_lines = [
-            "# DOI for latest citable snapshot: 10.5281/zenodo.19722513",
-            f"# Latest citable snapshot (all.zip): {snapshot_zip_url}",
-            f"# Latest citable snapshot (sample_parameters.csv): {snapshot_csv_url}",
-        ]
-    else:
-        snapshot_lines = [
-            "# Latest citable snapshot: (not available yet on this instance)",
-        ]
-
-    header = [
-        "# ECHOrepo Canonical Dataset",
-        "# File: sample_parameters.csv",
-        f"# Generated at: {generated_at}",
-        f"# Downloaded from: {base_url}/download/canonical/sample_parameters.csv",
-        f"# Description: Canonical sample parameter data on: As, Ca, Cd, Cu, Fe, K, Mg, Mn, Mo, Ni, P, Pb, S, Zn.",
-        f"# Note: Absence of a parameter means it has been filtered out due to low abundance below the measuring equipment's threshold.",
-        "# Note: This is a live export. For a fixed, citable snapshot, use the full canonical ZIP export below.",
-        *snapshot_lines,
-        "",
-    ]
-    csv_text = "\n".join(header) + body
-
-    data = csv_text.encode("utf-8")
-    buf = BytesIO(data)
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name="sample_parameters.csv",
-        mimetype="text/csv",
-    )
-
-
-@web_bp.route("/download/canonical/sample_biodiversity.csv")
-@login_required
-def download_canonical_sample_biodiversity():
-    g._analytics_extra = {
+        "empty_message": "No canonical sample_parameters found in database",
+    },
+    "sample_biodiversity.csv": {
         "dataset": "canonical_sample_biodiversity",
-        "file_name": "sample_biodiversity.csv",
+        "empty_message": (
+            "No compact biodiversity statistics found in database"
+        ),
+    },
+}
+
+
+def _send_live_canonical_csv(filename: str):
+    config = _CANONICAL_EXPORTS[filename]
+
+    g._analytics_extra = {
+        "dataset": config["dataset"],
+        "file_name": filename,
         "kind": "canonical_export",
     }
 
-    sql = """
-        SELECT
-            sample_id,
-            marker,
-            otu_id,
-            count,
-            taxa,
-            uploaded_at,
-            uploaded_by,
-            source_file
-        FROM sample_otu_counts
-        ORDER BY sample_id, marker, otu_id
-    """
-
-    df = _get_canonical_biodiversity_df()
+    df, csv_text = build_live_csv(
+        filename=filename,
+        base_url=request.url_root.rstrip("/"),
+        snapshot_date=_get_latest_canonical_snapshot_date(),
+    )
 
     if df.empty:
         abort(
             404,
-            description=(
-                "No compact biodiversity statistics "
-                "found in database"
-            ),
+            description=config["empty_message"],
         )
 
-    buf_txt = io.StringIO()
-    df.to_csv(buf_txt, index=False)
-    body = buf_txt.getvalue()
-
-    generated_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    base_url = request.url_root.rstrip("/")
-
-    header = [
-        "# ECHOrepo Canonical Dataset",
-        "# File: sample_biodiversity.csv",
-        f"# Generated at: {generated_at}",
-        f"# Downloaded from: {base_url}/download/canonical/sample_biodiversity.csv",
-        "# Description: Biodiversity OTU abundance data per sample.",
-        "",
-    ]
-    csv_text = "\n".join(header) + body
-
-    data = csv_text.encode("utf-8")
-    buf = BytesIO(data)
     return send_file(
-        buf,
+        BytesIO(csv_text.encode("utf-8")),
         as_attachment=True,
-        download_name="sample_biodiversity.csv",
+        download_name=filename,
         mimetype="text/csv",
     )
 
 
-@web_bp.route("/download/canonical/all.zip")
+@web_bp.get("/download/canonical/samples.csv")
+@login_required
+def download_canonical_samples():
+    return _send_live_canonical_csv("samples.csv")
+
+
+@web_bp.get("/download/canonical/sample_images.csv")
+@login_required
+def download_canonical_sample_images():
+    return _send_live_canonical_csv(
+        "sample_images.csv"
+    )
+
+
+@web_bp.get("/download/canonical/sample_parameters.csv")
+@login_required
+def download_canonical_sample_parameters():
+    return _send_live_canonical_csv(
+        "sample_parameters.csv"
+    )
+
+
+@web_bp.get("/download/canonical/sample_biodiversity.csv")
+@login_required
+def download_canonical_sample_biodiversity():
+    return _send_live_canonical_csv(
+        "sample_biodiversity.csv"
+    )
+
+
+@web_bp.get("/download/canonical/all.zip")
 @login_required
 def download_canonical_zip():
     g._analytics_extra = {
@@ -1347,150 +853,29 @@ def download_canonical_zip():
         "kind": "canonical_export",
     }
 
-    # Version date for this canonical snapshot
-    version_date = datetime.utcnow().date().isoformat()
-    # Base URL for building reference links in headers
-    base_url = request.url_root.rstrip("/")
+    version_date = (
+        datetime.utcnow()
+        .date()
+        .isoformat()
+    )
 
-    # We'll collect the final CSV text for MinIO upload
-    csv_contents: dict[str, str] = {}
+    bundle = build_snapshot_bundle(
+        base_url=request.url_root.rstrip("/"),
+        version_date=version_date,
+    )
 
-    mem = BytesIO()
-    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        # 1) samples.csv
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM samples ORDER BY timestamp_utc DESC, sample_id")
-            df_samples = pd.DataFrame(cur.fetchall())
+    _upload_canonical_csvs_to_minio(
+        bundle.csv_contents,
+        version_date,
+    )
 
-        buf1 = io.StringIO()
-        df_samples.to_csv(buf1, index=False)
-        body_samples = buf1.getvalue()
+    _upload_canonical_all_zip_to_minio(
+        bundle.zip_bytes,
+        version_date,
+    )
 
-        header_samples = [
-            "# ECHOrepo Canonical Dataset",
-            "# File: samples.csv",
-            f"# Version date: {version_date}",
-            f"# Version URL: {base_url}/download/canonical/{version_date}/samples.csv",
-            f"# Latest canonical: {base_url}/download/canonical/samples.csv",
-            "# Description: Canonical sample-level data (locations, pH, texture, structure, etc.).",
-            "",
-        ]
-        csv_samples = "\n".join(header_samples) + body_samples
-
-        csv_contents["samples.csv"] = csv_samples
-        zf.writestr("samples.csv", csv_samples)
-
-        # 2) sample_images.csv
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM sample_images ORDER BY sample_id, image_id")
-            df_imgs = pd.DataFrame(cur.fetchall())
-
-        buf2 = io.StringIO()
-        df_imgs.to_csv(buf2, index=False)
-        body_imgs = buf2.getvalue()
-
-        header_imgs = [
-            "# ECHOrepo Canonical Dataset",
-            "# File: sample_images.csv",
-            f"# Version date: {version_date}",
-            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_images.csv",
-            f"# Latest canonical: {base_url}/download/canonical/sample_images.csv",
-            "# Description: Canonical image metadata linked to samples (IDs, URLs, descriptions).",
-            "",
-        ]
-        csv_imgs = "\n".join(header_imgs) + body_imgs
-
-        csv_contents["sample_images.csv"] = csv_imgs
-        zf.writestr("sample_images.csv", csv_imgs)
-
-        # 3) sample_parameters.csv
-        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM sample_parameters ORDER BY sample_id, parameter_code")
-            df_params = pd.DataFrame(cur.fetchall())
-            df_params = _drop_oxide_rows(df_params)
-            df_params = _drop_parameter_values_below(
-                df_params,
-                threshold=0.01,
-            )
-
-        buf3 = io.StringIO()
-        df_params.to_csv(buf3, index=False)
-        body_params = buf3.getvalue()
-
-        header_params = [
-            "# ECHOrepo Canonical Dataset",
-            "# File: sample_parameters.csv",
-            f"# Version date: {version_date}",
-            f"# Version URL: {base_url}/download/canonical/{version_date}/sample_parameters.csv",
-            f"# Latest canonical: {base_url}/download/canonical/sample_parameters.csv",
-            "# Description: Canonical laboratory parameters (metals, nutrients, etc.) per sample.",
-            "",
-        ]
-        csv_params = "\n".join(header_params) + body_params
-
-        csv_contents["sample_parameters.csv"] = csv_params
-        zf.writestr("sample_parameters.csv", csv_params)
-
-        df_biodiv = _get_canonical_biodiversity_df()
-
-        buf4 = io.StringIO()
-        df_biodiv.to_csv(
-            buf4,
-            index=False,
-        )
-        body_biodiv = buf4.getvalue()
-
-        header_biodiv = [
-            "# ECHOrepo Canonical Dataset",
-            "# File: sample_biodiversity.csv",
-            f"# Version date: {version_date}",
-            (
-                "# Version URL: "
-                f"{base_url}/download/canonical/"
-                f"{version_date}/sample_biodiversity.csv"
-            ),
-            (
-                "# Latest canonical: "
-                f"{base_url}/download/canonical/"
-                "sample_biodiversity.csv"
-            ),
-            (
-                "# Description: Phylum-level taxonomic "
-                "abundance statistics per sample and marker."
-            ),
-            (
-                "# Note: Raw OTU-level source data are not "
-                "included in this canonical snapshot."
-            ),
-            "",
-        ]
-
-        csv_biodiv = (
-            "\n".join(header_biodiv)
-            + body_biodiv
-        )
-
-        csv_contents[
-            "sample_biodiversity.csv"
-        ] = csv_biodiv
-
-        zf.writestr(
-            "sample_biodiversity.csv",
-            csv_biodiv,
-        )
-
-    _upload_canonical_csvs_to_minio(csv_contents, version_date)
-
-    # Prepare ZIP bytes once
-    mem.seek(0)
-    zip_bytes = mem.getvalue()
-
-    # Also upload all.zip snapshot to MinIO
-    _upload_canonical_all_zip_to_minio(zip_bytes, version_date)
-
-    # Send to user
     return send_file(
-        BytesIO(zip_bytes),
+        BytesIO(bundle.zip_bytes),
         as_attachment=True,
         download_name="all_canonical.zip",
         mimetype="application/zip",
@@ -1511,6 +896,23 @@ def landing():
 @web_bp.get("/my", endpoint="home")
 @login_required
 def home():
+    # biodiversity marker and level from env, with fallback to legacy env names
+    biodiv_marker = os.getenv(
+        "BIODIV_MARKER",
+        os.getenv(
+            "BIODEV_MARKER",
+            "16S,ITS",
+        ),
+    )
+
+    biodiv_level = os.getenv(
+        "BIODIV_LEVEL",
+        os.getenv(
+            "BIODEV_LEVEL",
+            "Phylum",
+        ),
+    )
+
     # who is this
     user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
     if not user_key:
@@ -1548,7 +950,7 @@ def home():
     df = query_user_df(user_key)
 
     # decide survey visibility from canonical lab rows, not from samples DF
-    has_lab_results = _user_has_lab_results(df) or _user_has_metals_legacy(df)
+    has_lab_results = _user_has_lab_results(df) or _dataframe_has_metals(df)
 
     # only for display, now drop oxide-like columns (harmless on samples DF)
     df = _drop_oxide_columns_from_df(df)
@@ -1603,8 +1005,8 @@ def home():
             # pass flag to template
             can_upload_lab_data=can_upload,
             current_locale=str(get_locale() or "en"),
-            biodev_marker=os.getenv("BIODEV_MARKER", "16S,ITS"),
-            biodev_level=os.getenv("BIODEV_LEVEL", "Phylum"),   
+            biodiv_marker=biodiv_marker,
+            biodiv_level=biodiv_level,
         )
 
     # NON-EMPTY: data issues ------------------------------------------------
@@ -1667,8 +1069,8 @@ def home():
         # NEW: pass flag to template
         can_upload_lab_data=can_upload,
         current_locale=str(get_locale() or "en"),
-        biodev_marker=os.getenv("BIODEV_MARKER", "16S,ITS"),
-        biodev_level=os.getenv("BIODEV_LEVEL", "Phylum"),
+        biodiv_marker=biodiv_marker,
+        biodiv_level=biodiv_level,
     )
 
 
@@ -2378,7 +1780,11 @@ def search_samples():
                     )
                     zf.writestr(
                         "sample_biodiversity_filtered.csv",
-                        "sample_id,marker,otu_id,count,taxa,uploaded_at,uploaded_by,source_file\n",
+                        (
+                            "sample_id,country_code,marker,taxonomic_level,"
+                            "taxon,read_count,relative_abundance_pct,"
+                            "analysis_date,source_file,licence\n"
+                        ),
                     )
                 mem.seek(0)
                 return send_file(
@@ -2414,12 +1820,36 @@ def search_samples():
 
             # 4) fetch biodiversity data for those sample_ids (if any)
             sql_biodiv = """
-                SELECT sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file
-                FROM sample_otu_counts
-                WHERE sample_id = ANY(%s)
-                ORDER BY sample_id, marker, otu_id
+                SELECT
+                    sta.sample_id,
+                    s.country_code,
+                    sta.marker,
+                    sta.level AS taxonomic_level,
+                    sta.taxon,
+                    sta.read_count,
+                    sta.relative_abundance_pct,
+                    sta.uploaded_at AS analysis_date,
+                    sta.source_file,
+                    COALESCE(
+                        NULLIF(s.licence, ''),
+                        'CC-BY-4.0'
+                    ) AS licence
+                FROM sample_taxon_abundance AS sta
+                LEFT JOIN samples AS s
+                ON s.sample_id = sta.sample_id
+                WHERE sta.sample_id = ANY(%s)
+                ORDER BY
+                    sta.sample_id,
+                    sta.marker,
+                    sta.level,
+                    sta.read_count DESC,
+                    sta.taxon
             """
-            cur.execute(sql_biodiv, (sample_ids,))
+
+            cur.execute(
+                sql_biodiv,
+                (sample_ids,),
+            )
             biodiv_rows = cur.fetchall()
 
         # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
@@ -2530,7 +1960,7 @@ def search_samples():
             out4 = io.StringIO()
 
             out4.write("# ECHOrepo Filtered Dataset\n")
-            out4.write("# Source table: sample_otu_counts (filtered subset)\n")
+            out4.write("# Source table: sample_taxon_abundance (filtered subset)\n")
             out4.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out4.write(f"# Generated at: {generated}\n")
             out4.write(f"# Query: {query_string}\n")
@@ -2544,13 +1974,15 @@ def search_samples():
             w4.writerow(
                 [
                     "sample_id",
+                    "country_code",
                     "marker",
-                    "otu_id",
-                    "count",
-                    "taxa",
-                    "uploaded_at",
-                    "uploaded_by",
+                    "taxonomic_level",
+                    "taxon",
+                    "read_count",
+                    "relative_abundance_pct",
+                    "analysis_date",
                     "source_file",
+                    "licence",
                 ]
             )
             for r in biodiv_rows:
@@ -3873,71 +3305,6 @@ def _import_biodiversity_streaming(
     try:
         with get_pg_conn() as conn, conn.cursor() as cur:
             # Upload provenance only; no raw OTUs.
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS biodiversity_uploads (
-                    upload_id TEXT PRIMARY KEY,
-                    original_filename TEXT NOT NULL,
-                    archive_object_name TEXT NOT NULL,
-                    sha256 TEXT NOT NULL UNIQUE,
-                    aggregation_level TEXT NOT NULL,
-                    sample_count INTEGER NOT NULL,
-                    marker_count INTEGER NOT NULL,
-                    source_row_count INTEGER NOT NULL,
-                    nonzero_value_count INTEGER NOT NULL,
-                    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    uploaded_by TEXT
-                )
-                """
-            )
-
-            # Compact operational statistics.
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS sample_taxon_abundance (
-                    sample_id TEXT NOT NULL,
-                    marker TEXT NOT NULL,
-                    level TEXT NOT NULL,
-                    taxon TEXT NOT NULL,
-                    read_count DOUBLE PRECISION NOT NULL,
-                    relative_abundance_pct DOUBLE PRECISION NOT NULL,
-                    source_upload_id TEXT,
-                    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    uploaded_by TEXT,
-                    source_file TEXT,
-
-                    PRIMARY KEY (
-                        sample_id,
-                        marker,
-                        level,
-                        taxon
-                    ),
-
-                    FOREIGN KEY (source_upload_id)
-                        REFERENCES biodiversity_uploads(upload_id),
-
-                    CHECK (read_count >= 0),
-
-                    CHECK (
-                        relative_abundance_pct >= 0
-                        AND relative_abundance_pct <= 100.000001
-                    )
-                )
-                """
-            )
-
-            cur.execute(
-                """
-                CREATE INDEX IF NOT EXISTS
-                    idx_sample_taxon_abundance_lookup
-                ON sample_taxon_abundance (
-                    sample_id,
-                    marker,
-                    level
-                )
-                """
-            )
-
             cur.execute(
                 """
                 INSERT INTO biodiversity_uploads (

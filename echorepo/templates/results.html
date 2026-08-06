@@ -532,8 +532,8 @@
 'lat_col': lat_col|default('GPS_lat'),
 'lon_col': lon_col|default('GPS_long'),
 'hide_wrong_coordinates': true,
-'biodev_marker': biodev_marker|default('16S,ITS'),
-'biodev_level': biodev_level|default('Phylum')
+'biodiv_marker': biodiv_marker|default('16S,ITS'),
+'biodiv_level': biodiv_level|default('Phylum')
 } %}
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
 <script src="{{ url_for('static', filename='js/map.js') }}?v=23"></script>
