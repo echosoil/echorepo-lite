@@ -75,20 +75,6 @@ def _clean_metals_info(s: str) -> str:
     return "; ".join(out)
 
 
-def _strip_oxides_from_info_str(s: str) -> str:
-    if not isinstance(s, str) or not s.strip():
-        return ""
-    parts = [p.strip() for p in s.split(";") if p.strip()]
-    keep = []
-    for token in parts:
-        left = token.split("=", 1)[0]  # param part before '='
-        norm = re.sub(r"\s+", "", left).upper()  # drop spaces, upper
-        if norm in OXIDE_NAMES:
-            continue
-        keep.append(token)
-    return "; ".join(keep)
-
-
 def get_pg_conn():
     """
     Central Postgres connection helper.
