@@ -38,7 +38,7 @@ from echorepo.services.i18n_overrides import (
 
 from ..auth.decorators import login_required
 from ..config import settings
-from ..services.db import _ensure_lab_enrichment, get_pg_conn, query_sample, query_user_df
+from ..services.db import _ensure_lab_enrichment, get_pg_conn, query_user_df
 from ..services.lab_permissions import can_upload_lab_data
 from ..services.validation import find_default_coord_rows, select_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
@@ -325,20 +325,6 @@ def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
 OXIDE_NAMES = {"MN2O3", "AL2O3", "CAO", "FE2O3", "MGO", "SIO2", "P2O5", "TIO2", "K2O", "SO3"}
 
 
-def _strip_oxides_from_info_str(s: str) -> str:
-    if not isinstance(s, str) or not s.strip():
-        return ""
-    parts = [p.strip() for p in s.split(";") if p.strip()]
-    keep = []
-    for token in parts:
-        left = token.split("=", 1)[0]
-        norm = re.sub(r"\s+", "", left).upper()
-        if norm in OXIDE_NAMES:
-            continue
-        keep.append(token)
-    return "; ".join(keep)
-
-
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
 # --------------------------------------------------------------------------
@@ -370,26 +356,6 @@ def _get_repo_user_id_from_db() -> str | None:
                 return val
 
     return user_key
-
-
-def _current_user_id() -> str | None:
-    kc_profile = (session.get("kc") or {}).get("profile") or {}
-
-    # prefer a stable internal KC id
-    if kc_profile.get("id"):
-        return kc_profile["id"]
-    if kc_profile.get("sub"):
-        return kc_profile["sub"]
-
-    # then fall back to whatever you used before
-    if session.get("user"):
-        return session["user"]
-
-    # last resort: email
-    if kc_profile.get("email"):
-        return kc_profile["email"]
-
-    return None
 
 
 def _has_accepted_privacy(user_id: str) -> bool:
@@ -474,7 +440,7 @@ def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
         return False
 
 
-def _user_has_metals_legacy(df: pd.DataFrame) -> bool:
+def _dataframe_has_metals(df: pd.DataFrame) -> bool:
     if df is None or df.empty:
         return False
     candidates = [
@@ -530,61 +496,6 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     # return f"{base}{sep}l={sosci_lang}&r={user_id}"
     return f"{base}{sep}r={user_id}"
 
-
-# --------------------------------------------------------------------------
-# labels for front-end
-# --------------------------------------------------------------------------
-def _js_base_labels() -> dict:
-    return {
-        "privacyRadius": _("Privacy radius (~±{km} km)"),
-        "soilPh": _("Soil pH"),
-        "acid": _("Acidic (≤5.5)"),
-        "slightlyAcid": _("Slightly acidic (5.5–6.5)"),
-        "neutral": _("Neutral (6.5–7.5)"),
-        "slightlyAlkaline": _("Slightly alkaline (7.5–8.5)"),
-        "alkaline": _("Alkaline (≥8.5)"),
-        "yourSamples": _("Your samples"),
-        "otherSamples": _("Other samples"),
-        "export": _("Export"),
-        "clear": _("Clear"),
-        "exportFiltered": _("Export filtered ({n})"),
-        "date": _("Date"),
-        "qr": _("QR code"),
-        "ph": _("pH"),
-        "colour": _("Colour"),
-        "soilOrganicMatter": _("Soil organic matter"),
-        "texture": _("Texture"),
-        "structure": _("Structure"),
-        "earthworms": _("Earthworms"),
-        "plastic": _("Plastic"),
-        "debris": _("Debris"),
-        "contamination": _("Contamination"),
-        "metals": _("Metals"),
-        "elementalConcentrations": _("Elemental concentrations"),
-        "drawRectangle": _("Draw a selection rectangle"),
-        "cancelDrawing": _("Cancel drawing"),
-        "cancel": _("Cancel"),
-        "deleteLastPoint": _("Delete last point"),
-        "drawRectangleHint": _("Click and drag to draw a selection rectangle."),
-        "releaseToFinish": _("Release mouse to add this rectangle to the selection."),
-        "selectionExport": _("Selection export to a file"),
-        "selectionExport2": _("Selection export"),
-        "selectionExportHintBefore": _("Use selection tool"),
-        "selectionExportHintAfter": _("to draw one or more areas"),
-        "exportSelection": _("Export selection"),
-        "exportSelectionTitle": _("Export selected samples"),
-        "clearSelection": _("Clear selection"),
-        "clearSelectionTitle": _("Clear all selection rectangles"),
-        "drawSelectionRectangle": _("Draw selection rectangle"),
-        "notAvailable": _("Not available"),
-        "zenodoDownload": _("Download dataset from Zenodo"),
-        "elementalConcentrationsHelp": _("Percentage values (%) can be converted to mg/kg by multiplying by 10000."),
-        "unitConversionHelp": _("Unit conversion help"),
-        "streetMap": _("Street map"),
-        "satellite": _("Satellite"),
-    }
-
-
 # --------------------------------------------------------------------------
 # helpers for lab upload / QR
 # --------------------------------------------------------------------------
@@ -597,50 +508,6 @@ def _normalize_qr(raw: str) -> str:
     if "-" not in raw and len(raw) >= 5:
         raw = raw[:4] + "-" + raw[4:]
     return raw
-
-
-def _user_has_metals(df: pd.DataFrame) -> bool:
-    if df is None or df.empty:
-        return False
-
-    cols = list(df.columns)
-    # Common exact names across old/new pipelines
-    exact = {
-        "METALS_info",
-        "lab_METALS_info",
-        "METALS",
-        "metals",
-        "metals_info",
-        "metals_info_en",
-        "metals_info_orig",
-        "elemental_concentrations",
-        "elemental_concentrations_en",
-        "elemental_concentrations_orig",
-    }
-
-    def _series_has_assignments(series: pd.Series) -> bool:
-        s = (
-            series.fillna("")
-            .astype(str)
-            .str.replace("<br>", ";", regex=False)
-            .str.strip()
-            .replace({"nan": "", "None": "", "NaN": "", "0": "", "0.0": ""})
-        )
-        # our metals blob looks like "Cu=12; Zn=5" etc.
-        return s.str.contains("=", regex=False).any()
-
-    # 1) Fast path: exact column name matches
-    for c in cols:
-        if c in exact and _series_has_assignments(df[c]):
-            return True
-
-    # 2) Fallback: any column whose name suggests metals/elemental info
-    for c in cols:
-        name = str(c).lower()
-        if ("metals" in name) or ("elemental" in name and "concentration" in name):
-            if _series_has_assignments(df[c]):
-                return True
-    return False
 
 
 # --------------------------------------------------------------------------
@@ -1286,20 +1153,6 @@ def download_canonical_sample_biodiversity():
         "kind": "canonical_export",
     }
 
-    sql = """
-        SELECT
-            sample_id,
-            marker,
-            otu_id,
-            count,
-            taxa,
-            uploaded_at,
-            uploaded_by,
-            source_file
-        FROM sample_otu_counts
-        ORDER BY sample_id, marker, otu_id
-    """
-
     df = _get_canonical_biodiversity_df()
 
     if df.empty:
@@ -1323,7 +1176,14 @@ def download_canonical_sample_biodiversity():
         "# File: sample_biodiversity.csv",
         f"# Generated at: {generated_at}",
         f"# Downloaded from: {base_url}/download/canonical/sample_biodiversity.csv",
-        "# Description: Biodiversity OTU abundance data per sample.",
+        (
+            "# Description: Phylum-level taxonomic abundance "
+            "statistics per sample and marker."
+        ),
+        (
+            "# Note: Raw OTU-level source data are not included "
+            "in this canonical export."
+        ),
         "",
     ]
     csv_text = "\n".join(header) + body
@@ -1423,7 +1283,8 @@ def download_canonical_zip():
             f"# Version date: {version_date}",
             f"# Version URL: {base_url}/download/canonical/{version_date}/sample_parameters.csv",
             f"# Latest canonical: {base_url}/download/canonical/sample_parameters.csv",
-            "# Description: Canonical laboratory parameters (metals, nutrients, etc.) per sample.",
+            f"# Description: Canonical sample parameter data on: As, Ca, Cd, Cu, Fe, K, Mg, Mn, Mo, Ni, P, Pb, S, Zn.",
+            f"# Note: Absence of a parameter means it has been filtered out due to low abundance below the measuring equipment's threshold.",
             "",
         ]
         csv_params = "\n".join(header_params) + body_params
@@ -1548,7 +1409,7 @@ def home():
     df = query_user_df(user_key)
 
     # decide survey visibility from canonical lab rows, not from samples DF
-    has_lab_results = _user_has_lab_results(df) or _user_has_metals_legacy(df)
+    has_lab_results = _user_has_lab_results(df) or _dataframe_has_metals(df)
 
     # only for display, now drop oxide-like columns (harmless on samples DF)
     df = _drop_oxide_columns_from_df(df)
@@ -2378,7 +2239,11 @@ def search_samples():
                     )
                     zf.writestr(
                         "sample_biodiversity_filtered.csv",
-                        "sample_id,marker,otu_id,count,taxa,uploaded_at,uploaded_by,source_file\n",
+                        (
+                            "sample_id,country_code,marker,taxonomic_level,"
+                            "taxon,read_count,relative_abundance_pct,"
+                            "analysis_date,source_file,licence\n"
+                        ),
                     )
                 mem.seek(0)
                 return send_file(
@@ -2414,12 +2279,36 @@ def search_samples():
 
             # 4) fetch biodiversity data for those sample_ids (if any)
             sql_biodiv = """
-                SELECT sample_id, marker, otu_id, count, taxa, uploaded_at, uploaded_by, source_file
-                FROM sample_otu_counts
-                WHERE sample_id = ANY(%s)
-                ORDER BY sample_id, marker, otu_id
+                SELECT
+                    sta.sample_id,
+                    s.country_code,
+                    sta.marker,
+                    sta.level AS taxonomic_level,
+                    sta.taxon,
+                    sta.read_count,
+                    sta.relative_abundance_pct,
+                    sta.uploaded_at AS analysis_date,
+                    sta.source_file,
+                    COALESCE(
+                        NULLIF(s.licence, ''),
+                        'CC-BY-4.0'
+                    ) AS licence
+                FROM sample_taxon_abundance AS sta
+                LEFT JOIN samples AS s
+                ON s.sample_id = sta.sample_id
+                WHERE sta.sample_id = ANY(%s)
+                ORDER BY
+                    sta.sample_id,
+                    sta.marker,
+                    sta.level,
+                    sta.read_count DESC,
+                    sta.taxon
             """
-            cur.execute(sql_biodiv, (sample_ids,))
+
+            cur.execute(
+                sql_biodiv,
+                (sample_ids,),
+            )
             biodiv_rows = cur.fetchall()
 
         # ---- drop oxides here (list-of-tuples: keep columns 2=code, 3=name) ----
@@ -2530,7 +2419,7 @@ def search_samples():
             out4 = io.StringIO()
 
             out4.write("# ECHOrepo Filtered Dataset\n")
-            out4.write("# Source table: sample_otu_counts (filtered subset)\n")
+            out4.write("# Source table: sample_taxon_abundance (filtered subset)\n")
             out4.write(f"# Download full dataset snapshot: {snapshot_url}\n")
             out4.write(f"# Generated at: {generated}\n")
             out4.write(f"# Query: {query_string}\n")
@@ -2544,13 +2433,15 @@ def search_samples():
             w4.writerow(
                 [
                     "sample_id",
+                    "country_code",
                     "marker",
-                    "otu_id",
-                    "count",
-                    "taxa",
-                    "uploaded_at",
-                    "uploaded_by",
+                    "taxonomic_level",
+                    "taxon",
+                    "read_count",
+                    "relative_abundance_pct",
+                    "analysis_date",
                     "source_file",
+                    "licence",
                 ]
             )
             for r in biodiv_rows:
