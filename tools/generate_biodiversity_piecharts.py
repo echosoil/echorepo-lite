@@ -1,20 +1,205 @@
 #!/usr/bin/env python3
+"""
+ECHOrepo biodiversity image generator
+======================================
+
+Run commands from the repository root, where the project .env file is located.
+
+The script skips images already present in MinIO by default. Use --force to
+recreate and overwrite them.
+
+IMAGE TYPES AND COMMANDS
+------------------------
+
+1. Bacterial taxonomic pie charts: 16S / Phylum
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker 16S \
+     --level Phylum
+
+   MinIO destination:
+
+     biodiversity/piecharts/16S/Phylum/<sample_id>.png
+
+
+2. Fungal taxonomic pie charts: ITS / Phylum
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker ITS \
+     --level Phylum
+
+   MinIO destination:
+
+     biodiversity/piecharts/ITS/Phylum/<sample_id>.png
+
+
+3. Fungal ecological guild images
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker ITS \
+     --level Phylum \
+     --fungal-guilds
+
+   This command also generates any missing ITS Phylum pie charts.
+
+   Fungal guild data are reconstructed from the current raw ITS archives in
+   MinIO. The legacy sample_otu_counts table is used only as a fallback for
+   older samples.
+
+   The raw ITS data must contain usable genus-level taxonomy.
+
+   MinIO destination:
+
+     biodiversity/guildplots/fungi/<sample_id>.png
+
+
+4. Build FAPROTAX input files for bacterial guild analysis
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker 16S \
+     --level Phylum \
+     --build-faprotax-inputs
+
+   Generated files:
+
+     /tmp/faprotax_work/6_otu_clean_counts_no_blanks.csv
+     /tmp/faprotax_work/7_taxonomy_clean.csv
+
+   Important: in the current implementation, this step still reads OTU data
+   from the legacy sample_otu_counts table.
+
+   Run the separate FAPROTAX analysis after creating these files. Its resulting
+   sample-by-function file must be available at FAPROTAX_FUNCTION_CSV, whose
+   default value is:
+
+     data/biodiversity/8_faprotax_samples_x_functions.csv
+
+
+5. Bacterial ecological guild images
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker 16S \
+     --level Phylum \
+     --bacterial-guilds
+
+   This command also generates any missing 16S Phylum pie charts.
+
+   Bacterial guild images are generated from the configured FAPROTAX
+   sample-by-function CSV.
+
+   MinIO destination:
+
+     biodiversity/guildplots/bacteria/<sample_id>.png
+
+
+GENERATE ALL IMAGE TYPES
+------------------------
+
+First build the FAPROTAX inputs:
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker 16S \
+     --level Phylum \
+     --build-faprotax-inputs
+
+Run the external FAPROTAX processing and place its result at the path configured
+by FAPROTAX_FUNCTION_CSV.
+
+Then generate all bacterial images:
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker 16S \
+     --level Phylum \
+     --bacterial-guilds
+
+Finally, generate all fungal images:
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker ITS \
+     --level Phylum \
+     --fungal-guilds
+
+
+USEFUL OPTIONS
+--------------
+
+Generate images for one sample only:
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker ITS \
+     --fungal-guilds \
+     --sample-id CLMW-8393
+
+Generate images for several selected samples:
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker ITS \
+     --fungal-guilds \
+     --sample-id CLMW-8393,AACW-5934
+
+The --sample-id option may also be repeated:
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker ITS \
+     --fungal-guilds \
+     --sample-id CLMW-8393 \
+     --sample-id AACW-5934
+
+Preview missing images without generating or uploading them:
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker ITS \
+     --fungal-guilds \
+     --dry-run
+
+Recreate all selected images, including images already present in MinIO:
+
+   python3 tools/generate_biodiversity_piecharts.py \
+     --marker ITS \
+     --fungal-guilds \
+     --force
+
+
+ENVIRONMENT-VARIABLE ALTERNATIVES
+---------------------------------
+
+The following environment variables can be used instead of the corresponding
+command-line flags:
+
+   GENERATE_FUNGAL_GUILDS=1
+   GENERATE_BACTERIAL_GUILDS=1
+   BUILD_FAPROTAX_INPUTS=1
+   BIODIV_FORCE_REGENERATE=1
+   BIODIV_MARKER=16S
+   BIODIV_LEVEL=Phylum
+
+Example:
+
+   GENERATE_FUNGAL_GUILDS=1 \
+   BIODIV_MARKER=ITS \
+   python3 tools/generate_biodiversity_piecharts.py
+"""
+
 from __future__ import annotations
 
 import argparse
+import csv
 import io
 import json
 import math
 import os
 import re
+import shutil
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 from dotenv import load_dotenv
+from openpyxl import load_workbook
 
 # ---------------------------------------------------------------------------
 # Load .env exactly like pull_and_enrich_samples.py
@@ -330,6 +515,396 @@ def fetch_otu_data(marker: str = "16S") -> pd.DataFrame:
     with get_pg_conn() as conn:
         df = pd.read_sql(sql, conn, params=[marker])
     return df
+
+
+
+BIODIVERSITY_SAMPLE_COLUMN_RE = re.compile(
+    r"^(?P<sample>[A-Za-z0-9]{4}-[A-Za-z0-9]{4,})-(?P<marker>16S|ITS)$",
+    re.IGNORECASE,
+)
+
+
+def _normalize_biodiversity_header(value) -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").strip().lower())
+
+
+def fetch_current_biodiversity_archives(
+    marker: str,
+    sample_ids: set[str] | None = None,
+) -> pd.DataFrame:
+    """
+    Return the raw MinIO archive currently associated with each sample.
+
+    sample_taxon_abundance is the source of truth for which upload is current.
+    All Phylum rows for one sample/marker should point to the same upload ID.
+    """
+    sql = """
+        SELECT DISTINCT
+            UPPER(sta.sample_id) AS sample_id,
+            sta.source_upload_id,
+            bu.archive_object_name,
+            bu.original_filename,
+            bu.uploaded_at
+        FROM sample_taxon_abundance AS sta
+        JOIN biodiversity_uploads AS bu
+          ON bu.upload_id = sta.source_upload_id
+        WHERE UPPER(sta.marker) = UPPER(%s)
+          AND sta.source_upload_id IS NOT NULL
+    """
+    params: list[object] = [marker]
+
+    if sample_ids:
+        sql += " AND UPPER(sta.sample_id) = ANY(%s)"
+        params.append(sorted(sample_ids))
+
+    sql += " ORDER BY sample_id, bu.uploaded_at DESC"
+
+    with get_pg_conn() as conn:
+        df = pd.read_sql(sql, conn, params=params)
+
+    if df.empty:
+        return df
+
+    # Defensive: if inconsistent rows exist, retain the newest mapping.
+    return (
+        df.sort_values("uploaded_at", ascending=False)
+        .drop_duplicates(subset=["sample_id"], keep="first")
+        .reset_index(drop=True)
+    )
+
+
+def _download_minio_object(mclient, object_name: str, destination: Path) -> None:
+    if mclient is None:
+        raise RuntimeError("MinIO is required to read raw biodiversity archives")
+
+    response = None
+    try:
+        response = mclient.get_object(MINIO_BUCKET, object_name)
+        with destination.open("wb") as out:
+            shutil.copyfileobj(response, out, length=1024 * 1024)
+    finally:
+        if response is not None:
+            response.close()
+            response.release_conn()
+
+
+def _extract_biodiversity_source(zip_path: Path, output_dir: Path) -> Path:
+    """Extract the original CSV/TSV/XLSX from one raw-upload ZIP."""
+    supported = {".csv", ".tsv", ".txt", ".xlsx"}
+
+    with zipfile.ZipFile(zip_path) as zf:
+        members = [
+            info
+            for info in zf.infolist()
+            if not info.is_dir()
+            and Path(info.filename).suffix.lower() in supported
+        ]
+
+        if not members:
+            raise ValueError(f"No CSV/TSV/XLSX source found in {zip_path.name}")
+
+        preferred_name = None
+        try:
+            manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
+            preferred_name = Path(
+                str(manifest.get("original_filename") or "")
+            ).name
+        except Exception:
+            preferred_name = None
+
+        selected = members[0]
+        if preferred_name:
+            for member in members:
+                if Path(member.filename).name == preferred_name:
+                    selected = member
+                    break
+
+        safe_name = Path(selected.filename).name
+        destination = output_dir / safe_name
+        with zf.open(selected) as source, destination.open("wb") as target:
+            shutil.copyfileobj(source, target, length=1024 * 1024)
+
+    return destination
+
+
+def _aggregate_fungal_rows(
+    header,
+    rows,
+    target_samples: set[str],
+) -> pd.DataFrame:
+    """
+    Reconstruct the information needed by FUNGuild from a raw OTU table.
+
+    Rows are aggregated by sample and genus to keep memory use small. Counts
+    without a usable genus are retained so chart percentages still use the
+    full fungal-community read total as their denominator.
+    """
+    cleaned_header = [str(value or "").strip() for value in header]
+    normalized = [_normalize_biodiversity_header(value) for value in cleaned_header]
+
+    otu_idx = 0
+    for idx, value in enumerate(normalized):
+        if value in {"otuid", "otu"}:
+            otu_idx = idx
+            break
+
+    sample_columns: list[tuple[int, str]] = []
+    for idx, value in enumerate(cleaned_header):
+        match = BIODIVERSITY_SAMPLE_COLUMN_RE.fullmatch(value)
+        if not match or match.group("marker").upper() != "ITS":
+            continue
+        sample_id = match.group("sample").upper()
+        if sample_id in target_samples:
+            sample_columns.append((idx, sample_id))
+
+    if not sample_columns:
+        return pd.DataFrame(columns=["sample_id", "otu_id", "count", "taxa"])
+
+    by_name = {value: idx for idx, value in enumerate(normalized) if value}
+    genus_idx = by_name.get("genus")
+    taxonomy_idx = by_name.get("taxonomy")
+
+    # Legacy layout: Taxonomy, A, B, C, D, E, F where E is Genus.
+    if genus_idx is None and taxonomy_idx is not None:
+        genus_idx = by_name.get("e")
+
+    aggregates: dict[str, dict[str, float]] = {}
+
+    for row in rows:
+        if otu_idx >= len(row) or not str(row[otu_idx] or "").strip():
+            continue
+
+        positive_counts: list[tuple[str, float]] = []
+        for idx, sample_id in sample_columns:
+            raw_value = row[idx] if idx < len(row) else None
+            try:
+                value = float(raw_value)
+            except (TypeError, ValueError):
+                continue
+            if not math.isfinite(value) or value <= 0:
+                continue
+            positive_counts.append((sample_id, value))
+
+        if not positive_counts:
+            continue
+
+        genus = ""
+        if genus_idx is not None and genus_idx < len(row):
+            genus = clean_taxon_value(row[genus_idx])
+
+        if not genus and taxonomy_idx is not None and taxonomy_idx < len(row):
+            genus = parse_taxonomy_string(row[taxonomy_idx]).get("Genus", "")
+            genus = clean_taxon_value(genus)
+
+        for sample_id, value in positive_counts:
+            sample_counts = aggregates.setdefault(sample_id, {})
+            sample_counts[genus] = sample_counts.get(genus, 0.0) + value
+
+    output_rows = []
+    for sample_id, genus_counts in aggregates.items():
+        for genus, count in genus_counts.items():
+            output_rows.append(
+                {
+                    "sample_id": sample_id,
+                    "otu_id": f"raw-genus:{genus or 'unclassified'}",
+                    "count": count,
+                    "taxa": {"Genus": genus} if genus else {},
+                }
+            )
+
+    return pd.DataFrame(output_rows, columns=["sample_id", "otu_id", "count", "taxa"])
+
+
+def _read_fungal_rows_from_source(
+    source_path: Path,
+    target_samples: set[str],
+) -> pd.DataFrame:
+    suffix = source_path.suffix.lower()
+
+    if suffix == ".xlsx":
+        wb = load_workbook(source_path, read_only=True, data_only=True)
+        try:
+            sheet_name = next(
+                (
+                    name
+                    for name in wb.sheetnames
+                    if str(name).strip().lower() == "clean_phylum"
+                ),
+                None,
+            )
+
+            if sheet_name is None:
+                for candidate in wb.sheetnames:
+                    ws_candidate = wb[candidate]
+                    first_row = next(
+                        ws_candidate.iter_rows(
+                            min_row=1,
+                            max_row=1,
+                            values_only=True,
+                        ),
+                        None,
+                    )
+                    if first_row and any(
+                        BIODIVERSITY_SAMPLE_COLUMN_RE.fullmatch(str(v or "").strip())
+                        for v in first_row
+                    ):
+                        sheet_name = candidate
+                        break
+
+            if sheet_name is None:
+                raise ValueError(f"No biodiversity worksheet found in {source_path.name}")
+
+            rows = wb[sheet_name].iter_rows(values_only=True)
+            header = next(rows, None)
+            if header is None:
+                raise ValueError(f"Empty biodiversity worksheet in {source_path.name}")
+
+            return _aggregate_fungal_rows(header, rows, target_samples)
+        finally:
+            wb.close()
+
+    if suffix not in {".csv", ".tsv", ".txt"}:
+        raise ValueError(f"Unsupported raw biodiversity file: {source_path.name}")
+
+    with source_path.open("r", encoding="utf-8-sig", newline="") as stream:
+        probe = stream.read(65536)
+        stream.seek(0)
+
+        if suffix == ".tsv":
+            dialect = csv.excel_tab
+        else:
+            try:
+                dialect = csv.Sniffer().sniff(probe, delimiters=",\t;")
+            except csv.Error:
+                dialect = csv.excel
+
+        reader = csv.reader(stream, dialect=dialect)
+        header = next(reader, None)
+        if header is None:
+            raise ValueError(f"Empty biodiversity file: {source_path.name}")
+
+        return _aggregate_fungal_rows(header, reader, target_samples)
+
+
+def fetch_current_fungal_data_from_archives(
+    mclient,
+    sample_ids: set[str] | None = None,
+) -> tuple[pd.DataFrame, set[str], set[str]]:
+    """
+    Reconstruct current ITS genus/count data from raw MinIO archives.
+
+    Returns: dataframe, all current sample IDs, successfully reconstructed IDs.
+    """
+    mappings = fetch_current_biodiversity_archives("ITS", sample_ids)
+    if mappings.empty:
+        return (
+            pd.DataFrame(columns=["sample_id", "otu_id", "count", "taxa"]),
+            set(),
+            set(),
+        )
+
+    current_ids = set(mappings["sample_id"].astype(str).str.upper())
+    frames: list[pd.DataFrame] = []
+    reconstructed_ids: set[str] = set()
+
+    grouped = mappings.groupby("archive_object_name", dropna=False)
+
+    with tempfile.TemporaryDirectory(prefix="echorepo-funguild-") as tmp:
+        tmp_dir = Path(tmp)
+
+        for archive_number, (object_name, group) in enumerate(grouped, start=1):
+            object_name = str(object_name or "").strip()
+            archive_samples = set(group["sample_id"].astype(str).str.upper())
+
+            if not object_name:
+                print(
+                    "[WARN] Current ITS samples have no archive object: "
+                    f"{sorted(archive_samples)}"
+                )
+                continue
+
+            archive_path = tmp_dir / f"archive-{archive_number}.zip"
+            extract_dir = tmp_dir / f"archive-{archive_number}"
+            extract_dir.mkdir(parents=True, exist_ok=True)
+
+            try:
+                print(
+                    f"[INFO] Reading raw ITS archive {object_name} "
+                    f"for {len(archive_samples)} samples"
+                )
+                _download_minio_object(mclient, object_name, archive_path)
+                source_path = _extract_biodiversity_source(archive_path, extract_dir)
+                frame = _read_fungal_rows_from_source(source_path, archive_samples)
+            except Exception as exc:
+                print(f"[WARN] Could not reconstruct {object_name}: {exc}")
+                continue
+
+            if frame.empty:
+                print(f"[WARN] No positive ITS rows reconstructed from {object_name}")
+                continue
+
+            frame["sample_id"] = frame["sample_id"].astype(str).str.upper()
+            found = set(frame["sample_id"].unique())
+            reconstructed_ids.update(found)
+            frames.append(frame)
+
+            missing = archive_samples - found
+            if missing:
+                print(
+                    f"[WARN] Archive {object_name} did not yield ITS data for "
+                    f"{len(missing)} mapped samples: {sorted(missing)[:10]}"
+                )
+
+    combined = (
+        pd.concat(frames, ignore_index=True)
+        if frames
+        else pd.DataFrame(columns=["sample_id", "otu_id", "count", "taxa"])
+    )
+    return combined, current_ids, reconstructed_ids
+
+
+def fetch_fungal_guild_source_data(
+    mclient,
+    sample_ids: set[str] | None = None,
+) -> pd.DataFrame:
+    """
+    Build the effective fungal source dataset.
+
+    Current raw archives take precedence. The legacy sample_otu_counts table is
+    retained only for samples that have no current sample_taxon_abundance
+    provenance, so old data cannot override a newer upload.
+    """
+    archive_df, current_ids, reconstructed_ids = (
+        fetch_current_fungal_data_from_archives(mclient, sample_ids)
+    )
+
+    legacy_df = fetch_otu_data(marker="ITS")
+    if not legacy_df.empty:
+        legacy_df["sample_id"] = legacy_df["sample_id"].astype(str).str.upper()
+        if sample_ids:
+            legacy_df = legacy_df[legacy_df["sample_id"].isin(sample_ids)].copy()
+        legacy_df = legacy_df[~legacy_df["sample_id"].isin(current_ids)].copy()
+
+    failed_current = current_ids - reconstructed_ids
+    print(f"[INFO] Current ITS samples linked to raw archives: {len(current_ids)}")
+    print(f"[INFO] Current ITS samples reconstructed: {len(reconstructed_ids)}")
+    print(
+        "[INFO] Legacy-only ITS samples retained: "
+        f"{legacy_df['sample_id'].nunique() if not legacy_df.empty else 0}"
+    )
+    if failed_current:
+        print(
+            "[WARN] Current ITS samples not reconstructed and not replaced by "
+            f"stale legacy rows: {len(failed_current)}"
+        )
+
+    frames = [df for df in (archive_df, legacy_df) if not df.empty]
+    if not frames:
+        return pd.DataFrame(columns=["sample_id", "otu_id", "count", "taxa"])
+
+    combined = pd.concat(frames, ignore_index=True)
+    print(f"[INFO] Effective ITS guild samples: {combined['sample_id'].nunique()}")
+    return combined
 
 
 def fetch_taxon_abundance(
@@ -1647,7 +2222,8 @@ def generate_fungal_guildplots(
     dry_run: bool = False,
 ) -> tuple[int, int]:
     """
-    Generate fungal ecological guild plots from legacy OTU-level ITS data.
+    Generate fungal ecological guild plots from current raw ITS archives,
+    with legacy OTU rows used only for samples that have no current upload.
 
     Existing MinIO objects are skipped unless force=True.
 
@@ -1657,22 +2233,12 @@ def generate_fungal_guildplots(
     marker = "ITS"
     print("[INFO] Generating fungal ecological guild plots from ITS data")
 
-    df = fetch_otu_data(marker=marker)
+    df = fetch_fungal_guild_source_data(
+        mclient,
+        sample_ids=sample_ids,
+    )
     if df.empty:
-        print("[INFO] No ITS OTU rows found; skipping fungal guild plots.")
-        return 0, 0
-
-    if sample_ids:
-        df = df[
-            df["sample_id"]
-            .fillna("")
-            .astype(str)
-            .str.upper()
-            .isin(sample_ids)
-        ].copy()
-
-    if df.empty:
-        print("[INFO] No ITS OTU rows match the requested sample filter.")
+        print("[INFO] No ITS data available for fungal guild plots.")
         return 0, 0
 
     funguild_by_genus = load_funguild_best_by_genus()
@@ -1776,6 +2342,34 @@ def parse_args():
         action="store_true",
         help="Show missing chart objects without creating or uploading them.",
     )
+    parser.add_argument(
+        "--fungal-guilds",
+        action="store_true",
+        default=GENERATE_FUNGAL_GUILDS,
+        help=(
+            "Generate ITS fungal ecological guild charts. "
+            "Can also be enabled with GENERATE_FUNGAL_GUILDS=1."
+        ),
+    )
+    parser.add_argument(
+        "--bacterial-guilds",
+        action="store_true",
+        default=GENERATE_BACTERIAL_GUILDS,
+        help=(
+            "Generate 16S bacterial ecological guild charts from the "
+            "configured FAPROTAX sample-by-function CSV. Can also be enabled "
+            "with GENERATE_BACTERIAL_GUILDS=1."
+        ),
+    )
+    parser.add_argument(
+        "--build-faprotax-inputs",
+        action="store_true",
+        default=BUILD_FAPROTAX_INPUTS,
+        help=(
+            "Build FAPROTAX OTU-count and taxonomy input files. "
+            "Can also be enabled with BUILD_FAPROTAX_INPUTS=1."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1813,7 +2407,7 @@ def main():
 
     mclient = init_minio()
 
-    if BUILD_FAPROTAX_INPUTS:
+    if args.build_faprotax_inputs:
         build_clean_otu_and_taxonomy_files(
             marker="16S",
             out_dir=Path("/tmp/faprotax_work"),
@@ -1884,7 +2478,7 @@ def main():
     print(f"[OK] Generated {generated} taxonomic charts")
     print(f"[OK] Uploaded {uploaded} taxonomic charts to MinIO")
 
-    if GENERATE_FUNGAL_GUILDS:
+    if args.fungal_guilds:
         generate_fungal_guildplots(
             mclient,
             force=args.force,
@@ -1892,7 +2486,7 @@ def main():
             dry_run=args.dry_run,
         )
 
-    if GENERATE_BACTERIAL_GUILDS:
+    if args.bacterial_guilds:
         generate_bacterial_guildplots_from_faprotax(
             mclient,
             force=args.force,
