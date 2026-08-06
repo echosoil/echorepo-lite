@@ -6,11 +6,9 @@ import os
 import pathlib
 import re
 import sqlite3
-import zipfile  # kept in case you later want to build ZIPs locally
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
-import hashlib
 
 import pandas as pd
 from flask import (
@@ -39,6 +37,18 @@ from ..auth.decorators import login_required
 from ..config import settings
 from ..services.db import _ensure_lab_enrichment, get_pg_conn, query_user_df
 from ..services.lab_permissions import can_upload_lab_data
+from ..services.storage.minio import (
+    StorageError,
+    StorageNotConfigured,
+    StorageObjectNotFound,
+    archive_raw_biodiversity_upload,
+    get_canonical_object,
+    invalidate_biodiversity_charts,
+    latest_canonical_snapshot_date,
+    object_exists,
+    upload_canonical_csvs,
+    upload_canonical_zip,
+)
 from ..services.validation import find_default_coord_rows, select_country_mismatches
 from ..utils.table import make_table_html, strip_orig_cols
 
@@ -72,129 +82,6 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 
 # blueprint
 web_bp = Blueprint("web", __name__)
-
-def _archive_raw_biodiversity_upload(
-    file_bytes: bytes,
-    filename: str,
-    uploader_id: str,
-) -> tuple[str, str]:
-    """
-    Store the unmodified biodiversity workbook inside a ZIP in MinIO.
-
-    Returns:
-        (object_name, sha256)
-    """
-    client = _get_minio_client()
-    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-
-    if client is None:
-        abort(
-            503,
-            description=(
-                "MinIO is not configured. The biodiversity upload was not "
-                "imported because the raw source file could not be archived."
-            ),
-        )
-
-    try:
-        if not client.bucket_exists(bucket):
-            client.make_bucket(bucket)
-    except Exception as e:
-        abort(
-            503,
-            description=f"Cannot prepare MinIO bucket for raw biodiversity archive: {e}",
-        )
-
-    original_filename = (
-        os.path.basename(filename or "").strip()
-        or "biodiversity_upload.xlsx"
-    )
-
-    # Prevent path characters or unusual symbols inside the ZIP/object name.
-    safe_filename = re.sub(
-        r"[^A-Za-z0-9._-]+",
-        "_",
-        original_filename,
-    ).strip("._")
-
-    if not safe_filename:
-        safe_filename = "biodiversity_upload.xlsx"
-
-    sha256 = hashlib.sha256(file_bytes).hexdigest()
-    uploaded_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    date_part = datetime.utcnow().date().isoformat()
-
-    zip_buffer = BytesIO()
-
-    manifest = {
-        "original_filename": original_filename,
-        "sha256": sha256,
-        "uploaded_at_utc": uploaded_at,
-        "uploaded_by": uploader_id,
-        "aggregation_level": "Phylum",
-        "markers": ["16S", "ITS"],
-        "processing_version": "phylum-aggregation-v1",
-    }
-
-    try:
-        with zipfile.ZipFile(
-            zip_buffer,
-            mode="w",
-            compression=zipfile.ZIP_DEFLATED,
-        ) as zf:
-            zf.writestr(
-                safe_filename,
-                file_bytes,
-            )
-
-            zf.writestr(
-                "manifest.json",
-                json.dumps(
-                    manifest,
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-            )
-
-            zf.writestr(
-                "README.txt",
-                (
-                    "This archive contains the original, unmodified biodiversity "
-                    "laboratory upload.\n\n"
-                    "The ECHOrepo operational database stores only Phylum-level "
-                    "aggregate statistics. Full OTU-level source data are retained "
-                    "in this archive for publication and preservation through Zenodo.\n"
-                ),
-            )
-    except Exception as e:
-        abort(
-            500,
-            description=f"Cannot build raw biodiversity ZIP archive: {e}",
-        )
-
-    zip_buffer.seek(0)
-    zip_bytes = zip_buffer.getvalue()
-
-    object_name = (
-        f"biodiversity/raw/{date_part}/"
-        f"{sha256[:16]}_{safe_filename}.zip"
-    )
-
-    try:
-        client.put_object(
-            bucket,
-            object_name,
-            BytesIO(zip_bytes),
-            length=len(zip_bytes),
-            content_type="application/zip",
-        )
-    except Exception as e:
-        abort(
-            503,
-            description=f"Cannot store raw biodiversity ZIP in MinIO: {e}",
-        )
-
-    return object_name, sha256
 
 def _current_ui_i18n() -> dict:
     """
@@ -436,155 +323,6 @@ def _normalize_qr(raw: str) -> str:
     return raw
 
 
-# --------------------------------------------------------------------------
-# MinIO helpers + canonical download routes (proxy through Flask)
-# --------------------------------------------------------------------------
-try:
-    from minio import Minio
-except ImportError:
-    Minio = None
-
-
-def _get_minio_client():
-    """
-    Build a MinIO client from env / app config.
-    We use it server-side to fetch objects and stream them to the user.
-    """
-    if Minio is None:
-        return None
-
-    endpoint = os.getenv("MINIO_ENDPOINT", "minio:9000")
-    access_key = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER") or ""
-    secret_key = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD") or ""
-    secure = False
-    if endpoint.startswith("https://"):
-        secure = True
-        endpoint = endpoint[len("https://") :]
-    elif endpoint.startswith("http://"):
-        secure = False
-        endpoint = endpoint[len("http://") :]
-
-    if not access_key or not secret_key:
-        return None
-
-    return Minio(
-        endpoint,
-        access_key=access_key,
-        secret_key=secret_key,
-        secure=secure,
-    )
-
-
-def _stream_minio_canonical(obj_name: str):
-    """
-    Instead of redirecting the browser to MinIO (which you don't expose),
-    we, the Flask app, download the object from MinIO and send it to the client.
-    """
-    client = _get_minio_client()
-    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-
-    if client is None:
-        abort(503, description="MinIO not configured on this instance")
-
-    key = f"canonical/{obj_name}"
-    try:
-        resp = client.get_object(bucket, key)
-    except Exception as e:
-        abort(404, description=f"object not found in MinIO: {key}, error: {e}")
-
-    # read into memory, then close the MinIO response
-    data = resp.read()
-    resp.close()
-    resp.release_conn()
-
-    mimetype = "application/zip" if obj_name.endswith(".zip") else "text/csv"
-    return send_file(
-        io.BytesIO(data),
-        mimetype=mimetype,
-        as_attachment=True,
-        download_name=obj_name,
-    )
-
-
-def _upload_canonical_csvs_to_minio(csv_dict: dict[str, str], version_date: str):
-    """
-    Upload canonical CSVs (given as text) to MinIO, under:
-      canonical/<version_date>/samples.csv
-      canonical/<version_date>/sample_images.csv
-      canonical/<version_date>/sample_parameters.csv
-      canonical/latest/<same>
-
-    csv_dict keys should be exactly "samples.csv", "sample_images.csv",
-    "sample_parameters.csv".
-    """
-    client = _get_minio_client()
-    if client is None:
-        # MinIO not configured, silently skip
-        return
-
-    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-
-    try:
-        if not client.bucket_exists(bucket):
-            client.make_bucket(bucket)
-    except Exception as e:
-        logging.getLogger(__name__).error(f"Error ensuring MinIO bucket {bucket}: {e}")
-        return
-
-    for filename, csv_text in csv_dict.items():
-        if not csv_text:
-            continue
-
-        data = csv_text.encode("utf-8")
-        for prefix in (f"canonical/{version_date}/", "canonical/latest/"):
-            obj_name = prefix + filename
-            try:
-                client.put_object(
-                    bucket,
-                    obj_name,
-                    BytesIO(data),
-                    length=len(data),
-                    content_type="text/csv",
-                )
-            except Exception as e:
-                logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
-
-
-def _upload_canonical_all_zip_to_minio(zip_bytes: bytes, version_date: str):
-    """
-    Upload all.zip snapshot to MinIO under:
-      canonical/<version_date>/all.zip
-      canonical/latest/all.zip
-    """
-    client = _get_minio_client()
-    if client is None:
-        logging.getLogger(__name__).warning("MinIO not configured; skipping all.zip upload")
-        return
-
-    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-
-    try:
-        if not client.bucket_exists(bucket):
-            client.make_bucket(bucket)
-    except Exception as e:
-        logging.getLogger(__name__).error(f"Error ensuring MinIO bucket {bucket}: {e}")
-        return
-
-    from io import BytesIO
-
-    for prefix in (f"canonical/{version_date}/", "canonical/latest/"):
-        obj_name = prefix + "all.zip"
-        try:
-            client.put_object(
-                bucket,
-                obj_name,
-                BytesIO(zip_bytes),
-                length=len(zip_bytes),
-                content_type="application/zip",
-            )
-        except Exception as e:
-            logging.getLogger(__name__).error(f"Error uploading {obj_name} to MinIO: {e}")
-
 # --------- Biodiversity helpers
 
 
@@ -706,34 +444,6 @@ def _parse_sample_id_list(raw: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
-def _get_latest_canonical_snapshot_date() -> str | None:
-    """
-    Return the latest YYYY-MM-DD for which canonical/<date>/all.zip exists
-    in MinIO. Used by search export headers.
-    """
-    client = _get_minio_client()
-    if client is None:
-        return None
-
-    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-
-    try:
-        dates: set[str] = set()
-        # Expect keys like: canonical/2025-12-08/all.zip
-        for obj in client.list_objects(bucket, prefix="canonical/", recursive=True):
-            parts = obj.object_name.split("/")
-            if len(parts) == 3 and parts[0] == "canonical" and parts[2] == "all.zip":
-                dates.add(parts[1])
-
-        if not dates:
-            return None
-        # Lexicographically max works for ISO dates YYYY-MM-DD
-        return max(dates)
-    except Exception as e:
-        logging.getLogger(__name__).error(f"Error listing canonical snapshots from MinIO: {e}")
-        return None
-
-
 # -------------- Endpoints for privacy acceptance ----------------
 
 
@@ -798,7 +508,7 @@ def _send_live_canonical_csv(filename: str):
     df, csv_text = build_live_csv(
         filename=filename,
         base_url=request.url_root.rstrip("/"),
-        snapshot_date=_get_latest_canonical_snapshot_date(),
+        snapshot_date=latest_canonical_snapshot_date(),
     )
 
     if df.empty:
@@ -865,12 +575,12 @@ def download_canonical_zip():
         version_date=version_date,
     )
 
-    _upload_canonical_csvs_to_minio(
+    upload_canonical_csvs(
         bundle.csv_contents,
         version_date,
     )
 
-    _upload_canonical_all_zip_to_minio(
+    upload_canonical_zip(
         bundle.zip_bytes,
         version_date,
     )
@@ -1737,7 +1447,7 @@ def search_samples():
         )
 
         base_url = request.url_root.rstrip("/")
-        snapshot_date = _get_latest_canonical_snapshot_date()
+        snapshot_date = latest_canonical_snapshot_date()
         version_date = (
             snapshot_date
             or date.today().isoformat()
@@ -1939,7 +1649,22 @@ def download_canonical_version(date, filename):
     which maps to MinIO object canonical/2025-12-02/samples.csv
     """
     obj_name = f"{date}/{filename}"
-    return _stream_minio_canonical(obj_name)
+
+    try:
+        stored = get_canonical_object(obj_name)
+    except StorageNotConfigured as exc:
+        abort(503, description=str(exc))
+    except StorageObjectNotFound as exc:
+        abort(404, description=str(exc))
+    except StorageError as exc:
+        abort(502, description=str(exc))
+
+    return send_file(
+        BytesIO(stored.data),
+        mimetype=stored.content_type,
+        as_attachment=True,
+        download_name=stored.download_name,
+    )
 
 
 @web_bp.get("/explore", endpoint="explore")
@@ -2302,30 +2027,6 @@ def _looks_like_biodiversity_file(
             except Exception:
                 pass
 
-
-def _biodiversity_chart_object_names(
-    sample_id: str,
-    marker: str,
-    level: str = "Phylum",
-) -> list[str]:
-    objects = [
-        (
-            f"biodiversity/piecharts/"
-            f"{marker}/{level}/{sample_id}.png"
-        )
-    ]
-
-    if marker == "ITS":
-        objects.append(
-            f"biodiversity/guildplots/fungi/{sample_id}.png"
-        )
-    elif marker == "16S":
-        objects.append(
-            f"biodiversity/guildplots/bacteria/{sample_id}.png"
-        )
-
-    return objects
-    
 
 def _process_lab_upload_file(
     uploaded_file,
@@ -3007,14 +2708,20 @@ def _import_biodiversity_streaming(
     # ------------------------------------------------------------------
     # Archive the original workbook before committing statistics
     # ------------------------------------------------------------------
-    raw_archive_object, source_sha256 = (
-        _archive_raw_biodiversity_upload(
+    try:
+        raw_archive = archive_raw_biodiversity_upload(
             file_bytes=file_bytes,
             filename=filename,
             uploader_id=uploader_id,
+            aggregation_level=level,
         )
-    )
+    except StorageNotConfigured as exc:
+        abort(503, description=str(exc))
+    except StorageError as exc:
+        abort(503, description=str(exc))
 
+    raw_archive_object = raw_archive.object_name
+    source_sha256 = raw_archive.sha256
     upload_id = source_sha256
 
     # ------------------------------------------------------------------
@@ -3231,26 +2938,10 @@ def _import_biodiversity_streaming(
     # ------------------------------------------------------------------
     # Invalidate cached chart images
     # ------------------------------------------------------------------
-    client = _get_minio_client()
-    bucket = os.getenv(
-        "MINIO_BUCKET",
-        "echorepo-uploads",
+    invalidate_biodiversity_charts(
+        affected_sample_markers,
+        level,
     )
-
-    if client is not None:
-        for sample_id, marker in affected_sample_markers:
-            for object_name in _biodiversity_chart_object_names(
-                sample_id,
-                marker,
-                level,
-            ):
-                try:
-                    client.remove_object(bucket, object_name)
-                except Exception:
-                    log.exception(
-                        "Could not invalidate biodiversity chart %s",
-                        object_name,
-                    )
 
     inserted = len(aggregate_rows)
 
@@ -3298,21 +2989,22 @@ def public_sample_piechart(sample_id: str):
     }
     level = level_aliases.get(level_raw, "Phylum")
 
-    client = _get_minio_client()
-    bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-
     # The taxonomic pie chart always depends on the imported data.
     object_name = (
         f"biodiversity/piecharts/"
         f"{marker}/{level}/{sample_id}.png"
     )
 
-    if client is None:
-        return jsonify({"ok": True, "image_url": None, "caption": ""})
-
     try:
-        client.stat_object(bucket, object_name)
-    except Exception:
+        chart_exists = object_exists(object_name)
+    except StorageError:
+        logging.getLogger(__name__).exception(
+            "Could not inspect biodiversity chart %s",
+            object_name,
+        )
+        chart_exists = False
+
+    if not chart_exists:
         return jsonify({"ok": True, "image_url": None, "caption": ""})
 
     image_url = f"/storage/{object_name}"
