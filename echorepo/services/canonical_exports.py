@@ -678,3 +678,45 @@ def build_filtered_bundle(
         zip_bytes=zip_buffer.getvalue(),
     )
 
+
+def build_machine_bundle(
+    *,
+    sample_ids: Sequence[str] | None = None,
+) -> CanonicalBundle:
+    """
+    Build a machine-readable canonical ZIP.
+
+    Unlike the human-facing snapshot download, these CSV files contain
+    no leading comment lines. Their first line is the CSV column header.
+
+    Used by /api/v1/canonical/all.zip and the Zenodo publication script.
+    """
+    csv_contents: dict[str, str] = {}
+
+    for filename in EXPORT_SPECS:
+        df = get_export_df(
+            filename,
+            sample_ids=sample_ids,
+        )
+
+        csv_contents[filename] = (
+            dataframe_to_csv_body(df)
+        )
+
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(
+        zip_buffer,
+        mode="w",
+        compression=zipfile.ZIP_DEFLATED,
+    ) as archive:
+        for filename, csv_text in csv_contents.items():
+            archive.writestr(
+                filename,
+                csv_text,
+            )
+
+    return CanonicalBundle(
+        csv_contents=csv_contents,
+        zip_bytes=zip_buffer.getvalue(),
+    )
