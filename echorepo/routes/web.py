@@ -1372,6 +1372,23 @@ def landing():
 @web_bp.get("/my", endpoint="home")
 @login_required
 def home():
+    # biodiversity marker and level from env, with fallback to legacy env names
+    biodiv_marker = os.getenv(
+        "BIODIV_MARKER",
+        os.getenv(
+            "BIODEV_MARKER",
+            "16S,ITS",
+        ),
+    )
+
+    biodiv_level = os.getenv(
+        "BIODIV_LEVEL",
+        os.getenv(
+            "BIODEV_LEVEL",
+            "Phylum",
+        ),
+    )
+
     # who is this
     user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
     if not user_key:
@@ -1464,8 +1481,8 @@ def home():
             # pass flag to template
             can_upload_lab_data=can_upload,
             current_locale=str(get_locale() or "en"),
-            biodev_marker=os.getenv("BIODEV_MARKER", "16S,ITS"),
-            biodev_level=os.getenv("BIODEV_LEVEL", "Phylum"),   
+            biodiv_marker=biodiv_marker,
+            biodiv_level=biodiv_level,
         )
 
     # NON-EMPTY: data issues ------------------------------------------------
@@ -1528,8 +1545,8 @@ def home():
         # NEW: pass flag to template
         can_upload_lab_data=can_upload,
         current_locale=str(get_locale() or "en"),
-        biodev_marker=os.getenv("BIODEV_MARKER", "16S,ITS"),
-        biodev_level=os.getenv("BIODEV_LEVEL", "Phylum"),
+        biodiv_marker=biodiv_marker,
+        biodiv_level=biodiv_level,
     )
 
 
