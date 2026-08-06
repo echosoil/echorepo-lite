@@ -1,0 +1,373 @@
+{
+  "dataset": {
+    "language": "en"
+  },
+  "global_columns": {
+    "sample_id": {
+      "title": "Sample identifier",
+      "description": "Unique identifier of the ECHOREPO soil sample.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/identifier",
+      "required": true,
+      "status": "approved"
+    },
+    "timestamp_utc": {
+      "title": "Sampling timestamp",
+      "description": "Date and time associated with collection of the soil sample, expressed in UTC where available.",
+      "datatype": "datetime",
+      "propertyUrl": "http://www.w3.org/ns/sosa/phenomenonTime",
+      "status": "approved"
+    },
+    "lat": {
+      "title": "Latitude",
+      "description": "Latitude of the sample location in decimal degrees using WGS 84 (EPSG:4326).",
+      "datatype": "number",
+      "propertyUrl": "http://www.w3.org/2003/01/geo/wgs84_pos#lat",
+      "unit": "decimal degree",
+      "status": "approved"
+    },
+    "lon": {
+      "title": "Longitude",
+      "description": "Longitude of the sample location in decimal degrees using WGS 84 (EPSG:4326).",
+      "datatype": "number",
+      "propertyUrl": "http://www.w3.org/2003/01/geo/wgs84_pos#long",
+      "unit": "decimal degree",
+      "status": "approved"
+    },
+    "country_code": {
+      "title": "Country code",
+      "description": "ISO 3166-1 alpha-2 country code associated with the sample location.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/addressCountry",
+      "status": "approved"
+    },
+    "location_accuracy_m": {
+      "title": "Location accuracy",
+      "description": "Estimated horizontal accuracy of the recorded sample coordinates, in metres.",
+      "datatype": "number",
+      "unit": "m",
+      "status": "approved"
+    },
+    "uploaded_at": {
+      "title": "Upload timestamp",
+      "description": "Date and time at which the source data were uploaded or ingested into ECHOREPO.",
+      "datatype": "datetime",
+      "propertyUrl": "http://purl.org/dc/terms/created",
+      "status": "approved"
+    },
+    "uploaded_by": {
+      "title": "Uploaded by",
+      "description": "Identifier of the account or process that uploaded the source data.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/contributor",
+      "status": "approved"
+    },
+    "source_file": {
+      "title": "Source file",
+      "description": "Name or reference of the source file from which the row was derived.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/source",
+      "status": "approved"
+    },
+    "data_source": {
+      "title": "Data source",
+      "description": "Source system or workflow from which the canonical record was derived.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/source",
+      "status": "approved"
+    },
+    "collected_by": {
+      "title": "Collected by",
+      "description": "Identifier or category of the participant or process responsible for collecting the sample data.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/creator",
+      "status": "approved"
+    },
+    "licence": {
+      "title": "Licence",
+      "description": "Licence statement associated with the row or source data.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/license",
+      "status": "approved"
+    },
+    "qa_status": {
+      "title": "Quality-assurance status",
+      "description": "ECHOREPO quality-assurance status assigned to the canonical sample record.",
+      "datatype": "string",
+      "status": "approved"
+    },
+    "parameter_name": {
+      "title": "Parameter name",
+      "description": "Internal ECHOREPO name of the observed or measured parameter.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/variableMeasured",
+      "status": "approved"
+    },
+    "parameter_label": {
+      "title": "Parameter label",
+      "description": "Human-readable label of the observed or measured parameter.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/name",
+      "status": "approved"
+    },
+    "parameter_uri": {
+      "title": "Observed-property URI",
+      "description": "Persistent URI identifying the property that was observed or measured.",
+      "datatype": "anyURI",
+      "propertyUrl": "http://www.w3.org/ns/sosa/observedProperty",
+      "status": "approved"
+    },
+    "parameter_value": {
+      "title": "Parameter value",
+      "description": "Recorded result of the observation or measurement. Its interpretation depends on parameter_name or parameter_uri.",
+      "datatype": "string",
+      "propertyUrl": "http://www.w3.org/ns/sosa/hasSimpleResult",
+      "status": "approved"
+    },
+    "unit": {
+      "title": "Unit",
+      "description": "Human-readable unit in which the parameter value is expressed.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/unitText",
+      "status": "approved"
+    },
+    "unit_uri": {
+      "title": "Unit URI",
+      "description": "Persistent URI identifying the unit of measurement.",
+      "datatype": "anyURI",
+      "propertyUrl": "http://qudt.org/schema/qudt/unit",
+      "status": "approved"
+    },
+    "procedure_uri": {
+      "title": "Measurement-procedure URI",
+      "description": "Persistent URI identifying the procedure used to obtain the result, where available.",
+      "datatype": "anyURI",
+      "propertyUrl": "http://www.w3.org/ns/sosa/usedProcedure",
+      "status": "approved"
+    },
+    "subject_uri": {
+      "title": "Feature-of-interest URI",
+      "description": "Persistent URI identifying the subject or feature of interest of the observation.",
+      "datatype": "anyURI",
+      "propertyUrl": "http://www.w3.org/ns/sosa/hasFeatureOfInterest",
+      "status": "approved"
+    },
+    "method_label": {
+      "title": "Method label",
+      "description": "Human-readable name of the method or procedure used to obtain the value.",
+      "datatype": "string",
+      "status": "approved"
+    },
+    "marker": {
+      "title": "Molecular marker",
+      "description": "Molecular marker or assay target used for the biodiversity observation, for example 16S or ITS.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/measurementTechnique",
+      "status": "approved"
+    },
+    "otu_id": {
+      "title": "Operational taxonomic unit identifier",
+      "description": "Identifier of the operational taxonomic unit in the source biodiversity table.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/identifier",
+      "status": "approved"
+    },
+    "count": {
+      "title": "Sequence or observation count",
+      "description": "Count associated with the operational taxonomic unit for the sample.",
+      "datatype": "integer",
+      "propertyUrl": "http://rs.tdwg.org/dwc/terms/organismQuantity",
+      "unit": "count",
+      "status": "approved"
+    },
+    "taxa": {
+      "title": "Taxonomic assignment",
+      "description": "Taxonomic assignment associated with the operational taxonomic unit, as supplied by the source biodiversity workflow.",
+      "datatype": "string",
+      "propertyUrl": "http://rs.tdwg.org/dwc/terms/scientificName",
+      "status": "provisional"
+    },
+    "filename": {
+      "title": "File name",
+      "description": "Name of the image or other related digital file.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/name",
+      "status": "approved"
+    },
+    "image_url": {
+      "title": "Image URL",
+      "description": "URL from which the sample image can be accessed.",
+      "datatype": "anyURI",
+      "propertyUrl": "https://schema.org/contentUrl",
+      "status": "approved"
+    },
+    "content_url": {
+      "title": "Content URL",
+      "description": "URL from which the related digital object can be accessed.",
+      "datatype": "anyURI",
+      "propertyUrl": "https://schema.org/contentUrl",
+      "status": "approved"
+    },
+    "image_type": {
+      "title": "Image type",
+      "description": "ECHOREPO category describing the role or type of the sample image.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/type",
+      "status": "approved"
+    },
+    "caption": {
+      "title": "Image caption",
+      "description": "Human-readable caption or comment associated with the sample image.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/description",
+      "status": "approved"
+    }
+  },
+  "tables": {
+    "samples.csv": {
+      "title": "ECHOREPO canonical soil samples",
+      "description": "Canonical sample-level ECHOREPO records, including identifiers, sampling time, location and selected soil observations.",
+      "primaryKey": "sample_id",
+      "columns": {
+        "ph": {
+          "title": "Soil pH",
+          "description": "Soil pH value recorded for the sample.",
+          "datatype": "number",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilpH",
+          "unit": "pH",
+          "method": "ECHO citizen-science or laboratory workflow, as represented in the canonical source data.",
+          "status": "approved"
+        },
+        "organic_carbon_pct": {
+          "title": "Soil organic carbon",
+          "description": "Soil organic carbon content associated with the sample, expressed as a percentage where populated.",
+          "datatype": "number",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilOrganicCarbon",
+          "unit": "%",
+          "status": "approved"
+        },
+        "earthworms_count": {
+          "title": "Earthworm abundance",
+          "description": "Number of earthworms observed in the ECHO citizen-science assessment.",
+          "datatype": "integer",
+          "propertyUrl": "https://w3id.org/eusoilvoc#BiologicalAbundance",
+          "unit": "count",
+          "method": "ECHO citizen-science earthworm observation protocol.",
+          "status": "approved"
+        },
+        "pollutants_count": {
+          "title": "Observed pollutant indicators",
+          "description": "Count of pollutant or contamination indicators recorded for the sample.",
+          "datatype": "integer",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilContaminants",
+          "unit": "count",
+          "status": "provisional"
+        },
+        "contamination_debris": {
+          "title": "Debris contamination observation",
+          "description": "Recorded observation of debris contamination at the sampling location.",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilContaminants",
+          "status": "provisional"
+        },
+        "contamination_plastic": {
+          "title": "Plastic contamination observation",
+          "description": "Recorded observation of plastic contamination at the sampling location.",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilContaminants",
+          "status": "provisional"
+        },
+        "contamination_other_orig": {
+          "title": "Other contamination observation, original language",
+          "description": "Free-text description of other contamination in the language submitted by the participant.",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilContaminants",
+          "status": "provisional"
+        },
+        "contamination_other_en": {
+          "title": "Other contamination observation, English",
+          "description": "English representation of the free-text description of other contamination.",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilContaminants",
+          "status": "provisional"
+        },
+        "soil_structure_orig": {
+          "title": "Soil structure, original language",
+          "description": "Soil-structure observation in the language submitted by the participant.",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilStructure",
+          "status": "approved"
+        },
+        "soil_structure_en": {
+          "title": "Soil structure, English",
+          "description": "English representation of the soil-structure observation.",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilStructure",
+          "status": "approved"
+        },
+        "soil_texture_orig": {
+          "title": "Soil texture, original language",
+          "description": "Soil-texture observation in the language submitted by the participant.",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilTexture",
+          "status": "approved"
+        },
+        "soil_texture_en": {
+          "title": "Soil texture, English",
+          "description": "English representation of the soil-texture observation.",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilTexture",
+          "status": "approved"
+        },
+        "observations_orig": {
+          "title": "Additional observations, original language",
+          "description": "Additional free-text observations submitted by the participant in the original language.",
+          "datatype": "string",
+          "status": "approved"
+        },
+        "observations_en": {
+          "title": "Additional observations, English",
+          "description": "English representation of additional free-text observations.",
+          "datatype": "string",
+          "status": "approved"
+        },
+        "metals_info_orig": {
+          "title": "Metals information, original language",
+          "description": "Participant-provided information concerning metals or potential metal contamination in the original language.",
+          "datatype": "string",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilContaminants",
+          "status": "provisional"
+        },
+        "metals_info_en": {
+          "title": "Metals information, English",
+          "description": "English representation of participant-provided information concerning metals or potential metal contamination.",
+          "datatype": "string",
+          "propertyUrl": "https://w3id.org/eusoilvoc#SoilContaminants",
+          "status": "provisional"
+        }
+      }
+    },
+    "sample_parameters.csv": {
+      "title": "ECHOREPO sample parameters",
+      "description": "Long-form parameter observations and measurements associated with ECHOREPO samples. The parameter_uri and procedure_uri columns carry row-level semantic identifiers when available."
+    },
+    "sample_images.csv": {
+      "title": "ECHOREPO sample images",
+      "description": "Image resources and image metadata associated with ECHOREPO soil samples."
+    },
+    "sample_biodiversity.csv": {
+      "title": "ECHOREPO sample biodiversity observations",
+      "description": "Operational taxonomic units, taxonomic assignments and counts associated with ECHOREPO soil samples.",
+      "primaryKey": [
+        "sample_id",
+        "marker",
+        "taxonomic_level",
+        "taxon"
+      ],
+      "columns": {
+        "sample_id": {},
+        "country_code": {},
+        "marker": {},
+        "taxonomic_level": {},
+        "taxon": {},
+        "read_count": {},
+        "relative_abundance_pct": {},
+        "analysis_date": {},
+        "source_file": {},
+        "licence": {}
+      }
+    }
+  }
+}
