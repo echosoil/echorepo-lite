@@ -44,6 +44,15 @@ SAMPLE_COLUMNS = [
     "licence",
 ]
 
+PUBLIC_COLUMN_MAP = {
+    "organic_carbon_pct": "soil_organic_matter_estimate_pct",
+    "analysis_date": "analysis_datetime_utc",
+    "value": "result_value",
+    "uom": "unit",
+    "taxonomic_level": "taxon_rank",
+    "taxon": "scientific_name",
+}
+
 IMAGE_COLUMNS = [
     "sample_id",
     "country_code",
@@ -270,7 +279,7 @@ def get_samples_df(
     ids = _normalise_sample_ids(sample_ids)
 
     if ids == []:
-        return pd.DataFrame(columns=SAMPLE_COLUMNS)
+        return pd.DataFrame(columns=SAMPLE_COLUMNS).rename(columns=PUBLIC_COLUMN_MAP)
 
     where_sql = ""
     params: tuple = ()
@@ -290,7 +299,7 @@ def get_samples_df(
         sql,
         params,
         SAMPLE_COLUMNS,
-    )
+    ).rename(columns=PUBLIC_COLUMN_MAP)
 
 
 def get_images_df(

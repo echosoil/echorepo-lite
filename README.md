@@ -330,7 +330,7 @@ lon
 country_code
 location_accuracy_m
 ph
-organic_carbon_pct
+soil_organic_matter_estimate_pct
 earthworms_count
 contamination_debris
 contamination_plastic

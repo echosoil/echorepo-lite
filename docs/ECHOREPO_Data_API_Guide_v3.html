@@ -1,22 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <title>ECHOREPO Data API – Canonical & Lab Enrichment (v3)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-           max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
-    pre { background: #111; color: #eee; padding: 0.75rem 1rem; overflow-x: auto; }
-    code { font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
-    th, td { border: 1px solid #ccc; padding: 0.4rem 0.6rem; text-align: left; }
-    th { background: #f0f0f0; }
-    h1, h2, h3 { line-height: 1.3; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.6;
+    }
+
+    pre {
+      background: #111;
+      color: #eee;
+      padding: 0.75rem 1rem;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1rem 0;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.3;
+    }
   </style>
 </head>
+
 <body>
-<pre># ECHOREPO Data API – Canonical &amp; Lab Enrichment (v3)
+  <pre># ECHOREPO Data API – Canonical &amp; Lab Enrichment (v3)
 
 This document describes the public-facing **ECHOREPO Data API** intended for
 external services (e.g. SoilWise / EUSO) and trusted partners.
@@ -116,7 +151,7 @@ Column sets (simplified):
 
 ```text
 sample_id, timestamp_utc, lat, lon, country_code, location_accuracy_m,
-ph, organic_carbon_pct, earthworms_count,
+ph, soil_organic_matter_estimate_pct, earthworms_count,
 contamination_debris, contamination_plastic,
 contamination_other_orig, contamination_other_en,
 pollutants_count,
@@ -557,4 +592,5 @@ build it on top of `/canonical/samples` and the ZIP endpoint so that we keep
 the **canonical model** stable.
 </pre>
 </body>
+
 </html>
