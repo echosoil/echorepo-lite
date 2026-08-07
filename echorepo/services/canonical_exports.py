@@ -13,6 +13,7 @@ import pandas as pd
 from psycopg2.extras import RealDictCursor
 
 from .db import get_pg_conn
+from .soil_categories import standardize_soil_columns
 
 
 ZENODO_DOI = "10.5281/zenodo.19722513"
@@ -318,7 +319,7 @@ def drop_oxide_rows(
 
     return df.loc[~oxide_mask].copy()
 
-def _standardise_timestamp_columns(
+def _standardize_timestamp_columns(
     df: pd.DataFrame,
     timestamp_cols: list[str] | None = None,
 ) -> pd.DataFrame:
@@ -344,7 +345,7 @@ def _standardise_timestamp_columns(
     return df
 
 
-def _standardise_nullable_integer_columns(
+def _standardize_nullable_integer_columns(
     df: pd.DataFrame,
     int_cols: list[str] | None = None,
 ) -> pd.DataFrame:
@@ -485,11 +486,11 @@ def get_samples_df(
         SAMPLE_COLUMNS,
     ).rename(columns=SAMPLE_PUBLIC_COLUMN_MAP)
 
-    df = _standardise_timestamp_columns(
+    df = _standardize_timestamp_columns(
         df,
         timestamp_cols=["sampling_datetime_utc"],
     )
-    df = _standardise_nullable_integer_columns(
+    df = _standardize_nullable_integer_columns(
         df,
         int_cols=[
             "earthworms_count",
@@ -498,6 +499,8 @@ def get_samples_df(
             "pollutants_count",
         ],
     )
+
+    df = standardize_soil_columns(df)
     return df
 
 
@@ -531,7 +534,7 @@ def get_images_df(
         IMAGE_COLUMNS,
     ).rename(columns=IMAGE_PUBLIC_COLUMN_MAP)
 
-    df = _standardise_timestamp_columns(
+    df = _standardize_timestamp_columns(
         df,
         timestamp_cols=["image_datetime_utc"],
     )
@@ -580,7 +583,7 @@ def get_parameters_df(
     )
     df = _enrich_parameter_metadata(df)
     df = df.rename(columns=PARAMETER_PUBLIC_COLUMN_MAP)
-    return _standardise_timestamp_columns(
+    return _standardize_timestamp_columns(
         df,
         timestamp_cols=["analysis_datetime_utc"],
     )
@@ -636,11 +639,11 @@ def get_biodiversity_df(
         BIODIVERSITY_COLUMNS,
     ).rename(columns=BIODIVERSITY_PUBLIC_COLUMN_MAP)
 
-    df = _standardise_nullable_integer_columns(
+    df = _standardize_nullable_integer_columns(
         df,
         int_cols=["read_count"],
     )
-    return _standardise_timestamp_columns(
+    return _standardize_timestamp_columns(
         df,
         timestamp_cols=["ingested_datetime_utc"],
     )

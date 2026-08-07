@@ -27,7 +27,7 @@ python3 tools/publish_api_file_to_zenodo.py \
   --env-file "${ZENODO_ENV_FILE:-.env_zenodo}" \
   --api-base "${ZENODO_API_BASE:-https://echorepo.quanta-labs.com/api/v1}" \
   --api-path "${ZENODO_API_PATH:-/canonical/all.zip}" \
-  --metadata-config "${SOILWISE_METADATA_CONFIG:-metadata/soilwise/echorepo_columns.json}" \
+  --metadata-config "${SOILWISE_METADATA_CONFIG:-metadata/canonical/echorepo_columns.json}" \
   --file-json-name "${SOILWISE_FILE_JSON_NAME:-file.json}" \
   --log-file "${ZENODO_LOG_FILE:-data/zenodo_sync_log.csv}" \
   --title "${ZENODO_TITLE:-ECHOREPO Soil Dataset}" \
