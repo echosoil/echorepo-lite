@@ -52,4 +52,5 @@ python3 tools/publish_api_file_to_zenodo.py \
     --copyright "${ZENODO_COPYRIGHT:-© 2026 ECHO Horizon Project}" \
     --keyword "${ZENODO_KEYWORD:-soil,biodiversity,citizen-science}" \
     --subject "${ZENODO_SUBJECT:-Soil science|http://id.loc.gov/authorities/subjects/sh85124022|url}" \
-    "${extra_flags[@]}"
+    "${extra_flags[@]}" \
+    "$@"
