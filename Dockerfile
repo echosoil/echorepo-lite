@@ -33,6 +33,12 @@ COPY migrations/ ./migrations/
 # In your compose file you currently mount ./static:/app/static:ro
 COPY static/ ./static/
 
+# Copy metadata / controlled vocabularies
+COPY metadata/ ./metadata/
+
+# Copy tools for running scripts in the container
+COPY tools/ ./tools/
+
 # Compile translations.
 # The `|| true` prevents the build from failing if a locale is empty/missing.
 RUN pybabel compile -d /app/echorepo/translations || true
