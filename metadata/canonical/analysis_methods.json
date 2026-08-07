@@ -1,0 +1,7 @@
+{
+  "MXRF_105C": {
+    "name": "Micro-X-ray fluorescence (µXRF)",
+    "description": "Soil oven-dried at 105 °C to constant weight before total elemental concentration analysis.",
+    "procedure_uri": null
+  }
+}

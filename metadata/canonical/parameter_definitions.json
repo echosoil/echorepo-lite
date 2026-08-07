@@ -1,0 +1,98 @@
+{
+  "As": {
+    "name": "Total arsenic concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Pb": {
+    "name": "Total lead concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Ca": {
+    "name": "Total calcium concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Cd": {
+    "name": "Total cadmium concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Co": {
+    "name": "Total cobalt concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Cr": {
+    "name": "Total chromium concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Cu": {
+    "name": "Total copper concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Fe": {
+    "name": "Total iron concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "K": {
+    "name": "Total potassium concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Mg": {
+    "name": "Total magnesium concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Mn": {
+    "name": "Total manganese concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Mo": {
+    "name": "Total molybdenum concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Ni": {
+    "name": "Total nickel concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "P": {
+    "name": "Total phosphorus concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "S": {
+    "name": "Total sulfur concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  },
+  "Zn": {
+    "name": "Total zinc concentration in soil",
+    "property_uri": "...",
+    "default_unit": "mg/kg",
+    "method_code": "MXRF_105C"
+  }
+}
