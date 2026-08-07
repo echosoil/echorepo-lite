@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import io
+import os
 import re
 import zipfile
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 import pandas as pd
 from psycopg2.extras import RealDictCursor
@@ -44,6 +46,14 @@ SAMPLE_COLUMNS = [
     "licence",
 ]
 
+# The PostgreSQL schema remains unchanged. These maps define only the
+# names exposed by the canonical/public CSV resources.
+SAMPLE_PUBLIC_COLUMN_MAP = {
+    "timestamp_utc": "sampling_datetime_utc",
+    "ph": "soil_ph_field",
+    "organic_carbon_pct": "soil_organic_matter_estimate_pct",
+}
+
 IMAGE_COLUMNS = [
     "sample_id",
     "country_code",
@@ -55,6 +65,10 @@ IMAGE_COLUMNS = [
     "timestamp_utc",
     "licence",
 ]
+
+IMAGE_PUBLIC_COLUMN_MAP = {
+    "timestamp_utc": "image_datetime_utc",
+}
 
 PARAMETER_COLUMNS = [
     "sample_id",
@@ -71,6 +85,12 @@ PARAMETER_COLUMNS = [
     "parameter_uri",
 ]
 
+PARAMETER_PUBLIC_COLUMN_MAP = {
+    "value": "result_value",
+    "uom": "unit",
+    "analysis_date": "analysis_datetime_utc",
+}
+
 BIODIVERSITY_COLUMNS = [
     "sample_id",
     "country_code",
@@ -79,10 +99,42 @@ BIODIVERSITY_COLUMNS = [
     "taxon",
     "read_count",
     "relative_abundance_pct",
-    "analysis_date",
+    "uploaded_at",
     "source_file",
     "licence",
 ]
+
+BIODIVERSITY_PUBLIC_COLUMN_MAP = {
+    "taxonomic_level": "taxon_rank",
+    "taxon": "scientific_name",
+    # The source column is sample_taxon_abundance.uploaded_at. It is not
+    # necessarily the laboratory analysis time, so do not call it analysis_date.
+    "uploaded_at": "ingested_datetime_utc",
+}
+
+ELEMENT_PARAMETER_NAMES = {
+    "As": "Total arsenic concentration in soil",
+    "Ca": "Total calcium concentration in soil",
+    "Cd": "Total cadmium concentration in soil",
+    "Co": "Total cobalt concentration in soil",
+    "Cr": "Total chromium concentration in soil",
+    "Cu": "Total copper concentration in soil",
+    "Fe": "Total iron concentration in soil",
+    "K": "Total potassium concentration in soil",
+    "Mg": "Total magnesium concentration in soil",
+    "Mn": "Total manganese concentration in soil",
+    "Mo": "Total molybdenum concentration in soil",
+    "Ni": "Total nickel concentration in soil",
+    "P": "Total phosphorus concentration in soil",
+    "Pb": "Total lead concentration in soil",
+    "S": "Total sulfur concentration in soil",
+    "Zn": "Total zinc concentration in soil",
+}
+
+DEFAULT_ELEMENT_ANALYSIS_METHOD = (
+    "Micro-X-ray fluorescence (µXRF) after oven drying at 105 °C "
+    "to constant weight"
+)
 
 
 @dataclass(frozen=True)
@@ -102,8 +154,9 @@ EXPORT_SPECS = {
     "samples.csv": ExportSpec(
         filename="samples.csv",
         description=(
-            "Canonical sample-level data "
-            "(locations, pH, texture, structure, etc.)."
+            "Canonical sample-level data including location, field-estimated "
+            "soil pH, soil organic matter, earthworms, visible contamination, "
+            "soil structure, soil texture and participant observations."
         ),
     ),
     "sample_images.csv": ExportSpec(
@@ -116,20 +169,21 @@ EXPORT_SPECS = {
     "sample_parameters.csv": ExportSpec(
         filename="sample_parameters.csv",
         description=(
-            "Canonical sample parameter data on: "
-            "As, Ca, Cd, Cu, Fe, K, Mg, Mn, Mo, Ni, "
-            "P, Pb, S and Zn."
+            "Canonical laboratory elemental concentration measurements "
+            "associated with ECHOREPO soil samples."
         ),
         notes=(
-            "Absence of a parameter means that it was filtered out "
-            "because its value was below the measuring equipment threshold.",
+            "Rows with numeric values below the configured canonical export "
+            "threshold (default 0.01) are omitted.",
+            "Oxide-form parameter rows are excluded from the canonical export "
+            "by default.",
         ),
     ),
     "sample_biodiversity.csv": ExportSpec(
         filename="sample_biodiversity.csv",
         description=(
-            "Phylum-level taxonomic abundance statistics "
-            "per sample and marker."
+            "Microbial taxonomic abundance statistics by reported taxonomic rank "
+            "per sample and molecular marker (for example 16S or ITS)."
         ),
         notes=(
             "Raw OTU-level source data are not included "
@@ -263,6 +317,142 @@ def drop_oxide_rows(
 
     return df.loc[~oxide_mask].copy()
 
+def _standardise_timestamp_columns(
+    df: pd.DataFrame,
+    timestamp_cols: list[str] | None = None,
+) -> pd.DataFrame:
+    """
+    Convert timestamp columns to ISO 8601 UTC strings.
+
+    Invalid values become empty in the CSV rather than being emitted in a
+    non-standard timestamp format.
+    """
+    if df is None or df.empty:
+        return df
+
+    for col in timestamp_cols or []:
+        if col not in df.columns:
+            continue
+
+        df[col] = pd.to_datetime(
+            df[col],
+            utc=True,
+            errors="coerce",
+        ).dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    return df
+
+
+def _standardise_nullable_integer_columns(
+    df: pd.DataFrame,
+    int_cols: list[str] | None = None,
+) -> pd.DataFrame:
+    """
+    Convert integer-like columns to pandas nullable integers.
+
+    A column is left unchanged if it contains a non-numeric value or a genuine
+    fractional value. This avoids silently destroying source information in
+    fields whose exact semantics are still being reviewed.
+    """
+    if df is None or df.empty:
+        return df
+
+    for col in int_cols or []:
+        if col not in df.columns:
+            continue
+
+        original = df[col]
+        non_empty = original.notna() & original.astype(str).str.strip().ne("")
+        numeric = pd.to_numeric(original, errors="coerce")
+
+        if numeric[non_empty].isna().any():
+            continue
+
+        non_null_numeric = numeric.dropna()
+        if not non_null_numeric.empty and (
+            (non_null_numeric % 1).abs() > 1e-12
+        ).any():
+            continue
+
+        df[col] = numeric.astype("Int64")
+
+    return df
+
+
+def _enrich_parameter_metadata(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Improve public labels for elemental measurements without changing the DB.
+
+    Existing non-empty human-readable names and methods are preserved.
+    The ECHO field protocol specifies µXRF after oven drying at 105 °C to
+    constant weight for the canonical heavy-metal/nutrient measurements.
+    """
+    if df is None or df.empty or "parameter_code" not in df.columns:
+        return df
+
+    code_series = df["parameter_code"].fillna("").astype(str).str.strip()
+    code_folded = code_series.str.casefold()
+
+    if "parameter_name" in df.columns:
+        name_series = df["parameter_name"].fillna("").astype(str).str.strip()
+        for code, label in ELEMENT_PARAMETER_NAMES.items():
+            mask = code_folded.eq(code.casefold())
+            replace_name = name_series.eq("") | name_series.str.casefold().eq(
+                code.casefold()
+            )
+            df.loc[mask & replace_name, "parameter_name"] = label
+
+    if "analysis_method" in df.columns:
+        method_series = df["analysis_method"].fillna("").astype(str).str.strip()
+        known_codes = {code.casefold() for code in ELEMENT_PARAMETER_NAMES}
+        mask = code_folded.isin(known_codes) & method_series.eq("")
+        df.loc[mask, "analysis_method"] = DEFAULT_ELEMENT_ANALYSIS_METHOD
+
+    return df
+
+
+def _rewrite_local_image_urls(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Rewrite localhost image URLs when ECHOREPO_PUBLIC_BASE_URL is configured.
+
+    Example:
+      ECHOREPO_PUBLIC_BASE_URL=https://echorepo.quanta-labs.com
+
+    Non-local URLs are left unchanged.
+    """
+    if df is None or df.empty or "image_url" not in df.columns:
+        return df
+
+    public_base = os.getenv("ECHOREPO_PUBLIC_BASE_URL", "").strip().rstrip("/")
+    if not public_base:
+        return df
+
+    def rewrite(value: object) -> object:
+        if value is None or pd.isna(value):
+            return value
+
+        text = str(value).strip()
+        if not text:
+            return text
+
+        try:
+            parsed = urlsplit(text)
+        except ValueError:
+            return text
+
+        if parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
+            return text
+
+        suffix = parsed.path or "/"
+        if parsed.query:
+            suffix += f"?{parsed.query}"
+        if parsed.fragment:
+            suffix += f"#{parsed.fragment}"
+        return f"{public_base}{suffix}"
+
+    df["image_url"] = df["image_url"].map(rewrite)
+    return df
+
 
 def get_samples_df(
     sample_ids: Sequence[str] | None = None,
@@ -270,7 +460,9 @@ def get_samples_df(
     ids = _normalise_sample_ids(sample_ids)
 
     if ids == []:
-        return pd.DataFrame(columns=SAMPLE_COLUMNS)
+        return pd.DataFrame(columns=SAMPLE_COLUMNS).rename(
+            columns=SAMPLE_PUBLIC_COLUMN_MAP
+        )
 
     where_sql = ""
     params: tuple = ()
@@ -286,11 +478,26 @@ def get_samples_df(
         ORDER BY timestamp_utc DESC, sample_id
     """
 
-    return _fetch_dataframe(
+    df = _fetch_dataframe(
         sql,
         params,
         SAMPLE_COLUMNS,
+    ).rename(columns=SAMPLE_PUBLIC_COLUMN_MAP)
+
+    df = _standardise_timestamp_columns(
+        df,
+        timestamp_cols=["sampling_datetime_utc"],
     )
+    df = _standardise_nullable_integer_columns(
+        df,
+        int_cols=[
+            "earthworms_count",
+            "contamination_debris",
+            "contamination_plastic",
+            "pollutants_count",
+        ],
+    )
+    return df
 
 
 def get_images_df(
@@ -299,7 +506,9 @@ def get_images_df(
     ids = _normalise_sample_ids(sample_ids)
 
     if ids == []:
-        return pd.DataFrame(columns=IMAGE_COLUMNS)
+        return pd.DataFrame(columns=IMAGE_COLUMNS).rename(
+            columns=IMAGE_PUBLIC_COLUMN_MAP
+        )
 
     where_sql = ""
     params: tuple = ()
@@ -315,11 +524,17 @@ def get_images_df(
         ORDER BY sample_id, image_id
     """
 
-    return _fetch_dataframe(
+    df = _fetch_dataframe(
         sql,
         params,
         IMAGE_COLUMNS,
+    ).rename(columns=IMAGE_PUBLIC_COLUMN_MAP)
+
+    df = _standardise_timestamp_columns(
+        df,
+        timestamp_cols=["image_datetime_utc"],
     )
+    return _rewrite_local_image_urls(df)
 
 
 def get_parameters_df(
@@ -331,7 +546,9 @@ def get_parameters_df(
     ids = _normalise_sample_ids(sample_ids)
 
     if ids == []:
-        return pd.DataFrame(columns=PARAMETER_COLUMNS)
+        return pd.DataFrame(columns=PARAMETER_COLUMNS).rename(
+            columns=PARAMETER_PUBLIC_COLUMN_MAP
+        )
 
     where_sql = ""
     params: tuple = ()
@@ -356,9 +573,15 @@ def get_parameters_df(
     if exclude_oxides:
         df = drop_oxide_rows(df)
 
-    return drop_parameter_values_below(
+    df = drop_parameter_values_below(
         df,
         threshold=minimum_value,
+    )
+    df = _enrich_parameter_metadata(df)
+    df = df.rename(columns=PARAMETER_PUBLIC_COLUMN_MAP)
+    return _standardise_timestamp_columns(
+        df,
+        timestamp_cols=["analysis_datetime_utc"],
     )
 
 
@@ -370,7 +593,7 @@ def get_biodiversity_df(
     if ids == []:
         return pd.DataFrame(
             columns=BIODIVERSITY_COLUMNS
-        )
+        ).rename(columns=BIODIVERSITY_PUBLIC_COLUMN_MAP)
 
     where_sql = ""
     params: tuple = ()
@@ -388,7 +611,7 @@ def get_biodiversity_df(
             sta.taxon,
             sta.read_count,
             sta.relative_abundance_pct,
-            sta.uploaded_at AS analysis_date,
+            sta.uploaded_at,
             sta.source_file,
             COALESCE(
                 NULLIF(s.licence, ''),
@@ -406,10 +629,19 @@ def get_biodiversity_df(
             sta.taxon
     """
 
-    return _fetch_dataframe(
+    df = _fetch_dataframe(
         sql,
         params,
         BIODIVERSITY_COLUMNS,
+    ).rename(columns=BIODIVERSITY_PUBLIC_COLUMN_MAP)
+
+    df = _standardise_nullable_integer_columns(
+        df,
+        int_cols=["read_count"],
+    )
+    return _standardise_timestamp_columns(
+        df,
+        timestamp_cols=["ingested_datetime_utc"],
     )
 
 

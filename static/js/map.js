@@ -1380,11 +1380,6 @@
       p.locationAccuracyM
     );
 
-    const pollutantsCount = pick(
-      p.pollutants_count,
-      p.pollutantsCount
-    );
-
     const observations = pick(
       p.observations_en,
       p.observations_orig,
@@ -1433,6 +1428,7 @@
       : `${String(locationAccuracy).trim()} m`;
 
     const soilOrganicMatter = pick(
+      p.soil_organic_matter_estimate_pct,
       p.organic_carbon_pct,
       p.organicCarbonPct,
       p.SOIL_COLOR_color,
@@ -1535,11 +1531,6 @@
         '<i class="bi bi-chat-left-text"></i> ' +
         T('observations', {}, 'Observations'),
         observations
-      ],
-      [
-        '<i class="bi bi-exclamation-diamond"></i> ' +
-        T('pollutantsCount', {}, 'Pollutants'),
-        fmtInt(pollutantsCount)
       ]
     ].filter(([_, value]) => !(
       value == null ||

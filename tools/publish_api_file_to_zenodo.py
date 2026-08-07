@@ -15,27 +15,27 @@ import zipfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import requests
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-DEFAULT_API_PATH = "/canonical/zenodo_bundle.zip"
+DEFAULT_API_PATH = "/canonical/all.zip"
 DEFAULT_METADATA_CONFIG = "metadata/soilwise/echorepo_columns.json"
 DEFAULT_SOILVOC_API = "https://api.soilwise-he.containers.wur.nl/vocab/api/v1"
 
 CANONICAL_RESOURCE_SCHEMAS: dict[str, list[str]] = {
     "samples.csv": [
         "sample_id",
-        "timestamp_utc",
+        "sampling_datetime_utc",
         "lat",
         "lon",
         "country_code",
         "location_accuracy_m",
-        "ph",
-        "organic_carbon_pct",
+        "soil_ph_field",
+        "soil_organic_matter_estimate_pct",
         "earthworms_count",
         "contamination_debris",
         "contamination_plastic",
@@ -63,7 +63,7 @@ CANONICAL_RESOURCE_SCHEMAS: dict[str, list[str]] = {
         "image_description_orig",
         "image_description_en",
         "collected_by",
-        "timestamp_utc",
+        "image_datetime_utc",
         "licence",
     ],
     "sample_parameters.csv": [
@@ -71,10 +71,10 @@ CANONICAL_RESOURCE_SCHEMAS: dict[str, list[str]] = {
         "country_code",
         "parameter_code",
         "parameter_name",
-        "value",
-        "uom",
+        "result_value",
+        "unit",
         "analysis_method",
-        "analysis_date",
+        "analysis_datetime_utc",
         "lab_id",
         "created_by",
         "licence",
@@ -84,11 +84,11 @@ CANONICAL_RESOURCE_SCHEMAS: dict[str, list[str]] = {
         "sample_id",
         "country_code",
         "marker",
-        "taxonomic_level",
-        "taxon",
+        "taxon_rank",
+        "scientific_name",
         "read_count",
         "relative_abundance_pct",
-        "analysis_date",
+        "ingested_datetime_utc",
         "source_file",
         "licence",
     ],
@@ -538,6 +538,41 @@ def infer_csvw_datatype(column_name: str, values: list[str]) -> str:
     return "string"
 
 
+def _open_csv_reader(
+    text: str,
+    filename: str,
+) -> tuple[csv._reader, str]:
+    """Return a reader and delimiter for one CSV resource.
+
+    ECHOREPO canonical exports have a fixed RFC-4180-style dialect: comma
+    delimiter, double-quote quote character, and doubled quotes inside quoted
+    fields. Do not run ``csv.Sniffer`` on these files: free-text image
+    descriptions may contain many apostrophes, causing Sniffer to incorrectly
+    choose a single quote as the quote character and then split quoted commas
+    into extra cells.
+
+    Non-canonical CSVs retain dialect detection for backwards compatibility.
+    """
+    stream = io.StringIO(text, newline="")
+
+    if filename in CANONICAL_RESOURCE_SCHEMAS:
+        return (
+            csv.reader(
+                stream,
+                delimiter=",",
+                quotechar='"',
+                doublequote=True,
+                escapechar=None,
+                skipinitialspace=False,
+                strict=True,
+            ),
+            ",",
+        )
+
+    dialect = detect_csv_dialect(text)
+    return csv.reader(stream, dialect=dialect, strict=True), dialect.delimiter
+
+
 def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
     raw = path.read_bytes()
     if not raw:
@@ -547,13 +582,16 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
     if "\x00" in text:
         raise ValueError(f"CSV contains NUL bytes: {path.name}")
 
-    dialect = detect_csv_dialect(text)
-    reader = csv.reader(io.StringIO(text, newline=""), dialect)
+    reader, delimiter = _open_csv_reader(text, path.name)
 
     try:
         headers = next(reader)
     except StopIteration as exc:
         raise ValueError(f"CSV has no header row: {path.name}") from exc
+    except csv.Error as exc:
+        raise ValueError(
+            f"Cannot parse the header of {path.name}: {exc}"
+        ) from exc
 
     headers = [header.lstrip("\ufeff").strip() for header in headers]
     if not headers or any(not header for header in headers):
@@ -563,21 +601,34 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
 
     values_by_column: dict[str, list[str]] = {header: [] for header in headers}
     row_count = 0
-    physical_row_number = 1
 
-    for row in reader:
-        physical_row_number += 1
-        if not row or all(not cell.strip() for cell in row):
-            continue
-        row_count += 1
-        if len(row) != len(headers):
-            raise ValueError(
-                f"CSV row {physical_row_number} in {path.name} has "
-                f"{len(row)} cells; expected {len(headers)}"
-            )
-        if row_count <= sample_rows:
-            for header, value in zip(headers, row):
-                values_by_column[header].append(value)
+    try:
+        for row in reader:
+            if not row or all(not cell.strip() for cell in row):
+                continue
+
+            row_count += 1
+            if len(row) != len(headers):
+                preview = " | ".join(
+                    cell.replace("\r", "\\r").replace("\n", "\\n")[:120]
+                    for cell in row[: min(len(row), 6)]
+                )
+                raise ValueError(
+                    f"CSV record {row_count + 1} in {path.name} has "
+                    f"{len(row)} cells; expected {len(headers)}. "
+                    f"The record ends near physical line {reader.line_num}. "
+                    f"Parsed preview: {preview!r}"
+                )
+
+            if row_count <= sample_rows:
+                for header, value in zip(headers, row):
+                    values_by_column[header].append(value)
+
+    except csv.Error as exc:
+        raise ValueError(
+            f"Malformed CSV in {path.name} near physical line "
+            f"{reader.line_num}: {exc}"
+        ) from exc
 
     inferred = {
         header: infer_csvw_datatype(header, values_by_column[header])
@@ -590,11 +641,64 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
         "headers": headers,
         "row_count": row_count,
         "encoding": "utf-8" if encoding.startswith("utf-8") else encoding,
-        "delimiter": dialect.delimiter,
+        "delimiter": delimiter,
         "inferred_datatypes": inferred,
         "size_bytes": path.stat().st_size,
         "sha256": sha256_file(path),
     }
+
+
+def validate_public_resource_values(
+    csv_paths: list[Path],
+) -> None:
+    """
+    Reject canonical values that are known to be unusable after publication.
+
+    In particular, localhost image URLs can work inside the ECHOREPO deployment
+    but are meaningless to a Zenodo/SoilWise user.
+    """
+    by_name = {path.name: path for path in csv_paths}
+    images_path = by_name.get("sample_images.csv")
+    if images_path is None:
+        return
+
+    text, _ = decode_csv_bytes(images_path.read_bytes())
+    reader, _ = _open_csv_reader(text, images_path.name)
+
+    try:
+        headers = next(reader)
+    except StopIteration:
+        return
+
+    headers = [header.lstrip("\ufeff").strip() for header in headers]
+    try:
+        image_url_index = headers.index("image_url")
+    except ValueError:
+        return
+
+    for row_number, row in enumerate(reader, start=2):
+        if len(row) != len(headers):
+            continue
+
+        value = row[image_url_index].strip()
+        if not value:
+            continue
+
+        try:
+            parsed = urlsplit(value)
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Invalid image_url in sample_images.csv row {row_number}: "
+                f"{value!r}"
+            ) from exc
+
+        if parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
+            raise RuntimeError(
+                "sample_images.csv contains a localhost image_url at row "
+                f"{row_number}: {value!r}. Configure "
+                "ECHOREPO_PUBLIC_BASE_URL in the canonical-export service so "
+                "published image URLs use the public ECHOREPO host."
+            )
 
 
 def canonical_schema_summary(
@@ -704,6 +808,52 @@ def validate_metadata_config_against_analyses(
     return warnings
 
 
+def validate_canonical_metadata_coverage(
+    config: dict[str, Any],
+    analyses: list[dict[str, Any]],
+) -> None:
+    """
+    Require curated metadata for every column of a canonical ECHOREPO bundle.
+
+    Provisional metadata is allowed here: the purpose of this check is to stop
+    renamed/new canonical columns from silently falling back to generic
+    auto-generated descriptions. --require-complete-metadata remains the
+    stricter switch that also rejects provisional/unresolved metadata.
+    """
+    missing: list[str] = []
+    incomplete: list[str] = []
+
+    for analysis in analyses:
+        filename = analysis["filename"]
+        for column_name in analysis["headers"]:
+            metadata = column_config_for(config, filename, column_name)
+            if not metadata:
+                missing.append(f"{filename}:{column_name}")
+                continue
+
+            required_fields = ("title", "description", "datatype")
+            absent_fields = [
+                field
+                for field in required_fields
+                if metadata.get(field) in (None, "", [])
+            ]
+            if absent_fields:
+                incomplete.append(
+                    f"{filename}:{column_name} missing {', '.join(absent_fields)}"
+                )
+
+    if missing or incomplete:
+        parts: list[str] = []
+        if missing:
+            parts.append("no curated metadata for " + ", ".join(missing))
+        if incomplete:
+            parts.append("incomplete metadata: " + "; ".join(incomplete))
+        raise RuntimeError(
+            "Canonical metadata configuration does not match the public CSV "
+            "schema: " + " | ".join(parts)
+        )
+
+
 def load_metadata_config(path: str | None) -> tuple[dict[str, Any], list[str]]:
     if not path:
         return {}, ["No metadata configuration file was specified."]
@@ -740,6 +890,14 @@ def humanize_column_name(name: str) -> str:
 
 
 def normalize_property_urls(value: Any) -> list[str]:
+    """
+    Normalize a curated propertyUrl value.
+
+    The SoilWise annotator historically emitted a list here, while the CSVW
+    metadata model defines propertyUrl as one URI template. Accept either input
+    shape for backwards compatibility, but require at most one distinct URI in
+    the generated file.json.
+    """
     if value in (None, "", []):
         return []
     if isinstance(value, str):
@@ -747,7 +905,9 @@ def normalize_property_urls(value: Any) -> list[str]:
     elif isinstance(value, list):
         values = value
     else:
-        raise ValueError(f"propertyUrl must be a string or list, got {type(value).__name__}")
+        raise ValueError(
+            f"propertyUrl must be a string or list, got {type(value).__name__}"
+        )
 
     output: list[str] = []
     for item in values:
@@ -758,6 +918,12 @@ def normalize_property_urls(value: Any) -> list[str]:
             raise ValueError(f"Invalid propertyUrl URI: {uri!r}")
         if uri not in output:
             output.append(uri)
+
+    if len(output) > 1:
+        raise ValueError(
+            "CSVW propertyUrl accepts one URI template per column; "
+            f"got multiple values: {output}"
+        )
     return output
 
 
@@ -831,10 +997,17 @@ def build_column_description(
         metadata.get("propertyUrl", metadata.get("element_uri"))
     )
     if property_urls:
-        # SoilWise's Tabular Data Annotator exports propertyUrl as a list.
-        column["propertyUrl"] = property_urls
+        column["propertyUrl"] = property_urls[0]
 
-    for key in ("unit", "method", "separator", "format", "valueUrl", "null"):
+    for key in (
+        "unit",
+        "method",
+        "lang",
+        "separator",
+        "format",
+        "valueUrl",
+        "null",
+    ):
         value = metadata.get(key)
         if value not in (None, "", []):
             column[key] = value
@@ -843,6 +1016,38 @@ def build_column_description(
         column["required"] = True
 
     return column
+
+
+def dataset_config_for(config: dict[str, Any]) -> dict[str, Any]:
+    value = config.get("dataset")
+    return value if isinstance(value, dict) else {}
+
+
+def _dataset_additional_properties(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """
+    Preserve ECHOREPO dataset-level methodological metadata in file.json
+    without inventing CSVW predicates for project-specific concepts.
+    """
+    dataset = dataset_config_for(config)
+    mapping = (
+        ("coordinate_reference_system", "Coordinate reference system"),
+        ("sampling_depth", "Sampling depth"),
+        ("sampling_method", "Sampling method"),
+    )
+
+    output: list[dict[str, Any]] = []
+    for key, title in mapping:
+        value = dataset.get(key)
+        if value in (None, "", []):
+            continue
+        output.append(
+            {
+                "@type": "schema:PropertyValue",
+                "schema:name": title,
+                "schema:value": value,
+            }
+        )
+    return output
 
 
 def build_csvw_document(
@@ -921,27 +1126,35 @@ def build_csvw_document(
         tables.append(table)
 
     creators = [parse_creator(value)["name"] for value in args.creator]
+    dataset_config = dataset_config_for(config)
     document: dict[str, Any] = {
         "@context": [
             "http://www.w3.org/ns/csvw",
             {
-                "@language": "en",
+                "@language": str(dataset_config.get("language") or "en"),
                 "dc": "http://purl.org/dc/terms/",
                 "schema": "https://schema.org/",
                 "sosa": "http://www.w3.org/ns/sosa/",
                 "qudt": "http://qudt.org/schema/qudt/",
+                "unit": "https://schema.org/unitText",
+                "method": "https://schema.org/measurementTechnique",
             },
         ],
         "dc:title": args.title,
         "dc:description": args.description,
         "dc:creator": creators,
-        "dc:license": license_url(args.license),
-        "dc:source": source_url,
+        "dc:license": {"@id": license_url(args.license)},
+        "dc:source": {"@id": source_url},
         "dc:modified": utc_now_iso(),
+        "schema:inLanguage": str(dataset_config.get("language") or "en"),
         "tables": tables,
     }
+
+    additional_properties = _dataset_additional_properties(config)
+    if additional_properties:
+        document["schema:additionalProperty"] = additional_properties
     if reserved_doi:
-        document["dc:identifier"] = f"https://doi.org/{reserved_doi}"
+        document["dc:identifier"] = {"@id": f"https://doi.org/{reserved_doi}"}
     if args.version:
         document["schema:version"] = args.version
     if args.copyright:
@@ -1308,7 +1521,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--api-base")
     parser.add_argument(
         "--api-path",
-        default=DEFAULT_API_PATH,
+        default=None,
         help=(
             "API path relative to --api-base; default: "
             f"{DEFAULT_API_PATH}"
@@ -1363,7 +1576,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--metadata-config",
-        default=DEFAULT_METADATA_CONFIG,
+        default=None,
         help="Curated column metadata JSON used to build file.json",
     )
     parser.add_argument("--file-json-name", default="file.json")
@@ -1416,7 +1629,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Prepare and validate resources without creating a Zenodo draft",
     )
-    parser.add_argument("--log-file", default="data/zenodo_sync_log.csv")
+    parser.add_argument("--log-file", default=None)
     return parser
 
 
@@ -1445,6 +1658,24 @@ def main() -> int:
         file_env,
     )
     api_base = env_or_config("ZENODO_API_BASE", args.api_base, file_env)
+    api_path = env_or_config(
+        "ZENODO_API_PATH",
+        args.api_path,
+        file_env,
+        DEFAULT_API_PATH,
+    )
+    metadata_config_path = env_or_config(
+        "SOILWISE_METADATA_CONFIG",
+        args.metadata_config,
+        file_env,
+        DEFAULT_METADATA_CONFIG,
+    )
+    log_file_value = env_or_config(
+        "ZENODO_LOG_FILE",
+        args.log_file,
+        file_env,
+        "data/zenodo_sync_log.csv",
+    )
 
     if not args.source_file:
         if not api_base:
@@ -1460,14 +1691,14 @@ def main() -> int:
     metadata = build_zenodo_metadata(args)
     filters = build_filter_params(args)
     patterns = args.csv_pattern or list(DEFAULT_CSV_PATTERNS)
-    log_file = Path(args.log_file).expanduser()
+    log_file = _resolve_input_path(str(log_file_value)).expanduser()
 
     log_row: dict[str, Any] = {
         "run_at_utc": utc_now_iso(),
         "status": "started",
         "message": "",
         "api_base": api_base or "",
-        "api_path": normalize_endpoint_path(args.api_path),
+        "api_path": normalize_endpoint_path(str(api_path)),
         "download_url": "",
         "filters_json": json.dumps(filters, ensure_ascii=False, sort_keys=True),
         "existing_deposition_id": args.existing_deposition_id or "",
@@ -1516,7 +1747,7 @@ def main() -> int:
                 download_url = source_path.as_uri()
             else:
                 download_name = args.download_name or infer_download_name_from_path(
-                    args.api_path
+                    str(api_path)
                 )
                 source_path = temp_path / download_name
                 headers = build_echorepo_headers(
@@ -1525,7 +1756,7 @@ def main() -> int:
                 )
                 download_info = download_api_file(
                     str(api_base),
-                    args.api_path,
+                    str(api_path),
                     headers,
                     filters,
                     source_path,
@@ -1557,6 +1788,7 @@ def main() -> int:
             analyses = [analyse_csv(path) for path in csv_paths]
 
             if args.validate_canonical_schema:
+                validate_public_resource_values(csv_paths)
                 validate_echorepo_resource_schemas(analyses)
                 log_row["canonical_schema_validated"] = "1"
 
@@ -1567,7 +1799,7 @@ def main() -> int:
                 sort_keys=True,
             )
 
-            config, config_warnings = load_metadata_config(args.metadata_config)
+            config, config_warnings = load_metadata_config(str(metadata_config_path))
             config_warnings = deduplicate_strings(
                 [
                     *config_warnings,
@@ -1577,6 +1809,9 @@ def main() -> int:
                     ),
                 ]
             )
+
+            if args.validate_canonical_schema:
+                validate_canonical_metadata_coverage(config, analyses)
 
             # First pass validates the structure before creating a Zenodo draft.
             csvw_document, metadata_warnings = build_csvw_document(
@@ -1727,6 +1962,7 @@ def main() -> int:
                             "resource_schemas": schema_summary,
                             "csv_files": [path.name for path in csv_paths],
                             "file_json": args.file_json_name,
+                            "metadata_config": str(metadata_config_path),
                             "prepared_files": uploaded_names,
                             "save_prepared_dir": args.save_prepared_dir,
                             "metadata_warnings": metadata_warnings,

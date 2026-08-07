@@ -328,13 +328,12 @@ timestamp_utc
 lat
 lon
 country_code
-location_accuracy_m
+coordinate_obfuscation_radius_m
 ph
-organic_carbon_pct
+soil_organic_matter_estimate_pct
 earthworms_count
 contamination_debris
 contamination_plastic
-pollutants_count
 soil_structure_orig
 soil_structure_en
 soil_texture_orig
