@@ -14,7 +14,8 @@ TEXTURE_VALUES = {
     "silty clay",
     "clayey",
     "clay loam",
-    "other *",
+    "other",
+    "no data",
 }
 
 STRUCTURE_VALUES = {
@@ -23,6 +24,7 @@ STRUCTURE_VALUES = {
     "firm",
     "compact",
     "high compact",
+    "no data",
 }
 
 
