@@ -49,7 +49,7 @@
       "description": "Radius, in metres, used to spatially obfuscate the published sample coordinates in ECHOREPO for privacy protection. The published latitude and longitude represent an obfuscated location rather than the exact sampling point.",
       "datatype": "number",
       "unit": "m",
-      "status": "provisional"
+      "status": "approved"
     },
     "collected_by": {
       "title": "Collector identifier",
@@ -115,36 +115,29 @@
     },
     "parameter_code": {
       "title": "Parameter code",
-      "description": "Compact ECHOREPO code for the measured elemental parameter, for example As, Pb or Zn.",
+      "description": "Compact code identifying the measured elemental parameter. The corresponding human-readable definition and semantic URI are given in parameter_definitions.csv.",
       "datatype": "string",
       "status": "approved"
     },
     "parameter_name": {
       "title": "Parameter name",
-      "description": "Human-readable name of the measured elemental concentration, for example 'Total arsenic concentration in soil'.",
+      "description": "Human-readable name of the parameter identified by parameter_code.",
       "datatype": "string",
-      "propertyUrl": "https://schema.org/variableMeasured",
+      "propertyUrl": "https://schema.org/name",
       "status": "approved"
     },
     "result_value": {
       "title": "Measurement result",
-      "description": "Numeric result reported for the parameter identified by parameter_code and parameter_uri.",
+      "description": "Numeric measurement result. The measured property is identified by parameter_code and defined in parameter_definitions.csv.",
       "datatype": "number",
       "propertyUrl": "http://www.w3.org/ns/sosa/hasSimpleResult",
       "status": "approved"
     },
     "unit": {
       "title": "Unit",
-      "description": "Human-readable unit in which the measurement result is expressed, for example mg/kg.",
+      "description": "Unit in which result_value is expressed for this measurement, for example mg/kg.",
       "datatype": "string",
       "propertyUrl": "https://schema.org/unitText",
-      "status": "approved"
-    },
-    "analysis_method": {
-      "title": "Analysis method",
-      "description": "Human-readable laboratory method used to obtain the result. For the canonical ECHO elemental measurements, blank source values are exported as micro-X-ray fluorescence (µXRF) after oven drying at 105 °C to constant weight.",
-      "datatype": "string",
-      "propertyUrl": "https://schema.org/measurementTechnique",
       "status": "approved"
     },
     "analysis_datetime_utc": {
@@ -161,16 +154,9 @@
       "propertyUrl": "http://purl.org/dc/terms/identifier",
       "status": "approved"
     },
-    "created_by": {
-      "title": "Created by",
-      "description": "Internal identifier associated with the account or process that created the parameter record. Publication of this field should be reviewed against the ECHOREPO privacy policy.",
-      "datatype": "string",
-      "propertyUrl": "http://purl.org/dc/terms/contributor",
-      "status": "provisional"
-    },
     "parameter_uri": {
       "title": "Observed-property URI",
-      "description": "Persistent URI identifying the measured property for this row, where a reviewed mapping is available.",
+      "description": "Persistent URI identifying the soil property or elemental concentration represented by parameter_code, where a reviewed mapping is available.",
       "datatype": "anyURI",
       "propertyUrl": "http://www.w3.org/ns/sosa/observedProperty",
       "status": "approved"
@@ -222,6 +208,47 @@
       "description": "Name of the source biodiversity file from which the canonical abundance row was derived.",
       "datatype": "string",
       "propertyUrl": "http://purl.org/dc/terms/source",
+      "status": "approved"
+    },
+    "method_code": {
+      "title": "Analysis method code",
+      "description": "Compact code identifying the laboratory analysis method. The method is defined in analysis_methods.csv.",
+      "datatype": "string",
+      "status": "approved"
+    },
+    "default_unit": {
+      "title": "Default unit",
+      "description": "Default human-readable unit associated with the parameter definition. The actual unit for each measurement is retained in sample_parameters.csv.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/unitText",
+      "status": "approved"
+    },
+    "parameter_description": {
+      "title": "Parameter description",
+      "description": "Human-readable description of the parameter represented by parameter_code.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/description",
+      "status": "approved"
+    },
+    "method_name": {
+      "title": "Analysis method name",
+      "description": "Short human-readable name of the laboratory method represented by method_code.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/name",
+      "status": "approved"
+    },
+    "method_description": {
+      "title": "Analysis method description",
+      "description": "Human-readable description of the laboratory procedure represented by method_code.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/description",
+      "status": "approved"
+    },
+    "procedure_uri": {
+      "title": "Procedure URI",
+      "description": "Persistent URI identifying the laboratory procedure represented by method_code, where a reviewed vocabulary mapping is available.",
+      "datatype": "anyURI",
+      "propertyUrl": "http://www.w3.org/ns/sosa/usedProcedure",
       "status": "approved"
     }
   },
@@ -362,16 +389,78 @@
         "sample_id",
         "image_id"
       ],
-      "columns": {}
+      "columns": {},
+      "foreignKeys": [
+        {
+          "columnReference": "sample_id",
+          "reference": {
+            "resource": "samples.csv",
+            "columnReference": "sample_id"
+          }
+        }
+      ]
     },
     "sample_parameters.csv": {
       "title": "ECHOREPO sample laboratory parameters",
-      "description": "Long-form elemental concentration measurements associated with ECHOREPO soil samples. The public export improves element labels and fills a blank analysis_method with the ECHO µXRF protocol for recognised elemental parameter codes while preserving non-empty source methods.",
+      "description": "Compact long-form elemental concentration measurements associated with ECHOREPO soil samples. parameter_code refers to parameter_definitions.csv and method_code refers to analysis_methods.csv, avoiding repetition of human-readable labels, descriptions and semantic URIs in every measurement row.",
+      "foreignKeys": [
+        {
+          "columnReference": "sample_id",
+          "reference": {
+            "resource": "samples.csv",
+            "columnReference": "sample_id"
+          }
+        },
+        {
+          "columnReference": "parameter_code",
+          "reference": {
+            "resource": "parameter_definitions.csv",
+            "columnReference": "parameter_code"
+          }
+        },
+        {
+          "columnReference": "method_code",
+          "reference": {
+            "resource": "analysis_methods.csv",
+            "columnReference": "method_code"
+          }
+        }
+      ],
       "columns": {}
     },
     "sample_biodiversity.csv": {
       "title": "ECHOREPO sample microbial biodiversity observations",
       "description": "Microbial taxonomic abundance statistics by reported taxonomic rank associated with ECHOREPO samples and molecular markers. The ingested_datetime_utc field is an ECHOREPO ingestion timestamp, not a laboratory analysis timestamp.",
+      "columns": {},
+      "foreignKeys": [
+        {
+          "columnReference": "sample_id",
+          "reference": {
+            "resource": "samples.csv",
+            "columnReference": "sample_id"
+          }
+        }
+      ]
+    },
+    "parameter_definitions.csv": {
+      "title": "ECHOREPO parameter definitions",
+      "description": "Reference table defining the compact parameter codes used in sample_parameters.csv. It provides human-readable names, reviewed semantic URIs, default units, method codes and parameter descriptions.",
+      "primaryKey": "parameter_code",
+      "foreignKeys": [
+        {
+          "columnReference": "method_code",
+          "reference": {
+            "resource": "analysis_methods.csv",
+            "columnReference": "method_code"
+          }
+        }
+      ],
+      "columns": {}
+    },
+    "analysis_methods.csv": {
+      "title": "ECHOREPO analysis methods",
+      "description": "Reference table defining the compact laboratory method codes used by sample_parameters.csv and parameter_definitions.csv, including short names, full method descriptions and reviewed procedure URIs where available.",
+      "primaryKey": "method_code",
       "columns": {}
     }
   }
