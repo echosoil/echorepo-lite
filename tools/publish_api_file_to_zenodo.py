@@ -33,7 +33,7 @@ CANONICAL_RESOURCE_SCHEMAS: dict[str, list[str]] = {
         "lat",
         "lon",
         "country_code",
-        "location_accuracy_m",
+        "coordinate_obfuscation_radius_m",
         "soil_ph_field",
         "soil_organic_matter_estimate_pct",
         "earthworms_count",
