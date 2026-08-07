@@ -213,6 +213,7 @@
     "franco arenosa": "sandy loam",
     "limoso-argilloso": "silty clay",
     "agrilloso-limoso": "silty clay",
+    "Πηλώδη": "sandy loam",
     "nan": "no data"
   },
   "soil_structure": {
