@@ -1380,11 +1380,6 @@
       p.locationAccuracyM
     );
 
-    const pollutantsCount = pick(
-      p.pollutants_count,
-      p.pollutantsCount
-    );
-
     const observations = pick(
       p.observations_en,
       p.observations_orig,
@@ -1536,11 +1531,6 @@
         '<i class="bi bi-chat-left-text"></i> ' +
         T('observations', {}, 'Observations'),
         observations
-      ],
-      [
-        '<i class="bi bi-exclamation-diamond"></i> ' +
-        T('pollutantsCount', {}, 'Pollutants'),
-        fmtInt(pollutantsCount)
       ]
     ].filter(([_, value]) => !(
       value == null ||
