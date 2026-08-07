@@ -23,7 +23,7 @@ import requests
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_API_PATH = "/canonical/all.zip"
-DEFAULT_METADATA_CONFIG = "metadata/soilwise/echorepo_columns.json"
+DEFAULT_METADATA_CONFIG = "metadata/canonical/echorepo_columns.json"
 DEFAULT_SOILVOC_API = "https://api.soilwise-he.containers.wur.nl/vocab/api/v1"
 
 CANONICAL_RESOURCE_SCHEMAS: dict[str, list[str]] = {
