@@ -21,8 +21,8 @@ from .soil_categories import standardize_soil_columns
 
 ZENODO_DOI = "10.5281/zenodo.19722513"
 
-PARAMETER_DEFINITIONS_JSON = "metadata/soilwise/parameter_definitions.json"
-ANALYSIS_METHODS_JSON = "metadata/soilwise/analysis_methods.json"
+PARAMETER_DEFINITIONS_JSON = "metadata/canonical/parameter_definitions.json"
+ANALYSIS_METHODS_JSON = "metadata/canonical/analysis_methods.json"
 PARAMETER_DEFINITIONS_ENV = "ECHOREPO_PARAMETER_DEFINITIONS"
 ANALYSIS_METHODS_ENV = "ECHOREPO_ANALYSIS_METHODS"
 
