@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import io
+import json
 import os
 import re
 import zipfile
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from datetime import datetime, timezone
+from pathlib import Path
 from urllib.parse import urlsplit
 
 import pandas as pd
@@ -17,6 +20,11 @@ from .soil_categories import standardize_soil_columns
 
 
 ZENODO_DOI = "10.5281/zenodo.19722513"
+
+PARAMETER_DEFINITIONS_JSON = "metadata/soilwise/parameter_definitions.json"
+ANALYSIS_METHODS_JSON = "metadata/soilwise/analysis_methods.json"
+PARAMETER_DEFINITIONS_ENV = "ECHOREPO_PARAMETER_DEFINITIONS"
+ANALYSIS_METHODS_ENV = "ECHOREPO_ANALYSIS_METHODS"
 
 SAMPLE_COLUMNS = [
     "sample_id",
@@ -73,6 +81,9 @@ IMAGE_PUBLIC_COLUMN_MAP = {
 }
 
 PARAMETER_COLUMNS = [
+    # Internal PostgreSQL columns. The public CSV intentionally drops the
+    # repeated human-readable parameter/method metadata and replaces it with
+    # compact codes backed by the two reference CSVs below.
     "sample_id",
     "country_code",
     "parameter_code",
@@ -87,11 +98,39 @@ PARAMETER_COLUMNS = [
     "parameter_uri",
 ]
 
+PARAMETER_PUBLIC_COLUMNS = [
+    "sample_id",
+    "country_code",
+    "parameter_code",
+    "result_value",
+    "unit",
+    "method_code",
+    "analysis_datetime_utc",
+    "lab_id",
+    "licence",
+]
+
 PARAMETER_PUBLIC_COLUMN_MAP = {
     "value": "result_value",
     "uom": "unit",
     "analysis_date": "analysis_datetime_utc",
 }
+
+PARAMETER_DEFINITION_COLUMNS = [
+    "parameter_code",
+    "parameter_name",
+    "parameter_uri",
+    "default_unit",
+    "method_code",
+    "parameter_description",
+]
+
+ANALYSIS_METHOD_COLUMNS = [
+    "method_code",
+    "method_name",
+    "method_description",
+    "procedure_uri",
+]
 
 BIODIVERSITY_COLUMNS = [
     "sample_id",
@@ -113,30 +152,6 @@ BIODIVERSITY_PUBLIC_COLUMN_MAP = {
     # necessarily the laboratory analysis time, so do not call it analysis_date.
     "uploaded_at": "ingested_datetime_utc",
 }
-
-ELEMENT_PARAMETER_NAMES = {
-    "As": "Total arsenic concentration in soil",
-    "Ca": "Total calcium concentration in soil",
-    "Cd": "Total cadmium concentration in soil",
-    "Co": "Total cobalt concentration in soil",
-    "Cr": "Total chromium concentration in soil",
-    "Cu": "Total copper concentration in soil",
-    "Fe": "Total iron concentration in soil",
-    "K": "Total potassium concentration in soil",
-    "Mg": "Total magnesium concentration in soil",
-    "Mn": "Total manganese concentration in soil",
-    "Mo": "Total molybdenum concentration in soil",
-    "Ni": "Total nickel concentration in soil",
-    "P": "Total phosphorus concentration in soil",
-    "Pb": "Total lead concentration in soil",
-    "S": "Total sulfur concentration in soil",
-    "Zn": "Total zinc concentration in soil",
-}
-
-DEFAULT_ELEMENT_ANALYSIS_METHOD = (
-    "Micro-X-ray fluorescence (µXRF) after oven drying at 105 °C "
-    "to constant weight"
-)
 
 
 @dataclass(frozen=True)
@@ -190,6 +205,21 @@ EXPORT_SPECS = {
         notes=(
             "Raw OTU-level source data are not included "
             "in this canonical export.",
+        ),
+    ),
+    "parameter_definitions.csv": ExportSpec(
+        filename="parameter_definitions.csv",
+        description=(
+            "Reference table defining compact parameter codes used by "
+            "sample_parameters.csv, including human-readable labels and "
+            "reviewed semantic URIs."
+        ),
+    ),
+    "analysis_methods.csv": ExportSpec(
+        filename="analysis_methods.csv",
+        description=(
+            "Reference table defining compact laboratory method codes used by "
+            "sample_parameters.csv."
         ),
     ),
 }
@@ -381,37 +411,361 @@ def _standardize_nullable_integer_columns(
     return df
 
 
-def _enrich_parameter_metadata(df: pd.DataFrame) -> pd.DataFrame:
+def _resolve_metadata_file(
+    default_relative_path: str,
+    env_name: str,
+) -> Path:
     """
-    Improve public labels for elemental measurements without changing the DB.
+    Resolve a curated metadata JSON file without assuming a fixed package depth.
 
-    Existing non-empty human-readable names and methods are preserved.
-    The ECHO field protocol specifies µXRF after oven drying at 105 °C to
-    constant weight for the canonical heavy-metal/nutrient measurements.
+    Resolution order:
+      1. explicit environment variable;
+      2. current working directory;
+      3. each parent directory of this module.
+
+    This lets production use the normal repository layout while still allowing
+    tests/deployments to override the files explicitly.
     """
-    if df is None or df.empty or "parameter_code" not in df.columns:
-        return df
-
-    code_series = df["parameter_code"].fillna("").astype(str).str.strip()
-    code_folded = code_series.str.casefold()
-
-    if "parameter_name" in df.columns:
-        name_series = df["parameter_name"].fillna("").astype(str).str.strip()
-        for code, label in ELEMENT_PARAMETER_NAMES.items():
-            mask = code_folded.eq(code.casefold())
-            replace_name = name_series.eq("") | name_series.str.casefold().eq(
-                code.casefold()
+    configured = os.getenv(env_name, "").strip()
+    if configured:
+        path = Path(configured).expanduser()
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        if not path.exists():
+            raise FileNotFoundError(
+                f"{env_name} points to a missing file: {path}"
             )
-            df.loc[mask & replace_name, "parameter_name"] = label
+        return path.resolve()
 
-    if "analysis_method" in df.columns:
-        method_series = df["analysis_method"].fillna("").astype(str).str.strip()
-        known_codes = {code.casefold() for code in ELEMENT_PARAMETER_NAMES}
-        mask = code_folded.isin(known_codes) & method_series.eq("")
-        df.loc[mask, "analysis_method"] = DEFAULT_ELEMENT_ANALYSIS_METHOD
+    relative = Path(default_relative_path)
+    candidates = [Path.cwd() / relative]
+    module_path = Path(__file__).resolve()
+    candidates.extend(parent / relative for parent in module_path.parents)
 
-    return df
+    seen: set[Path] = set()
+    for candidate in candidates:
+        candidate = candidate.resolve()
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if candidate.exists():
+            return candidate
 
+    raise FileNotFoundError(
+        f"Cannot find {default_relative_path}. Put it in the repository at "
+        f"{default_relative_path}, or set {env_name}."
+    )
+
+
+def _load_json_object(path: Path) -> dict[str, object]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Cannot read metadata JSON {path}: {exc}") from exc
+
+    if not isinstance(value, dict):
+        raise ValueError(f"Metadata JSON must contain an object: {path}")
+    return value
+
+
+def _first_text(mapping: dict[str, object], *keys: str) -> str:
+    for key in keys:
+        value = mapping.get(key)
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text:
+            return text
+    return ""
+
+
+def _validate_http_uri(value: str, *, field: str, code: str) -> None:
+    if value and not value.startswith(("http://", "https://")):
+        raise ValueError(
+            f"{field} for {code!r} must be an HTTP(S) URI, got {value!r}"
+        )
+
+
+@lru_cache(maxsize=1)
+def _parameter_definition_records() -> tuple[dict[str, str], ...]:
+    path = _resolve_metadata_file(
+        PARAMETER_DEFINITIONS_JSON,
+        PARAMETER_DEFINITIONS_ENV,
+    )
+    raw = _load_json_object(path)
+
+    records: list[dict[str, str]] = []
+    seen: set[str] = set()
+
+    for raw_code, raw_definition in raw.items():
+        code = str(raw_code).strip()
+        if not code:
+            raise ValueError(f"Empty parameter code in {path}")
+        folded = code.casefold()
+        if folded in seen:
+            raise ValueError(f"Duplicate parameter code {code!r} in {path}")
+        seen.add(folded)
+
+        if not isinstance(raw_definition, dict):
+            raise ValueError(
+                f"Definition for parameter {code!r} must be an object in {path}"
+            )
+
+        name = _first_text(
+            raw_definition,
+            "name",
+            "parameter_name",
+            "label",
+        )
+        if not name:
+            raise ValueError(
+                f"Parameter {code!r} has no name/parameter_name in {path}"
+            )
+
+        uri = _first_text(
+            raw_definition,
+            "property_uri",
+            "parameter_uri",
+            "uri",
+        )
+        _validate_http_uri(uri, field="parameter URI", code=code)
+
+        default_unit = _first_text(
+            raw_definition,
+            "default_unit",
+            "unit",
+        )
+        method_code = _first_text(raw_definition, "method_code")
+        description = _first_text(
+            raw_definition,
+            "description",
+            "parameter_description",
+        )
+
+        records.append(
+            {
+                "parameter_code": code,
+                "parameter_name": name,
+                "parameter_uri": uri,
+                "default_unit": default_unit,
+                "method_code": method_code,
+                "parameter_description": description,
+            }
+        )
+
+    return tuple(records)
+
+
+@lru_cache(maxsize=1)
+def _analysis_method_records() -> tuple[dict[str, str], ...]:
+    path = _resolve_metadata_file(
+        ANALYSIS_METHODS_JSON,
+        ANALYSIS_METHODS_ENV,
+    )
+    raw = _load_json_object(path)
+
+    records: list[dict[str, str]] = []
+    seen: set[str] = set()
+
+    for raw_code, raw_definition in raw.items():
+        code = str(raw_code).strip()
+        if not code:
+            raise ValueError(f"Empty method code in {path}")
+        folded = code.casefold()
+        if folded in seen:
+            raise ValueError(f"Duplicate method code {code!r} in {path}")
+        seen.add(folded)
+
+        if not isinstance(raw_definition, dict):
+            raise ValueError(
+                f"Definition for method {code!r} must be an object in {path}"
+            )
+
+        name = _first_text(
+            raw_definition,
+            "name",
+            "method_name",
+            "label",
+        )
+        if not name:
+            raise ValueError(
+                f"Method {code!r} has no name/method_name in {path}"
+            )
+
+        description = _first_text(
+            raw_definition,
+            "description",
+            "method_description",
+        )
+        procedure_uri = _first_text(
+            raw_definition,
+            "procedure_uri",
+            "uri",
+        )
+        _validate_http_uri(
+            procedure_uri,
+            field="procedure URI",
+            code=code,
+        )
+
+        records.append(
+            {
+                "method_code": code,
+                "method_name": name,
+                "method_description": description,
+                "procedure_uri": procedure_uri,
+            }
+        )
+
+    return tuple(records)
+
+
+def get_parameter_definitions_df() -> pd.DataFrame:
+    records = list(_parameter_definition_records())
+    return pd.DataFrame(records, columns=PARAMETER_DEFINITION_COLUMNS)
+
+
+def get_analysis_methods_df() -> pd.DataFrame:
+    records = list(_analysis_method_records())
+    return pd.DataFrame(records, columns=ANALYSIS_METHOD_COLUMNS)
+
+
+def _parameter_definition_index() -> dict[str, dict[str, str]]:
+    return {
+        record["parameter_code"].casefold(): dict(record)
+        for record in _parameter_definition_records()
+    }
+
+
+def _analysis_method_index() -> dict[str, dict[str, str]]:
+    return {
+        record["method_code"].casefold(): dict(record)
+        for record in _analysis_method_records()
+    }
+
+
+def _method_code_from_source_text(
+    source_value: object,
+    methods: dict[str, dict[str, str]],
+) -> str:
+    """
+    Convert an existing DB method value to a compact method code when possible.
+
+    Accepted source forms are:
+      - the code itself;
+      - the configured method name;
+      - the configured full description.
+
+    An empty source method simply returns an empty code so the parameter's
+    default method_code can be used.
+    """
+    if source_value is None or pd.isna(source_value):
+        return ""
+
+    text = str(source_value).strip()
+    if not text:
+        return ""
+
+    folded = text.casefold()
+    if folded in methods:
+        return methods[folded]["method_code"]
+
+    for record in methods.values():
+        candidates = {
+            record["method_name"].strip().casefold(),
+            record["method_description"].strip().casefold(),
+        }
+        candidates.discard("")
+        if folded in candidates:
+            return record["method_code"]
+
+    raise ValueError(
+        f"Cannot map analysis_method {text!r} to a code in "
+        f"{ANALYSIS_METHODS_JSON}"
+    )
+
+
+def _normalise_parameter_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert verbose database parameter rows to the compact public schema.
+
+    Human-readable parameter names, semantic parameter URIs and verbose method
+    descriptions live in parameter_definitions.csv / analysis_methods.csv.
+    sample_parameters.csv contains only their compact codes.
+    """
+    if df is None or df.empty:
+        return pd.DataFrame(columns=PARAMETER_PUBLIC_COLUMNS)
+
+    definitions = _parameter_definition_index()
+    methods = _analysis_method_index()
+
+    # Validate method references in the curated parameter dictionary before
+    # processing data rows.
+    for definition in definitions.values():
+        method_code = definition["method_code"].strip()
+        if method_code and method_code.casefold() not in methods:
+            raise ValueError(
+                f"Parameter {definition['parameter_code']!r} references unknown "
+                f"method_code {method_code!r} in {ANALYSIS_METHODS_JSON}"
+            )
+
+    output = df.copy()
+    method_codes: list[str] = []
+
+    for idx, row in output.iterrows():
+        parameter_code = str(row.get("parameter_code") or "").strip()
+        definition = definitions.get(parameter_code.casefold())
+        if definition is None:
+            raise ValueError(
+                f"Parameter code {parameter_code!r} is present in the database "
+                f"but missing from {PARAMETER_DEFINITIONS_JSON}"
+            )
+
+        configured_method = definition["method_code"].strip()
+        source_method = _method_code_from_source_text(
+            row.get("analysis_method"),
+            methods,
+        )
+
+        if source_method and configured_method and (
+            source_method.casefold() != configured_method.casefold()
+        ):
+            raise ValueError(
+                f"Parameter {parameter_code!r} row has analysis method "
+                f"{source_method!r}, but its definition specifies "
+                f"{configured_method!r}"
+            )
+
+        method_code = source_method or configured_method
+        if not method_code:
+            raise ValueError(
+                f"Parameter {parameter_code!r} has no method_code in "
+                f"{PARAMETER_DEFINITIONS_JSON} and its database "
+                "analysis_method is empty."
+            )
+        method_codes.append(method_code)
+
+        source_uri = str(row.get("parameter_uri") or "").strip()
+        configured_uri = definition["parameter_uri"].strip()
+        if source_uri and configured_uri and source_uri != configured_uri:
+            raise ValueError(
+                f"Parameter {parameter_code!r} has DB parameter_uri "
+                f"{source_uri!r}, but {PARAMETER_DEFINITIONS_JSON} defines "
+                f"{configured_uri!r}"
+            )
+
+        source_unit = str(row.get("uom") or "").strip()
+        if not source_unit and definition["default_unit"]:
+            output.at[idx, "uom"] = definition["default_unit"]
+
+    output["method_code"] = method_codes
+    output = output.rename(columns=PARAMETER_PUBLIC_COLUMN_MAP)
+    output = _standardize_timestamp_columns(
+        output,
+        timestamp_cols=["analysis_datetime_utc"],
+    )
+
+    return output[PARAMETER_PUBLIC_COLUMNS].copy()
 
 def _rewrite_local_image_urls(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -550,9 +904,7 @@ def get_parameters_df(
     ids = _normalise_sample_ids(sample_ids)
 
     if ids == []:
-        return pd.DataFrame(columns=PARAMETER_COLUMNS).rename(
-            columns=PARAMETER_PUBLIC_COLUMN_MAP
-        )
+        return pd.DataFrame(columns=PARAMETER_PUBLIC_COLUMNS)
 
     where_sql = ""
     params: tuple = ()
@@ -581,12 +933,8 @@ def get_parameters_df(
         df,
         threshold=minimum_value,
     )
-    df = _enrich_parameter_metadata(df)
-    df = df.rename(columns=PARAMETER_PUBLIC_COLUMN_MAP)
-    return _standardize_timestamp_columns(
-        df,
-        timestamp_cols=["analysis_datetime_utc"],
-    )
+
+    return _normalise_parameter_rows(df)
 
 
 def get_biodiversity_df(
@@ -664,6 +1012,12 @@ def get_export_df(
 
     if filename == "sample_biodiversity.csv":
         return get_biodiversity_df(sample_ids)
+
+    if filename == "parameter_definitions.csv":
+        return get_parameter_definitions_df()
+
+    if filename == "analysis_methods.csv":
+        return get_analysis_methods_df()
 
     raise ValueError(
         f"Unsupported canonical export: {filename}"
@@ -820,6 +1174,10 @@ FILTERED_EXPORT_FILENAMES = {
     "sample_images.csv": "sample_images_filtered.csv",
     "sample_parameters.csv": "sample_parameters_filtered.csv",
     "sample_biodiversity.csv": "sample_biodiversity_filtered.csv",
+    # Reference tables are small and are included unchanged so filtered
+    # parameter exports remain self-describing.
+    "parameter_definitions.csv": "parameter_definitions.csv",
+    "analysis_methods.csv": "analysis_methods.csv",
 }
 
 FILTERED_SOURCE_TABLES = {
@@ -827,6 +1185,8 @@ FILTERED_SOURCE_TABLES = {
     "sample_images.csv": "sample_images",
     "sample_parameters.csv": "sample_parameters",
     "sample_biodiversity.csv": "sample_taxon_abundance",
+    "parameter_definitions.csv": PARAMETER_DEFINITIONS_JSON,
+    "analysis_methods.csv": ANALYSIS_METHODS_JSON,
 }
 
 
@@ -881,7 +1241,7 @@ def build_filtered_bundle(
     snapshot_url: str,
     query_string: str,
 ) -> CanonicalBundle:
-    """Build the four-file ZIP returned by the filtered search export."""
+    """Build the filtered data ZIP plus its two compact reference tables."""
     csv_contents: dict[str, str] = {}
     generated_at = _utc_now_iso()
 
