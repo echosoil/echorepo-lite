@@ -70,15 +70,12 @@ CANONICAL_RESOURCE_SCHEMAS: dict[str, list[str]] = {
         "sample_id",
         "country_code",
         "parameter_code",
-        "parameter_name",
         "result_value",
         "unit",
-        "analysis_method",
+        "method_code",
         "analysis_datetime_utc",
         "lab_id",
-        "created_by",
         "licence",
-        "parameter_uri",
     ],
     "sample_biodiversity.csv": [
         "sample_id",
@@ -92,7 +89,84 @@ CANONICAL_RESOURCE_SCHEMAS: dict[str, list[str]] = {
         "source_file",
         "licence",
     ],
+    "parameter_definitions.csv": [
+        "parameter_code",
+        "parameter_name",
+        "parameter_uri",
+        "default_unit",
+        "method_code",
+        "parameter_description",
+    ],
+    "analysis_methods.csv": [
+        "method_code",
+        "method_name",
+        "method_description",
+        "procedure_uri",
+    ],
 }
+
+# Canonical CSVW relationships. These are part of the public ECHOREPO export
+# contract, not the PostgreSQL schema.
+CANONICAL_PRIMARY_KEYS: dict[str, str | list[str]] = {
+    "samples.csv": "sample_id",
+    "sample_images.csv": ["sample_id", "image_id"],
+    "parameter_definitions.csv": "parameter_code",
+    "analysis_methods.csv": "method_code",
+}
+
+CANONICAL_FOREIGN_KEYS: dict[str, list[dict[str, Any]]] = {
+    "sample_images.csv": [
+        {
+            "columnReference": "sample_id",
+            "reference": {
+                "resource": "samples.csv",
+                "columnReference": "sample_id",
+            },
+        }
+    ],
+    "sample_parameters.csv": [
+        {
+            "columnReference": "sample_id",
+            "reference": {
+                "resource": "samples.csv",
+                "columnReference": "sample_id",
+            },
+        },
+        {
+            "columnReference": "parameter_code",
+            "reference": {
+                "resource": "parameter_definitions.csv",
+                "columnReference": "parameter_code",
+            },
+        },
+        {
+            "columnReference": "method_code",
+            "reference": {
+                "resource": "analysis_methods.csv",
+                "columnReference": "method_code",
+            },
+        },
+    ],
+    "sample_biodiversity.csv": [
+        {
+            "columnReference": "sample_id",
+            "reference": {
+                "resource": "samples.csv",
+                "columnReference": "sample_id",
+            },
+        }
+    ],
+    "parameter_definitions.csv": [
+        {
+            "columnReference": "method_code",
+            "reference": {
+                "resource": "analysis_methods.csv",
+                "columnReference": "method_code",
+            },
+        }
+    ],
+}
+
 
 DEFAULT_CSV_PATTERNS = tuple(CANONICAL_RESOURCE_SCHEMAS)
 
@@ -701,6 +775,176 @@ def validate_public_resource_values(
             )
 
 
+def _read_csv_dict_rows(path: Path) -> list[dict[str, str]]:
+    """Read one canonical CSV using the same strict parser as schema validation."""
+    text, _ = decode_csv_bytes(path.read_bytes())
+    reader, _ = _open_csv_reader(text, path.name)
+
+    try:
+        headers = next(reader)
+    except StopIteration:
+        return []
+
+    headers = [header.lstrip("\ufeff").strip() for header in headers]
+    rows: list[dict[str, str]] = []
+
+    for row_number, row in enumerate(reader, start=2):
+        if not row or all(not cell.strip() for cell in row):
+            continue
+        if len(row) != len(headers):
+            raise RuntimeError(
+                f"{path.name} row {row_number} has {len(row)} cells; "
+                f"expected {len(headers)}."
+            )
+        rows.append(dict(zip(headers, row)))
+
+    return rows
+
+
+def validate_reference_integrity(csv_paths: list[Path]) -> None:
+    """
+    Validate the compact-code/reference-table relationships before publication.
+
+    This catches a stale parameter_definitions.json / analysis_methods.json
+    upstream of Zenodo, where repairing a published record would require a new
+    dataset version.
+    """
+    by_name = {path.name: path for path in csv_paths}
+    required = set(CANONICAL_RESOURCE_SCHEMAS)
+    if not required.issubset(by_name):
+        return
+
+    sample_ids = {
+        row["sample_id"].strip()
+        for row in _read_csv_dict_rows(by_name["samples.csv"])
+        if row.get("sample_id", "").strip()
+    }
+    parameter_rows = _read_csv_dict_rows(by_name["sample_parameters.csv"])
+    parameter_def_rows = _read_csv_dict_rows(by_name["parameter_definitions.csv"])
+    method_rows = _read_csv_dict_rows(by_name["analysis_methods.csv"])
+
+    parameter_codes = [
+        row.get("parameter_code", "").strip()
+        for row in parameter_def_rows
+        if row.get("parameter_code", "").strip()
+    ]
+    method_codes = [
+        row.get("method_code", "").strip()
+        for row in method_rows
+        if row.get("method_code", "").strip()
+    ]
+
+    duplicate_parameter_codes = sorted(
+        {code for code in parameter_codes if parameter_codes.count(code) > 1}
+    )
+    duplicate_method_codes = sorted(
+        {code for code in method_codes if method_codes.count(code) > 1}
+    )
+    if duplicate_parameter_codes:
+        raise RuntimeError(
+            "parameter_definitions.csv contains duplicate parameter_code values: "
+            f"{duplicate_parameter_codes}"
+        )
+    if duplicate_method_codes:
+        raise RuntimeError(
+            "analysis_methods.csv contains duplicate method_code values: "
+            f"{duplicate_method_codes}"
+        )
+
+    parameter_code_set = set(parameter_codes)
+    method_code_set = set(method_codes)
+
+    for child_filename in (
+        "sample_images.csv",
+        "sample_parameters.csv",
+        "sample_biodiversity.csv",
+    ):
+        child_rows = _read_csv_dict_rows(by_name[child_filename])
+        missing_sample_ids = sorted(
+            {
+                row.get("sample_id", "").strip()
+                for row in child_rows
+                if row.get("sample_id", "").strip()
+                and row.get("sample_id", "").strip() not in sample_ids
+            }
+        )
+        if missing_sample_ids:
+            preview = missing_sample_ids[:20]
+            suffix = " ..." if len(missing_sample_ids) > len(preview) else ""
+            raise RuntimeError(
+                f"{child_filename} references sample_id values absent from "
+                f"samples.csv: {preview}{suffix}"
+            )
+
+    unknown_parameter_codes = sorted(
+        {
+            row.get("parameter_code", "").strip()
+            for row in parameter_rows
+            if row.get("parameter_code", "").strip()
+            and row.get("parameter_code", "").strip() not in parameter_code_set
+        }
+    )
+    if unknown_parameter_codes:
+        raise RuntimeError(
+            "sample_parameters.csv contains parameter_code values absent from "
+            f"parameter_definitions.csv: {unknown_parameter_codes}"
+        )
+
+    unknown_method_codes = sorted(
+        {
+            row.get("method_code", "").strip()
+            for row in parameter_rows
+            if row.get("method_code", "").strip()
+            and row.get("method_code", "").strip() not in method_code_set
+        }
+    )
+    if unknown_method_codes:
+        raise RuntimeError(
+            "sample_parameters.csv contains method_code values absent from "
+            f"analysis_methods.csv: {unknown_method_codes}"
+        )
+
+    unknown_definition_methods = sorted(
+        {
+            row.get("method_code", "").strip()
+            for row in parameter_def_rows
+            if row.get("method_code", "").strip()
+            and row.get("method_code", "").strip() not in method_code_set
+        }
+    )
+    if unknown_definition_methods:
+        raise RuntimeError(
+            "parameter_definitions.csv contains method_code values absent from "
+            f"analysis_methods.csv: {unknown_definition_methods}"
+        )
+
+
+def collect_soilvoc_uris_from_resources(csv_paths: list[Path]) -> list[str]:
+    """
+    Collect row-level SoilVoc URIs from the compact reference tables.
+
+    Column propertyUrl metadata alone is insufficient now that observed-property
+    and procedure URIs live in parameter_definitions.csv and
+    analysis_methods.csv.
+    """
+    by_name = {path.name: path for path in csv_paths}
+    values: list[str] = []
+
+    for filename, column_name in (
+        ("parameter_definitions.csv", "parameter_uri"),
+        ("analysis_methods.csv", "procedure_uri"),
+    ):
+        path = by_name.get(filename)
+        if path is None:
+            continue
+        for row in _read_csv_dict_rows(path):
+            uri = row.get(column_name, "").strip()
+            if uri.startswith("https://w3id.org/eusoilvoc#"):
+                values.append(uri)
+
+    return deduplicate_strings(values)
+
+
 def canonical_schema_summary(
     analyses: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
@@ -1083,7 +1327,14 @@ def build_csvw_document(
         ]
 
         table_schema: dict[str, Any] = {"columns": columns}
-        primary_key = table_config.get("primaryKey")
+
+        # Allow echorepo_columns.json to override a canonical default, while
+        # still emitting the essential key relationships if the metadata file
+        # does not duplicate them.
+        primary_key = table_config.get(
+            "primaryKey",
+            CANONICAL_PRIMARY_KEYS.get(filename),
+        )
         if primary_key:
             keys = [primary_key] if isinstance(primary_key, str) else list(primary_key)
             missing_keys = [key for key in keys if key not in analysis["headers"]]
@@ -1094,20 +1345,51 @@ def build_csvw_document(
                 )
             table_schema["primaryKey"] = primary_key
 
-        if (
-            filename != "samples.csv"
-            and "samples.csv" in filenames
-            and "sample_id" in analysis["headers"]
-        ):
-            table_schema["foreignKeys"] = [
-                {
-                    "columnReference": "sample_id",
-                    "reference": {
-                        "resource": "samples.csv",
-                        "columnReference": "sample_id",
-                    },
-                }
-            ]
+        foreign_keys = table_config.get("foreignKeys")
+        if foreign_keys is None:
+            foreign_keys = CANONICAL_FOREIGN_KEYS.get(filename, [])
+
+        if foreign_keys:
+            if not isinstance(foreign_keys, list):
+                raise ValueError(
+                    f"foreignKeys for {filename} must be an array"
+                )
+
+            for foreign_key in foreign_keys:
+                if not isinstance(foreign_key, dict):
+                    raise ValueError(
+                        f"Invalid foreign key configuration for {filename}: "
+                        f"{foreign_key!r}"
+                    )
+                local_columns = foreign_key.get("columnReference")
+                local_columns = (
+                    [local_columns]
+                    if isinstance(local_columns, str)
+                    else list(local_columns or [])
+                )
+                missing_local = [
+                    column for column in local_columns
+                    if column not in analysis["headers"]
+                ]
+                if missing_local:
+                    raise ValueError(
+                        f"Foreign key for {filename} references missing local "
+                        f"columns: {missing_local}"
+                    )
+
+                reference = foreign_key.get("reference")
+                if not isinstance(reference, dict):
+                    raise ValueError(
+                        f"Foreign key for {filename} has no valid reference object"
+                    )
+                resource = reference.get("resource")
+                if resource not in filenames:
+                    raise ValueError(
+                        f"Foreign key for {filename} references missing resource "
+                        f"{resource!r}"
+                    )
+
+            table_schema["foreignKeys"] = foreign_keys
 
         table: dict[str, Any] = {
             "url": filename,
@@ -1561,7 +1843,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         help=(
             "ZIP member basename pattern to publish; repeatable. Defaults to "
-            "the four exact canonical resource filenames."
+            "the six exact canonical resource filenames."
         ),
     )
     parser.add_argument(
@@ -1790,6 +2072,7 @@ def main() -> int:
             if args.validate_canonical_schema:
                 validate_public_resource_values(csv_paths)
                 validate_echorepo_resource_schemas(analyses)
+                validate_reference_integrity(csv_paths)
                 log_row["canonical_schema_validated"] = "1"
 
             schema_summary = canonical_schema_summary(analyses)
@@ -1827,8 +2110,14 @@ def main() -> int:
             validate_csvw_document(csvw_document, analyses)
 
             if args.validate_soilvoc or args.require_soilvoc_validation:
+                soilvoc_uris = deduplicate_strings(
+                    [
+                        *collect_soilvoc_uris(csvw_document),
+                        *collect_soilvoc_uris_from_resources(csv_paths),
+                    ]
+                )
                 soilvoc_warnings = validate_soilvoc_uris(
-                    collect_soilvoc_uris(csvw_document),
+                    soilvoc_uris,
                     args.soilvoc_api_base,
                 )
                 metadata_warnings = deduplicate_strings(
