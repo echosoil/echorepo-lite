@@ -1470,7 +1470,7 @@ def canonical_sample_biodiversity():
     where_sql = "WHERE " + " AND ".join(where) if where else ""
     from_sql = """
         FROM sample_taxon_abundance AS sta
-        LEFT JOIN samples AS s ON s.sample_id = sta.sample_id
+        INNER JOIN samples AS s ON s.sample_id = sta.sample_id
     """
 
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
