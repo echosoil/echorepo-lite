@@ -52,6 +52,7 @@ SAMPLE_PUBLIC_COLUMN_MAP = {
     "timestamp_utc": "sampling_datetime_utc",
     "ph": "soil_ph_field",
     "organic_carbon_pct": "soil_organic_matter_estimate_pct",
+    "location_accuracy_m": "coordinate_obfuscation_radius_m",
 }
 
 IMAGE_COLUMNS = [
