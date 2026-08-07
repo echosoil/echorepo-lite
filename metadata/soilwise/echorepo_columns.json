@@ -238,7 +238,7 @@
           "method": "ECHO citizen-science or laboratory workflow, as represented in the canonical source data.",
           "status": "approved"
         },
-        "organic_carbon_pct": {
+        "soil_organic_matter_estimate_pct": {
           "title": "Soil organic carbon",
           "description": "Soil organic carbon content associated with the sample, expressed as a percentage where populated.",
           "datatype": "number",

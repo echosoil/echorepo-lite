@@ -1433,6 +1433,7 @@
       : `${String(locationAccuracy).trim()} m`;
 
     const soilOrganicMatter = pick(
+      p.soil_organic_matter_estimate_pct,
       p.organic_carbon_pct,
       p.organicCarbonPct,
       p.SOIL_COLOR_color,
