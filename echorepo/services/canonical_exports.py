@@ -970,7 +970,7 @@ def get_biodiversity_df(
                 'CC-BY-4.0'
             ) AS licence
         FROM sample_taxon_abundance AS sta
-        LEFT JOIN samples AS s
+        INNER JOIN samples AS s
           ON s.sample_id = sta.sample_id
         {where_sql}
         ORDER BY
