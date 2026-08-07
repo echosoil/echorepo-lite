@@ -44,9 +44,9 @@
       "propertyUrl": "https://schema.org/addressCountry",
       "status": "approved"
     },
-    "location_accuracy_m": {
-      "title": "Location accuracy or uncertainty",
-      "description": "Location accuracy/uncertainty value stored by ECHOREPO, in metres. The exact interpretation of this field (for example GPS accuracy versus published-coordinate generalisation) must be confirmed before final publication.",
+    "coordinate_obfuscation_radius_m": {
+      "title": "Coordinate obfuscation radius",
+      "description": "Radius, in metres, used to spatially obfuscate the published sample coordinates in ECHOREPO for privacy protection. The published latitude and longitude represent an obfuscated location rather than the exact sampling point.",
       "datatype": "number",
       "unit": "m",
       "status": "provisional"
