@@ -4,7 +4,18 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-import typing
+
+from flask import abort
+from openpyxl import load_workbook
+from psycopg2.extras import Json, execute_values
+
+from .db import get_pg_conn
+from .storage.minio import (
+    StorageError,
+    StorageNotConfigured,
+    archive_raw_biodiversity_upload,
+    invalidate_biodiversity_charts,
+)
 
 
 BIODIVERSITY_SAMPLE_RE = re.compile(
@@ -264,16 +275,13 @@ def _import_biodiversity_streaming(
     uploader_id: str,
 ):
     """
-    Import XLSX, CSV or TSV biodiversity data while retaining only
-    Phylum-level statistics.
+    Import XLSX, CSV or TSV biodiversity data while preserving both:
 
-    Rows are processed sequentially and OTU counts are aggregated into:
+      1. raw feature/OTU-level taxonomy and sparse non-zero abundances;
+      2. the existing compact Phylum-level statistics.
 
-        sample_id + marker + Phylum
-
-    No OTU IDs and no full taxonomy records are stored in PostgreSQL.
-    The original upload is archived as a ZIP in MinIO for later Zenodo
-    publication.
+    The original upload is also archived unchanged in MinIO. The SHA-256
+    of that source file is used as the content-addressed upload_id.
     """
     log = logging.getLogger(__name__)
 
@@ -481,8 +489,21 @@ def _import_biodiversity_streaming(
 
         sample_cols.append(
             {
+                # Stable position within this uploaded biodiversity file.
+                # Starts at 1 intentionally.
+                "sample_index": len(sample_cols) + 1,
+
+                # Python row index, zero-based.
                 "idx": idx,
+
+                # Original CSV/XLSX column number, one-based.
+                "source_column_number": idx + 1,
+
+                # Preserve exactly what the laboratory file called it.
                 "column_name": column_name,
+                "source_sample_label": column_name,
+
+                # Parsed ECHOREPO identity.
                 "sample_id": sample_id,
                 "marker": marker,
             }
@@ -511,6 +532,179 @@ def _import_biodiversity_streaming(
         and idx not in sample_col_indices
     ]
 
+    # ------------------------------------------------------------------
+    # Map source taxonomy columns to standard ranks
+    # ------------------------------------------------------------------
+
+    normalised_taxonomy_headers = {
+        normalize_header(column_name): idx
+        for idx, column_name in taxonomy_cols
+    }
+
+    # Your legacy files may use:
+    #
+    # Taxonomy | A | B | C | D | E | F
+    #
+    # where:
+    # Taxonomy = Kingdom
+    # A = Phylum
+    # B = Class
+    # C = Order
+    # D = Family
+    # E = Genus
+    # F = Species
+    legacy_taxonomy_layout = (
+        "taxonomy" in normalised_taxonomy_headers
+        and "a" in normalised_taxonomy_headers
+    )
+
+    if legacy_taxonomy_layout:
+        taxonomy_rank_indices = {
+            "kingdom": normalised_taxonomy_headers.get("taxonomy"),
+            "phylum": normalised_taxonomy_headers.get("a"),
+            "class_name": normalised_taxonomy_headers.get("b"),
+            "order_name": normalised_taxonomy_headers.get("c"),
+            "family": normalised_taxonomy_headers.get("d"),
+            "genus": normalised_taxonomy_headers.get("e"),
+            "species": normalised_taxonomy_headers.get("f"),
+        }
+    else:
+        taxonomy_rank_indices = {
+            "kingdom": normalised_taxonomy_headers.get("kingdom"),
+            "phylum": (
+                normalised_taxonomy_headers.get("phylum")
+                or normalised_taxonomy_headers.get("philum")
+            ),
+            "class_name": normalised_taxonomy_headers.get("class"),
+            "order_name": normalised_taxonomy_headers.get("order"),
+            "family": normalised_taxonomy_headers.get("family"),
+            "genus": normalised_taxonomy_headers.get("genus"),
+            "species": normalised_taxonomy_headers.get("species"),
+        }
+
+
+    def clean_taxonomy_rank(
+        value,
+        expected_prefix: str,
+    ) -> str | None:
+        if value is None:
+            return None
+
+        raw = str(value).strip()
+
+        if not raw:
+            return None
+
+        if raw.lower() in {
+            "nan",
+            "none",
+            "null",
+            "na",
+            "n/a",
+            "unassigned",
+            "unknown",
+        }:
+            return None
+
+        # A cell might contain either one value:
+        #
+        #   p__Ascomycota
+        #
+        # or an entire taxonomy string:
+        #
+        #   k__Fungi;p__Ascomycota;c__Sordariomycetes
+        #
+        wanted = expected_prefix.lower() + "__"
+
+        for token in re.split(r"[;|]", raw):
+            token = token.strip()
+
+            if token.lower().startswith(wanted):
+                raw = token
+                break
+
+        # Remove k__, p__, c__, etc.
+        raw = re.sub(
+            r"^[A-Za-z]__",
+            "",
+            raw,
+            flags=re.IGNORECASE,
+        ).strip()
+
+        if not raw:
+            return None
+
+        return raw
+
+
+    def taxonomy_for_row(row) -> dict:
+        prefix_by_rank = {
+            "kingdom": "k",
+            "phylum": "p",
+            "class_name": "c",
+            "order_name": "o",
+            "family": "f",
+            "genus": "g",
+            "species": "s",
+        }
+
+        result = {}
+
+        for rank, idx in taxonomy_rank_indices.items():
+            if idx is None or idx >= len(row):
+                result[rank] = None
+                continue
+
+            result[rank] = clean_taxonomy_rank(
+                row[idx],
+                prefix_by_rank[rank],
+            )
+
+        return result
+
+
+    def taxonomy_source_for_row(row) -> dict:
+        """
+        Preserve the original taxonomy fields exactly as supplied.
+        """
+        result = {}
+
+        for idx, column_name in taxonomy_cols:
+            value = row[idx] if idx < len(row) else None
+
+            result[str(column_name)] = (
+                None
+                if value is None
+                else str(value)
+            )
+
+        return result
+
+
+    def taxonomy_raw_for_row(row) -> str | None:
+        """
+        Human-readable representation of the original taxonomy fields.
+        The exact source fields are also retained in taxonomy_source JSONB.
+        """
+        values = []
+
+        for idx, _column_name in taxonomy_cols:
+            if idx >= len(row):
+                continue
+
+            value = row[idx]
+
+            if value is None:
+                continue
+
+            text = str(value).strip()
+
+            if text:
+                values.append(text)
+
+        return ";".join(values) or None
+        
+    
     # ------------------------------------------------------------------
     # Locate an explicit Phylum column
     # ------------------------------------------------------------------
@@ -587,95 +781,12 @@ def _import_biodiversity_streaming(
         return "Unclassified"
 
     # ------------------------------------------------------------------
-    # Stream and aggregate
+    # Archive original source and determine content-addressed upload ID
     # ------------------------------------------------------------------
-    # Shape:
     #
-    # {
-    #   ("ABCD-1234", "ITS"): {
-    #       "Ascomycota": 12345.0,
-    #       "Basidiomycota": 4567.0,
-    #   }
-    # }
-    aggregates: dict[
-        tuple[str, str],
-        dict[str, float],
-    ] = {}
-
-    source_rows = 0
-    nonzero_values = 0
-
-    try:
-        for source_row_number, row in enumerate(
-            rows_iter,
-            start=2,
-        ):
-            otu_id = (
-                ""
-                if row[otu_col_idx] is None
-                else str(row[otu_col_idx]).strip()
-            )
-
-            if not otu_id:
-                continue
-
-            source_rows += 1
-            phylum = extract_phylum(row)
-
-            for sample_info in sample_cols:
-                idx = sample_info["idx"]
-
-                value = row[idx] if idx < len(row) else None
-                count = to_float_or_none(value)
-
-                if count is None or count == 0:
-                    continue
-
-                if count < 0:
-                    raise ValueError(
-                        f"Negative abundance at source row "
-                        f"{source_row_number}, column "
-                        f"{sample_info['column_name']}: {count}"
-                    )
-
-                key = (
-                    sample_info["sample_id"],
-                    sample_info["marker"],
-                )
-
-                taxon_counts = aggregates.setdefault(
-                    key,
-                    {},
-                )
-
-                taxon_counts[phylum] = (
-                    taxon_counts.get(phylum, 0.0)
-                    + count
-                )
-
-                nonzero_values += 1
-
-    except ValueError as e:
-        abort(
-            400,
-            description=str(e),
-        )
-
-    finally:
-        close_source()
-
-    if not aggregates:
-        abort(
-            400,
-            description=(
-                "No non-zero biodiversity abundances were found "
-                "in the uploaded file."
-            ),
-        )
-
-    # ------------------------------------------------------------------
-    # Archive the original workbook before committing statistics
-    # ------------------------------------------------------------------
+    # We do this before streaming the OTU rows because upload_id is the
+    # SHA-256 of the original source file and is needed by all raw child rows.
+    #
     try:
         raw_archive = archive_raw_biodiversity_upload(
             file_bytes=file_bytes,
@@ -684,82 +795,98 @@ def _import_biodiversity_streaming(
             aggregation_level=level,
         )
     except StorageNotConfigured as exc:
-        abort(503, description=str(exc))
+        close_source()
+        abort(
+            503,
+            description=str(exc),
+        )
     except StorageError as exc:
-        abort(503, description=str(exc))
+        close_source()
+        abort(
+            503,
+            description=str(exc),
+        )
 
     raw_archive_object = raw_archive.object_name
     source_sha256 = raw_archive.sha256
     upload_id = source_sha256
 
     # ------------------------------------------------------------------
-    # Prepare compact rows
+    # Source sample-column metadata
     # ------------------------------------------------------------------
-    aggregate_rows = []
-
-    for (sample_id, marker), taxon_counts in sorted(
-        aggregates.items()
-    ):
-        total_count = sum(taxon_counts.values())
-
-        if total_count <= 0:
-            continue
-
-        for taxon, read_count in sorted(
-            taxon_counts.items(),
-            key=lambda item: item[1],
-            reverse=True,
-        ):
-            relative_abundance_pct = (
-                read_count / total_count * 100.0
-            )
-
-            aggregate_rows.append(
-                (
-                    sample_id,
-                    marker,
-                    level,
-                    taxon,
-                    float(read_count),
-                    float(relative_abundance_pct),
-                    upload_id,
-                    uploader_id,
-                    filename,
-                )
-            )
-
-    if not aggregate_rows:
-        abort(
-            400,
-            description="No Phylum-level statistics could be produced.",
-        )
-
-    affected_sample_markers = sorted(
-        aggregates.keys()
-    )
-
+    #
+    # sample_count is the number of distinct parsed ECHOREPO sample IDs
+    # represented by columns in this source file. marker_count is the
+    # number of markers (normally one per file, but the importer supports
+    # both 16S and ITS columns if present).
+    #
     sample_count = len(
         {
-            sample_id
-            for sample_id, _marker
-            in affected_sample_markers
+            item["sample_id"]
+            for item in sample_cols
         }
     )
 
     marker_count = len(
         {
-            marker
-            for _sample_id, marker
-            in affected_sample_markers
+            item["marker"]
+            for item in sample_cols
+        }
+    )
+
+    raw_sample_rows = [
+        (
+            upload_id,
+            item["sample_index"],
+            item["source_column_number"],
+            item["source_sample_label"],
+            item["sample_id"],
+            item["marker"],
+        )
+        for item in sample_cols
+    ]
+
+    # All sample/marker pairs in the source are considered affected,
+    # including columns whose abundance is entirely zero. This prevents
+    # stale aggregate rows from surviving a replacement import.
+    affected_sample_markers = sorted(
+        {
+            (
+                item["sample_id"],
+                item["marker"],
+            )
+            for item in sample_cols
         }
     )
 
     # ------------------------------------------------------------------
-    # Replace statistics transactionally
+    # Stream raw OTUs + raw abundances + existing Phylum aggregation
     # ------------------------------------------------------------------
+    aggregates: dict[
+        tuple[str, str],
+        dict[str, float],
+    ] = {}
+
+    source_rows = 0
+    nonzero_values = 0
+    feature_index = 0
+
+    FEATURE_BATCH_SIZE = 5_000
+    ABUNDANCE_BATCH_SIZE = 10_000
+
+    feature_batch = []
+    abundance_batch = []
+    aggregate_rows = []
+
     try:
         with get_pg_conn() as conn, conn.cursor() as cur:
-            # Upload provenance only; no raw OTUs.
+            # ----------------------------------------------------------
+            # 1. Upsert the parent provenance record
+            # ----------------------------------------------------------
+            #
+            # source_row_count and nonzero_value_count are set to zero
+            # temporarily and finalized after the source has been streamed.
+            #
             cur.execute(
                 """
                 INSERT INTO biodiversity_uploads (
@@ -783,21 +910,26 @@ def _import_biodiversity_streaming(
                     %s,
                     %s,
                     %s,
-                    %s,
-                    %s,
+                    0,
+                    0,
                     now(),
                     %s
                 )
                 ON CONFLICT (upload_id) DO UPDATE SET
-                    original_filename   = EXCLUDED.original_filename,
-                    archive_object_name = EXCLUDED.archive_object_name,
-                    aggregation_level   = EXCLUDED.aggregation_level,
-                    sample_count        = EXCLUDED.sample_count,
-                    marker_count        = EXCLUDED.marker_count,
-                    source_row_count    = EXCLUDED.source_row_count,
-                    nonzero_value_count = EXCLUDED.nonzero_value_count,
-                    uploaded_at         = now(),
-                    uploaded_by         = EXCLUDED.uploaded_by
+                    original_filename =
+                        EXCLUDED.original_filename,
+                    archive_object_name =
+                        EXCLUDED.archive_object_name,
+                    aggregation_level =
+                        EXCLUDED.aggregation_level,
+                    sample_count =
+                        EXCLUDED.sample_count,
+                    marker_count =
+                        EXCLUDED.marker_count,
+                    uploaded_at =
+                        now(),
+                    uploaded_by =
+                        EXCLUDED.uploaded_by
                 """,
                 (
                     upload_id,
@@ -807,15 +939,296 @@ def _import_biodiversity_streaming(
                     level,
                     sample_count,
                     marker_count,
-                    source_rows,
-                    nonzero_values,
                     uploader_id,
                 ),
             )
 
-            # Replace the complete Phylum result for each affected
-            # sample/marker. This prevents stale taxa remaining after
-            # a re-upload.
+            # ----------------------------------------------------------
+            # 2. Safe re-import of this exact source file
+            # ----------------------------------------------------------
+            #
+            # upload_id is content-addressed (SHA-256). If this exact file
+            # was imported earlier when only aggregates were stored, these
+            # deletes let us populate/rebuild its raw representation safely.
+            #
+            # Abundance must be deleted first because it references both
+            # raw feature and raw sample rows.
+            #
+            cur.execute(
+                """
+                DELETE FROM biodiversity_raw_abundance
+                WHERE upload_id = %s
+                """,
+                (upload_id,),
+            )
+
+            cur.execute(
+                """
+                DELETE FROM biodiversity_raw_features
+                WHERE upload_id = %s
+                """,
+                (upload_id,),
+            )
+
+            cur.execute(
+                """
+                DELETE FROM biodiversity_raw_samples
+                WHERE upload_id = %s
+                """,
+                (upload_id,),
+            )
+
+            # ----------------------------------------------------------
+            # 3. Preserve the source sample-column definitions
+            # ----------------------------------------------------------
+            execute_values(
+                cur,
+                """
+                INSERT INTO biodiversity_raw_samples (
+                    upload_id,
+                    sample_index,
+                    source_column_number,
+                    source_sample_label,
+                    sample_id,
+                    marker
+                )
+                VALUES %s
+                """,
+                raw_sample_rows,
+                page_size=1_000,
+            )
+
+            # ----------------------------------------------------------
+            # Batch flush helpers
+            # ----------------------------------------------------------
+            def flush_features():
+                if not feature_batch:
+                    return
+
+                execute_values(
+                    cur,
+                    """
+                    INSERT INTO biodiversity_raw_features (
+                        upload_id,
+                        feature_index,
+                        source_row_number,
+                        source_feature_id,
+                        taxonomy_raw,
+                        kingdom,
+                        phylum,
+                        class_name,
+                        order_name,
+                        family,
+                        genus,
+                        species,
+                        taxonomy_source
+                    )
+                    VALUES %s
+                    """,
+                    feature_batch,
+                    page_size=FEATURE_BATCH_SIZE,
+                )
+
+                feature_batch.clear()
+
+            def flush_abundances():
+                if not abundance_batch:
+                    return
+
+                # The abundance rows have FKs to raw features. Ensure every
+                # referenced feature has reached PostgreSQL before abundance
+                # rows are flushed. This matters because one OTU can have many
+                # non-zero sample values and fill this batch before the feature
+                # batch reaches its own size threshold.
+                flush_features()
+
+                execute_values(
+                    cur,
+                    """
+                    INSERT INTO biodiversity_raw_abundance (
+                        upload_id,
+                        feature_index,
+                        sample_index,
+                        read_count
+                    )
+                    VALUES %s
+                    """,
+                    abundance_batch,
+                    page_size=ABUNDANCE_BATCH_SIZE,
+                )
+
+                abundance_batch.clear()
+
+            # ----------------------------------------------------------
+            # 4. Stream every OTU / feature row once
+            # ----------------------------------------------------------
+            for source_row_number, row in enumerate(
+                rows_iter,
+                start=2,
+            ):
+                otu_id = (
+                    ""
+                    if row[otu_col_idx] is None
+                    else str(row[otu_col_idx]).strip()
+                )
+
+                if not otu_id:
+                    continue
+
+                source_rows += 1
+                feature_index += 1
+
+                taxonomy = taxonomy_for_row(row)
+                taxonomy_source = taxonomy_source_for_row(row)
+                taxonomy_raw = taxonomy_raw_for_row(row)
+
+                # Preserve every feature, including features that happen
+                # to have zero abundance in all sample columns.
+                feature_batch.append(
+                    (
+                        upload_id,
+                        feature_index,
+                        source_row_number,
+                        otu_id,
+                        taxonomy_raw,
+                        taxonomy.get("kingdom"),
+                        taxonomy.get("phylum"),
+                        taxonomy.get("class_name"),
+                        taxonomy.get("order_name"),
+                        taxonomy.get("family"),
+                        taxonomy.get("genus"),
+                        taxonomy.get("species"),
+                        Json(taxonomy_source),
+                    )
+                )
+
+                if len(feature_batch) >= FEATURE_BATCH_SIZE:
+                    flush_features()
+
+                # Keep using the tolerant existing extractor for the compact
+                # Phylum-level derivative.
+                phylum = extract_phylum(row)
+
+                for sample_info in sample_cols:
+                    idx = sample_info["idx"]
+
+                    value = (
+                        row[idx]
+                        if idx < len(row)
+                        else None
+                    )
+
+                    count = to_float_or_none(value)
+
+                    if count is None or count == 0:
+                        continue
+
+                    if count < 0:
+                        raise ValueError(
+                            "Negative abundance at source row "
+                            f"{source_row_number}, column "
+                            f"{sample_info['column_name']}: "
+                            f"{count}"
+                        )
+
+                    # Raw sparse abundance: zeroes are intentionally omitted.
+                    abundance_batch.append(
+                        (
+                            upload_id,
+                            feature_index,
+                            sample_info["sample_index"],
+                            float(count),
+                        )
+                    )
+
+                    if (
+                        len(abundance_batch)
+                        >= ABUNDANCE_BATCH_SIZE
+                    ):
+                        flush_abundances()
+
+                    nonzero_values += 1
+
+                    # Existing compact Phylum aggregation.
+                    key = (
+                        sample_info["sample_id"],
+                        sample_info["marker"],
+                    )
+
+                    taxon_counts = aggregates.setdefault(
+                        key,
+                        {},
+                    )
+
+                    taxon_counts[phylum] = (
+                        taxon_counts.get(
+                            phylum,
+                            0.0,
+                        )
+                        + count
+                    )
+
+            # Flush whatever remains after the final source row.
+            flush_features()
+            flush_abundances()
+
+            if not aggregates:
+                raise ValueError(
+                    "No non-zero biodiversity abundances "
+                    "were found in the uploaded file."
+                )
+
+            # ----------------------------------------------------------
+            # 5. Build the existing compact Phylum rows
+            # ----------------------------------------------------------
+            for (
+                sample_id,
+                marker,
+            ), taxon_counts in sorted(
+                aggregates.items()
+            ):
+                total_count = sum(
+                    taxon_counts.values()
+                )
+
+                if total_count <= 0:
+                    continue
+
+                for taxon, read_count in sorted(
+                    taxon_counts.items(),
+                    key=lambda item: item[1],
+                    reverse=True,
+                ):
+                    relative_abundance_pct = (
+                        read_count
+                        / total_count
+                        * 100.0
+                    )
+
+                    aggregate_rows.append(
+                        (
+                            sample_id,
+                            marker,
+                            level,
+                            taxon,
+                            float(read_count),
+                            float(relative_abundance_pct),
+                            upload_id,
+                            uploader_id,
+                            filename,
+                        )
+                    )
+
+            if not aggregate_rows:
+                raise ValueError(
+                    "No Phylum-level statistics "
+                    "could be produced."
+                )
+
+            # ----------------------------------------------------------
+            # 6. Replace the complete aggregate result for every
+            #    sample/marker represented by the uploaded source
+            # ----------------------------------------------------------
             cur.executemany(
                 """
                 DELETE FROM sample_taxon_abundance
@@ -829,12 +1242,15 @@ def _import_biodiversity_streaming(
                         marker,
                         level,
                     )
-                    for sample_id, marker
-                    in affected_sample_markers
+                    for (
+                        sample_id,
+                        marker,
+                    ) in affected_sample_markers
                 ],
             )
 
-            cur.executemany(
+            execute_values(
+                cur,
                 """
                 INSERT INTO sample_taxon_abundance (
                     sample_id,
@@ -848,18 +1264,7 @@ def _import_biodiversity_streaming(
                     uploaded_by,
                     source_file
                 )
-                VALUES (
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    now(),
-                    %s,
-                    %s
-                )
+                VALUES %s
                 ON CONFLICT (
                     sample_id,
                     marker,
@@ -869,39 +1274,69 @@ def _import_biodiversity_streaming(
                 DO UPDATE SET
                     read_count =
                         EXCLUDED.read_count,
-
                     relative_abundance_pct =
                         EXCLUDED.relative_abundance_pct,
-
                     source_upload_id =
                         EXCLUDED.source_upload_id,
-
                     uploaded_at =
                         now(),
-
                     uploaded_by =
                         EXCLUDED.uploaded_by,
-
                     source_file =
                         EXCLUDED.source_file
                 """,
                 aggregate_rows,
+                page_size=5_000,
+            )
+
+            # ----------------------------------------------------------
+            # 7. Finalize provenance counts
+            # ----------------------------------------------------------
+            cur.execute(
+                """
+                UPDATE biodiversity_uploads
+                SET
+                    source_row_count = %s,
+                    nonzero_value_count = %s,
+                    sample_count = %s,
+                    marker_count = %s,
+                    uploaded_at = now(),
+                    uploaded_by = %s
+                WHERE upload_id = %s
+                """,
+                (
+                    source_rows,
+                    nonzero_values,
+                    sample_count,
+                    marker_count,
+                    uploader_id,
+                    upload_id,
+                ),
             )
 
             conn.commit()
 
-    except Exception as e:
+    except ValueError as exc:
+        abort(
+            400,
+            description=str(exc),
+        )
+
+    except Exception as exc:
         log.exception(
-            "Phylum-level biodiversity import failed"
+            "Raw + Phylum biodiversity import failed"
         )
 
         abort(
             500,
             description=(
-                "Postgres Phylum-level biodiversity import "
-                f"failed: {e}"
+                "Postgres biodiversity import failed: "
+                f"{exc}"
             ),
         )
+
+    finally:
+        close_source()
 
     # ------------------------------------------------------------------
     # Invalidate cached chart images
@@ -915,10 +1350,12 @@ def _import_biodiversity_streaming(
 
     log.warning(
         (
-            "BIOUPLOAD: stored %d Phylum aggregate rows "
-            "for %d samples; markers=%s; "
-            "raw_archive=%s"
+            "BIOUPLOAD: stored raw features=%d, "
+            "nonzero_values=%d, aggregate_rows=%d, "
+            "samples=%d, markers=%s, raw_archive=%s"
         ),
+        source_rows,
+        nonzero_values,
         inserted,
         sample_count,
         sorted(
@@ -932,3 +1369,10 @@ def _import_biodiversity_streaming(
     )
 
     return inserted
+
+
+# Public aliases for callers outside this module. The underscored names are
+# retained so existing web.py imports/calls can be migrated gradually.
+looks_like_biodiversity_file = _looks_like_biodiversity_file
+import_biodiversity_file = _import_biodiversity_streaming
+

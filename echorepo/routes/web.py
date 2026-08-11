@@ -23,7 +23,6 @@ from flask import (
     url_for,
 )
 from flask_babel import get_locale
-from openpyxl import load_workbook
 from psycopg2.extras import RealDictCursor
 
 from echorepo.services.i18n_labels import make_labels
@@ -40,9 +39,7 @@ from ..services.storage.minio import (
     StorageError,
     StorageNotConfigured,
     StorageObjectNotFound,
-    archive_raw_biodiversity_upload,
     get_canonical_object,
-    invalidate_biodiversity_charts,
     latest_canonical_snapshot_date,
     object_exists,
     upload_canonical_csvs,
@@ -50,7 +47,6 @@ from ..services.storage.minio import (
 )
 from ..services.validation import find_default_coord_rows, select_country_mismatches
 from ..services.biodiversity_import import (
-    BIODIVERSITY_SAMPLE_RE,
     _looks_like_biodiversity_file,
     _import_biodiversity_streaming,
     )
