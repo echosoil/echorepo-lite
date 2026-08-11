@@ -1,0 +1,288 @@
+{
+  "dataset": {
+    "language": "en",
+    "data_level": "OTU/feature-level microbial biodiversity source data derived from ECHOREPO biodiversity uploads.",
+    "markers": "16S and ITS",
+    "abundance_representation": "Sparse long-form feature-by-sample abundance table. Only non-zero read_count values are stored.",
+    "zero_representation": "Absence of a biodiversity_abundance row for an existing source/feature/sample combination means a zero abundance in the source matrix.",
+    "taxonomy_handling": "Taxonomic assignments are preserved from the uploaded source. Parsed standard ranks are provided alongside taxonomy_raw and taxonomy_source_json so the original supplied taxonomy can be reconstructed.",
+    "related_canonical_dataset": "https://doi.org/10.5281/zenodo.19722513"
+  },
+  "global_columns": {
+    "source_id": {
+      "title": "Source identifier",
+      "description": "Content-addressed identifier of the imported biodiversity source file. In ECHOREPO this is the lowercase SHA-256 digest of the original uploaded source file.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/identifier",
+      "required": true,
+      "status": "approved"
+    },
+    "sample_id": {
+      "title": "ECHOREPO sample identifier",
+      "description": "Parsed ECHOREPO soil sample identifier associated with the source sample column, without the terminal molecular-marker suffix.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/identifier",
+      "required": true,
+      "status": "approved"
+    },
+    "marker": {
+      "title": "Molecular marker",
+      "description": "Molecular marker represented by the source sample column. Current ECHOREPO raw biodiversity imports use 16S or ITS.",
+      "datatype": "string",
+      "propertyUrl": "https://schema.org/measurementTechnique",
+      "required": true,
+      "status": "approved"
+    },
+    "feature_index": {
+      "title": "Feature index",
+      "description": "One-based stable integer index assigned by ECHOREPO to a feature/OTU within a single source upload.",
+      "datatype": "integer",
+      "required": true,
+      "status": "approved"
+    },
+    "sample_index": {
+      "title": "Sample-column index",
+      "description": "One-based stable integer index assigned by ECHOREPO to a biodiversity sample column within a single source upload.",
+      "datatype": "integer",
+      "required": true,
+      "status": "approved"
+    },
+    "licence": {
+      "title": "Licence",
+      "description": "Licence statement associated with the published biodiversity source record.",
+      "datatype": "string",
+      "propertyUrl": "http://purl.org/dc/terms/license",
+      "required": true,
+      "status": "approved"
+    }
+  },
+  "tables": {
+    "biodiversity_sources.csv": {
+      "title": "ECHOREPO raw biodiversity source files",
+      "description": "Provenance and ingestion metadata for biodiversity source files represented by the raw biodiversity package. Each source_id identifies one original uploaded file.",
+      "primaryKey": "source_id",
+      "columns": {
+        "source_filename": {
+          "title": "Original source filename",
+          "description": "Original filename of the biodiversity source file uploaded to ECHOREPO.",
+          "datatype": "string",
+          "propertyUrl": "http://purl.org/dc/terms/source",
+          "required": true,
+          "status": "approved"
+        },
+        "source_row_count": {
+          "title": "Source feature-row count",
+          "description": "Number of non-empty OTU/feature rows imported from the source file and represented in biodiversity_features.csv for this source.",
+          "datatype": "integer",
+          "required": true,
+          "status": "approved"
+        },
+        "nonzero_value_count": {
+          "title": "Non-zero abundance count",
+          "description": "Number of non-zero feature-by-sample abundance values imported from the source file and represented in biodiversity_abundance.csv for this source.",
+          "datatype": "integer",
+          "required": true,
+          "status": "approved"
+        },
+        "sample_count": {
+          "title": "Distinct sample count",
+          "description": "Number of distinct parsed ECHOREPO sample identifiers represented by sample columns in this source file.",
+          "datatype": "integer",
+          "required": true,
+          "status": "approved"
+        },
+        "marker_count": {
+          "title": "Distinct marker count",
+          "description": "Number of distinct molecular markers represented by sample columns in this source file.",
+          "datatype": "integer",
+          "required": true,
+          "status": "approved"
+        },
+        "ingested_datetime_utc": {
+          "title": "Ingestion date and time",
+          "description": "Date and time at which the biodiversity source upload was ingested into ECHOREPO, normalized to UTC in ISO 8601 format. This is an ECHOREPO ingestion timestamp, not a sequencing or laboratory-analysis timestamp.",
+          "datatype": "datetime",
+          "propertyUrl": "http://purl.org/dc/terms/created",
+          "required": true,
+          "status": "approved"
+        }
+      }
+    },
+    "biodiversity_samples.csv": {
+      "title": "ECHOREPO raw biodiversity sample columns",
+      "description": "Mapping of the original biodiversity source-file sample columns to parsed ECHOREPO sample identifiers and molecular markers.",
+      "primaryKey": [
+        "source_id",
+        "sample_index"
+      ],
+      "foreignKeys": [
+        {
+          "columnReference": "source_id",
+          "reference": {
+            "resource": "biodiversity_sources.csv",
+            "columnReference": "source_id"
+          }
+        }
+      ],
+      "columns": {
+        "source_column_number": {
+          "title": "Source column number",
+          "description": "One-based column number of this sample column in the original uploaded biodiversity source file.",
+          "datatype": "integer",
+          "required": true,
+          "status": "approved"
+        },
+        "source_sample_label": {
+          "title": "Original source sample label",
+          "description": "Sample-column label exactly as supplied by the biodiversity source file, for example ABCD-1234-16S or ABCD-1234-ITS.",
+          "datatype": "string",
+          "required": true,
+          "status": "approved"
+        }
+      }
+    },
+    "biodiversity_features.csv": {
+      "title": "ECHOREPO raw biodiversity features and taxonomy",
+      "description": "One row per OTU/feature in each biodiversity source upload, preserving the original feature identifier and taxonomy together with parsed standard taxonomic ranks.",
+      "primaryKey": [
+        "source_id",
+        "feature_index"
+      ],
+      "foreignKeys": [
+        {
+          "columnReference": "source_id",
+          "reference": {
+            "resource": "biodiversity_sources.csv",
+            "columnReference": "source_id"
+          }
+        }
+      ],
+      "columns": {
+        "source_row_number": {
+          "title": "Source row number",
+          "description": "One-based row number of the OTU/feature in the original source table, including the header row; data rows therefore normally start at 2.",
+          "datatype": "integer",
+          "required": true,
+          "status": "approved"
+        },
+        "source_feature_id": {
+          "title": "Original feature identifier",
+          "description": "OTU/feature identifier exactly as supplied in the original biodiversity source file.",
+          "datatype": "string",
+          "propertyUrl": "http://purl.org/dc/terms/identifier",
+          "required": true,
+          "status": "approved"
+        },
+        "taxonomy_raw": {
+          "title": "Original taxonomy representation",
+          "description": "Human-readable semicolon-joined representation of the taxonomy fields supplied for the feature in the source file. The exact source-field mapping is retained separately in taxonomy_source_json.",
+          "datatype": "string",
+          "status": "approved"
+        },
+        "kingdom": {
+          "title": "Kingdom",
+          "description": "Kingdom parsed from the taxonomy supplied by the source biodiversity workflow.",
+          "datatype": "string",
+          "propertyUrl": "http://rs.tdwg.org/dwc/terms/kingdom",
+          "status": "approved"
+        },
+        "phylum": {
+          "title": "Phylum",
+          "description": "Phylum parsed from the taxonomy supplied by the source biodiversity workflow.",
+          "datatype": "string",
+          "propertyUrl": "http://rs.tdwg.org/dwc/terms/phylum",
+          "status": "approved"
+        },
+        "class": {
+          "title": "Class",
+          "description": "Taxonomic class parsed from the taxonomy supplied by the source biodiversity workflow.",
+          "datatype": "string",
+          "propertyUrl": "http://rs.tdwg.org/dwc/terms/class",
+          "status": "approved"
+        },
+        "order": {
+          "title": "Order",
+          "description": "Taxonomic order parsed from the taxonomy supplied by the source biodiversity workflow.",
+          "datatype": "string",
+          "propertyUrl": "http://rs.tdwg.org/dwc/terms/order",
+          "status": "approved"
+        },
+        "family": {
+          "title": "Family",
+          "description": "Taxonomic family parsed from the taxonomy supplied by the source biodiversity workflow.",
+          "datatype": "string",
+          "propertyUrl": "http://rs.tdwg.org/dwc/terms/family",
+          "status": "approved"
+        },
+        "genus": {
+          "title": "Genus",
+          "description": "Taxonomic genus parsed from the taxonomy supplied by the source biodiversity workflow.",
+          "datatype": "string",
+          "propertyUrl": "http://rs.tdwg.org/dwc/terms/genus",
+          "status": "approved"
+        },
+        "species": {
+          "title": "Species-level source label",
+          "description": "Species-level taxonomic label parsed from the source biodiversity workflow. It is preserved as supplied and should not be interpreted as an independently taxonomically validated ECHOREPO identification.",
+          "datatype": "string",
+          "propertyUrl": "http://rs.tdwg.org/dwc/terms/scientificName",
+          "status": "approved"
+        },
+        "taxonomy_source_json": {
+          "title": "Exact source taxonomy fields",
+          "description": "JSON object serialised as text that preserves the original taxonomy column names and values for this feature, allowing the taxonomy supplied by the source file to be reconstructed without relying only on the parsed standard ranks.",
+          "datatype": "string",
+          "required": true,
+          "status": "approved"
+        }
+      }
+    },
+    "biodiversity_abundance.csv": {
+      "title": "ECHOREPO raw biodiversity feature abundances",
+      "description": "Sparse long-form feature-by-sample abundance values. Only non-zero values are present; a missing row for an existing source/feature/sample combination represents zero abundance in the original source matrix.",
+      "primaryKey": [
+        "source_id",
+        "feature_index",
+        "sample_index"
+      ],
+      "foreignKeys": [
+        {
+          "columnReference": [
+            "source_id",
+            "feature_index"
+          ],
+          "reference": {
+            "resource": "biodiversity_features.csv",
+            "columnReference": [
+              "source_id",
+              "feature_index"
+            ]
+          }
+        },
+        {
+          "columnReference": [
+            "source_id",
+            "sample_index"
+          ],
+          "reference": {
+            "resource": "biodiversity_samples.csv",
+            "columnReference": [
+              "source_id",
+              "sample_index"
+            ]
+          }
+        }
+      ],
+      "columns": {
+        "read_count": {
+          "title": "Sequence-read abundance",
+          "description": "Non-zero sequence-read abundance associated with the feature and source sample column. ECHOREPO stores this as a numeric value to preserve the source value; it represents sequencing-read abundance, not a count of organisms.",
+          "datatype": "number",
+          "unit": "count",
+          "required": true,
+          "status": "approved"
+        }
+      }
+    }
+  }
+}
