@@ -68,8 +68,10 @@ instance/
 .env
 .env.*
 .env_zenodo
+.env_zenodo_biodiversity
 !.env.example
 !.env_zenodo.example
+!.env_zenodo_biodiversity.example
 keys/*
 !keys/.gitkeep
 scripts/LOCAL_*
