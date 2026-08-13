@@ -1286,14 +1286,9 @@ def _import_biodiversity_streaming(
                         EXCLUDED.source_file
                 """,
                 aggregate_rows,
-                template=(
-                    "("
-                    "%s, %s, %s, %s, %s, "
-                    "%s, %s, now(), %s, %s"
-                    ")"
-                ),
                 page_size=5_000,
             )
+
             # ----------------------------------------------------------
             # 7. Finalize provenance counts
             # ----------------------------------------------------------
