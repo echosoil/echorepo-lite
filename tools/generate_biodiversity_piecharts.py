@@ -1289,7 +1289,7 @@ def build_clean_otu_and_taxonomy_files(
     before import.
     """
     if out_dir is None:
-        out_dir = PROJECT_ROOT / "data" / "biodiversity" / "faprotax_work"
+        out_dir = PROJECT_ROOT / "data" / "biodiversity" 
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
