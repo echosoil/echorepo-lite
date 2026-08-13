@@ -40,7 +40,9 @@ from echorepo.services.canonical_exports import (
 )
 from echorepo.services.db import _ensure_lab_enrichment, get_pg_conn
 from echorepo.services.storage.minio import upload_canonical_zip
-
+from echorepo.services.biodiversity_raw_exports import (
+    build_biodiversity_raw_bundle,
+)
 
 log = logging.getLogger(__name__)
 data_api = Blueprint("data_api", __name__)
@@ -1792,3 +1794,21 @@ def canonical_snapshot_all_zip():
         "version_date": version_date,
     }
     return _zip_response(bundle.zip_bytes, f"canonical_{version_date}.zip")
+
+
+@data_api.get("/biodiversity/raw/all.zip")
+def biodiversity_raw_all_zip():
+    require_api_auth()
+
+    bundle = build_biodiversity_raw_bundle()
+
+    g._analytics_extra = {
+        "dataset": "biodiversity_raw",
+        "api_name": "biodiversity_raw_all_zip",
+        "resource_counts": bundle.row_counts,
+    }
+
+    return _zip_response(
+        bundle.zip_bytes,
+        "biodiversity_raw.zip",
+    )
