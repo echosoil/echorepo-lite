@@ -1208,13 +1208,15 @@
     try {
       let r = await fetch(url, {
         method: "HEAD",
-        credentials: "same-origin"
+        credentials: "same-origin",
+        cache: "no-store"
       });
 
       if (r.status === 405) {
         r = await fetch(url, {
           method: "GET",
-          credentials: "same-origin"
+          credentials: "same-origin",
+          cache: "no-store"
         });
       }
 
@@ -1239,14 +1241,16 @@
       // Prefer HEAD so we do not download the image just to check existence.
       let r = await fetch(url, {
         method: "HEAD",
-        credentials: "same-origin"
+        credentials: "same-origin",
+        cache: "no-store"
       });
 
       // Some Flask/static routes may not support HEAD, so fallback to GET.
       if (r.status === 405) {
         r = await fetch(url, {
           method: "GET",
-          credentials: "same-origin"
+          credentials: "same-origin",
+          cache: "no-store"
         });
       }
 
@@ -1267,7 +1271,10 @@
     try {
       const r = await fetch(
         `/public/sample_piechart/${encodeURIComponent(sampleId)}?marker=${encodeURIComponent(marker)}&level=${encodeURIComponent(level)}`,
-        { credentials: "same-origin" }
+        {
+          credentials: "same-origin",
+          cache: "no-store"
+        }
       );
       if (!r.ok) return null;
       const j = await r.json();
@@ -2478,33 +2485,53 @@
               }
             }
 
-            if (!p.__pie16_loaded && chartId) {
-              p.__pie16_loaded = true;
-              const pie16 = await fetchSamplePiechart(chartId, "16S", BIODIV_LEVEL);
+            /*
+             * Successful biodiversity URLs themselves are the cache.
+             *
+             * Do not mark a failed lookup as permanently "loaded". Charts are
+             * generated asynchronously and may appear in MinIO after this map
+             * page was opened. A missing chart is therefore retried the next
+             * time the popup opens.
+             *
+             * Also keep fungal and bacterial guild checks independent. The old
+             * shared __guild_loaded flag meant that one missing guild was never
+             * checked again after the other one had loaded successfully.
+             */
+            if (chartId) {
+              const [
+                pie16,
+                pieITS,
+                fungalGuild,
+                bacterialGuild
+              ] = await Promise.all([
+                p.piechart_16s_url
+                  ? Promise.resolve(null)
+                  : fetchSamplePiechart(chartId, "16S", BIODIV_LEVEL),
+
+                p.piechart_its_url
+                  ? Promise.resolve(null)
+                  : fetchSamplePiechart(chartId, "ITS", BIODIV_LEVEL),
+
+                p.fungal_guildplot_url
+                  ? Promise.resolve(null)
+                  : fetchFungalGuildplot(chartId),
+
+                p.bacterial_guildplot_url
+                  ? Promise.resolve(null)
+                  : fetchBacterialGuildplot(chartId)
+              ]);
+
               if (pie16) {
                 p.piechart_16s_url = pie16.url;
                 p.piechart_16s_caption = pie16.desc || `16S · ${BIODIV_LEVEL}`;
                 changed = true;
               }
-            }
 
-            if (!p.__pieITS_loaded && chartId) {
-              p.__pieITS_loaded = true;
-              const pieITS = await fetchSamplePiechart(chartId, "ITS", BIODIV_LEVEL);
               if (pieITS) {
                 p.piechart_its_url = pieITS.url;
                 p.piechart_its_caption = pieITS.desc || `ITS · ${BIODIV_LEVEL}`;
                 changed = true;
               }
-            }
-
-            if (!p.__guild_loaded && chartId) {
-              p.__guild_loaded = true;
-
-              const [fungalGuild, bacterialGuild] = await Promise.all([
-                fetchFungalGuildplot(chartId),
-                fetchBacterialGuildplot(chartId)
-              ]);
 
               if (fungalGuild) {
                 p.fungal_guildplot_url = fungalGuild.url;
