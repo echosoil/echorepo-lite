@@ -1260,7 +1260,6 @@ def _import_biodiversity_streaming(
                     read_count,
                     relative_abundance_pct,
                     source_upload_id,
-                    uploaded_at,
                     uploaded_by,
                     source_file
                 )
