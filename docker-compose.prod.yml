@@ -41,8 +41,8 @@ services:
           --worker-class gthread \
           --threads 4 \
           --bind 0.0.0.0:8000 \
-          --timeout 120 \
-          --graceful-timeout 30 \
+          --timeout 900 \
+          --graceful-timeout 60 \
           --keep-alive 5 \
           --access-logfile - \
           --error-logfile - \
