@@ -67,3 +67,8 @@ services:
     # with echorepo-lite. Bind locally only if host-side tools need it.
     ports:
       - "127.0.0.1:5432:5432"
+
+    volumes:
+      - type: bind
+        source: ${POSTGRES_DATA_DIR:-/home/echo/ECHO-STORE/postgres/echorepo}
+        target: /var/lib/postgresql/data
