@@ -32,33 +32,27 @@ DEFAULT_METADATA_CONFIG = (
 
 DEFAULT_SOILVOC_API = "https://api.soilwise-he.containers.wur.nl/vocab/api/v1"
 
+BIODIVERSITY_MATRIX_RESOURCES = {
+    "biodiversity_16S.csv": "16S",
+    "biodiversity_ITS.csv": "ITS",
+}
+
+BIODIVERSITY_TAXONOMY_RESOURCE = "biodiversity_taxonomy.csv"
+
+# Matrix resources have a dynamic header: OTU ID, taxonomy_id, then one column
+# per current sample. Only the fixed prefix is declared here; the marker-specific
+# sample columns are validated separately.
 BIODIVERSITY_RESOURCE_SCHEMAS = {
-    "biodiversity_sources.csv": [
-        "source_id",
-        "source_filename",
-        "source_row_count",
-        "nonzero_value_count",
-        "sample_count",
-        "marker_count",
-        "ingested_datetime_utc",
-        "licence",
+    "biodiversity_16S.csv": [
+        "OTU ID",
+        "taxonomy_id",
     ],
-
-    "biodiversity_samples.csv": [
-        "source_id",
-        "sample_index",
-        "source_column_number",
-        "source_sample_label",
-        "sample_id",
-        "marker",
+    "biodiversity_ITS.csv": [
+        "OTU ID",
+        "taxonomy_id",
     ],
-
-    "biodiversity_features.csv": [
-        "source_id",
-        "feature_index",
-        "source_row_number",
-        "source_feature_id",
-        "taxonomy_raw",
+    BIODIVERSITY_TAXONOMY_RESOURCE: [
+        "taxonomy_id",
         "kingdom",
         "phylum",
         "class",
@@ -66,89 +60,110 @@ BIODIVERSITY_RESOURCE_SCHEMAS = {
         "family",
         "genus",
         "species",
-        "taxonomy_source_json",
-    ],
-
-    "biodiversity_abundance.csv": [
-        "source_id",
-        "feature_index",
-        "sample_index",
-        "read_count",
     ],
 }
 
-# Raw biodiversity CSVW relationships. These are part of the public ECHOREPO raw biodiversity export
-# contract, not the PostgreSQL schema.
 BIODIVERSITY_PRIMARY_KEYS = {
-    "biodiversity_sources.csv":
-        "source_id",
-
-    "biodiversity_samples.csv":
-        ["source_id", "sample_index"],
-
-    "biodiversity_features.csv":
-        ["source_id", "feature_index"],
-
-    "biodiversity_abundance.csv":
-        [
-            "source_id",
-            "feature_index",
-            "sample_index",
-        ],
+    "biodiversity_16S.csv": "OTU ID",
+    "biodiversity_ITS.csv": "OTU ID",
+    BIODIVERSITY_TAXONOMY_RESOURCE: "taxonomy_id",
 }
 
 BIODIVERSITY_FOREIGN_KEYS = {
-    "biodiversity_samples.csv": [
+    "biodiversity_16S.csv": [
         {
-            "columnReference": "source_id",
+            "columnReference": "taxonomy_id",
             "reference": {
-                "resource": "biodiversity_sources.csv",
-                "columnReference": "source_id",
+                "resource": BIODIVERSITY_TAXONOMY_RESOURCE,
+                "columnReference": "taxonomy_id",
             },
         },
     ],
-
-    "biodiversity_features.csv": [
+    "biodiversity_ITS.csv": [
         {
-            "columnReference": "source_id",
+            "columnReference": "taxonomy_id",
             "reference": {
-                "resource": "biodiversity_sources.csv",
-                "columnReference": "source_id",
-            },
-        },
-    ],
-
-    "biodiversity_abundance.csv": [
-        {
-            "columnReference": [
-                "source_id",
-                "feature_index",
-            ],
-            "reference": {
-                "resource": "biodiversity_features.csv",
-                "columnReference": [
-                    "source_id",
-                    "feature_index",
-                ],
-            },
-        },
-        {
-            "columnReference": [
-                "source_id",
-                "sample_index",
-            ],
-            "reference": {
-                "resource": "biodiversity_samples.csv",
-                "columnReference": [
-                    "source_id",
-                    "sample_index",
-                ],
+                "resource": BIODIVERSITY_TAXONOMY_RESOURCE,
+                "columnReference": "taxonomy_id",
             },
         },
     ],
 }
 
 DEFAULT_CSV_PATTERNS = tuple(BIODIVERSITY_RESOURCE_SCHEMAS)
+
+# Current ECHOREPO sample columns retained by the biodiversity exporter.
+BIODIVERSITY_SAMPLE_COLUMN_RE = re.compile(
+    r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$",
+    re.IGNORECASE,
+)
+
+# Built-in metadata covers the new stable scientific columns. A curated JSON
+# config can override any of these values. Dynamic sample columns receive one
+# generic reviewed definition in column_config_for().
+BIODIVERSITY_BUILTIN_COLUMN_METADATA = {
+    "OTU ID": {
+        "title": "OTU / feature identifier",
+        "description": (
+            "Identifier of the OTU/ASV/sequence feature represented by this row."
+        ),
+        "datatype": "string",
+        "status": "reviewed",
+        "required": True,
+    },
+    "taxonomy_id": {
+        "title": "Taxonomy identifier",
+        "description": (
+            "Bundle-local integer identifier for the complete taxonomic lineage; "
+            "resolve it through biodiversity_taxonomy.csv."
+        ),
+        "datatype": "integer",
+        "status": "reviewed",
+        "required": True,
+    },
+    "kingdom": {
+        "title": "Kingdom",
+        "description": "Taxonomic kingdom assigned to the OTU/feature lineage.",
+        "datatype": "string",
+        "status": "reviewed",
+    },
+    "phylum": {
+        "title": "Phylum",
+        "description": "Taxonomic phylum assigned to the OTU/feature lineage.",
+        "datatype": "string",
+        "status": "reviewed",
+    },
+    "class": {
+        "title": "Class",
+        "description": "Taxonomic class assigned to the OTU/feature lineage.",
+        "datatype": "string",
+        "status": "reviewed",
+    },
+    "order": {
+        "title": "Order",
+        "description": "Taxonomic order assigned to the OTU/feature lineage.",
+        "datatype": "string",
+        "status": "reviewed",
+    },
+    "family": {
+        "title": "Family",
+        "description": "Taxonomic family assigned to the OTU/feature lineage.",
+        "datatype": "string",
+        "status": "reviewed",
+    },
+    "genus": {
+        "title": "Genus",
+        "description": "Taxonomic genus assigned to the OTU/feature lineage.",
+        "datatype": "string",
+        "status": "reviewed",
+    },
+    "species": {
+        "title": "Species",
+        "description": "Taxonomic species assigned to the OTU/feature lineage.",
+        "datatype": "string",
+        "status": "reviewed",
+    },
+}
 
 
 def utc_now_iso() -> str:
@@ -693,73 +708,125 @@ def _open_csv_reader(
 
 
 def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
-    raw = path.read_bytes()
-    if not raw:
+    """Analyse one CSV without loading large biodiversity matrices into RAM."""
+    if path.stat().st_size == 0:
         raise ValueError(f"CSV is empty: {path.name}")
 
-    text, encoding = decode_csv_bytes(raw)
-    if "\x00" in text:
-        raise ValueError(f"CSV contains NUL bytes: {path.name}")
+    # Public biodiversity resources are generated by ECHOREPO itself and use a
+    # fixed UTF-8, comma-delimited RFC-4180-style dialect. Stream these files:
+    # the wide OTU x sample matrices can be very large when decompressed.
+    if path.name in BIODIVERSITY_RESOURCE_SCHEMAS:
+        encoding = "utf-8"
+        delimiter = ","
+        with path.open("r", encoding="utf-8-sig", newline="") as file_handle:
+            reader = csv.reader(
+                file_handle,
+                delimiter=",",
+                quotechar='"',
+                doublequote=True,
+                escapechar=None,
+                skipinitialspace=False,
+                strict=True,
+            )
+            try:
+                headers = next(reader)
+            except StopIteration as exc:
+                raise ValueError(f"CSV has no header row: {path.name}") from exc
+            except csv.Error as exc:
+                raise ValueError(
+                    f"Cannot parse the header of {path.name}: {exc}"
+                ) from exc
 
-    reader, delimiter = _open_csv_reader(text, path.name)
+            headers = [header.lstrip("\ufeff").strip() for header in headers]
+            if not headers or any(not header for header in headers):
+                raise ValueError(f"CSV contains an empty column header: {path.name}")
+            if len(headers) != len(set(headers)):
+                raise ValueError(f"CSV contains duplicate column headers: {path.name}")
 
-    try:
-        headers = next(reader)
-    except StopIteration as exc:
-        raise ValueError(f"CSV has no header row: {path.name}") from exc
-    except csv.Error as exc:
-        raise ValueError(
-            f"Cannot parse the header of {path.name}: {exc}"
-        ) from exc
+            values_by_column: dict[str, list[str]] = {
+                header: [] for header in headers
+            }
+            row_count = 0
 
-    headers = [header.lstrip("\ufeff").strip() for header in headers]
-    if not headers or any(not header for header in headers):
-        raise ValueError(f"CSV contains an empty column header: {path.name}")
-    if len(headers) != len(set(headers)):
-        raise ValueError(f"CSV contains duplicate column headers: {path.name}")
-
-    values_by_column: dict[str, list[str]] = {header: [] for header in headers}
-    row_count = 0
-
-    try:
+            try:
+                for row in reader:
+                    if not row or all(not cell.strip() for cell in row):
+                        continue
+                    row_count += 1
+                    if len(row) != len(headers):
+                        preview = " | ".join(
+                            cell.replace("\r", "\\r").replace("\n", "\\n")[:120]
+                            for cell in row[: min(len(row), 6)]
+                        )
+                        raise ValueError(
+                            f"CSV record {row_count + 1} in {path.name} has "
+                            f"{len(row)} cells; expected {len(headers)}. "
+                            f"The record ends near physical line {reader.line_num}. "
+                            f"Parsed preview: {preview!r}"
+                        )
+                    if row_count <= sample_rows:
+                        for header, value in zip(headers, row):
+                            values_by_column[header].append(value)
+            except csv.Error as exc:
+                raise ValueError(
+                    f"Malformed CSV in {path.name} near physical line "
+                    f"{reader.line_num}: {exc}"
+                ) from exc
+    else:
+        # Backwards-compatible path for arbitrary CSVs supplied through custom
+        # --csv-pattern values.
+        raw = path.read_bytes()
+        text, detected_encoding = decode_csv_bytes(raw)
+        if "\x00" in text:
+            raise ValueError(f"CSV contains NUL bytes: {path.name}")
+        reader, delimiter = _open_csv_reader(text, path.name)
+        encoding = "utf-8" if detected_encoding.startswith("utf-8") else detected_encoding
+        try:
+            headers = next(reader)
+        except StopIteration as exc:
+            raise ValueError(f"CSV has no header row: {path.name}") from exc
+        headers = [header.lstrip("\ufeff").strip() for header in headers]
+        if not headers or any(not header for header in headers):
+            raise ValueError(f"CSV contains an empty column header: {path.name}")
+        if len(headers) != len(set(headers)):
+            raise ValueError(f"CSV contains duplicate column headers: {path.name}")
+        values_by_column = {header: [] for header in headers}
+        row_count = 0
         for row in reader:
             if not row or all(not cell.strip() for cell in row):
                 continue
-
             row_count += 1
             if len(row) != len(headers):
-                preview = " | ".join(
-                    cell.replace("\r", "\\r").replace("\n", "\\n")[:120]
-                    for cell in row[: min(len(row), 6)]
-                )
                 raise ValueError(
                     f"CSV record {row_count + 1} in {path.name} has "
-                    f"{len(row)} cells; expected {len(headers)}. "
-                    f"The record ends near physical line {reader.line_num}. "
-                    f"Parsed preview: {preview!r}"
+                    f"{len(row)} cells; expected {len(headers)}."
                 )
-
             if row_count <= sample_rows:
                 for header, value in zip(headers, row):
                     values_by_column[header].append(value)
-
-    except csv.Error as exc:
-        raise ValueError(
-            f"Malformed CSV in {path.name} near physical line "
-            f"{reader.line_num}: {exc}"
-        ) from exc
 
     inferred = {
         header: infer_csvw_datatype(header, values_by_column[header])
         for header in headers
     }
 
+    # Stable semantic datatypes for the scientific bundle.
+    if path.name in BIODIVERSITY_MATRIX_RESOURCES:
+        inferred["OTU ID"] = "string"
+        inferred["taxonomy_id"] = "integer"
+        for header in headers[2:]:
+            inferred[header] = "number"
+    elif path.name == BIODIVERSITY_TAXONOMY_RESOURCE:
+        inferred["taxonomy_id"] = "integer"
+        for header in headers[1:]:
+            inferred[header] = "string"
+
     return {
         "path": path,
         "filename": path.name,
         "headers": headers,
         "row_count": row_count,
-        "encoding": "utf-8" if encoding.startswith("utf-8") else encoding,
+        "encoding": encoding,
         "delimiter": delimiter,
         "inferred_datatypes": inferred,
         "size_bytes": path.stat().st_size,
@@ -767,323 +834,150 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
     }
 
 
+def _matrix_headers(path: Path) -> list[str]:
+    with path.open("r", encoding="utf-8-sig", newline="") as file_handle:
+        reader = csv.reader(file_handle)
+        try:
+            return [value.strip() for value in next(reader)]
+        except StopIteration as exc:
+            raise RuntimeError(f"CSV has no header row: {path.name}") from exc
+
+
 def validate_biodiversity_resource_values(
     csv_paths: list[Path],
 ) -> None:
-    """Validate row-level values that are part of the raw biodiversity contract."""
+    """Validate values in the compact scientific biodiversity bundle."""
     by_name = {path.name: path for path in csv_paths}
-
-    sources_path = by_name.get("biodiversity_sources.csv")
-    samples_path = by_name.get("biodiversity_samples.csv")
-    features_path = by_name.get("biodiversity_features.csv")
-    abundance_path = by_name.get("biodiversity_abundance.csv")
-
-    if not all((sources_path, samples_path, features_path, abundance_path)):
+    taxonomy_path = by_name.get(BIODIVERSITY_TAXONOMY_RESOURCE)
+    if taxonomy_path is None:
         return
 
-    source_rows = _read_csv_dict_rows(sources_path)
-    sample_rows = _read_csv_dict_rows(samples_path)
-    feature_rows = _read_csv_dict_rows(features_path)
-    abundance_rows = _read_csv_dict_rows(abundance_path)
-
-    source_ids: set[str] = set()
-    for row_number, row in enumerate(source_rows, start=2):
-        source_id = row.get("source_id", "").strip()
-        if not re.fullmatch(r"[0-9a-fA-F]{64}", source_id):
-            raise RuntimeError(
-                f"biodiversity_sources.csv row {row_number} has invalid "
-                f"source_id {source_id!r}; expected a 64-character SHA-256 digest."
-            )
-        if source_id in source_ids:
-            raise RuntimeError(
-                f"biodiversity_sources.csv contains duplicate source_id {source_id!r}"
-            )
-        source_ids.add(source_id)
-
-        for column in (
-            "source_row_count",
-            "nonzero_value_count",
-            "sample_count",
-            "marker_count",
-        ):
-            value = row.get(column, "").strip()
+    taxonomy_ids: set[int] = set()
+    with taxonomy_path.open("r", encoding="utf-8-sig", newline="") as file_handle:
+        reader = csv.DictReader(file_handle)
+        for row_number, row in enumerate(reader, start=2):
+            raw_id = (row.get("taxonomy_id") or "").strip()
             try:
-                parsed = int(value)
+                taxonomy_id = int(raw_id)
             except ValueError as exc:
                 raise RuntimeError(
-                    f"biodiversity_sources.csv row {row_number} has non-integer "
-                    f"{column}={value!r}"
+                    f"{taxonomy_path.name} row {row_number} has non-integer "
+                    f"taxonomy_id={raw_id!r}"
                 ) from exc
-            if parsed < 0:
+            if taxonomy_id < 1:
                 raise RuntimeError(
-                    f"biodiversity_sources.csv row {row_number} has negative "
-                    f"{column}={parsed}"
+                    f"{taxonomy_path.name} row {row_number} requires taxonomy_id >= 1"
                 )
-
-        timestamp = row.get("ingested_datetime_utc", "").strip()
-        if timestamp and not _is_iso_datetime(timestamp):
-            raise RuntimeError(
-                f"biodiversity_sources.csv row {row_number} has invalid "
-                f"ingested_datetime_utc={timestamp!r}"
-            )
-
-    for row_number, row in enumerate(sample_rows, start=2):
-        marker = row.get("marker", "").strip().upper()
-        if marker not in {"16S", "ITS"}:
-            raise RuntimeError(
-                f"biodiversity_samples.csv row {row_number} has unsupported "
-                f"marker={marker!r}; expected 16S or ITS."
-            )
-        for column in ("sample_index", "source_column_number"):
-            value = row.get(column, "").strip()
-            try:
-                parsed = int(value)
-            except ValueError as exc:
+            if taxonomy_id in taxonomy_ids:
                 raise RuntimeError(
-                    f"biodiversity_samples.csv row {row_number} has non-integer "
-                    f"{column}={value!r}"
-                ) from exc
-            if parsed < 1:
-                raise RuntimeError(
-                    f"biodiversity_samples.csv row {row_number} requires "
-                    f"{column} >= 1"
+                    f"{taxonomy_path.name} contains duplicate taxonomy_id={taxonomy_id}"
                 )
+            taxonomy_ids.add(taxonomy_id)
 
-        if not row.get("source_sample_label", "").strip():
-            raise RuntimeError(
-                f"biodiversity_samples.csv row {row_number} has an empty "
-                "source_sample_label"
-            )
-        if not row.get("sample_id", "").strip():
-            raise RuntimeError(
-                f"biodiversity_samples.csv row {row_number} has an empty sample_id"
-            )
+    for filename, marker in BIODIVERSITY_MATRIX_RESOURCES.items():
+        path = by_name.get(filename)
+        if path is None:
+            continue
 
-    for row_number, row in enumerate(feature_rows, start=2):
-        for column, minimum in (("feature_index", 1), ("source_row_number", 2)):
-            value = row.get(column, "").strip()
-            try:
-                parsed = int(value)
-            except ValueError as exc:
-                raise RuntimeError(
-                    f"biodiversity_features.csv row {row_number} has non-integer "
-                    f"{column}={value!r}"
-                ) from exc
-            if parsed < minimum:
-                raise RuntimeError(
-                    f"biodiversity_features.csv row {row_number} requires "
-                    f"{column} >= {minimum}"
-                )
+        headers = _matrix_headers(path)
+        sample_headers = headers[2:]
+        otu_ids: set[str] = set()
 
-        if not row.get("source_feature_id", "").strip():
-            raise RuntimeError(
-                f"biodiversity_features.csv row {row_number} has an empty "
-                "source_feature_id"
-            )
+        with path.open("r", encoding="utf-8-sig", newline="") as file_handle:
+            reader = csv.reader(file_handle)
+            next(reader, None)
+            for row_number, row in enumerate(reader, start=2):
+                if not row or all(not value.strip() for value in row):
+                    continue
+                if len(row) != len(headers):
+                    raise RuntimeError(
+                        f"{filename} row {row_number} has {len(row)} cells; "
+                        f"expected {len(headers)}"
+                    )
 
-        raw_json = row.get("taxonomy_source_json", "").strip()
-        if raw_json:
-            try:
-                parsed_json = json.loads(raw_json)
-            except json.JSONDecodeError as exc:
-                raise RuntimeError(
-                    f"biodiversity_features.csv row {row_number} has invalid "
-                    "taxonomy_source_json"
-                ) from exc
-            if not isinstance(parsed_json, dict):
-                raise RuntimeError(
-                    f"biodiversity_features.csv row {row_number} "
-                    "taxonomy_source_json must encode a JSON object"
-                )
+                otu_id = row[0].strip()
+                if not otu_id:
+                    raise RuntimeError(
+                        f"{filename} row {row_number} has an empty OTU ID"
+                    )
+                if otu_id in otu_ids:
+                    raise RuntimeError(
+                        f"{filename} contains duplicate OTU ID {otu_id!r}"
+                    )
+                otu_ids.add(otu_id)
 
-    for row_number, row in enumerate(abundance_rows, start=2):
-        value = row.get("read_count", "").strip()
-        try:
-            count = float(value)
-        except ValueError as exc:
-            raise RuntimeError(
-                f"biodiversity_abundance.csv row {row_number} has non-numeric "
-                f"read_count={value!r}"
-            ) from exc
-        if not math.isfinite(count) or count <= 0:
-            raise RuntimeError(
-                f"biodiversity_abundance.csv row {row_number} must contain a "
-                f"finite positive read_count, got {value!r}"
-            )
+                raw_taxonomy_id = row[1].strip()
+                try:
+                    taxonomy_id = int(raw_taxonomy_id)
+                except ValueError as exc:
+                    raise RuntimeError(
+                        f"{filename} row {row_number} has non-integer "
+                        f"taxonomy_id={raw_taxonomy_id!r}"
+                    ) from exc
+                if taxonomy_id not in taxonomy_ids:
+                    raise RuntimeError(
+                        f"{filename} row {row_number} references taxonomy_id="
+                        f"{taxonomy_id}, absent from {BIODIVERSITY_TAXONOMY_RESOURCE}"
+                    )
+
+                for column_name, raw_value in zip(sample_headers, row[2:]):
+                    value = raw_value.strip()
+                    # Blank means this feature was absent from the source-file
+                    # feature universe for that sample; it is intentionally not
+                    # the same thing as a measured zero.
+                    if value == "":
+                        continue
+                    try:
+                        count = float(value)
+                    except ValueError as exc:
+                        raise RuntimeError(
+                            f"{filename} row {row_number}, column {column_name!r} "
+                            f"has non-numeric read count {value!r}"
+                        ) from exc
+                    if not math.isfinite(count) or count < 0:
+                        raise RuntimeError(
+                            f"{filename} row {row_number}, column {column_name!r} "
+                            f"requires a finite non-negative read count, got {value!r}"
+                        )
 
 
 def _read_csv_dict_rows(path: Path) -> list[dict[str, str]]:
-    """Read one biodiversity CSV using the same strict parser as schema validation."""
-    text, _ = decode_csv_bytes(path.read_bytes())
-    reader, _ = _open_csv_reader(text, path.name)
-
-    try:
-        headers = next(reader)
-    except StopIteration:
-        return []
-
-    headers = [header.lstrip("\ufeff").strip() for header in headers]
-    rows: list[dict[str, str]] = []
-
-    for row_number, row in enumerate(reader, start=2):
-        if not row or all(not cell.strip() for cell in row):
-            continue
-        if len(row) != len(headers):
-            raise RuntimeError(
-                f"{path.name} row {row_number} has {len(row)} cells; "
-                f"expected {len(headers)}."
-            )
-        rows.append(dict(zip(headers, row)))
-
-    return rows
+    """Small-table helper retained for backwards-compatible utility callers."""
+    with path.open("r", encoding="utf-8-sig", newline="") as file_handle:
+        reader = csv.DictReader(file_handle)
+        return [dict(row) for row in reader]
 
 
 def validate_reference_integrity(csv_paths: list[Path]) -> None:
-    """Validate raw biodiversity PK/FK relationships and source summary counts."""
+    """Validate taxonomy dictionary references used by both marker matrices."""
     by_name = {path.name: path for path in csv_paths}
     required = set(BIODIVERSITY_RESOURCE_SCHEMAS)
     if not required.issubset(by_name):
         return
 
-    sources = _read_csv_dict_rows(by_name["biodiversity_sources.csv"])
-    samples = _read_csv_dict_rows(by_name["biodiversity_samples.csv"])
-    features = _read_csv_dict_rows(by_name["biodiversity_features.csv"])
-    abundances = _read_csv_dict_rows(by_name["biodiversity_abundance.csv"])
+    taxonomy_path = by_name[BIODIVERSITY_TAXONOMY_RESOURCE]
+    taxonomy_ids: set[int] = set()
+    with taxonomy_path.open("r", encoding="utf-8-sig", newline="") as file_handle:
+        reader = csv.DictReader(file_handle)
+        for row in reader:
+            taxonomy_ids.add(int((row.get("taxonomy_id") or "0").strip()))
 
-    source_by_id: dict[str, dict[str, str]] = {}
-    for row in sources:
-        source_id = row.get("source_id", "").strip()
-        if source_id in source_by_id:
-            raise RuntimeError(
-                f"Duplicate source_id in biodiversity_sources.csv: {source_id!r}"
-            )
-        source_by_id[source_id] = row
-
-    sample_keys: set[tuple[str, int]] = set()
-    distinct_samples_by_source: dict[str, set[str]] = {}
-    markers_by_source: dict[str, set[str]] = {}
-
-    for row in samples:
-        source_id = row.get("source_id", "").strip()
-        if source_id not in source_by_id:
-            raise RuntimeError(
-                "biodiversity_samples.csv references source_id absent from "
-                f"biodiversity_sources.csv: {source_id!r}"
-            )
-        key = (source_id, int(row["sample_index"]))
-        if key in sample_keys:
-            raise RuntimeError(
-                "Duplicate (source_id, sample_index) in biodiversity_samples.csv: "
-                f"{key!r}"
-            )
-        sample_keys.add(key)
-        distinct_samples_by_source.setdefault(source_id, set()).add(
-            row.get("sample_id", "").strip()
-        )
-        markers_by_source.setdefault(source_id, set()).add(
-            row.get("marker", "").strip().upper()
-        )
-
-    feature_keys: set[tuple[str, int]] = set()
-    feature_count_by_source: dict[str, int] = {}
-
-    for row in features:
-        source_id = row.get("source_id", "").strip()
-        if source_id not in source_by_id:
-            raise RuntimeError(
-                "biodiversity_features.csv references source_id absent from "
-                f"biodiversity_sources.csv: {source_id!r}"
-            )
-        key = (source_id, int(row["feature_index"]))
-        if key in feature_keys:
-            raise RuntimeError(
-                "Duplicate (source_id, feature_index) in biodiversity_features.csv: "
-                f"{key!r}"
-            )
-        feature_keys.add(key)
-        feature_count_by_source[source_id] = (
-            feature_count_by_source.get(source_id, 0) + 1
-        )
-
-    abundance_keys: set[tuple[str, int, int]] = set()
-    abundance_count_by_source: dict[str, int] = {}
-
-    for row in abundances:
-        source_id = row.get("source_id", "").strip()
-        feature_index = int(row["feature_index"])
-        sample_index = int(row["sample_index"])
-        feature_key = (source_id, feature_index)
-        sample_key = (source_id, sample_index)
-        abundance_key = (source_id, feature_index, sample_index)
-
-        if feature_key not in feature_keys:
-            raise RuntimeError(
-                "biodiversity_abundance.csv references a feature absent from "
-                f"biodiversity_features.csv: {feature_key!r}"
-            )
-        if sample_key not in sample_keys:
-            raise RuntimeError(
-                "biodiversity_abundance.csv references a sample column absent from "
-                f"biodiversity_samples.csv: {sample_key!r}"
-            )
-        if abundance_key in abundance_keys:
-            raise RuntimeError(
-                "Duplicate abundance primary key in biodiversity_abundance.csv: "
-                f"{abundance_key!r}"
-            )
-        abundance_keys.add(abundance_key)
-        abundance_count_by_source[source_id] = (
-            abundance_count_by_source.get(source_id, 0) + 1
-        )
-
-    for source_id, row in source_by_id.items():
-        expected_feature_count = int(row["source_row_count"])
-        actual_feature_count = feature_count_by_source.get(source_id, 0)
-        if expected_feature_count != actual_feature_count:
-            raise RuntimeError(
-                f"Source {source_id} declares source_row_count="
-                f"{expected_feature_count}, but biodiversity_features.csv has "
-                f"{actual_feature_count} rows for that source."
-            )
-
-        expected_nonzero_count = int(row["nonzero_value_count"])
-        actual_nonzero_count = abundance_count_by_source.get(source_id, 0)
-        if expected_nonzero_count != actual_nonzero_count:
-            raise RuntimeError(
-                f"Source {source_id} declares nonzero_value_count="
-                f"{expected_nonzero_count}, but biodiversity_abundance.csv has "
-                f"{actual_nonzero_count} rows for that source."
-            )
-
-        expected_sample_count = int(row["sample_count"])
-        actual_sample_count = len(
-            {
-                value
-                for value in distinct_samples_by_source.get(source_id, set())
-                if value
-            }
-        )
-        if expected_sample_count != actual_sample_count:
-            raise RuntimeError(
-                f"Source {source_id} declares sample_count={expected_sample_count}, "
-                f"but biodiversity_samples.csv contains {actual_sample_count} "
-                "distinct sample_id values for that source."
-            )
-
-        expected_marker_count = int(row["marker_count"])
-        actual_marker_count = len(
-            {
-                value
-                for value in markers_by_source.get(source_id, set())
-                if value
-            }
-        )
-        if expected_marker_count != actual_marker_count:
-            raise RuntimeError(
-                f"Source {source_id} declares marker_count={expected_marker_count}, "
-                f"but biodiversity_samples.csv contains {actual_marker_count} "
-                "distinct markers for that source."
-            )
+    for filename in BIODIVERSITY_MATRIX_RESOURCES:
+        path = by_name[filename]
+        with path.open("r", encoding="utf-8-sig", newline="") as file_handle:
+            reader = csv.reader(file_handle)
+            headers = next(reader, None)
+            if headers is None:
+                raise RuntimeError(f"{filename} has no header")
+            for row_number, row in enumerate(reader, start=2):
+                if not row or all(not value.strip() for value in row):
+                    continue
+                taxonomy_id = int(row[1])
+                if taxonomy_id not in taxonomy_ids:
+                    raise RuntimeError(
+                        f"{filename} row {row_number} references missing "
+                        f"taxonomy_id={taxonomy_id}"
+                    )
 
 
 def collect_soilvoc_uris_from_resources(csv_paths: list[Path]) -> list[str]:
@@ -1126,23 +1020,48 @@ def validate_biodiversity_resource_schemas(
             parts.append(f"unexpected CSV resources: {unexpected}")
         raise RuntimeError("Invalid biodiversity bundle: " + "; ".join(parts))
 
-    for filename, expected_headers in BIODIVERSITY_RESOURCE_SCHEMAS.items():
+    taxonomy = by_filename[BIODIVERSITY_TAXONOMY_RESOURCE]
+    expected_taxonomy_headers = BIODIVERSITY_RESOURCE_SCHEMAS[
+        BIODIVERSITY_TAXONOMY_RESOURCE
+    ]
+    if taxonomy["headers"] != expected_taxonomy_headers:
+        raise RuntimeError(
+            f"Unexpected header in {BIODIVERSITY_TAXONOMY_RESOURCE}. "
+            f"Expected {expected_taxonomy_headers}, got {taxonomy['headers']}"
+        )
+
+    for filename, marker in BIODIVERSITY_MATRIX_RESOURCES.items():
         analysis = by_filename[filename]
-        actual_headers = analysis["headers"]
-
-
-        if actual_headers != expected_headers:
+        headers = analysis["headers"]
+        if headers[:2] != ["OTU ID", "taxonomy_id"]:
             raise RuntimeError(
-                f"Unexpected header in {filename}. "
-                f"Expected {expected_headers}, got {actual_headers}"
+                f"Unexpected fixed header prefix in {filename}: {headers[:2]!r}; "
+                "expected ['OTU ID', 'taxonomy_id']"
+            )
+        if len(headers) < 3:
+            raise RuntimeError(
+                f"{filename} has no sample abundance columns"
             )
 
+        for sample_column in headers[2:]:
+            match = BIODIVERSITY_SAMPLE_COLUMN_RE.fullmatch(sample_column)
+            if not match:
+                raise RuntimeError(
+                    f"Unexpected sample column {sample_column!r} in {filename}; "
+                    f"expected an ECHOREPO sample label ending in -{marker}"
+                )
+            if match.group(1).upper() != marker:
+                raise RuntimeError(
+                    f"Sample column {sample_column!r} belongs to marker "
+                    f"{match.group(1).upper()}, not {marker}"
+                )
+
+    for filename, analysis in by_filename.items():
         if analysis["encoding"] != "utf-8":
             raise RuntimeError(
                 f"Biodiversity resource {filename} is not UTF-8: "
                 f"detected {analysis['encoding']}"
             )
-
         if analysis["delimiter"] != ",":
             raise RuntimeError(
                 f"Biodiversity resource {filename} uses delimiter "
@@ -1331,7 +1250,31 @@ def column_config_for(
         if isinstance(config.get("global_columns"), dict)
         else {}
     )
+
+    builtin: dict[str, Any] = dict(
+        BIODIVERSITY_BUILTIN_COLUMN_METADATA.get(column_name, {})
+    )
+
+    marker = BIODIVERSITY_MATRIX_RESOURCES.get(filename)
+    if marker and column_name not in {"OTU ID", "taxonomy_id"}:
+        match = BIODIVERSITY_SAMPLE_COLUMN_RE.fullmatch(column_name)
+        if match and match.group(1).upper() == marker:
+            sample_id = column_name[: -(len(marker) + 1)]
+            builtin = {
+                "title": f"Read count for sample {sample_id}",
+                "description": (
+                    f"Sequencing read count for OTU/feature in ECHOREPO sample "
+                    f"{sample_id} ({marker}). Zero means the feature was present "
+                    "in that source matrix with zero reads; blank means the "
+                    "feature row was absent from the source file supplying this "
+                    "sample."
+                ),
+                "datatype": "number",
+                "status": "reviewed",
+            }
+
     return _merge_dicts(
+        builtin,
         global_columns.get(column_name),
         table_columns.get(column_name),
     )
@@ -1451,11 +1394,11 @@ def build_csvw_document(
         filename = analysis["filename"]
         table_config = table_config_for(config, filename)
         table_title = str(
-            table_config.get("title") or f"ECHOREPO raw biodiversity: {filename}"
+            table_config.get("title") or f"ECHOREPO biodiversity: {filename}"
         ).strip()
         table_description = str(
             table_config.get("description")
-            or f"Tabular ECHOREPO raw biodiversity resource stored in {filename}."
+            or f"Tabular ECHOREPO biodiversity resource stored in {filename}."
         ).strip()
 
         columns = [
@@ -1946,7 +1889,7 @@ def ensure_unique_filenames(paths: list[Path]) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Download the ECHOREPO raw biodiversity CSV bundle, generate "
+            "Download the ECHOREPO biodiversity matrix bundle, generate "
             "CSVW file.json, and publish all resources under one Zenodo record DOI"
         )
     )
@@ -2003,7 +1946,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         help=(
             "ZIP member basename pattern to publish; repeatable. Defaults to "
-            "the four exact raw biodiversity resource filenames."
+            "the three exact biodiversity matrix/taxonomy resource filenames."
         ),
     )
     parser.add_argument(
@@ -2011,9 +1954,9 @@ def build_parser() -> argparse.ArgumentParser:
         action=argparse.BooleanOptionalAction,
         default=True,
         help=(
-            "Require the exact ECHOREPO raw biodiversity filenames, headers, "
-            "row-value constraints, primary/foreign keys, and source summary "
-            "counts. Enabled by default."
+            "Require the ECHOREPO 16S/ITS matrix resources and taxonomy dictionary, "
+            "validate dynamic sample headers, read-count values, and taxonomy "
+            "references. Enabled by default."
         ),
     )
     # Backwards-compatible hidden alias retained for scripts copied from the
