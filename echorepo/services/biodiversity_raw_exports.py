@@ -5,6 +5,7 @@ import io
 import json
 import math
 import os
+import re
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass
@@ -138,8 +139,46 @@ def _fetch_current_samples(cur) -> list[dict[str, Any]]:
     )
 
 
+def _normalise_taxonomy_value(value: Any) -> str:
+    """
+    Normalize taxonomy text while repairing a known Excel coercion.
+
+    Taxonomic labels such as "11-24" can be interpreted by Excel/openpyxl as
+    a month/year date and reach PostgreSQL as "2024-11-01 00:00:00".
+    These are scientific taxonomy labels, not dates.
+
+    Canonicalize both forms to M-YY / MM-YY so that equivalent OTU lineages
+    from different source workbooks compare equal.
+    """
+    text = _text(value)
+    if not text:
+        return ""
+
+    # Already-correct taxonomy token, e.g. 11-24 or 1-24.
+    match = re.fullmatch(r"(\d{1,2})-(\d{2})", text)
+    if match:
+        month = int(match.group(1))
+        if 1 <= month <= 12:
+            return f"{month}-{match.group(2)}"
+
+    # Excel/openpyxl date coercion, e.g. 2024-11-01 or
+    # 2024-11-01 00:00:00. Only day 01 at midnight is accepted because this
+    # is the characteristic month/year conversion we need to repair.
+    match = re.fullmatch(
+        r"(\d{4})-(\d{2})-01(?:[ T]00:00:00(?:\.0+)?)?",
+        text,
+    )
+    if match:
+        year = int(match.group(1))
+        month = int(match.group(2))
+        if 1 <= month <= 12:
+            return f"{month}-{year % 100:02d}"
+
+    return text
+
+
 def _taxonomy_tuple(row: dict[str, Any]) -> tuple[str, ...]:
-    return tuple(_text(row.get(rank)) for rank in TAXONOMY_RANKS)
+    return tuple(_normalise_taxonomy_value(row.get(rank)) for rank in TAXONOMY_RANKS)
 
 
 def _load_marker_data(

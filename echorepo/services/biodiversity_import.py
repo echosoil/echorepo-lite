@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 import re
+from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
 
@@ -16,7 +17,6 @@ from .storage.minio import (
     archive_raw_biodiversity_upload,
     invalidate_biodiversity_charts,
 )
-
 
 BIODIVERSITY_SAMPLE_RE = re.compile(
     r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$",
@@ -45,15 +45,9 @@ def _is_biodiversity_header(header) -> bool:
     if not header:
         return False
 
-    cleaned = [
-        "" if value is None else str(value).strip()
-        for value in header
-    ]
+    cleaned = ["" if value is None else str(value).strip() for value in header]
 
-    normalised = {
-        _normalise_biodiversity_header(value)
-        for value in cleaned
-    }
+    normalised = {_normalise_biodiversity_header(value) for value in cleaned}
 
     has_otu_id = bool(
         normalised.intersection(
@@ -64,27 +58,41 @@ def _is_biodiversity_header(header) -> bool:
         )
     )
 
-    has_sample_column = any(
-        BIODIVERSITY_SAMPLE_RE.fullmatch(value)
-        for value in cleaned
-        if value
-    )
+    has_sample_column = any(BIODIVERSITY_SAMPLE_RE.fullmatch(value) for value in cleaned if value)
 
     # Normal format:
     # Kingdom, Phylum, Class, Order, Family, Genus, Species
-    has_phylum = "phylum" in normalised
+    has_named_taxonomy = "phylum" in normalised or "philum" in normalised
 
-    # Legacy format:
+    # Older legacy format:
     # Taxonomy, A, B, C, D, E, F
-    has_legacy_phylum = (
-        "taxonomy" in normalised
-        and "a" in normalised
+    #
+    # Taxonomy = Kingdom
+    # A = Phylum
+    # ...
+    # F = Species
+    has_taxonomy_a_to_f = "taxonomy" in normalised and all(
+        column in normalised for column in ("a", "b", "c", "d", "e", "f")
+    )
+
+    # Current compact taxonomy layout used by some clean_phylum sheets:
+    # A, B, C, D, E, F, G
+    #
+    # A = Kingdom
+    # B = Phylum
+    # C = Class
+    # D = Order
+    # E = Family
+    # F = Genus
+    # G = Species
+    has_a_to_g_taxonomy = all(
+        column in normalised for column in ("a", "b", "c", "d", "e", "f", "g")
     )
 
     return (
         has_otu_id
         and has_sample_column
-        and (has_phylum or has_legacy_phylum)
+        and (has_named_taxonomy or has_taxonomy_a_to_f or has_a_to_g_taxonomy)
     )
 
 
@@ -116,14 +124,9 @@ def _open_biodiversity_rows(
                 data_only=True,
             )
         except Exception as e:
-            raise ValueError(
-                f"Cannot open biodiversity XLSX: {e}"
-            ) from e
+            raise ValueError(f"Cannot open biodiversity XLSX: {e}") from e
 
-        sheet_lookup = {
-            str(sheet_name).strip().lower(): sheet_name
-            for sheet_name in wb.sheetnames
-        }
+        sheet_lookup = {str(sheet_name).strip().lower(): sheet_name for sheet_name in wb.sheetnames}
 
         selected_sheet = sheet_lookup.get("clean_phylum")
 
@@ -164,9 +167,7 @@ def _open_biodiversity_rows(
             header = next(rows_iter)
         except StopIteration:
             wb.close()
-            raise ValueError(
-                f"Biodiversity sheet '{selected_sheet}' is empty"
-            )
+            raise ValueError(f"Biodiversity sheet '{selected_sheet}' is empty") from None
 
         return (
             list(header),
@@ -179,10 +180,7 @@ def _open_biodiversity_rows(
     # CSV / TSV / TXT
     # --------------------------------------------------------------
     if suffix not in {".csv", ".tsv", ".txt"}:
-        raise ValueError(
-            "Unsupported biodiversity file type. "
-            "Use .xlsx, .csv or .tsv."
-        )
+        raise ValueError("Unsupported biodiversity file type. Use .xlsx, .csv or .tsv.")
 
     byte_stream = BytesIO(file_bytes)
 
@@ -199,9 +197,7 @@ def _open_biodiversity_rows(
     except UnicodeDecodeError as e:
         byte_stream.close()
 
-        raise ValueError(
-            "Cannot decode biodiversity text file as UTF-8"
-        ) from e
+        raise ValueError("Cannot decode biodiversity text file as UTF-8") from e
 
     if suffix == ".tsv":
         dialect = csv.excel_tab
@@ -227,9 +223,7 @@ def _open_biodiversity_rows(
         header = next(reader)
     except StopIteration:
         text_stream.close()
-        raise ValueError(
-            "Biodiversity CSV/TSV is empty"
-        )
+        raise ValueError("Biodiversity CSV/TSV is empty") from None
 
     return (
         header,
@@ -424,12 +418,7 @@ def _import_biodiversity_streaming(
             description=str(e),
         )
 
-    header = [
-        ""
-        if value is None
-        else str(value).strip()
-        for value in raw_header
-    ]
+    header = ["" if value is None else str(value).strip() for value in raw_header]
 
     if not any(header):
         close_source()
@@ -477,9 +466,7 @@ def _import_biodiversity_streaming(
         if idx == otu_col_idx:
             continue
 
-        if not BIODIVERSITY_SAMPLE_RE.fullmatch(
-            str(column_name).strip()
-        ):
+        if not BIODIVERSITY_SAMPLE_RE.fullmatch(str(column_name).strip()):
             continue
 
         sample_id, marker = split_sample_marker(column_name)
@@ -492,17 +479,13 @@ def _import_biodiversity_streaming(
                 # Stable position within this uploaded biodiversity file.
                 # Starts at 1 intentionally.
                 "sample_index": len(sample_cols) + 1,
-
                 # Python row index, zero-based.
                 "idx": idx,
-
                 # Original CSV/XLSX column number, one-based.
                 "source_column_number": idx + 1,
-
                 # Preserve exactly what the laboratory file called it.
                 "column_name": column_name,
                 "source_sample_label": column_name,
-
                 # Parsed ECHOREPO identity.
                 "sample_id": sample_id,
                 "marker": marker,
@@ -520,16 +503,12 @@ def _import_biodiversity_streaming(
             ),
         )
 
-    sample_col_indices = {
-        item["idx"]
-        for item in sample_cols
-    }
+    sample_col_indices = {item["idx"] for item in sample_cols}
 
     taxonomy_cols = [
         (idx, column_name)
         for idx, column_name in enumerate(header)
-        if idx != otu_col_idx
-        and idx not in sample_col_indices
+        if idx != otu_col_idx and idx not in sample_col_indices
     ]
 
     # ------------------------------------------------------------------
@@ -537,28 +516,37 @@ def _import_biodiversity_streaming(
     # ------------------------------------------------------------------
 
     normalised_taxonomy_headers = {
-        normalize_header(column_name): idx
-        for idx, column_name in taxonomy_cols
+        normalize_header(column_name): idx for idx, column_name in taxonomy_cols
     }
 
-    # Your legacy files may use:
+    # Supported compact taxonomy layouts:
     #
-    # Taxonomy | A | B | C | D | E | F
+    # 1) Taxonomy | A | B | C | D | E | F
+    #       Taxonomy = Kingdom
+    #       A = Phylum
+    #       B = Class
+    #       C = Order
+    #       D = Family
+    #       E = Genus
+    #       F = Species
     #
-    # where:
-    # Taxonomy = Kingdom
-    # A = Phylum
-    # B = Class
-    # C = Order
-    # D = Family
-    # E = Genus
-    # F = Species
-    legacy_taxonomy_layout = (
-        "taxonomy" in normalised_taxonomy_headers
-        and "a" in normalised_taxonomy_headers
+    # 2) A | B | C | D | E | F | G
+    #       A = Kingdom
+    #       B = Phylum
+    #       C = Class
+    #       D = Order
+    #       E = Family
+    #       F = Genus
+    #       G = Species
+    taxonomy_a_to_f_layout = "taxonomy" in normalised_taxonomy_headers and all(
+        column in normalised_taxonomy_headers for column in ("a", "b", "c", "d", "e", "f")
     )
 
-    if legacy_taxonomy_layout:
+    a_to_g_taxonomy_layout = all(
+        column in normalised_taxonomy_headers for column in ("a", "b", "c", "d", "e", "f", "g")
+    )
+
+    if taxonomy_a_to_f_layout:
         taxonomy_rank_indices = {
             "kingdom": normalised_taxonomy_headers.get("taxonomy"),
             "phylum": normalised_taxonomy_headers.get("a"),
@@ -568,12 +556,23 @@ def _import_biodiversity_streaming(
             "genus": normalised_taxonomy_headers.get("e"),
             "species": normalised_taxonomy_headers.get("f"),
         }
+    elif a_to_g_taxonomy_layout:
+        taxonomy_rank_indices = {
+            "kingdom": normalised_taxonomy_headers.get("a"),
+            "phylum": normalised_taxonomy_headers.get("b"),
+            "class_name": normalised_taxonomy_headers.get("c"),
+            "order_name": normalised_taxonomy_headers.get("d"),
+            "family": normalised_taxonomy_headers.get("e"),
+            "genus": normalised_taxonomy_headers.get("f"),
+            "species": normalised_taxonomy_headers.get("g"),
+        }
     else:
         taxonomy_rank_indices = {
             "kingdom": normalised_taxonomy_headers.get("kingdom"),
             "phylum": (
                 normalised_taxonomy_headers.get("phylum")
-                or normalised_taxonomy_headers.get("philum")
+                if "phylum" in normalised_taxonomy_headers
+                else normalised_taxonomy_headers.get("philum")
             ),
             "class_name": normalised_taxonomy_headers.get("class"),
             "order_name": normalised_taxonomy_headers.get("order"),
@@ -582,7 +581,6 @@ def _import_biodiversity_streaming(
             "species": normalised_taxonomy_headers.get("species"),
         }
 
-
     def clean_taxonomy_rank(
         value,
         expected_prefix: str,
@@ -590,7 +588,38 @@ def _import_biodiversity_streaming(
         if value is None:
             return None
 
-        raw = str(value).strip()
+        # Excel may coerce taxonomy labels such as "11-24" into a
+        # month/year date. For taxonomy cells, repair that representation.
+        if isinstance(value, datetime):
+            if (
+                value.day == 1
+                and value.hour == 0
+                and value.minute == 0
+                and value.second == 0
+                and value.microsecond == 0
+            ):
+                raw = f"{value.month}-{value.year % 100:02d}"
+            else:
+                raw = str(value).strip()
+        elif isinstance(value, date):
+            if value.day == 1:
+                raw = f"{value.month}-{value.year % 100:02d}"
+            else:
+                raw = str(value).strip()
+        else:
+            raw = str(value).strip()
+
+        # Also repair ISO text produced by an earlier import of an
+        # Excel-coerced month/year taxonomy token.
+        match = re.fullmatch(
+            r"(\d{4})-(\d{2})-01(?:[ T]00:00:00(?:\.0+)?)?",
+            raw,
+        )
+        if match:
+            year = int(match.group(1))
+            month = int(match.group(2))
+            if 1 <= month <= 12:
+                raw = f"{month}-{year % 100:02d}"
 
         if not raw:
             return None
@@ -636,7 +665,6 @@ def _import_biodiversity_streaming(
 
         return raw
 
-
     def taxonomy_for_row(row) -> dict:
         prefix_by_rank = {
             "kingdom": "k",
@@ -662,7 +690,6 @@ def _import_biodiversity_streaming(
 
         return result
 
-
     def taxonomy_source_for_row(row) -> dict:
         """
         Preserve the original taxonomy fields exactly as supplied.
@@ -672,14 +699,9 @@ def _import_biodiversity_streaming(
         for idx, column_name in taxonomy_cols:
             value = row[idx] if idx < len(row) else None
 
-            result[str(column_name)] = (
-                None
-                if value is None
-                else str(value)
-            )
+            result[str(column_name)] = None if value is None else str(value)
 
         return result
-
 
     def taxonomy_raw_for_row(row) -> str | None:
         """
@@ -703,8 +725,7 @@ def _import_biodiversity_streaming(
                 values.append(text)
 
         return ";".join(values) or None
-        
-    
+
     # ------------------------------------------------------------------
     # Locate an explicit Phylum column
     # ------------------------------------------------------------------
@@ -721,35 +742,28 @@ def _import_biodiversity_streaming(
             phylum_col_idx = idx
             break
 
-    # Support your earlier legacy layout:
-    #
-    #   Taxonomy | A | B | C | D | E | F
-    #
-    # where:
-    #   Taxonomy = Kingdom
-    #   A        = Phylum
-    #   B        = Class
-    #   ...
+    # Support compact taxonomy layouts.
     if phylum_col_idx is None:
         normalized_headers = {
-            normalize_header(column_name): idx
-            for idx, column_name in taxonomy_cols
+            normalize_header(column_name): idx for idx, column_name in taxonomy_cols
         }
 
-        if (
-            "taxonomy" in normalized_headers
-            and "a" in normalized_headers
+        # Taxonomy | A | ... | F
+        # Taxonomy = Kingdom, A = Phylum
+        if "taxonomy" in normalized_headers and all(
+            column in normalized_headers for column in ("a", "b", "c", "d", "e", "f")
         ):
             phylum_col_idx = normalized_headers["a"]
+
+        # A | B | ... | G
+        # A = Kingdom, B = Phylum
+        elif all(column in normalized_headers for column in ("a", "b", "c", "d", "e", "f", "g")):
+            phylum_col_idx = normalized_headers["b"]
 
     def extract_phylum(row) -> str:
         # Preferred route: a dedicated Phylum column.
         if phylum_col_idx is not None:
-            value = (
-                row[phylum_col_idx]
-                if phylum_col_idx < len(row)
-                else None
-            )
+            value = row[phylum_col_idx] if phylum_col_idx < len(row) else None
 
             cleaned = clean_phylum_value(value)
 
@@ -820,19 +834,9 @@ def _import_biodiversity_streaming(
     # number of markers (normally one per file, but the importer supports
     # both 16S and ITS columns if present).
     #
-    sample_count = len(
-        {
-            item["sample_id"]
-            for item in sample_cols
-        }
-    )
+    sample_count = len({item["sample_id"] for item in sample_cols})
 
-    marker_count = len(
-        {
-            item["marker"]
-            for item in sample_cols
-        }
-    )
+    marker_count = len({item["marker"] for item in sample_cols})
 
     raw_sample_rows = [
         (
@@ -1066,11 +1070,7 @@ def _import_biodiversity_streaming(
                 rows_iter,
                 start=2,
             ):
-                otu_id = (
-                    ""
-                    if row[otu_col_idx] is None
-                    else str(row[otu_col_idx]).strip()
-                )
+                otu_id = "" if row[otu_col_idx] is None else str(row[otu_col_idx]).strip()
 
                 if not otu_id:
                     continue
@@ -1112,11 +1112,7 @@ def _import_biodiversity_streaming(
                 for sample_info in sample_cols:
                     idx = sample_info["idx"]
 
-                    value = (
-                        row[idx]
-                        if idx < len(row)
-                        else None
-                    )
+                    value = row[idx] if idx < len(row) else None
 
                     count = to_float_or_none(value)
 
@@ -1141,10 +1137,7 @@ def _import_biodiversity_streaming(
                         )
                     )
 
-                    if (
-                        len(abundance_batch)
-                        >= ABUNDANCE_BATCH_SIZE
-                    ):
+                    if len(abundance_batch) >= ABUNDANCE_BATCH_SIZE:
                         flush_abundances()
 
                     nonzero_values += 1
@@ -1174,8 +1167,7 @@ def _import_biodiversity_streaming(
 
             if not aggregates:
                 raise ValueError(
-                    "No non-zero biodiversity abundances "
-                    "were found in the uploaded file."
+                    "No non-zero biodiversity abundances were found in the uploaded file."
                 )
 
             # ----------------------------------------------------------
@@ -1184,12 +1176,8 @@ def _import_biodiversity_streaming(
             for (
                 sample_id,
                 marker,
-            ), taxon_counts in sorted(
-                aggregates.items()
-            ):
-                total_count = sum(
-                    taxon_counts.values()
-                )
+            ), taxon_counts in sorted(aggregates.items()):
+                total_count = sum(taxon_counts.values())
 
                 if total_count <= 0:
                     continue
@@ -1199,11 +1187,7 @@ def _import_biodiversity_streaming(
                     key=lambda item: item[1],
                     reverse=True,
                 ):
-                    relative_abundance_pct = (
-                        read_count
-                        / total_count
-                        * 100.0
-                    )
+                    relative_abundance_pct = read_count / total_count * 100.0
 
                     aggregate_rows.append(
                         (
@@ -1220,10 +1204,7 @@ def _import_biodiversity_streaming(
                     )
 
             if not aggregate_rows:
-                raise ValueError(
-                    "No Phylum-level statistics "
-                    "could be produced."
-                )
+                raise ValueError("No Phylum-level statistics could be produced.")
 
             # ----------------------------------------------------------
             # 6. Replace the complete aggregate result for every
@@ -1260,6 +1241,7 @@ def _import_biodiversity_streaming(
                     read_count,
                     relative_abundance_pct,
                     source_upload_id,
+                    uploaded_at,
                     uploaded_by,
                     source_file
                 )
@@ -1322,16 +1304,11 @@ def _import_biodiversity_streaming(
         )
 
     except Exception as exc:
-        log.exception(
-            "Raw + Phylum biodiversity import failed"
-        )
+        log.exception("Raw + Phylum biodiversity import failed")
 
         abort(
             500,
-            description=(
-                "Postgres biodiversity import failed: "
-                f"{exc}"
-            ),
+            description=(f"Postgres biodiversity import failed: {exc}"),
         )
 
     finally:
@@ -1357,13 +1334,7 @@ def _import_biodiversity_streaming(
         nonzero_values,
         inserted,
         sample_count,
-        sorted(
-            {
-                marker
-                for _sample_id, marker
-                in affected_sample_markers
-            }
-        ),
+        sorted({marker for _sample_id, marker in affected_sample_markers}),
         raw_archive_object,
     )
 
@@ -1374,4 +1345,3 @@ def _import_biodiversity_streaming(
 # retained so existing web.py imports/calls can be migrated gradually.
 looks_like_biodiversity_file = _looks_like_biodiversity_file
 import_biodiversity_file = _import_biodiversity_streaming
-
