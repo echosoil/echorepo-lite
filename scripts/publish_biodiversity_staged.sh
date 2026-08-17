@@ -211,31 +211,36 @@ case "$ACTION" in
             echorepo-lite:latest \
             -c '
 from pathlib import Path
+
 from echorepo.services.biodiversity_raw_exports import (
-    build_biodiversity_raw_bundle,
+    write_biodiversity_raw_bundle,
 )
 
-print("[1/3] Querying PostgreSQL and constructing bundle...", flush=True)
-
-bundle = build_biodiversity_raw_bundle()
+output = Path("/out/biodiversity_raw.zip")
 
 print(
-    "[2/3] Bundle generated:",
-    f"{len(bundle.zip_bytes) / 1024 / 1024:.1f} MB",
+    "[1/2] Streaming PostgreSQL biodiversity data to ZIP...",
     flush=True,
 )
 
-tmp = Path("/out/biodiversity_raw.zip.part")
-final = Path("/out/biodiversity_raw.zip")
+row_counts = write_biodiversity_raw_bundle(
+    output,
+    progress=lambda message: print(message, flush=True),
+)
 
-tmp.write_bytes(bundle.zip_bytes)
-tmp.replace(final)
-
-print("[3/3] Written:", final, flush=True)
+print(
+    "[2/2] Export complete:",
+    output,
+    flush=True,
+)
 
 print("Rows:", flush=True)
-for filename, count in bundle.row_counts.items():
-    print(f"  {filename}: {count}", flush=True)
+
+for filename, count in row_counts.items():
+    print(
+        f"  {filename}: {count}",
+        flush=True,
+    )
 ' 2>&1 | tee "$LOG"
 
         echo
