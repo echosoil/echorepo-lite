@@ -181,6 +181,75 @@ def _taxonomy_tuple(row: dict[str, Any]) -> tuple[str, ...]:
     return tuple(_normalise_taxonomy_value(row.get(rank)) for rank in TAXONOMY_RANKS)
 
 
+_UNASSIGNED_TAXONOMY_TOKENS = {
+    "no hit",
+    "no hits",
+    "nohit",
+    "unassigned",
+    "unknown",
+}
+
+
+def _normalise_unassigned_token(value: str) -> str:
+    return re.sub(r"[\s_-]+", " ", value.strip().lower())
+
+
+def _is_unassigned_taxonomy(taxonomy: tuple[str, ...]) -> bool:
+    """
+    Return True when the lineage contains no actual taxonomic assignment.
+
+    Examples considered equivalent non-assignments:
+
+        ("", "", "", "", "", "", "")
+        ("No_hit", "", "", "", "", "", "")
+        ("unassigned", "", "", "", "", "", "")
+
+    A partially classified lineage such as
+    ("Bacteria", "unclassified", "", ...) is NOT considered empty/unassigned.
+    """
+    nonempty = [value for value in taxonomy if value.strip()]
+    if not nonempty:
+        return True
+
+    return all(
+        _normalise_unassigned_token(value) in _UNASSIGNED_TAXONOMY_TOKENS for value in nonempty
+    )
+
+
+def _resolve_taxonomy_pair(
+    first: tuple[str, ...],
+    later: tuple[str, ...],
+) -> tuple[str, ...] | None:
+    """
+    Resolve harmless differences between source taxonomies for the same OTU.
+
+    Rules:
+      * exact equality -> keep it;
+      * two non-assignments (blank / No_hit / unassigned / unknown) ->
+        canonical public lineage ("No_hit", "", ...);
+      * one non-assignment and one informative lineage -> keep the informative
+        lineage;
+      * two genuinely different informative lineages -> unresolved (None), so
+        the caller still aborts instead of silently corrupting taxonomy.
+    """
+    if first == later:
+        return first
+
+    first_unassigned = _is_unassigned_taxonomy(first)
+    later_unassigned = _is_unassigned_taxonomy(later)
+
+    if first_unassigned and later_unassigned:
+        return ("No_hit", "", "", "", "", "", "")
+
+    if first_unassigned:
+        return later
+
+    if later_unassigned:
+        return first
+
+    return None
+
+
 def _load_marker_data(
     cur,
     *,
@@ -762,11 +831,17 @@ def _stream_feature_groups(
 
             # Same OTU/feature ID in another/current source.
             if taxonomy != current_taxonomy:
-                raise RuntimeError(
-                    "The same OTU/feature ID maps to different taxonomies across "
-                    f"current {marker} source files: {feature_id!r}. "
-                    f"First={current_taxonomy!r}, later={taxonomy!r}"
+                resolved_taxonomy = _resolve_taxonomy_pair(
+                    current_taxonomy,
+                    taxonomy,
                 )
+                if resolved_taxonomy is None:
+                    raise RuntimeError(
+                        "The same OTU/feature ID maps to different taxonomies "
+                        f"across current {marker} source files: {feature_id!r}. "
+                        f"First={current_taxonomy!r}, later={taxonomy!r}"
+                    )
+                current_taxonomy = resolved_taxonomy
 
             if source_id in current_sources:
                 raise RuntimeError(
