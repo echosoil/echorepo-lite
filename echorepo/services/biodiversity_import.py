@@ -23,6 +23,8 @@ BIODIVERSITY_SAMPLE_RE = re.compile(
     re.IGNORECASE,
 )
 
+BIODIVERSITY_MIN_RELATIVE_ABUNDANCE_PCT = 1.0
+
 
 def _normalise_biodiversity_header(value) -> str:
     return re.sub(
@@ -635,6 +637,19 @@ def _import_biodiversity_streaming(
         }:
             return None
 
+        normalized_unassigned = re.sub(
+            r"[\s_-]+",
+            "",
+            raw.lower(),
+        )
+        if normalized_unassigned in {
+            "nohit",
+            "nohits",
+            "unassigned",
+            "unknown",
+        }:
+            return None
+
         # A cell might contain either one value:
         #
         #   p__Ascomycota
@@ -874,6 +889,7 @@ def _import_biodiversity_streaming(
     source_rows = 0
     nonzero_values = 0
     feature_index = 0
+    excluded_unassigned_features = 0
 
     FEATURE_BATCH_SIZE = 5_000
     ABUNDANCE_BATCH_SIZE = 10_000
@@ -1076,14 +1092,23 @@ def _import_biodiversity_streaming(
                     continue
 
                 source_rows += 1
-                feature_index += 1
 
                 taxonomy = taxonomy_for_row(row)
+
+                # Completely unassigned/no-hit OTUs are not part of the
+                # structured biodiversity dataset. The untouched original
+                # source remains archived in MinIO for provenance.
+                if not any(taxonomy.values()):
+                    excluded_unassigned_features += 1
+                    continue
+
+                feature_index += 1
+
                 taxonomy_source = taxonomy_source_for_row(row)
                 taxonomy_raw = taxonomy_raw_for_row(row)
 
-                # Preserve every feature, including features that happen
-                # to have zero abundance in all sample columns.
+                # Preserve every retained feature, including features that
+                # happen to have zero abundance in all sample columns.
                 feature_batch.append(
                     (
                         upload_id,
@@ -1277,7 +1302,11 @@ def _import_biodiversity_streaming(
                 UPDATE biodiversity_uploads
                 SET
                     source_row_count = %s,
-                    nonzero_value_count = %s,
+                    nonzero_value_count = (
+                        SELECT COUNT(*)
+                        FROM biodiversity_raw_abundance
+                        WHERE upload_id = %s
+                    ),
                     sample_count = %s,
                     marker_count = %s,
                     uploaded_at = now(),
@@ -1286,7 +1315,7 @@ def _import_biodiversity_streaming(
                 """,
                 (
                     source_rows,
-                    nonzero_values,
+                    upload_id,
                     sample_count,
                     marker_count,
                     uploader_id,
@@ -1325,11 +1354,14 @@ def _import_biodiversity_streaming(
 
     log.warning(
         (
-            "BIOUPLOAD: stored raw features=%d, "
+            "BIOUPLOAD: source_rows=%d, stored_raw_features=%d, "
+            "excluded_unassigned_features=%d, "
             "nonzero_values=%d, aggregate_rows=%d, "
             "samples=%d, markers=%s, raw_archive=%s"
         ),
         source_rows,
+        feature_index,
+        excluded_unassigned_features,
         nonzero_values,
         inserted,
         sample_count,
@@ -1338,6 +1370,577 @@ def _import_biodiversity_streaming(
     )
 
     return inserted
+
+
+def finalize_biodiversity_global_filter(
+    min_relative_abundance_pct: float = (BIODIVERSITY_MIN_RELATIVE_ABUNDANCE_PCT),
+) -> dict[str, int | float]:
+    """Finalize the current biodiversity dataset after a batch of imports.
+
+    The filter is GLOBAL across all current sample columns:
+
+      * completely unassigned/no-hit OTUs are removed;
+      * an OTU is removed only when it stays strictly below the threshold in
+        every current sample;
+      * an OTU reaching the threshold in at least one current sample is kept;
+      * current Phylum aggregates and percentages are rebuilt afterwards.
+
+    This must be called after the complete batch of source files has been
+    imported. Calling it after every individual plate/source would make the
+    cross-source rule depend on import order.
+
+    Original archived source files and biodiversity_uploads provenance remain
+    untouched, so the structured representation can be rebuilt if necessary.
+    """
+    if not 0 < min_relative_abundance_pct < 100:
+        raise ValueError("min_relative_abundance_pct must be between 0 and 100")
+
+    log = logging.getLogger(__name__)
+
+    with get_pg_conn() as conn, conn.cursor() as cur:
+        # A current sample/marker must resolve to exactly one source upload.
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM (
+                SELECT
+                    UPPER(sample_id) AS sample_id,
+                    UPPER(marker) AS marker
+                FROM sample_taxon_abundance
+                WHERE source_upload_id IS NOT NULL
+                GROUP BY UPPER(sample_id), UPPER(marker)
+                HAVING COUNT(DISTINCT source_upload_id) > 1
+            ) AS conflicts
+            """
+        )
+        if int(cur.fetchone()[0]) != 0:
+            raise RuntimeError(
+                "Some current sample/marker pairs point to more than one "
+                "source_upload_id; global biodiversity cleanup aborted."
+            )
+
+        # Temporary tables are transaction-local and disappear on commit.
+        cur.execute(
+            """
+            CREATE TEMP TABLE _bio_current_sources ON COMMIT DROP AS
+            SELECT
+                UPPER(sample_id) AS sample_id,
+                UPPER(marker) AS marker,
+                MIN(source_upload_id) AS source_upload_id
+            FROM sample_taxon_abundance
+            WHERE source_upload_id IS NOT NULL
+            GROUP BY UPPER(sample_id), UPPER(marker)
+            """
+        )
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX ON _bio_current_sources (
+                sample_id,
+                marker
+            )
+            """
+        )
+
+        cur.execute(
+            """
+            CREATE TEMP TABLE _bio_current_sample_columns ON COMMIT DROP AS
+            SELECT
+                current.sample_id,
+                current.marker,
+                current.source_upload_id AS upload_id,
+                rs.sample_index
+            FROM _bio_current_sources AS current
+            JOIN biodiversity_raw_samples AS rs
+              ON rs.upload_id = current.source_upload_id
+             AND UPPER(rs.sample_id) = current.sample_id
+             AND UPPER(rs.marker) = current.marker
+            """
+        )
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX ON _bio_current_sample_columns (
+                sample_id,
+                marker
+            )
+            """
+        )
+
+        cur.execute("SELECT COUNT(*) FROM _bio_current_sources")
+        expected_samples = int(cur.fetchone()[0])
+        cur.execute("SELECT COUNT(*) FROM _bio_current_sample_columns")
+        resolved_samples = int(cur.fetchone()[0])
+        if expected_samples != resolved_samples:
+            raise RuntimeError(
+                "Could not resolve every current sample/marker to exactly "
+                f"one raw sample column: expected={expected_samples}, "
+                f"resolved={resolved_samples}"
+            )
+
+        # Identify completely unassigned/no-hit feature rows that predate the
+        # importer-side filter.
+        cur.execute(
+            """
+            CREATE TEMP TABLE _bio_unassigned_features ON COMMIT DROP AS
+            SELECT
+                f.upload_id,
+                f.feature_index,
+                f.source_feature_id
+            FROM biodiversity_raw_features AS f
+            WHERE f.upload_id IN (
+                SELECT DISTINCT upload_id
+                FROM _bio_current_sample_columns
+            )
+            AND regexp_replace(
+                    LOWER(BTRIM(COALESCE(f.kingdom, ''))),
+                    '[^a-z0-9]+', '', 'g'
+                ) IN (
+                    '', 'nohit', 'nohits', 'unassigned', 'unknown',
+                    'nan', 'none', 'null', 'na'
+                )
+            AND regexp_replace(
+                    LOWER(BTRIM(COALESCE(f.phylum, ''))),
+                    '[^a-z0-9]+', '', 'g'
+                ) IN (
+                    '', 'nohit', 'nohits', 'unassigned', 'unknown',
+                    'nan', 'none', 'null', 'na'
+                )
+            AND regexp_replace(
+                    LOWER(BTRIM(COALESCE(f.class_name, ''))),
+                    '[^a-z0-9]+', '', 'g'
+                ) IN (
+                    '', 'nohit', 'nohits', 'unassigned', 'unknown',
+                    'nan', 'none', 'null', 'na'
+                )
+            AND regexp_replace(
+                    LOWER(BTRIM(COALESCE(f.order_name, ''))),
+                    '[^a-z0-9]+', '', 'g'
+                ) IN (
+                    '', 'nohit', 'nohits', 'unassigned', 'unknown',
+                    'nan', 'none', 'null', 'na'
+                )
+            AND regexp_replace(
+                    LOWER(BTRIM(COALESCE(f.family, ''))),
+                    '[^a-z0-9]+', '', 'g'
+                ) IN (
+                    '', 'nohit', 'nohits', 'unassigned', 'unknown',
+                    'nan', 'none', 'null', 'na'
+                )
+            AND regexp_replace(
+                    LOWER(BTRIM(COALESCE(f.genus, ''))),
+                    '[^a-z0-9]+', '', 'g'
+                ) IN (
+                    '', 'nohit', 'nohits', 'unassigned', 'unknown',
+                    'nan', 'none', 'null', 'na'
+                )
+            AND regexp_replace(
+                    LOWER(BTRIM(COALESCE(f.species, ''))),
+                    '[^a-z0-9]+', '', 'g'
+                ) IN (
+                    '', 'nohit', 'nohits', 'unassigned', 'unknown',
+                    'nan', 'none', 'null', 'na'
+                )
+            """
+        )
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX ON _bio_unassigned_features (
+                upload_id,
+                feature_index
+            )
+            """
+        )
+
+        # Denominator for the 1% rule: total reads in each current sample after
+        # excluding completely unassigned/no-hit OTUs, but before the 1% filter.
+        cur.execute(
+            """
+            CREATE TEMP TABLE _bio_sample_totals ON COMMIT DROP AS
+            SELECT
+                c.sample_id,
+                c.marker,
+                c.upload_id,
+                c.sample_index,
+                SUM(a.read_count)::double precision AS total_reads
+            FROM _bio_current_sample_columns AS c
+            JOIN biodiversity_raw_abundance AS a
+              ON a.upload_id = c.upload_id
+             AND a.sample_index = c.sample_index
+            LEFT JOIN _bio_unassigned_features AS bad
+              ON bad.upload_id = a.upload_id
+             AND bad.feature_index = a.feature_index
+            WHERE bad.feature_index IS NULL
+            GROUP BY
+                c.sample_id,
+                c.marker,
+                c.upload_id,
+                c.sample_index
+            """
+        )
+
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM _bio_current_sample_columns AS c
+            LEFT JOIN _bio_sample_totals AS t
+              ON t.sample_id = c.sample_id
+             AND t.marker = c.marker
+            WHERE COALESCE(t.total_reads, 0) <= 0
+            """
+        )
+        if int(cur.fetchone()[0]) != 0:
+            raise RuntimeError(
+                "At least one current sample/marker has zero reads after "
+                "removing completely unassigned OTUs; cleanup aborted."
+            )
+
+        # Maximum relative abundance for each OTU ID across every current
+        # sample. Sparse zeroes need no rows: their contribution is 0%.
+        cur.execute(
+            """
+            CREATE TEMP TABLE _bio_feature_max_pct ON COMMIT DROP AS
+            SELECT
+                f.source_feature_id,
+                MAX(
+                    100.0 * a.read_count / t.total_reads
+                )::double precision AS max_relative_abundance_pct
+            FROM _bio_current_sample_columns AS c
+            JOIN _bio_sample_totals AS t
+              ON t.sample_id = c.sample_id
+             AND t.marker = c.marker
+             AND t.upload_id = c.upload_id
+             AND t.sample_index = c.sample_index
+            JOIN biodiversity_raw_abundance AS a
+              ON a.upload_id = c.upload_id
+             AND a.sample_index = c.sample_index
+            JOIN biodiversity_raw_features AS f
+              ON f.upload_id = a.upload_id
+             AND f.feature_index = a.feature_index
+            LEFT JOIN _bio_unassigned_features AS bad
+              ON bad.upload_id = f.upload_id
+             AND bad.feature_index = f.feature_index
+            WHERE bad.feature_index IS NULL
+            GROUP BY f.source_feature_id
+            """
+        )
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX ON _bio_feature_max_pct (
+                source_feature_id
+            )
+            """
+        )
+
+        # If an OTU reaches the threshold in ANY current sample, retain every
+        # occurrence of that OTU in the current structured dataset.
+        cur.execute(
+            """
+            CREATE TEMP TABLE _bio_low_features ON COMMIT DROP AS
+            SELECT
+                f.upload_id,
+                f.feature_index,
+                f.source_feature_id
+            FROM biodiversity_raw_features AS f
+            LEFT JOIN _bio_feature_max_pct AS pct
+              ON pct.source_feature_id = f.source_feature_id
+            LEFT JOIN _bio_unassigned_features AS unassigned
+              ON unassigned.upload_id = f.upload_id
+             AND unassigned.feature_index = f.feature_index
+            WHERE f.upload_id IN (
+                SELECT DISTINCT upload_id
+                FROM _bio_current_sample_columns
+            )
+              AND unassigned.feature_index IS NULL
+              AND COALESCE(
+                    pct.max_relative_abundance_pct,
+                    0.0
+                  ) < %s
+            """,
+            (float(min_relative_abundance_pct),),
+        )
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX ON _bio_low_features (
+                upload_id,
+                feature_index
+            )
+            """
+        )
+
+        cur.execute(
+            """
+            CREATE TEMP TABLE _bio_features_to_remove ON COMMIT DROP AS
+            SELECT
+                upload_id,
+                feature_index,
+                source_feature_id,
+                'unassigned'::text AS reason
+            FROM _bio_unassigned_features
+
+            UNION ALL
+
+            SELECT
+                upload_id,
+                feature_index,
+                source_feature_id,
+                'below_threshold_everywhere'::text AS reason
+            FROM _bio_low_features
+            """
+        )
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX ON _bio_features_to_remove (
+                upload_id,
+                feature_index
+            )
+            """
+        )
+
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM _bio_features_to_remove
+            WHERE reason = 'unassigned'
+            """
+        )
+        unassigned_features = int(cur.fetchone()[0])
+
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM _bio_features_to_remove
+            WHERE reason = 'below_threshold_everywhere'
+            """
+        )
+        low_features = int(cur.fetchone()[0])
+
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM biodiversity_raw_abundance AS a
+            JOIN _bio_features_to_remove AS bad
+              ON bad.upload_id = a.upload_id
+             AND bad.feature_index = a.feature_index
+            """
+        )
+        abundance_rows = int(cur.fetchone()[0])
+
+        # Never allow the filter to erase an entire current sample.
+        cur.execute(
+            """
+            CREATE TEMP TABLE _bio_retained_sample_totals ON COMMIT DROP AS
+            SELECT
+                c.sample_id,
+                c.marker,
+                SUM(a.read_count)::double precision AS retained_reads
+            FROM _bio_current_sample_columns AS c
+            JOIN biodiversity_raw_abundance AS a
+              ON a.upload_id = c.upload_id
+             AND a.sample_index = c.sample_index
+            LEFT JOIN _bio_features_to_remove AS bad
+              ON bad.upload_id = a.upload_id
+             AND bad.feature_index = a.feature_index
+            WHERE bad.feature_index IS NULL
+            GROUP BY c.sample_id, c.marker
+            """
+        )
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM _bio_current_sample_columns AS c
+            LEFT JOIN _bio_retained_sample_totals AS retained
+              ON retained.sample_id = c.sample_id
+             AND retained.marker = c.marker
+            WHERE COALESCE(retained.retained_reads, 0) <= 0
+            """
+        )
+        if int(cur.fetchone()[0]) != 0:
+            raise RuntimeError(
+                "The global biodiversity threshold would leave at least "
+                "one current sample/marker with zero retained reads; "
+                "cleanup aborted."
+            )
+
+        # Delete FK children before raw feature rows.
+        cur.execute(
+            """
+            DELETE FROM biodiversity_raw_abundance AS a
+            USING _bio_features_to_remove AS bad
+            WHERE a.upload_id = bad.upload_id
+              AND a.feature_index = bad.feature_index
+            """
+        )
+        cur.execute(
+            """
+            DELETE FROM biodiversity_raw_features AS f
+            USING _bio_features_to_remove AS bad
+            WHERE f.upload_id = bad.upload_id
+              AND f.feature_index = bad.feature_index
+            """
+        )
+
+        # Refresh current upload non-zero counts. source_row_count intentionally
+        # remains the original source-row count for provenance.
+        cur.execute(
+            """
+            UPDATE biodiversity_uploads AS bu
+            SET nonzero_value_count = counts.nonzero_value_count
+            FROM (
+                SELECT
+                    current_upload.upload_id,
+                    COUNT(a.feature_index)::integer
+                        AS nonzero_value_count
+                FROM (
+                    SELECT DISTINCT upload_id
+                    FROM _bio_current_sample_columns
+                ) AS current_upload
+                LEFT JOIN biodiversity_raw_abundance AS a
+                  ON a.upload_id = current_upload.upload_id
+                GROUP BY current_upload.upload_id
+            ) AS counts
+            WHERE counts.upload_id = bu.upload_id
+            """
+        )
+
+        # Rebuild all current Phylum aggregates so the percentages match the
+        # retained OTU-level data.
+        cur.execute(
+            """
+            DELETE FROM sample_taxon_abundance AS sta
+            USING _bio_current_sources AS current
+            WHERE UPPER(sta.sample_id) = current.sample_id
+              AND UPPER(sta.marker) = current.marker
+              AND LOWER(sta.level) = 'phylum'
+            """
+        )
+
+        cur.execute(
+            """
+            WITH phylum_counts AS (
+                SELECT
+                    current.sample_id,
+                    current.marker,
+                    current.source_upload_id,
+                    CASE
+                        WHEN regexp_replace(
+                            LOWER(BTRIM(COALESCE(f.phylum, ''))),
+                            '[^a-z0-9]+', '', 'g'
+                        ) IN (
+                            '', 'nohit', 'nohits', 'unassigned',
+                            'unknown', 'unclassified', 'uncultured',
+                            'nan', 'none', 'null', 'na'
+                        )
+                            THEN 'Unclassified'
+                        ELSE BTRIM(f.phylum)
+                    END AS taxon,
+                    SUM(a.read_count)::double precision AS read_count
+                FROM _bio_current_sources AS current
+                JOIN biodiversity_raw_samples AS rs
+                  ON rs.upload_id = current.source_upload_id
+                 AND UPPER(rs.sample_id) = current.sample_id
+                 AND UPPER(rs.marker) = current.marker
+                JOIN biodiversity_raw_abundance AS a
+                  ON a.upload_id = rs.upload_id
+                 AND a.sample_index = rs.sample_index
+                JOIN biodiversity_raw_features AS f
+                  ON f.upload_id = a.upload_id
+                 AND f.feature_index = a.feature_index
+                GROUP BY
+                    current.sample_id,
+                    current.marker,
+                    current.source_upload_id,
+                    CASE
+                        WHEN regexp_replace(
+                            LOWER(BTRIM(COALESCE(f.phylum, ''))),
+                            '[^a-z0-9]+', '', 'g'
+                        ) IN (
+                            '', 'nohit', 'nohits', 'unassigned',
+                            'unknown', 'unclassified', 'uncultured',
+                            'nan', 'none', 'null', 'na'
+                        )
+                            THEN 'Unclassified'
+                        ELSE BTRIM(f.phylum)
+                    END
+            ),
+            with_totals AS (
+                SELECT
+                    counts.*,
+                    SUM(counts.read_count) OVER (
+                        PARTITION BY counts.sample_id, counts.marker
+                    ) AS total_count
+                FROM phylum_counts AS counts
+            )
+            INSERT INTO sample_taxon_abundance (
+                sample_id,
+                marker,
+                level,
+                taxon,
+                read_count,
+                relative_abundance_pct,
+                source_upload_id,
+                uploaded_by,
+                source_file
+            )
+            SELECT
+                totals.sample_id,
+                totals.marker,
+                'Phylum',
+                totals.taxon,
+                totals.read_count,
+                totals.read_count / totals.total_count * 100.0,
+                totals.source_upload_id,
+                bu.uploaded_by,
+                bu.original_filename
+            FROM with_totals AS totals
+            JOIN biodiversity_uploads AS bu
+              ON bu.upload_id = totals.source_upload_id
+            WHERE totals.read_count > 0
+              AND totals.total_count > 0
+            ON CONFLICT (
+                sample_id,
+                marker,
+                level,
+                taxon
+            )
+            DO UPDATE SET
+                read_count = EXCLUDED.read_count,
+                relative_abundance_pct =
+                    EXCLUDED.relative_abundance_pct,
+                source_upload_id = EXCLUDED.source_upload_id,
+                uploaded_at = now(),
+                uploaded_by = EXCLUDED.uploaded_by,
+                source_file = EXCLUDED.source_file
+            """
+        )
+
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM sample_taxon_abundance
+            WHERE LOWER(level) = 'phylum'
+            """
+        )
+        aggregate_rows = int(cur.fetchone()[0])
+
+    log.warning(
+        (
+            "BIODIVERSITY GLOBAL FILTER: threshold=%.4f%%, "
+            "unassigned_features=%d, low_features=%d, "
+            "abundance_rows_removed=%d, current_phylum_rows=%d"
+        ),
+        min_relative_abundance_pct,
+        unassigned_features,
+        low_features,
+        abundance_rows,
+        aggregate_rows,
+    )
+
+    return {
+        "threshold_pct": float(min_relative_abundance_pct),
+        "unassigned_features_removed": unassigned_features,
+        "below_threshold_features_removed": low_features,
+        "abundance_rows_removed": abundance_rows,
+        "current_phylum_rows": aggregate_rows,
+    }
 
 
 # Public aliases for callers outside this module. The underscored names are
