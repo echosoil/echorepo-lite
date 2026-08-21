@@ -21,7 +21,7 @@ from flask_babel import ngettext as _real_ngettext
 from .analytics import hash_ip, log_usage_event
 from .auth.routes import auth_bp, init_oauth
 from .config import settings
-from .i18n import BASE_LABEL_MSGIDS, init_i18n, lang_bp
+from .i18n import BASE_LABEL_MSGIDS, SUPPORTED_LOCALES, LOCALE_FLAGS, init_i18n, lang_bp
 from .routes import data_api
 from .routes.api import api_bp
 from .routes.errors import errors_bp
@@ -89,19 +89,31 @@ def _canon_locale(lang: str) -> str:
 def _default_flags(codes):
     base = {
         "en": "gb",
+        "bg": "bg",
         "cs": "cz",
+        "da": "dk",
         "de": "de",
         "el": "gr",
         "es": "es",
+        "et": "ee",
         "fi": "fi",
         "fr": "fr",
+        "hr": "hr",
+        "hu": "hu",
         "it": "it",
+        "lb": "lu",
+        "lt": "lt",
+        "lv": "lv",
+        "nb": "no",
         "nl": "nl",
         "pl": "pl",
         "pt": "pt",
         "ro": "ro",
         "sk": "sk",
+        "sl": "si",
+        "sv": "se",
     }
+
     out = dict(base)
     for c in codes:
         out.setdefault(c, "gb")
@@ -252,14 +264,6 @@ def create_app() -> Flask:
     if "jinja2.ext.i18n" not in app.jinja_env.extensions:
         app.jinja_env.add_extension("jinja2.ext.i18n")
     app.register_blueprint(lang_bp)  # /set-lang/<code>
-
-    # Supported locales & flags (from settings or defaults)
-    SUPPORTED_LOCALES = getattr(
-        settings,
-        "SUPPORTED_LOCALES",
-        ["en", "cs", "de", "el", "es", "fi", "fr", "it", "nl", "pl", "pt", "ro", "sk"],
-    )
-    LOCALE_FLAGS = getattr(settings, "LOCALE_FLAGS", _default_flags(SUPPORTED_LOCALES))
 
     # ---- Override-aware gettext for templates (incl. {% trans %}) ----
     def _gettext_with_overrides(msgid, **kwargs):
