@@ -16,17 +16,14 @@ LOG_DIR="$WORK_DIR/logs"
 
 SOURCE_ZIP="$SOURCE_DIR/biodiversity_raw.zip"
 
-# Change this if your actual filename is publish_biodiversity_zenodo.py
 PUBLISHER="${BIODIVERSITY_PUBLISHER:-tools/publish_biodiversity_to_zenodo.py}"
-
 METADATA_CONFIG="${BIODIVERSITY_METADATA_CONFIG:-metadata/biodiversity/echorepo_biodiversity_columns.json}"
-
 
 # Resource limit for the expensive export job.
 EXPORT_CPUS="${EXPORT_CPUS:-1.0}"
 EXPORT_MEMORY="${EXPORT_MEMORY:-4g}"
 
-# Production Docker network created by COMPOSE_PROJECT_NAME=echorepo_prod
+# Docker network used by the app/PostgreSQL deployment.
 DOCKER_NETWORK="${DOCKER_NETWORK:-echorepo_dev_default}"
 
 mkdir -p \
@@ -44,6 +41,27 @@ set -a
 # shellcheck disable=SC1090
 source "$ZENODO_ENV_FILE"
 set +a
+
+# Zenodo publication layout:
+#   archive -> biodiversity_raw.zip + file.json
+#   files   -> biodiversity_16S.csv + biodiversity_ITS.csv
+#              + biodiversity_taxonomy.csv + file.json
+#   both    -> all of the above
+#
+# Resolve this AFTER sourcing .env_zenodo_biodiversity so the mode can be
+# configured there as well as on the command line/environment.
+PUBLISH_MODE="${BIODIVERSITY_PUBLISH_MODE:-archive}"
+SOURCE_ARCHIVE_NAME="${BIODIVERSITY_SOURCE_ARCHIVE_NAME:-biodiversity_raw.zip}"
+
+case "$PUBLISH_MODE" in
+    archive|files|both)
+        ;;
+    *)
+        echo "ERROR: BIODIVERSITY_PUBLISH_MODE must be archive, files, or both." >&2
+        echo "Got: $PUBLISH_MODE" >&2
+        exit 2
+        ;;
+esac
 
 
 timestamp() {
@@ -65,13 +83,47 @@ resources() {
     echo
     echo "-- DOCKER --"
     docker stats --no-stream \
-        --format \
-        'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}' \
+        --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}' \
         echorepo_dev-echorepo-lite-1 \
         echorepo_dev-postgres-1 \
         2>/dev/null || true
 
     echo
+}
+
+
+publication_layout() {
+    case "$PUBLISH_MODE" in
+        archive)
+            cat <<EOF
+Zenodo publication mode: archive
+Expected Zenodo files:
+  $SOURCE_ARCHIVE_NAME
+  ${BIODIVERSITY_FILE_JSON_NAME:-file.json}
+EOF
+            ;;
+        files)
+            cat <<EOF
+Zenodo publication mode: files
+Expected Zenodo files:
+  biodiversity_16S.csv
+  biodiversity_ITS.csv
+  biodiversity_taxonomy.csv
+  ${BIODIVERSITY_FILE_JSON_NAME:-file.json}
+EOF
+            ;;
+        both)
+            cat <<EOF
+Zenodo publication mode: both
+Expected Zenodo files:
+  biodiversity_16S.csv
+  biodiversity_ITS.csv
+  biodiversity_taxonomy.csv
+  $SOURCE_ARCHIVE_NAME
+  ${BIODIVERSITY_FILE_JSON_NAME:-file.json}
+EOF
+            ;;
+    esac
 }
 
 
@@ -100,42 +152,29 @@ require_checkpoint() {
 common_args=(
     --env-file "$ZENODO_ENV_FILE"
 
-    # IMPORTANT:
-    # Reuse the already-created bundle.
-    # Do NOT ask the API to regenerate it.
+    # Reuse the already-created bundle. Do NOT ask the API to regenerate it.
     --source-file "$SOURCE_ZIP"
+
+    --publish-mode "$PUBLISH_MODE"
+    --source-archive-name "$SOURCE_ARCHIVE_NAME"
 
     --metadata-config "$METADATA_CONFIG"
 
-    --file-json-name \
-    "${BIODIVERSITY_FILE_JSON_NAME:-file.json}"
+    --file-json-name "${BIODIVERSITY_FILE_JSON_NAME:-file.json}"
 
-    --log-file \
-    "${BIODIVERSITY_ZENODO_LOG_FILE:-
-      data/zenodo_biodiversity_sync_log.csv}"
+    --log-file "${BIODIVERSITY_ZENODO_LOG_FILE:-data/zenodo_biodiversity_sync_log.csv}"
 
-    --title \
-    "${BIODIVERSITY_ZENODO_TITLE:-
-      ECHOREPO Microbial Biodiversity Source Data}"
+    --title "${BIODIVERSITY_ZENODO_TITLE:-ECHOREPO Microbial Biodiversity Source Data}"
 
-    --description \
-    "${BIODIVERSITY_ZENODO_DESCRIPTION:-
-      OTU/feature-level microbial biodiversity data associated with \
-ECHOREPO soil samples, preserving OTU-by-sample read-count matrices \
-for 16S and ITS marker datasets together with normalized taxonomy.}"
+    --description "${BIODIVERSITY_ZENODO_DESCRIPTION:-OTU/feature-level microbial biodiversity data associated with ECHOREPO soil samples, preserving OTU-by-sample read-count matrices for 16S and ITS marker datasets together with normalized taxonomy.}"
 
-    --creator \
-    "${ZENODO_CREATOR:-
-      Osychenko, Oleg|Quanta Systems, S.L.}"
+    --creator "${ZENODO_CREATOR:-Osychenko, Oleg|Quanta Systems, S.L.}"
 
-    --grant \
-    "${ZENODO_GRANT:-101112869}"
+    --grant "${ZENODO_GRANT:-101112869}"
 
-    --copyright \
-    "${ZENODO_COPYRIGHT:-© 2026 ECHO Horizon Project}"
+    --copyright "${ZENODO_COPYRIGHT:-© 2026 ECHO Horizon Project}"
 
-    --keyword \
-    "soil,biodiversity,microbial-biodiversity,16S,ITS,OTU,citizen-science"
+    --keyword "soil,biodiversity,microbial-biodiversity,16S,ITS,OTU,citizen-science"
 )
 
 
@@ -144,6 +183,9 @@ case "$ACTION" in
     status)
         echo "WORK_DIR:"
         echo "  $WORK_DIR"
+
+        echo
+        publication_layout
 
         echo
         echo "CHECKPOINTS:"
@@ -179,13 +221,14 @@ case "$ACTION" in
         resources
 
         rm -f \
-            "$SOURCE_ZIP" \
             "$SOURCE_ZIP.part" \
-            "$CHECKPOINT_DIR/01_export.ok"
+            "$CHECKPOINT_DIR/01_export.ok" \
+            "$CHECKPOINT_DIR/02_prepare.ok" \
+            "$CHECKPOINT_DIR/03_publish.ok"
 
-        # Verify expected production network first.
-        docker network inspect "$DOCKER_NETWORK" \
-            >/dev/null
+        # Keep an existing complete ZIP until the new streaming exporter
+        # atomically replaces it on success.
+        docker network inspect "$DOCKER_NETWORK" >/dev/null
 
         LOG="$LOG_DIR/01_export_$(date +%Y%m%d_%H%M%S).log"
 
@@ -290,6 +333,9 @@ for filename, count in row_counts.items():
         ls -lh "$SOURCE_ZIP"
 
         echo
+        publication_layout
+
+        echo
         echo "NO request to /biodiversity/raw/all.zip will occur."
         echo
 
@@ -311,12 +357,14 @@ for filename, count in row_counts.items():
             2>&1 | tee "$LOG"
 
         echo
-        echo "Prepared files:"
+        echo "Prepared Zenodo files:"
         ls -lh "$PREPARED_DIR"
 
         echo
         echo "Checksums:"
-        sha256sum "$PREPARED_DIR"/* \
+        find "$PREPARED_DIR" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
             | tee "$PREPARED_DIR/SHA256SUMS"
 
         checkpoint "02_prepare"
@@ -327,6 +375,9 @@ for filename, count in row_counts.items():
         echo "================ STOP POINT ================"
         echo
         echo "Zenodo has NOT been modified."
+        echo
+        echo
+        publication_layout
         echo
         echo "Inspect:"
         echo
@@ -359,7 +410,10 @@ for filename, count in row_counts.items():
         fi
 
         echo
-        echo "Publishing this exact source:"
+        publication_layout
+
+        echo
+        echo "Publishing from this exact source ZIP:"
         ls -lh "$SOURCE_ZIP"
         sha256sum "$SOURCE_ZIP"
 
@@ -410,6 +464,9 @@ for filename, count in row_counts.items():
         echo "  CONFIRM_PUBLISH=YES $0 publish"
         echo "  $0 reset-prepare"
         echo "  $0 reset-all"
+        echo
+        echo "Publication mode (default: archive):"
+        echo "  BIODIVERSITY_PUBLISH_MODE=archive|files|both"
         exit 2
         ;;
 esac
