@@ -1,0 +1,975 @@
+# Greek translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-21 15:10+0000\n"
+"PO-Revision-Date: 2025-10-29 13:21+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: el\n"
+"Language-Team: el <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#~ msgid "Export filtered (%(n)s)"
+#~ msgstr "Φίλτρα εξαγωγής (%(n)s)"
+
+#~ msgid "Privacy radius (~±%(km)s km)"
+#~ msgstr "Ακτίνα απορρήτου (~±__%(km)s_ km)"
+
+#~ msgid "It helps us improve EchoSoil."
+#~ msgstr "Μας βοηθά να βελτιώσουμε το EchoSoil."
+
+#~ msgid "Some samples need attention to ensure correct maps and downloads."
+#~ msgstr ""
+#~ "Ορισμένα δείγματα χρειάζονται προσοχή για "
+#~ "να εξασφαλίσουν σωστούς χάρτες και "
+#~ "λήψεις."
+
+#~ msgid "Any country"
+#~ msgstr "Οποιαδήποτε χώρα"
+
+#~ msgid "Copy user key"
+#~ msgstr "Αντιγραφή κλειδιού χρήστη"
+
+#~ msgid "EU-funded"
+#~ msgstr "Χρηματοδοτήσεις ΕΕ"
+
+#~ msgid "EU-funded initiative"
+#~ msgstr "Πρωτοβουλία χρηματοδοτούμενη από την ΕΕ"
+
+#~ msgid "Sign in to export data"
+#~ msgstr "Σύνδεση στα στοιχεία εξαγωγής"
+
+#~ msgid "Expected columns:"
+#~ msgstr "Αναμενόμενες στήλες:"
+
+#~ msgid "Czechia"
+#~ msgstr "Τσεχική Δημοκρατία"
+
+#~ msgid "Germany"
+#~ msgstr "Γερμανία"
+
+#~ msgid "Spain"
+#~ msgstr "Ισπανία"
+
+#~ msgid "Finland"
+#~ msgstr "Φινλανδία"
+
+#~ msgid "France"
+#~ msgstr "Γαλλία"
+
+#~ msgid "United Kingdom"
+#~ msgstr "Ηνωμένο Βασίλειο"
+
+#~ msgid "Greece"
+#~ msgstr "Ελλάδα"
+
+#~ msgid "Italy"
+#~ msgstr "Ιταλία"
+
+#~ msgid "Netherlands"
+#~ msgstr "Κάτω Χώρες"
+
+#~ msgid "Poland"
+#~ msgstr "Πολωνία"
+
+#~ msgid "Portugal"
+#~ msgstr "Πορτογαλία"
+
+#~ msgid "Romania"
+#~ msgstr "Ρουμανία"
+
+#~ msgid "Slovakia"
+#~ msgstr "Σλοβακία"
+
+#~ msgid "OK"
+#~ msgstr "ΕΝΤΆΞΕΙ"
+
+#~ msgid "Approved"
+#~ msgstr "Έγκριση"
+
+#~ msgid "Approval comment"
+#~ msgstr "Παρατηρήσεις έγκρισης"
+
+#~ msgid "Optional: e.g. border sample, algorithm false positive"
+#~ msgstr "Προαιρετικό: π.χ. δείγμα περιγράμματος, ψευδώς θετικός αλγόριθμος"
+
+#~ msgid "Save selected as OK"
+#~ msgstr "Αποθήκευση επιλεγμένου ως OK"
+
+#~ msgid "Privacy radius (~±{km} km)"
+#~ msgstr "Ακτίνα απορρήτου (~±__{km}_ km)"
+
+#~ msgid "Soil pH"
+#~ msgstr "PH εδάφους"
+
+#~ msgid "Acidic (≤5.5)"
+#~ msgstr "Οξύ (≤5.5)"
+
+#~ msgid "Slightly acidic (5.5–6.5)"
+#~ msgstr "Ελαφρώς όξινα (5.5–6.5)"
+
+#~ msgid "Neutral (6.5–7.5)"
+#~ msgstr "Ουδέτερο (6.5–7.5)"
+
+#~ msgid "Slightly alkaline (7.5–8.5)"
+#~ msgstr "Ελαφρώς αλκαλικό (7.5–8.5)"
+
+#~ msgid "Alkaline (≥8.5)"
+#~ msgstr "Αλκαλίνη (≥8. 5)"
+
+#~ msgid "Your samples"
+#~ msgstr "Τα δείγματα σας"
+
+#~ msgid "Other samples"
+#~ msgstr "Άλλα δείγματα"
+
+#~ msgid "Export"
+#~ msgstr "Εξαγωγή"
+
+#~ msgid "Clear"
+#~ msgstr "Καθαρισμός"
+
+#~ msgid "Export filtered ({n})"
+#~ msgstr "Φίλτρα εξαγωγής ({n})"
+
+#~ msgid "Date"
+#~ msgstr "Ημερομηνία"
+
+#~ msgid "QR code"
+#~ msgstr "Κωδικός QR"
+
+#~ msgid "pH"
+#~ msgstr "p Η"
+
+#~ msgid "Colour"
+#~ msgstr "Χρώμα"
+
+#~ msgid "Soil organic matter"
+#~ msgstr "Οργανική ύλη εδάφους"
+
+#~ msgid "Texture"
+#~ msgstr "Υφή"
+
+#~ msgid "Structure"
+#~ msgstr "Δομή"
+
+#~ msgid "Earthworms"
+#~ msgstr "Γαιοσκώληκες"
+
+#~ msgid "Plastic"
+#~ msgstr "Πλαστικό"
+
+#~ msgid "Debris"
+#~ msgstr "Αποβράσματα"
+
+#~ msgid "Contamination"
+#~ msgstr "Μόλυνση"
+
+#~ msgid "Metals"
+#~ msgstr "Μέταλλα"
+
+#~ msgid "Elemental concentrations"
+#~ msgstr "Στοιχειώδεις συγκεντρώσεις"
+
+#~ msgid "Draw a selection rectangle"
+#~ msgstr "Σχεδίαση ορθογωνίου επιλογής"
+
+#~ msgid "Cancel drawing"
+#~ msgstr "Ακύρωση σχεδίου"
+
+#~ msgid "Cancel"
+#~ msgstr "Ακύρωση"
+
+#~ msgid "Delete last point"
+#~ msgstr "Διαγραφή τελευταίου σημείου"
+
+#~ msgid "Click and drag to draw a selection rectangle."
+#~ msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο επιλογής."
+
+#~ msgid "Release mouse to add this rectangle to the selection."
+#~ msgstr "Αφήστε το ποντίκι για να προσθέσετε αυτό το ορθογώνιο στην επιλογή."
+
+#~ msgid "Selection export to a file"
+#~ msgstr "Επιλογή εξαγωγής σε ένα αρχείο"
+
+#~ msgid "Selection export"
+#~ msgstr "Εξαγωγή επιλογής"
+
+#~ msgid "Use selection tool"
+#~ msgstr "Χρήση εργαλείου επιλογής"
+
+#~ msgid "to draw one or more areas"
+#~ msgstr "να σχεδιάσουν έναν ή περισσότερους τομείς"
+
+#~ msgid "Export selection"
+#~ msgstr "Επιλογή εξαγωγής"
+
+#~ msgid "Export selected samples"
+#~ msgstr "Εξαγωγή επιλεγμένων δειγμάτων"
+
+#~ msgid "Clear selection"
+#~ msgstr "Καθαρισμός επιλογής"
+
+#~ msgid "Clear all selection rectangles"
+#~ msgstr "Καθαρισμός όλων των ορθογωνίων επιλογής"
+
+#~ msgid "Draw selection rectangle"
+#~ msgstr "Σχεδίαση ορθογωνίου επιλογής"
+
+#~ msgid "Not available"
+#~ msgstr "Υποθ"
+
+#~ msgid "Download dataset from Zenodo"
+#~ msgstr "Λήψη συνόλου δεδομένων από το Zenodo"
+
+#~ msgid ""
+#~ "Percentage values (%) can be converted"
+#~ " to mg/kg by multiplying by 10000."
+#~ msgstr ""
+#~ "Οι τιμές (%) μπορούν να μετατραπούν "
+#~ "σε mg/kg πολλαπλασιάζοντας με 10000."
+
+#~ msgid "Unit conversion help"
+#~ msgstr "Βοήθεια μετατροπής μονάδας"
+
+#~ msgid "Street map"
+#~ msgstr "Χάρτης οδών"
+
+#~ msgid "Satellite"
+#~ msgstr "Δορυφόρος"
+
+#~ msgid "Password recovery is not configured for this site."
+#~ msgstr "Η ανάκτηση κωδικού πρόσβασης δεν έχει ρυθμιστεί για αυτόν τον ιστότοπο."
+
+#~ msgid "Could not contact the password recovery service."
+#~ msgstr "Αδυναμία επικοινωνίας με την υπηρεσία ανάκτησης κωδικού πρόσβασης."
+
+#~ msgid "If this address is registered, a reset link has been sent."
+#~ msgstr ""
+#~ "Εάν αυτή η διεύθυνση είναι καταχωρημένη,"
+#~ " έχει αποσταλεί ένας σύνδεσμος επαναφοράς."
+
+#~ msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+#~ msgstr ""
+#~ "Νέος κωδικός πρόσβασης μπορεί να "
+#~ "διαρκέσει έως και 30 λεπτά για να"
+#~ " ενεργοποιηθεί στο ECHOREPO."
+
+#~ msgid ""
+#~ "Password recovery is temporarily unavailable."
+#~ " Please contact the organisers."
+#~ msgstr ""
+#~ "Η ανάκτηση κωδικού πρόσβασης δεν είναι"
+#~ " προσωρινά διαθέσιμη. Παρακαλώ επικοινωνήστε "
+#~ "με τους διοργανωτές."
+
+#~ msgid "ECHOrepo — EU Soil Data"
+#~ msgstr "ECHOrepo — ΕΕ Δεδομένα εδάφους"
+
+#~ msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
+#~ msgstr ""
+#~ "ECHOREPO — Δείγματα εδάφους για την "
+#~ "επιστήμη των πολιτών στο πλαίσιο του "
+#~ "προγράμματος ECHO που χρηματοδοτείται από "
+#~ "την ΕΕ"
+
+#~ msgid ""
+#~ "Access and download your soil samples."
+#~ " Part of the EU-funded ECHO "
+#~ "project."
+#~ msgstr ""
+#~ "Πρόσβαση και λήψη δειγμάτων εδάφους σας."
+#~ " Μέρος του προγράμματος ECHO που "
+#~ "χρηματοδοτείται από την ΕΕ."
+
+#~ msgid "Skip to content"
+#~ msgstr "Μετάβαση στο περιεχόμενο"
+
+#~ msgid "Primary"
+#~ msgstr "Πρωτοβάθμια"
+
+#~ msgid "ECHOrepo logo"
+#~ msgstr "Λογότυπο ECHOrepo"
+
+#~ msgid "Toggle navigation"
+#~ msgstr "Εναλλαγή πλοήγησης"
+
+#~ msgid "About"
+#~ msgstr "Σχετικά"
+
+#~ msgid "For Participants"
+#~ msgstr "Για τους συμμετέχοντες"
+
+#~ msgid "Partners"
+#~ msgstr "Εταίροι"
+
+#~ msgid "News & Events"
+#~ msgstr "Νέα & Γεγονότα"
+
+#~ msgid "Resources"
+#~ msgstr "Πόροι"
+
+#~ msgid "Media Kit"
+#~ msgstr "Κιτ πολυμέσων"
+
+#~ msgid "Publications"
+#~ msgstr "Εκδόσεις"
+
+#~ msgid "Newsletter Archive"
+#~ msgstr "Αρχείο ενημερωτικού δελτίου"
+
+#~ msgid "Zenodo Publications"
+#~ msgstr "Εκδόσεις Zenodo"
+
+#~ msgid "Change language"
+#~ msgstr "Αλλαγή γλώσσας"
+
+#~ msgid "Logged in as"
+#~ msgstr "Σύνδεση ως"
+
+#~ msgid "Logout"
+#~ msgstr "Αποσύνδεση"
+
+#~ msgid "Sign in"
+#~ msgstr "Υπογραφή"
+
+#~ msgid "ECHOrepo is part of the EU- and UKRI-funded"
+#~ msgstr "Το ECHOrepo είναι μέρος της χρηματοδοτούμενης από την ΕΕ και το UKRI"
+
+#~ msgid "project"
+#~ msgstr "έργο"
+
+#~ msgid "Need help?"
+#~ msgstr "Χρειάζεσαι βοήθεια?"
+
+#~ msgid "Funded by UK Research and Innovation (UKRI)"
+#~ msgstr "Χρηματοδοτείται από το Ηνωμένο Βασίλειο Έρευνα και Καινοτομία (UKRI)"
+
+#~ msgid "Co-funded by the European Union"
+#~ msgstr "Συγχρηματοδότηση από την Ευρωπαϊκή Ένωση"
+
+#~ msgid "Funded by the European Union and UK Research and Innovation"
+#~ msgstr ""
+#~ "Χρηματοδοτείται από την Ευρωπαϊκή Ένωση "
+#~ "και το Ηνωμένο Βασίλειο Έρευνα και "
+#~ "Καινοτομία"
+
+#~ msgid "Coordinate issues"
+#~ msgstr "Θέματα συντονισμού"
+
+#~ msgid "The coordinate issues file was not found:"
+#~ msgstr "Το αρχείο θεμάτων συντεταγμένων δε βρέθηκε:"
+
+#~ msgid "Sample / QR"
+#~ msgstr "Δείγμα / QR"
+
+#~ msgid "User ID"
+#~ msgstr "ID χρήστη"
+
+#~ msgid "Issue type"
+#~ msgstr "Τύπος έκδοσης"
+
+#~ msgid "Any issue"
+#~ msgstr "Κάθε θέμα"
+
+#~ msgid "Search"
+#~ msgstr "Αναζήτηση"
+
+#~ msgid "Actual country"
+#~ msgstr "Πραγματική χώρα"
+
+#~ msgid "Planned country"
+#~ msgstr "Προγραμματισμένη χώρα"
+
+#~ msgid "Show approved"
+#~ msgstr "Εμφάνιση εγκεκριμένων"
+
+#~ msgid "Export current results"
+#~ msgstr "Εξαγωγή των τρεχόντων αποτελεσμάτων"
+
+#~ msgid "coordinate issue(s)"
+#~ msgstr "θέματα συντονισμού"
+
+#~ msgid "Source:"
+#~ msgstr "Πηγή:"
+
+#~ msgid "Lat"
+#~ msgstr "Λατ"
+
+#~ msgid "Lon"
+#~ msgstr "Λον"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Καθορισμός συντεταγμένων"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Εμφάνιση μόνο αυτού του δείγματος στο χάρτη"
+
+#~ msgid "Save"
+#~ msgstr "Αποθήκευση"
+
+#~ msgid "No coordinate issues for these filters."
+#~ msgstr "Δεν υπάρχουν θέματα συντεταγμένων για αυτά τα φίλτρα."
+
+#~ msgid "Showing page"
+#~ msgstr "Εμφάνιση σελίδας"
+
+#~ msgid "of"
+#~ msgstr "του"
+
+#~ msgid "results"
+#~ msgstr "αποτελέσματα"
+
+#~ msgid "ECHOrepo — Explore"
+#~ msgstr "ECHOREPO — Εξερευνήστε"
+
+#~ msgid "Explore the map"
+#~ msgstr "Εξερευνήστε το χάρτη"
+
+#~ msgid "Sign in to export data and access your personal samples."
+#~ msgstr ""
+#~ "Συνδεθείτε στην εξαγωγή δεδομένων και "
+#~ "πρόσβαση στα προσωπικά σας δείγματα."
+
+#~ msgid "Mobile version"
+#~ msgstr "Κινητή έκδοση"
+
+#~ msgid "Desktop version"
+#~ msgstr "Έκδοση επιφάνειας εργασίας"
+
+#~ msgid "min"
+#~ msgstr "λεπτά"
+
+#~ msgid "max"
+#~ msgstr "max"
+
+#~ msgid "Country"
+#~ msgstr "Χώρες"
+
+#~ msgid "All countries"
+#~ msgstr "Όλες οι χώρες"
+
+#~ msgid "Apply"
+#~ msgstr "Εφαρμογή"
+
+#~ msgid "Export filtered (0)"
+#~ msgstr "Φίλτρο εξαγωγής (0)"
+
+#~ msgid "Copy view link"
+#~ msgstr "Αντιγραφή δεσμού προβολής"
+
+#~ msgid "Data quality issues — ECHOrepo"
+#~ msgstr "Θέματα ποιότητας δεδομένων — ECHOREPO"
+
+#~ msgid "Back to My Data"
+#~ msgstr "Επιστροφή στα Δεδομένα Μου"
+
+#~ msgid "Data quality issues"
+#~ msgstr "Θέματα ποιότητας δεδομένων"
+
+#~ msgid "Data issues"
+#~ msgstr "Θέματα δεδομένων"
+
+#~ msgid "Default coordinates (%(lat)s, %(lon)s)"
+#~ msgstr "Προκαθορισμένες συντεταγμένες (__%(lat)s_, __%(lon)s_)"
+
+#~ msgid "No entries with default coordinates"
+#~ msgstr "Χωρίς καταχωρήσεις με προκαθορισμένες συντεταγμένες"
+
+#~ msgid "Sample"
+#~ msgstr "Δείγμα"
+
+#~ msgid "User"
+#~ msgstr "Χρήστης"
+
+#~ msgid "QR"
+#~ msgstr "QR"
+
+#~ msgid "Fix"
+#~ msgstr "Διόρθωση"
+
+#~ msgid "Lat (dec or DMS)"
+#~ msgstr "Λατ (dec ή DMS)"
+
+#~ msgid "Lon (dec or DMS)"
+#~ msgstr "Lon (dec ή DMS)"
+
+#~ msgid "Country mismatches"
+#~ msgstr "Αναντιστοιχίες ανά χώρα"
+
+#~ msgid "No country mismatches"
+#~ msgstr "Καμία αταίριαστη χώρα"
+
+#~ msgid "Actual country (from coords) is not in the planned list for this QR."
+#~ msgstr ""
+#~ "Η πραγματική χώρα (από συντονιστές) δεν"
+#~ " περιλαμβάνεται στον προβλεπόμενο κατάλογο "
+#~ "για την παρούσα QR."
+
+#~ msgid "Upload lab data"
+#~ msgstr "Αποστολή δεδομένων εργαστηρίου"
+
+#~ msgid ""
+#~ "Upload either metals results (CSV/XLSX) "
+#~ "or biodiversity OTU table (XLSX with "
+#~ "sheet"
+#~ msgstr ""
+#~ "Αποστολή είτε αποτελεσμάτων μετάλλων "
+#~ "(CSV/XLSX) ή πίνακα OTU βιοποικιλότητας "
+#~ "(XLSX με φύλλο"
+
+#~ msgid "The server will detect the format automatically."
+#~ msgstr "Ο εξυπηρετητής θα ανιχνεύσει αυτόματα τη μορφή."
+
+#~ msgid "Upload"
+#~ msgstr "Αποστολή"
+
+#~ msgid "ECHOrepo — Access"
+#~ msgstr "ECHOrepo — Πρόσβαση"
+
+#~ msgid "Access your data"
+#~ msgstr "Πρόσβαση στα δεδομένα σας"
+
+#~ msgid "Sign in with your Keycloak credentials."
+#~ msgstr "Υπογράψτε με τα διαπιστευτήριά σας."
+
+#~ msgid "Email or username"
+#~ msgstr "Ηλεκτρονικό ταχυδρομείο ή όνομα χρήστη"
+
+#~ msgid "you@example.org"
+#~ msgstr "you@example.org"
+
+#~ msgid "Password"
+#~ msgstr "Κωδικός πρόσβασης"
+
+#~ msgid "Continue"
+#~ msgstr "Συνέχεια"
+
+#~ msgid "Forgot your password?"
+#~ msgstr "Ξέχασες τον κωδικό σου?"
+
+#~ msgid "or"
+#~ msgstr "ή"
+
+#~ msgid "Sign in through Keycloak"
+#~ msgstr "Σύνδεση μέσω του Keycloak"
+
+#~ msgid "Issues signing in? Contact the organisers."
+#~ msgstr "Θέματα που υπογράφουν; Επικοινωνήστε με τους διοργανωτές."
+
+#~ msgid "GDPR-friendly access"
+#~ msgstr "Φιλική πρόσβαση GDPR"
+
+#~ msgid "Download your data anytime"
+#~ msgstr "Κατεβάστε τα δεδομένα σας οποτεδήποτε"
+
+#~ msgid "ECHOrepo — Your Data"
+#~ msgstr "ECHOREPO — Τα Δεδομένα Σας"
+
+#~ msgid "Download all samples (CSV)"
+#~ msgstr "Κατεβάστε όλα τα δείγματα (CSV)"
+
+#~ msgid "Search samples"
+#~ msgstr "Δείγματα αναζήτησης"
+
+#~ msgid "Your data"
+#~ msgstr "Τα δεδομένα σας"
+
+#~ msgid ""
+#~ "Explore your soil sample locations on"
+#~ " the map, then export or browse "
+#~ "the table."
+#~ msgstr ""
+#~ "Εξερευνήστε τις τοποθεσίες του δείγματος "
+#~ "εδάφους σας στο χάρτη, στη συνέχεια, "
+#~ "εξαγωγή ή περιήγηση στον πίνακα."
+
+#~ msgid "Fix data issues (%(n)s)"
+#~ msgstr "Διόρθωση θεμάτων δεδομένων (__%(n)s_)"
+
+#~ msgid "Final survey"
+#~ msgstr "Τελική έρευνα"
+
+#~ msgid "We sincerely thank you for your commitment to this project!"
+#~ msgstr "Σας ευχαριστούμε ειλικρινά για τη δέσμευσή σας σε αυτό το έργο!"
+
+#~ msgid ""
+#~ "This is the third and final survey"
+#~ " in the project, following the "
+#~ "initial ones you completed before and"
+#~ " after\n"
+#~ "      soil sampling. The majority of "
+#~ "questions are consistent with the "
+#~ "previous surveys so that we can "
+#~ "accurately\n"
+#~ "      measure changes over time and "
+#~ "understand the impact of project "
+#~ "participation."
+#~ msgstr ""
+#~ "Αυτή είναι η τρίτη και τελευταία "
+#~ "έρευνα στο έργο, μετά τις αρχικές "
+#~ "που ολοκληρώσατε πριν και μετά\n"
+#~ "δειγματοληψία του εδάφους. Οι περισσότερες "
+#~ "ερωτήσεις είναι σύμφωνες με τις "
+#~ "προηγούμενες έρευνες, έτσι ώστε να "
+#~ "μπορούμε με ακρίβεια\n"
+#~ "να μετρούν τις αλλαγές με την "
+#~ "πάροδο του χρόνου και να κατανοούν "
+#~ "τον αντίκτυπο της συμμετοχής στο έργο."
+
+#~ msgid ""
+#~ "Before you start: please only complete"
+#~ " this survey if the lab results "
+#~ "from your soil sample(s) have already"
+#~ "\n"
+#~ "      been added to the repository. "
+#~ "If the results are pending, please "
+#~ "check back at a later time."
+#~ msgstr ""
+#~ "Πριν ξεκινήσετε: παρακαλώ συμπληρώστε αυτή "
+#~ "την έρευνα μόνο εάν τα αποτελέσματα "
+#~ "του εργαστηρίου από το(τα) δείγμα(τα) "
+#~ "εδάφους σας έχουν ήδη\n"
+#~ "προστέθηκε στο αποθετήριο. Εάν εκκρεμούν "
+#~ "τα αποτελέσματα, παρακαλούμε ελέγξτε ξανά "
+#~ "αργότερα."
+
+#~ msgid "Go to final survey"
+#~ msgstr "Μετάβαση στην τελική έρευνα"
+
+#~ msgid "Data use information"
+#~ msgstr "Πληροφορίες χρήσης δεδομένων"
+
+#~ msgid "I have already completed it"
+#~ msgstr "Το έχω ήδη ολοκληρώσει"
+
+#~ msgid "Processing survey data in the ECHO project"
+#~ msgstr "Δεδομένα έρευνας για την επεξεργασία του έργου ECHO"
+
+#~ msgid ""
+#~ "The objective of this survey data "
+#~ "is to examine the impact of "
+#~ "project participation on participant\n"
+#~ "        attitudes and motivation towards soil."
+#~ msgstr ""
+#~ "Στόχος των δεδομένων της έρευνας αυτής"
+#~ " είναι να εξεταστούν οι επιπτώσεις "
+#~ "της συμμετοχής του έργου στον "
+#~ "συμμετέχοντα\n"
+#~ "στάσεις και κίνητρα προς το έδαφος."
+
+#~ msgid ""
+#~ "Your information will only be used "
+#~ "for scientific purposes. We do not "
+#~ "collect names or addresses. Your\n"
+#~ "        details regarding age and gender"
+#~ " are only used for statistical "
+#~ "purposes and all details are collected"
+#~ " and\n"
+#~ "        evaluated anonymously. It is not"
+#~ " possible to draw conclusions about "
+#~ "your person at any time."
+#~ msgstr ""
+#~ "Οι πληροφορίες σας θα χρησιμοποιηθούν "
+#~ "μόνο για επιστημονικούς σκοπούς. Δεν "
+#~ "συλλέγουμε ονόματα ή διευθύνσεις. Το "
+#~ "δικό σου\n"
+#~ "Πληροφορίες σχετικά με την ηλικία και"
+#~ " το φύλο χρησιμοποιούνται μόνο για "
+#~ "στατιστικούς σκοπούς και συλλέγονται όλες "
+#~ "οι λεπτομέρειες και\n"
+#~ "αξιολογήθηκε ανώνυμα. Δεν είναι δυνατόν "
+#~ "να βγάλεις συμπεράσματα για το άτομο "
+#~ "σου οποιαδήποτε στιγμή."
+
+#~ msgid ""
+#~ "Answering each question in the survey"
+#~ " is most appreciated as it plays "
+#~ "a crucial role in providing valuable"
+#~ "\n"
+#~ "        insights that enhance the "
+#~ "relevance and impact of the ECHO "
+#~ "project. Your honest responses are "
+#~ "essential for\n"
+#~ "        understanding how engagement with "
+#~ "the project influences attitudes and "
+#~ "motivations, ensuring the project’s\n"
+#~ "        outcomes are meaningful and well-informed."
+#~ msgstr ""
+#~ "Η απάντηση σε κάθε ερώτηση της "
+#~ "έρευνας εκτιμάται περισσότερο καθώς παίζει "
+#~ "καθοριστικό ρόλο στην παροχή πολύτιμης\n"
+#~ "πληροφορίες που ενισχύουν τη συνάφεια "
+#~ "και τον αντίκτυπο του έργου ECHO. "
+#~ "Οι ειλικρινείς απαντήσεις σας είναι "
+#~ "απαραίτητες για\n"
+#~ "κατανόηση του τρόπου με τον οποίο "
+#~ "η εμπλοκή με το έργο επηρεάζει τις"
+#~ " στάσεις και τα κίνητρα, εξασφαλίζοντας "
+#~ "τη λειτουργία του έργου\n"
+#~ "Τα αποτελέσματα είναι σημαντικά και καλά ενημερωμένα."
+
+#~ msgid ""
+#~ "The survey will take approximately 8–10"
+#~ " minutes to complete. Please find a"
+#~ " quiet space where you won’t be\n"
+#~ ""
+#~ "        interrupted. There are no right"
+#~ " or wrong answers — answer "
+#~ "spontaneously."
+#~ msgstr ""
+#~ "Η έρευνα θα διαρκέσει περίπου 8-10 "
+#~ "λεπτά για να ολοκληρωθεί. Παρακαλώ "
+#~ "βρείτε ένα ήσυχο χώρο όπου δεν θα"
+#~ " είστε\n"
+#~ "Διακόπτεται. Δεν υπάρχουν σωστές ή λάθος"
+#~ " απαντήσεις — απαντήστε αυθόρμητα."
+
+#~ msgid ""
+#~ "Based on the information provided to "
+#~ "you, please consent to participate in"
+#~ " the survey below."
+#~ msgstr ""
+#~ "Με βάση τις πληροφορίες που σας "
+#~ "παρέχονται, παρακαλούμε συναινείτε να "
+#~ "συμμετάσχετε στην παρακάτω έρευνα."
+
+#~ msgid "thank you for your participation!"
+#~ msgstr "σας ευχαριστώ για τη συμμετοχή σας!"
+
+#~ msgid "Show details"
+#~ msgstr "Εμφάνιση λεπτομερειών"
+
+#~ msgid "Dismiss"
+#~ msgstr "Ελεύθεροι"
+
+#~ msgid "No data found for"
+#~ msgstr "Δεν βρέθηκαν δεδομένα για"
+
+#~ msgid ""
+#~ "If you recently submitted samples, try again\n"
+#~ "    later."
+#~ msgstr ""
+#~ "Αν υποβάλατε πρόσφατα δείγματα, προσπαθήστε ξανά.\n"
+#~ "Αργότερα."
+
+#~ msgid "Download"
+#~ msgstr "Λήψη"
+
+#~ msgid "CSV (per-user)"
+#~ msgstr "CSV (ανά χρήστη)"
+
+#~ msgid "XLSX (per-user)"
+#~ msgstr "XLSX (ανά χρήστη)"
+
+#~ msgid "All samples (CSV, anonymised)"
+#~ msgstr "Όλα τα δείγματα (CSV, ανώνυμα)"
+
+#~ msgid "GeoJSON (per-user)"
+#~ msgstr "GeoJSON (ανά χρήστη)"
+
+#~ msgid "Canonical exports"
+#~ msgstr "Κανονική εξαγωγή"
+
+#~ msgid "samples.csv"
+#~ msgstr "δείγματα.csv"
+
+#~ msgid "sample_images.csv"
+#~ msgstr "δείγμα_εικόνες.csv"
+
+#~ msgid "sample_parameters.csv"
+#~ msgstr "δείγμα_παράμετροι.csv"
+
+#~ msgid "sample_biodiversity.csv"
+#~ msgstr "δείγμα βιοποικιλότητα.csv"
+
+#~ msgid "All canonical (zip)"
+#~ msgstr "Όλα τα κανονικά (zip)"
+
+#~ msgid "Apply pH filter"
+#~ msgstr "Εφαρμογή φίλτρου pH"
+
+#~ msgid "Export rows matching current pH filter"
+#~ msgstr "Εξαγωγή γραμμών που ταιριάζουν με το τρέχον φίλτρο pH"
+
+#~ msgid "Privacy information"
+#~ msgstr "Πληροφορίες απορρήτου"
+
+#~ msgid ""
+#~ "I have read the privacy information "
+#~ "above and I consent to the "
+#~ "processing of my personal data for\n"
+#~ ""
+#~ "              this project."
+#~ msgstr ""
+#~ "Έχω διαβάσει τις παραπάνω πληροφορίες "
+#~ "απορρήτου και συναινώ στην επεξεργασία "
+#~ "των προσωπικών μου δεδομένων για\n"
+#~ "Αυτό το έργο."
+
+#~ msgid "Accept and continue"
+#~ msgstr "Αποδοχή και συνέχιση"
+
+#~ msgid "Show on map"
+#~ msgstr "Εμφάνιση στο χάρτη"
+
+#~ msgid "Could not locate this sample on the map."
+#~ msgstr "Αδυναμία εντοπισμού του δείγματος στο χάρτη."
+
+#~ msgid "pH min"
+#~ msgstr "π H min"
+
+#~ msgid "pH max"
+#~ msgstr "π H max"
+
+#~ msgid "Date from"
+#~ msgstr "Ημερομηνία από"
+
+#~ msgid "Date to"
+#~ msgstr "Ημερομηνία"
+
+#~ msgid "Export current search"
+#~ msgstr "Εξαγωγή τρέχουσας αναζήτησης"
+
+#~ msgid "Sign in to export results as ZIP."
+#~ msgstr "Συνδεθείτε στα αποτελέσματα των εξαγωγών ως ZIP."
+
+#~ msgid "Timestamp"
+#~ msgstr "Χρονοσφραγίδα"
+
+#~ msgid "Collected by"
+#~ msgstr "Συλλέγεται από"
+
+#~ msgid "Show this sample on map"
+#~ msgstr "Εμφάνιση του δείγματος στο χάρτη"
+
+#~ msgid "No results for these filters."
+#~ msgstr "Δεν υπάρχουν αποτελέσματα για αυτά τα φίλτρα."
+
+#~ msgid "ECHOrepo — Zenodo Publications"
+#~ msgstr "ECHOREPO — Εκδόσεις Zenodo"
+
+#~ msgid "Published datasets on Zenodo"
+#~ msgstr "Δημοσίευση συνόλων δεδομένων για το Zenodo"
+
+#~ msgid ""
+#~ "This page lists ECHOrepo datasets "
+#~ "published on Zenodo, with DOI links "
+#~ "and suggested references."
+#~ msgstr ""
+#~ "Η σελίδα αυτή απαριθμεί τα σύνολα "
+#~ "δεδομένων ECHOrepo που δημοσιεύονται στο "
+#~ "Zenodo, με συνδέσμους DOI και "
+#~ "προτεινόμενες αναφορές."
+
+#~ msgid "Untitled dataset"
+#~ msgstr "Σύνολο δεδομένων χωρίς τίτλο"
+
+#~ msgid "Published at"
+#~ msgstr "Δημοσίευση"
+
+#~ msgid "Version DOI"
+#~ msgstr "Έκδοση DOI"
+
+#~ msgid "Concept DOI"
+#~ msgstr "Η ιδέα DOI"
+
+#~ msgid "API path"
+#~ msgstr "Διαδρομή API"
+
+#~ msgid "Uploaded file"
+#~ msgstr "Αποστολή αρχείου"
+
+#~ msgid "Deposition ID"
+#~ msgstr "ID κατάθεσης"
+
+#~ msgid "Concept record ID"
+#~ msgstr "ID εγγραφής σύλληψης"
+
+#~ msgid "Download source"
+#~ msgstr "Λήψη πηγής"
+
+#~ msgid "source URL"
+#~ msgstr "uRL πηγής"
+
+#~ msgid "Filters"
+#~ msgstr "Φίλτρα"
+
+#~ msgid "Zenodo page"
+#~ msgstr "Σελίδα Zenodo"
+
+#~ msgid "record page"
+#~ msgstr "καταγραφή σελίδας"
+
+#~ msgid "Suggested reference"
+#~ msgstr "Προτεινόμενη αναφορά"
+
+#~ msgid "No Zenodo publications have been logged yet."
+#~ msgstr "Δεν έχουν καταγραφεί ακόμα εκδόσεις του Zenodo."
+
+#~ msgid "Link copied to clipboard"
+#~ msgstr "Δεσμός αντιγραφόμενο στο πρόχειρο"
+
+#~ msgid "Copy this link:"
+#~ msgstr "Αντιγραφή αυτού του συνδέσμου:"
+
+#~ msgid "Export filtered (${n})"
+#~ msgstr "Φίλτρα εξαγωγής (${n})"
+
+#~ msgid "Release mouse to finish drawing."
+#~ msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
+
+#~ msgid "Loading map data..."
+#~ msgstr "Φόρτωση δεδομένων χάρτη..."
+
+#~ msgid "Please wait"
+#~ msgstr "Παρακαλώ περιμένετε"
+
+#~ msgid "Loading..."
+#~ msgstr "Φόρτωση..."
+
+#~ msgid "Delete last point drawn"
+#~ msgstr "Διαγραφή του τελευταίου σημείου που έχει σχεδιαστεί"
+
+#~ msgid ""
+#~ "Click and drag to draw a selection"
+#~ " rectangle. You can draw more than"
+#~ " one."
+#~ msgstr ""
+#~ "Κάντε κλικ και σύρετε για να "
+#~ "σχεδιάσετε ένα ορθογώνιο επιλογής. Μπορείς "
+#~ "να ζωγραφίσεις περισσότερους από έναν."
+
+#~ msgid "No selected samples to export."
+#~ msgstr "Δεν υπάρχουν επιλεγμένα δείγματα προς εξαγωγή."
+
+#~ msgid "Please sign in to export data."
+#~ msgstr "Παρακαλώ υπογράψτε για εξαγωγή δεδομένων."
+
+#~ msgid "Loading sample..."
+#~ msgstr "Φόρτωση δείγματος..."
+
+#~ msgid "Loading samples..."
+#~ msgstr "Φόρτωση δειγμάτων..."
+
+#~ msgid "Fetching visible map area"
+#~ msgstr "Ανάκτηση ορατής περιοχής χάρτη"
+
+#~ msgid "Rendering markers..."
+#~ msgstr "Αποτύπωση δεικτών..."
+
+#~ msgid "Building clusters and popups"
+#~ msgstr "Συγκροτήματα και αναδυόμενα"
+
+#~ msgid "Preparing map"
+#~ msgstr "Προετοιμασία χάρτη"
+

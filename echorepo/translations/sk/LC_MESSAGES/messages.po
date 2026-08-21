@@ -1,0 +1,939 @@
+# Slovak translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-21 15:10+0000\n"
+"PO-Revision-Date: 2025-10-29 13:21+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: sk\n"
+"Language-Team: sk <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#~ msgid "Export filtered (%(n)s)"
+#~ msgstr "Export filtrovaný (%(n)s)"
+
+#~ msgid "Privacy radius (~±%(km)s km)"
+#~ msgstr "Polomer súkromia (~±%(km)s km)"
+
+#~ msgid "It helps us improve EchoSoil."
+#~ msgstr "Pomáha nám zlepšiť EchoSoil."
+
+#~ msgid "Some samples need attention to ensure correct maps and downloads."
+#~ msgstr ""
+#~ "Niektoré vzorky potrebujú pozornosť, aby "
+#~ "zabezpečili správne mapy a sťahovanie."
+
+#~ msgid "Any country"
+#~ msgstr "Každá krajina"
+
+#~ msgid "Copy user key"
+#~ msgstr "Kopírovať užívateľský kľúč"
+
+#~ msgid "EU-funded"
+#~ msgstr "Financované EÚ"
+
+#~ msgid "EU-funded initiative"
+#~ msgstr "Iniciatíva financovaná EÚ"
+
+#~ msgid "Sign in to export data"
+#~ msgstr "Prihláste sa do exportných údajov"
+
+#~ msgid "Expected columns:"
+#~ msgstr "Očakávané stĺpce:"
+
+#~ msgid "Czechia"
+#~ msgstr "Česká republika"
+
+#~ msgid "Germany"
+#~ msgstr "Nemecko"
+
+#~ msgid "Spain"
+#~ msgstr "Španielsko"
+
+#~ msgid "Finland"
+#~ msgstr "Fínsko"
+
+#~ msgid "France"
+#~ msgstr "Francúzsko"
+
+#~ msgid "United Kingdom"
+#~ msgstr "Spojené kráľovstvo"
+
+#~ msgid "Greece"
+#~ msgstr "Grécko"
+
+#~ msgid "Italy"
+#~ msgstr "Taliansko"
+
+#~ msgid "Netherlands"
+#~ msgstr "Holandsko"
+
+#~ msgid "Poland"
+#~ msgstr "Poľsko"
+
+#~ msgid "Portugal"
+#~ msgstr "Portugalsko"
+
+#~ msgid "Romania"
+#~ msgstr "Rumunsko"
+
+#~ msgid "Slovakia"
+#~ msgstr "Slovensko"
+
+#~ msgid "OK"
+#~ msgstr "OK"
+
+#~ msgid "Approved"
+#~ msgstr "Schválené"
+
+#~ msgid "Approval comment"
+#~ msgstr "Poznámky k typovému schváleniu"
+
+#~ msgid "Optional: e.g. border sample, algorithm false positive"
+#~ msgstr "Nepovinné: napr. hraničná vzorka, chybne pozitívny algoritmus"
+
+#~ msgid "Save selected as OK"
+#~ msgstr "Uložiť vybrané ako OK"
+
+#~ msgid "Privacy radius (~±{km} km)"
+#~ msgstr "Polomer súkromia (~±{km} km)"
+
+#~ msgid "Soil pH"
+#~ msgstr "PH pôdy"
+
+#~ msgid "Acidic (≤5.5)"
+#~ msgstr "Kyselina (≤5.5)"
+
+#~ msgid "Slightly acidic (5.5–6.5)"
+#~ msgstr "Mierne kyslé (5.5"
+
+#~ msgid "Neutral (6.5–7.5)"
+#~ msgstr "Neutrálne (6, 5 7, 5)"
+
+#~ msgid "Slightly alkaline (7.5–8.5)"
+#~ msgstr "Mierne zásadité (7.5 a 8.5.)"
+
+#~ msgid "Alkaline (≥8.5)"
+#~ msgstr "Alkalické (≥8,5)"
+
+#~ msgid "Your samples"
+#~ msgstr "Vaše vzorky"
+
+#~ msgid "Other samples"
+#~ msgstr "Ostatné vzorky"
+
+#~ msgid "Export"
+#~ msgstr "Vývoz"
+
+#~ msgid "Clear"
+#~ msgstr "Vyčistiť"
+
+#~ msgid "Export filtered ({n})"
+#~ msgstr "Export filtrovaný ({n})"
+
+#~ msgid "Date"
+#~ msgstr "Dátum"
+
+#~ msgid "QR code"
+#~ msgstr "QR kód"
+
+#~ msgid "pH"
+#~ msgstr "p H"
+
+#~ msgid "Colour"
+#~ msgstr "Farba"
+
+#~ msgid "Soil organic matter"
+#~ msgstr "Organické látky v pôde"
+
+#~ msgid "Texture"
+#~ msgstr "Textúra"
+
+#~ msgid "Structure"
+#~ msgstr "Štruktúra"
+
+#~ msgid "Earthworms"
+#~ msgstr "Dážďovky"
+
+#~ msgid "Plastic"
+#~ msgstr "Plasty"
+
+#~ msgid "Debris"
+#~ msgstr "Debris"
+
+#~ msgid "Contamination"
+#~ msgstr "Kontaminácia"
+
+#~ msgid "Metals"
+#~ msgstr "Kovy"
+
+#~ msgid "Elemental concentrations"
+#~ msgstr "Elementárne koncentrácie"
+
+#~ msgid "Draw a selection rectangle"
+#~ msgstr "Nakreslite obdĺžnik výberu"
+
+#~ msgid "Cancel drawing"
+#~ msgstr "Zrušiť výkres"
+
+#~ msgid "Cancel"
+#~ msgstr "Zrušiť"
+
+#~ msgid "Delete last point"
+#~ msgstr "Vypustiť posledný bod"
+
+#~ msgid "Click and drag to draw a selection rectangle."
+#~ msgstr "Kliknite a pretiahnite nakresliť obdĺžnik výberu."
+
+#~ msgid "Release mouse to add this rectangle to the selection."
+#~ msgstr "Vypustiť myš pridať tento obdĺžnik do výberu."
+
+#~ msgid "Selection export to a file"
+#~ msgstr "Export výberu do súboru"
+
+#~ msgid "Selection export"
+#~ msgstr "Vývoz výberu"
+
+#~ msgid "Use selection tool"
+#~ msgstr "Použiť nástroj výberu"
+
+#~ msgid "to draw one or more areas"
+#~ msgstr "kresliť jednu alebo viac oblastí"
+
+#~ msgid "Export selection"
+#~ msgstr "Výber exportu"
+
+#~ msgid "Export selected samples"
+#~ msgstr "Exportovať vybrané vzorky"
+
+#~ msgid "Clear selection"
+#~ msgstr "Vyčistiť výber"
+
+#~ msgid "Clear all selection rectangles"
+#~ msgstr "Vyčistiť všetky obdĺžniky výberu"
+
+#~ msgid "Draw selection rectangle"
+#~ msgstr "Kresliť výber obdĺžnik"
+
+#~ msgid "Not available"
+#~ msgstr "Nie je k dispozícii"
+
+#~ msgid "Download dataset from Zenodo"
+#~ msgstr "Stiahnuť súbor zo Zenoda"
+
+#~ msgid ""
+#~ "Percentage values (%) can be converted"
+#~ " to mg/kg by multiplying by 10000."
+#~ msgstr "Percentuálne hodnoty (%) možno prepočítať na mg/kg vynásobením 10000."
+
+#~ msgid "Unit conversion help"
+#~ msgstr "Pomocník konverzie jednotiek"
+
+#~ msgid "Street map"
+#~ msgstr "Mapa ulíc"
+
+#~ msgid "Satellite"
+#~ msgstr "Satelit"
+
+#~ msgid "Password recovery is not configured for this site."
+#~ msgstr "Obnova hesla nie je pre túto stránku nastavená."
+
+#~ msgid "Could not contact the password recovery service."
+#~ msgstr "Nepodarilo sa kontaktovať službu obnovenia hesla."
+
+#~ msgid "If this address is registered, a reset link has been sent."
+#~ msgstr "Ak je táto adresa registrovaná, bol zaslaný resetový odkaz."
+
+#~ msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+#~ msgstr "Aktivácia nového hesla v ECHOREPO môže trvať až 30 minút."
+
+#~ msgid ""
+#~ "Password recovery is temporarily unavailable."
+#~ " Please contact the organisers."
+#~ msgstr "Obnova hesla je dočasne nedostupná. Prosím kontaktujte organizátorov."
+
+#~ msgid "ECHOrepo — EU Soil Data"
+#~ msgstr "ECHOrepo  Údaje o pôde"
+
+#~ msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
+#~ msgstr "ECHOrepo "
+
+#~ msgid ""
+#~ "Access and download your soil samples."
+#~ " Part of the EU-funded ECHO "
+#~ "project."
+#~ msgstr ""
+#~ "Prístup a stiahnuť svoje vzorky pôdy."
+#~ " Časť projektu ECHO financovaného EÚ."
+
+#~ msgid "Skip to content"
+#~ msgstr "Preskočiť na obsah"
+
+#~ msgid "Primary"
+#~ msgstr "Primárne"
+
+#~ msgid "ECHOrepo logo"
+#~ msgstr "Logo ECHOrepo"
+
+#~ msgid "Toggle navigation"
+#~ msgstr "Prepnúť navigáciu"
+
+#~ msgid "About"
+#~ msgstr "O"
+
+#~ msgid "For Participants"
+#~ msgstr "Pre účastníkov"
+
+#~ msgid "Partners"
+#~ msgstr "Partneri"
+
+#~ msgid "News & Events"
+#~ msgstr "Novinky a udalosti"
+
+#~ msgid "Resources"
+#~ msgstr "Zdroje"
+
+#~ msgid "Media Kit"
+#~ msgstr "Media Kit"
+
+#~ msgid "Publications"
+#~ msgstr "Publikácie"
+
+#~ msgid "Newsletter Archive"
+#~ msgstr "Archív noviniek"
+
+#~ msgid "Zenodo Publications"
+#~ msgstr "Publikácie Zenodo"
+
+#~ msgid "Change language"
+#~ msgstr "Zmeniť jazyk"
+
+#~ msgid "Logged in as"
+#~ msgstr "Prihlásený ako"
+
+#~ msgid "Logout"
+#~ msgstr "Odhlásenie"
+
+#~ msgid "Sign in"
+#~ msgstr "Prihlásiť sa"
+
+#~ msgid "ECHOrepo is part of the EU- and UKRI-funded"
+#~ msgstr "ECHOrepo je súčasťou financovania EÚ a UKRI"
+
+#~ msgid "project"
+#~ msgstr "projekt"
+
+#~ msgid "Need help?"
+#~ msgstr "Potrebuješ pomoc?"
+
+#~ msgid "Funded by UK Research and Innovation (UKRI)"
+#~ msgstr "Financované UK Research and Innovation (UKRI)"
+
+#~ msgid "Co-funded by the European Union"
+#~ msgstr "Spolufinancované Európskou úniou"
+
+#~ msgid "Funded by the European Union and UK Research and Innovation"
+#~ msgstr "Financované Európskou úniou a UK výskum a inovácie"
+
+#~ msgid "Coordinate issues"
+#~ msgstr "Koordinovať otázky"
+
+#~ msgid "The coordinate issues file was not found:"
+#~ msgstr "Súbor súradníc nebol nájdený:"
+
+#~ msgid "Sample / QR"
+#~ msgstr "Vzorka/QR"
+
+#~ msgid "User ID"
+#~ msgstr "ID užívateľa"
+
+#~ msgid "Issue type"
+#~ msgstr "Typ emisie"
+
+#~ msgid "Any issue"
+#~ msgstr "Akýkoľvek problém"
+
+#~ msgid "Search"
+#~ msgstr "Hľadať"
+
+#~ msgid "Actual country"
+#~ msgstr "Skutočná krajina"
+
+#~ msgid "Planned country"
+#~ msgstr "Plánovaná krajina"
+
+#~ msgid "Show approved"
+#~ msgstr "Zobraziť schválené"
+
+#~ msgid "Export current results"
+#~ msgstr "Exportovať aktuálne výsledky"
+
+#~ msgid "coordinate issue(s)"
+#~ msgstr "súradnicové otázky"
+
+#~ msgid "Source:"
+#~ msgstr "Zdroj:"
+
+#~ msgid "Lat"
+#~ msgstr "Lat"
+
+#~ msgid "Lon"
+#~ msgstr "Lon"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Opraviť súradnice"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Zobraziť iba túto vzorku na mape"
+
+#~ msgid "Save"
+#~ msgstr "Uložiť"
+
+#~ msgid "No coordinate issues for these filters."
+#~ msgstr "Žiadne problémy s koordináciou týchto filtrov."
+
+#~ msgid "Showing page"
+#~ msgstr "Zobrazenie stránky"
+
+#~ msgid "of"
+#~ msgstr "z"
+
+#~ msgid "results"
+#~ msgstr "výsledky"
+
+#~ msgid "ECHOrepo — Explore"
+#~ msgstr "ECHOrepo"
+
+#~ msgid "Explore the map"
+#~ msgstr "Objavte mapu"
+
+#~ msgid "Sign in to export data and access your personal samples."
+#~ msgstr "Prihláste sa na export údajov a prístup k svojim osobným vzorky."
+
+#~ msgid "Mobile version"
+#~ msgstr "Mobilná verzia"
+
+#~ msgid "Desktop version"
+#~ msgstr "Verzia plochy"
+
+#~ msgid "min"
+#~ msgstr "min"
+
+#~ msgid "max"
+#~ msgstr "max"
+
+#~ msgid "Country"
+#~ msgstr "Krajina"
+
+#~ msgid "All countries"
+#~ msgstr "Všetky krajiny"
+
+#~ msgid "Apply"
+#~ msgstr "Použiť"
+
+#~ msgid "Export filtered (0)"
+#~ msgstr "Export filtrované (0)"
+
+#~ msgid "Copy view link"
+#~ msgstr "Kopírovať odkaz na zobrazenie"
+
+#~ msgid "Data quality issues — ECHOrepo"
+#~ msgstr "Otázky kvality údajov "
+
+#~ msgid "Back to My Data"
+#~ msgstr "Späť k mojim údajom"
+
+#~ msgid "Data quality issues"
+#~ msgstr "Otázky kvality údajov"
+
+#~ msgid "Data issues"
+#~ msgstr "Otázky údajov"
+
+#~ msgid "Default coordinates (%(lat)s, %(lon)s)"
+#~ msgstr "Štandardné súradnice (%(lat)s, __%(lon)s_)"
+
+#~ msgid "No entries with default coordinates"
+#~ msgstr "Žiadne položky so štandardnými súradnicami"
+
+#~ msgid "Sample"
+#~ msgstr "Vzorka"
+
+#~ msgid "User"
+#~ msgstr "Užívateľ"
+
+#~ msgid "QR"
+#~ msgstr "QR"
+
+#~ msgid "Fix"
+#~ msgstr "Fix"
+
+#~ msgid "Lat (dec or DMS)"
+#~ msgstr "Lat (dec alebo DMS)"
+
+#~ msgid "Lon (dec or DMS)"
+#~ msgstr "Lon (dek alebo DMS)"
+
+#~ msgid "Country mismatches"
+#~ msgstr "Nesúlady krajín"
+
+#~ msgid "No country mismatches"
+#~ msgstr "Žiadny nesúlad medzi krajinami"
+
+#~ msgid "Actual country (from coords) is not in the planned list for this QR."
+#~ msgstr "Skutočná krajina (z koords) nie je v plánovanom zozname pre túto QR."
+
+#~ msgid "Upload lab data"
+#~ msgstr "Nahrať laboratórne údaje"
+
+#~ msgid ""
+#~ "Upload either metals results (CSV/XLSX) "
+#~ "or biodiversity OTU table (XLSX with "
+#~ "sheet"
+#~ msgstr ""
+#~ "Upload buď výsledky kovov (CSV/XLSX) "
+#~ "alebo tabuľka biodiverzity OTU (XLSX s"
+#~ " hárkom"
+
+#~ msgid "The server will detect the format automatically."
+#~ msgstr "Server automaticky detekuje formát."
+
+#~ msgid "Upload"
+#~ msgstr "Odoslať"
+
+#~ msgid "ECHOrepo — Access"
+#~ msgstr "ECHOrepo"
+
+#~ msgid "Access your data"
+#~ msgstr "Prístup k vašim údajom"
+
+#~ msgid "Sign in with your Keycloak credentials."
+#~ msgstr "Podpíšte sa so svojimi Keycloak poverenia."
+
+#~ msgid "Email or username"
+#~ msgstr "E-mail alebo užívateľské meno"
+
+#~ msgid "you@example.org"
+#~ msgstr "you@ example.org"
+
+#~ msgid "Password"
+#~ msgstr "Heslo"
+
+#~ msgid "Continue"
+#~ msgstr "Pokračovať"
+
+#~ msgid "Forgot your password?"
+#~ msgstr "Zabudol si heslo?"
+
+#~ msgid "or"
+#~ msgstr "alebo"
+
+#~ msgid "Sign in through Keycloak"
+#~ msgstr "Podpísať cez Keycloak"
+
+#~ msgid "Issues signing in? Contact the organisers."
+#~ msgstr "Problémy? Kontaktujte organizátorov."
+
+#~ msgid "GDPR-friendly access"
+#~ msgstr "Prístup k GDPR"
+
+#~ msgid "Download your data anytime"
+#~ msgstr "Stiahnite si dáta kedykoľvek"
+
+#~ msgid "ECHOrepo — Your Data"
+#~ msgstr "ECHOrepo"
+
+#~ msgid "Download all samples (CSV)"
+#~ msgstr "Stiahnite si všetky vzorky (CSV)"
+
+#~ msgid "Search samples"
+#~ msgstr "Prehľadávanie vzoriek"
+
+#~ msgid "Your data"
+#~ msgstr "Vaše údaje"
+
+#~ msgid ""
+#~ "Explore your soil sample locations on"
+#~ " the map, then export or browse "
+#~ "the table."
+#~ msgstr ""
+#~ "Preskúmajte umiestnenie vzorky pôdy na "
+#~ "mape, potom exportujte alebo prezrite "
+#~ "tabuľku."
+
+#~ msgid "Fix data issues (%(n)s)"
+#~ msgstr "Fix dáta problémy (%(n)s_)"
+
+#~ msgid "Final survey"
+#~ msgstr "Záverečný prieskum"
+
+#~ msgid "We sincerely thank you for your commitment to this project!"
+#~ msgstr "Úprimne vám ďakujeme za váš záväzok k tomuto projektu!"
+
+#~ msgid ""
+#~ "This is the third and final survey"
+#~ " in the project, following the "
+#~ "initial ones you completed before and"
+#~ " after\n"
+#~ "      soil sampling. The majority of "
+#~ "questions are consistent with the "
+#~ "previous surveys so that we can "
+#~ "accurately\n"
+#~ "      measure changes over time and "
+#~ "understand the impact of project "
+#~ "participation."
+#~ msgstr ""
+#~ "Toto je tretí a posledný prieskum "
+#~ "v projekte, ktorý nasleduje po prvých,"
+#~ " ktoré ste dokončili pred a po\n"
+#~ ""
+#~ "odber vzoriek pôdy. Väčšina otázok je"
+#~ " v súlade s predchádzajúcimi prieskummi,"
+#~ " aby sme mohli presne\n"
+#~ "meranie zmien v priebehu času a pochopenie vplyvu účasti na projekte."
+
+#~ msgid ""
+#~ "Before you start: please only complete"
+#~ " this survey if the lab results "
+#~ "from your soil sample(s) have already"
+#~ "\n"
+#~ "      been added to the repository. "
+#~ "If the results are pending, please "
+#~ "check back at a later time."
+#~ msgstr ""
+#~ "Pred začatím: prosím, dokončite tento "
+#~ "prieskum len vtedy, ak výsledky "
+#~ "laboratória z vašej vzorky pôdy už "
+#~ "majú\n"
+#~ "bol pridaný do úložiska. Ak výsledky "
+#~ "ešte nie sú k dispozícii, prosím, "
+#~ "skontrolujte ich neskôr."
+
+#~ msgid "Go to final survey"
+#~ msgstr "Prejsť na záverečný prieskum"
+
+#~ msgid "Data use information"
+#~ msgstr "Informácie o použití údajov"
+
+#~ msgid "I have already completed it"
+#~ msgstr "Už som to dokončil"
+
+#~ msgid "Processing survey data in the ECHO project"
+#~ msgstr "Spracovanie údajov z prieskumu v projekte ECHO"
+
+#~ msgid ""
+#~ "The objective of this survey data "
+#~ "is to examine the impact of "
+#~ "project participation on participant\n"
+#~ "        attitudes and motivation towards soil."
+#~ msgstr ""
+#~ "Cieľom tohto prieskumu je preskúmať "
+#~ "vplyv účasti na projekte na účastníka"
+#~ "\n"
+#~ "postoje a motivácia k pôde."
+
+#~ msgid ""
+#~ "Your information will only be used "
+#~ "for scientific purposes. We do not "
+#~ "collect names or addresses. Your\n"
+#~ "        details regarding age and gender"
+#~ " are only used for statistical "
+#~ "purposes and all details are collected"
+#~ " and\n"
+#~ "        evaluated anonymously. It is not"
+#~ " possible to draw conclusions about "
+#~ "your person at any time."
+#~ msgstr ""
+#~ "Vaše informácie budú použité len na "
+#~ "vedecké účely. Nezhromažďujeme mená ani "
+#~ "adresy. Váš\n"
+#~ "údaje týkajúce sa veku a pohlavia "
+#~ "sa používajú len na štatistické účely"
+#~ " a všetky údaje sa zhromažďujú a\n"
+#~ ""
+#~ "vyhodnocovali anonymne. O vašej osobe "
+#~ "nie je možné urobiť žiadne závery."
+
+#~ msgid ""
+#~ "Answering each question in the survey"
+#~ " is most appreciated as it plays "
+#~ "a crucial role in providing valuable"
+#~ "\n"
+#~ "        insights that enhance the "
+#~ "relevance and impact of the ECHO "
+#~ "project. Your honest responses are "
+#~ "essential for\n"
+#~ "        understanding how engagement with "
+#~ "the project influences attitudes and "
+#~ "motivations, ensuring the project’s\n"
+#~ "        outcomes are meaningful and well-informed."
+#~ msgstr ""
+#~ "Odpoveď na každú otázku v prieskume "
+#~ "je najviac cenená, pretože hrá kľúčovú"
+#~ " úlohu pri poskytovaní cenných\n"
+#~ "poznatky, ktoré zvyšujú význam a vplyv"
+#~ " projektu ECHO. Vaša úprimná odpoveď "
+#~ "je nevyhnutná pre\n"
+#~ "pochopenie, ako zapojenie do projektu "
+#~ "ovplyvňuje postoje a motivácie, zabezpečenie"
+#~ " projektu\n"
+#~ "výsledky sú zmysluplné a dobre informované."
+
+#~ msgid ""
+#~ "The survey will take approximately 8–10"
+#~ " minutes to complete. Please find a"
+#~ " quiet space where you won’t be\n"
+#~ ""
+#~ "        interrupted. There are no right"
+#~ " or wrong answers — answer "
+#~ "spontaneously."
+#~ msgstr ""
+#~ "Prieskum bude trvať približne 8-10 minút"
+#~ " dokončiť. Prosím, nájdite tichý priestor,"
+#~ " kde ste vyhrali\n"
+#~ "prerušiť. Neexistujú žiadne správne alebo nesprávne odpovede ."
+
+#~ msgid ""
+#~ "Based on the information provided to "
+#~ "you, please consent to participate in"
+#~ " the survey below."
+#~ msgstr ""
+#~ "Na základe informácií, ktoré vám boli"
+#~ " poskytnuté, súhlas s účasťou na "
+#~ "ďalšom prieskume."
+
+#~ msgid "thank you for your participation!"
+#~ msgstr "ďakujem za vašu účasť!"
+
+#~ msgid "Show details"
+#~ msgstr "Zobraziť detaily"
+
+#~ msgid "Dismiss"
+#~ msgstr "Odchod"
+
+#~ msgid "No data found for"
+#~ msgstr "Nenájdené žiadne údaje"
+
+#~ msgid ""
+#~ "If you recently submitted samples, try again\n"
+#~ "    later."
+#~ msgstr ""
+#~ "Ak ste nedávno predložili vzorky, skúste to znova\n"
+#~ "Neskôr."
+
+#~ msgid "Download"
+#~ msgstr "Stiahnuť"
+
+#~ msgid "CSV (per-user)"
+#~ msgstr "CSV (na užívateľa)"
+
+#~ msgid "XLSX (per-user)"
+#~ msgstr "XLSX (na užívateľa)"
+
+#~ msgid "All samples (CSV, anonymised)"
+#~ msgstr "Všetky vzorky (CSV, anonymizované)"
+
+#~ msgid "GeoJSON (per-user)"
+#~ msgstr "GeoJSON (na užívateľa)"
+
+#~ msgid "Canonical exports"
+#~ msgstr "Kanonické vývozy"
+
+#~ msgid "samples.csv"
+#~ msgstr "vzorky.csv"
+
+#~ msgid "sample_images.csv"
+#~ msgstr "vzorka_obrazy.csv"
+
+#~ msgid "sample_parameters.csv"
+#~ msgstr "vzorka_parametre.csv"
+
+#~ msgid "sample_biodiversity.csv"
+#~ msgstr "vzorka biodiverzita.csv"
+
+#~ msgid "All canonical (zip)"
+#~ msgstr "Všetky kanonické (zips)"
+
+#~ msgid "Apply pH filter"
+#~ msgstr "Aplikovať pH filter"
+
+#~ msgid "Export rows matching current pH filter"
+#~ msgstr "Exportovať riadky zodpovedajúce aktuálnemu pH filtru"
+
+#~ msgid "Privacy information"
+#~ msgstr "Informácie o ochrane súkromia"
+
+#~ msgid ""
+#~ "I have read the privacy information "
+#~ "above and I consent to the "
+#~ "processing of my personal data for\n"
+#~ ""
+#~ "              this project."
+#~ msgstr ""
+#~ "Čítal som vyššie uvedené informácie o"
+#~ " ochrane osobných údajov a súhlasím "
+#~ "so spracovaním mojich osobných údajov "
+#~ "pre\n"
+#~ "Tento projekt."
+
+#~ msgid "Accept and continue"
+#~ msgstr "Prijať a pokračovať"
+
+#~ msgid "Show on map"
+#~ msgstr "Zobraziť na mape"
+
+#~ msgid "Could not locate this sample on the map."
+#~ msgstr "Nepodarilo sa nájsť túto vzorku na mape."
+
+#~ msgid "pH min"
+#~ msgstr "p H min"
+
+#~ msgid "pH max"
+#~ msgstr "p H max"
+
+#~ msgid "Date from"
+#~ msgstr "Dátum"
+
+#~ msgid "Date to"
+#~ msgstr "Dátum"
+
+#~ msgid "Export current search"
+#~ msgstr "Exportovať aktuálne vyhľadávanie"
+
+#~ msgid "Sign in to export results as ZIP."
+#~ msgstr "Prihláste sa na export výsledkov ako ZIP."
+
+#~ msgid "Timestamp"
+#~ msgstr "Časová pečiatka"
+
+#~ msgid "Collected by"
+#~ msgstr "Zhromažďované"
+
+#~ msgid "Show this sample on map"
+#~ msgstr "Zobraziť túto vzorku na mape"
+
+#~ msgid "No results for these filters."
+#~ msgstr "Žiadne výsledky pre tieto filtre."
+
+#~ msgid "ECHOrepo — Zenodo Publications"
+#~ msgstr "ECHOrepo "
+
+#~ msgid "Published datasets on Zenodo"
+#~ msgstr "Publikované súbory údajov o Zenode"
+
+#~ msgid ""
+#~ "This page lists ECHOrepo datasets "
+#~ "published on Zenodo, with DOI links "
+#~ "and suggested references."
+#~ msgstr ""
+#~ "Táto stránka obsahuje zoznam súborov "
+#~ "ECHOrepo uverejnených na Zenode, s "
+#~ "odkazmi DOI a navrhovanými odkazmi."
+
+#~ msgid "Untitled dataset"
+#~ msgstr "Súbor bez názvu"
+
+#~ msgid "Published at"
+#~ msgstr "Uverejnené v"
+
+#~ msgid "Version DOI"
+#~ msgstr "Verzia DOI"
+
+#~ msgid "Concept DOI"
+#~ msgstr "Koncepcia DOI"
+
+#~ msgid "API path"
+#~ msgstr "Cesta API"
+
+#~ msgid "Uploaded file"
+#~ msgstr "Nahraný súbor"
+
+#~ msgid "Deposition ID"
+#~ msgstr "IDENTIFIKÁCIA"
+
+#~ msgid "Concept record ID"
+#~ msgstr "ID záznamu koncepcie"
+
+#~ msgid "Download source"
+#~ msgstr "Stiahnuť zdroj"
+
+#~ msgid "source URL"
+#~ msgstr "zdrojová URL"
+
+#~ msgid "Filters"
+#~ msgstr "Filtre"
+
+#~ msgid "Zenodo page"
+#~ msgstr "Stránka so Zenodom"
+
+#~ msgid "record page"
+#~ msgstr "nahrávacia stránka"
+
+#~ msgid "Suggested reference"
+#~ msgstr "Navrhované odkazy"
+
+#~ msgid "No Zenodo publications have been logged yet."
+#~ msgstr "Zatiaľ neboli zaznamenané žiadne publikácie Zenodo."
+
+#~ msgid "Link copied to clipboard"
+#~ msgstr "Odkaz skopírovaný do schránky"
+
+#~ msgid "Copy this link:"
+#~ msgstr "Kopírovať tento odkaz:"
+
+#~ msgid "Export filtered (${n})"
+#~ msgstr "Export filtrované (${n})"
+
+#~ msgid "Release mouse to finish drawing."
+#~ msgstr "Uvoľnite myš do konca výkresu."
+
+#~ msgid "Loading map data..."
+#~ msgstr "Načítavam dáta mapy..."
+
+#~ msgid "Please wait"
+#~ msgstr "Prosím, počkajte"
+
+#~ msgid "Loading..."
+#~ msgstr "Načítava sa..."
+
+#~ msgid "Delete last point drawn"
+#~ msgstr "Vypustiť posledný bod"
+
+#~ msgid ""
+#~ "Click and drag to draw a selection"
+#~ " rectangle. You can draw more than"
+#~ " one."
+#~ msgstr "Kliknite a pretiahnite nakresliť obdĺžnik výberu. Môžeš nakresliť viac."
+
+#~ msgid "No selected samples to export."
+#~ msgstr "Žiadne vybrané vzorky na vývoz."
+
+#~ msgid "Please sign in to export data."
+#~ msgstr "Prosím prihláste sa na export dát."
+
+#~ msgid "Loading sample..."
+#~ msgstr "Načítavam vzorku..."
+
+#~ msgid "Loading samples..."
+#~ msgstr "Načítavam vzorky..."
+
+#~ msgid "Fetching visible map area"
+#~ msgstr "Sťahujem viditeľnú oblasť mapy"
+
+#~ msgid "Rendering markers..."
+#~ msgstr "Kreslenie značiek..."
+
+#~ msgid "Building clusters and popups"
+#~ msgstr "Budovanie zoskupení a popupov"
+
+#~ msgid "Preparing map"
+#~ msgstr "Príprava mapy"
+
