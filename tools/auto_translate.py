@@ -1,136 +1,123 @@
 # tools/auto_translate.py
+from __future__ import annotations
+
 import argparse
 import json
 import os
 import re
+import sys
 import time
 import urllib.error
 import urllib.request
+from collections import defaultdict
+from typing import Iterable
 
 from babel.messages.pofile import read_po, write_po
 
-# --- add/replace these near the top with your other regexes ---
 
-# exact placeholders in source strings
+# ---------------------------------------------------------------------------
+# Placeholder handling
+# ---------------------------------------------------------------------------
+
 PY_TOKEN = re.compile(r"%\(([A-Za-z0-9_]+)\)s")
 BRACE_TOKEN = re.compile(r"\{([A-Za-z0-9_]+)\}")
 
-# compact legacy tokens: PH_0, __PH_0__, __PH_PY_1__, etc.
+# LibreTranslate occasionally mutates protected tokens, e.g.
+# __PH_0__ -> _PH_0 / PH_0 or spaced variants.
 PH_SENTINEL_ANY = re.compile(r"(?:__|_)?PH(?:_[A-Z]+)?_(\d+)(?:__|_)?")
-
-# robust "spaced" matcher: catches `_ _ PH _ PY _ 0 _ _` even with non-breaking spaces
 WHITES = r"[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]"
 SPACED_PH = re.compile(
-    rf"(?:{WHITES}|_)*PH(?:{WHITES}|_)*(?:[A-Z]+)?(?:{WHITES}|_)*(\d+)(?:{WHITES}|_)*(?:{WHITES}|_)*"
+    rf"(?:{WHITES}|_)*PH(?:{WHITES}|_)*(?:[A-Z]+)?(?:{WHITES}|_)*"
+    rf"(\d+)(?:{WHITES}|_)*(?:{WHITES}|_)*"
 )
 
 
-# --- Helper functions ---------------------------------------------------------
-def _to_text(val):
-    """Normalize MT output to a string."""
-    if isinstance(val, str):
-        return val
-    if isinstance(val, list) and val:
-        # LibreTranslate sometimes returns ['text']
-        return val[0]
-    if val is None:
+def _to_text(value) -> str:
+    """Normalize an API response value into a string."""
+    if value is None:
         return ""
-    return str(val)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        if not value:
+            return ""
+        return _to_text(value[0])
+    return str(value)
 
 
-# --- Placeholder extraction, protection, restoration --------------------------
-def extract_placeholders(src: str):
+def extract_placeholders(src: str) -> list[str]:
     """
-    Return (tokens, kind): tokens are the exact substrings to protect/restore.
-    Prefer Python-style; fallback to brace style; otherwise empty list.
+    Return placeholders in source order.
+
+    Unlike the old implementation, this protects BOTH %(name)s and {name}
+    if the same source string happens to contain both styles.
     """
     if not src:
-        return [], "none"
-    py = [m.group(0) for m in PY_TOKEN.finditer(src)]
-    if py:
-        return py, "py"
-    br = [m.group(0) for m in BRACE_TOKEN.finditer(src)]
-    if br:
-        return br, "br"
-    return [], "none"
+        return []
+
+    found: list[tuple[int, str]] = []
+    for rx in (PY_TOKEN, BRACE_TOKEN):
+        found.extend((m.start(), m.group(0)) for m in rx.finditer(src))
+    found.sort(key=lambda x: x[0])
+    return [token for _, token in found]
 
 
-def protect_placeholders(text: str):
-    """
-    Replace placeholders with __PH_i__ for safer MT.
-    Returns (protected_text, original_placeholders_list).
-    """
-    tokens, _kind = extract_placeholders(text or "")
+def protect_placeholders(text: str) -> tuple[str, list[str]]:
+    tokens = extract_placeholders(text or "")
     if not tokens:
         return text, []
+
     out = text
-    # Replace in first-occurrence order for deterministic mapping.
-    for i, tok in enumerate(tokens):
-        out = out.replace(tok, f"__PH_{i}__")
+    # Replace one occurrence at a time so repeated placeholders remain stable.
+    for i, token in enumerate(tokens):
+        out = out.replace(token, f"__PH_{i}__", 1)
     return out, tokens
 
 
-def restore_placeholders(translated: str, tokens):
-    """Restore original placeholders by their index."""
-    if not tokens or not translated:
-        return translated
-    out = translated
-    for i, tok in enumerate(tokens):
-        out = out.replace(f"__PH_{i}__", tok).replace(f"_PH_{i}__", tok).replace(f"PH_{i}", tok)
+def restore_placeholders(translated: str, tokens: list[str]) -> str:
+    if not tokens:
+        return _to_text(translated)
+
+    out = _to_text(translated)
+    for i, token in enumerate(tokens):
+        for variant in (f"__PH_{i}__", f"_PH_{i}__", f"PH_{i}"):
+            out = out.replace(variant, token)
     return out
 
 
-def repair_legacy_tokens(text: str, tokens):
+def repair_legacy_tokens(text: str, tokens: list[str]) -> str:
     """
-    Map junk PH tokens back to the real placeholders by index.
-    If the source had no placeholders, just strip PH junk and
-    leave the rest of the string unchanged.
+    Repair placeholder sentinels that were damaged by an older MT run.
     """
-    text = _to_text(text)
-    if not text:
-        return text
-
-    out = text  # do NOT normalize globally
-
-    if tokens:
-        # compact forms like "__PH_PY_0__", "_PH_0__", "PH_0"
-        def repl_compact(m):
-            try:
-                j = int(m.group(1))
-            except Exception:
-                j = 0
-            if not (0 <= j < len(tokens)):
-                j = 0
-            return tokens[j]
-
-        out = PH_SENTINEL_ANY.sub(repl_compact, out)
-
-        # spaced variants like "_ _ PH _ PY _ 0 _ _"
-        def repl_spaced(m):
-            try:
-                j = int(m.group(1))
-            except Exception:
-                j = 0
-            if not (0 <= j < len(tokens)):
-                j = 0
-            return tokens[j]
-
-        out = SPACED_PH.sub(repl_spaced, out)
+    out = _to_text(text)
+    if not out:
         return out
 
-    # Source had no placeholders — just remove leftover PH junk
+    if tokens:
+        def repl(m):
+            try:
+                idx = int(m.group(1))
+            except Exception:
+                idx = 0
+            if not 0 <= idx < len(tokens):
+                idx = 0
+            return tokens[idx]
+
+        out = PH_SENTINEL_ANY.sub(repl, out)
+        out = SPACED_PH.sub(repl, out)
+        return out
+
+    # No placeholders existed in the source; remove stray old PH markers only.
     out = PH_SENTINEL_ANY.sub("", out)
     out = SPACED_PH.sub("", out)
     return out
 
 
-# --- Robust PO writer ---------------------------------------------------------
+# ---------------------------------------------------------------------------
+# PO handling
+# ---------------------------------------------------------------------------
 
-
-def write_po_robust(path, catalog, width=80):
-    """
-    Some Babel versions write str, others bytes. Try text first; fall back to binary.
-    """
+def write_po_robust(path: str, catalog, width: int = 80) -> None:
     try:
         with open(path, "w", encoding="utf-8", newline="") as f:
             write_po(f, catalog, width=width)
@@ -139,188 +126,378 @@ def write_po_robust(path, catalog, width=80):
             write_po(f, catalog, width=width)
 
 
-# --- LibreTranslate client ----------------------------------------------------
-
-
-def _lt_post(url, payload, timeout=60):
-    req = urllib.request.Request(
-        url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}
-    )
-    return urllib.request.urlopen(req, timeout=timeout)
-
-
-def lt_translate_single(endpoint_base: str, text: str, target: str, source: str):
-    url = endpoint_base.rstrip("/") + "/translate"
-    payload = {"q": text, "source": source, "target": target, "format": "text"}
-    for attempt in range(5):
-        try:
-            with _lt_post(url, payload) as resp:
-                data = json.load(resp)
-                if isinstance(data, dict) and "translatedText" in data:
-                    return data["translatedText"]
-                if isinstance(data, list):
-                    if not data:
-                        return ""
-                    if isinstance(data[0], dict) and "translatedText" in data[0]:
-                        return data[0]["translatedText"]
-                    if isinstance(data[0], str):
-                        return data[0]
-                return ""
-        except urllib.error.HTTPError as e:
-            if e.code in (429, 500, 502, 503, 504):
-                time.sleep(1.3 * (attempt + 1))
-                continue
-            raise
-        except urllib.error.URLError:
-            time.sleep(1.3 * (attempt + 1))
-    return ""
-
-
-def lt_translate_batch(endpoint_base: str, texts, target: str, source: str):
-    if not texts:
-        return []
-    url = endpoint_base.rstrip("/") + "/translate"
-    payload = {"q": texts, "source": source, "target": target, "format": "text"}
-    try:
-        with _lt_post(url, payload) as resp:
-            data = json.load(resp)
-    except Exception:
-        return [lt_translate_single(endpoint_base, t, target, source) for t in texts]
-
-    out = []
-    if isinstance(data, list):
-        for item in data:
-            if isinstance(item, dict) and "translatedText" in item:
-                out.append(item["translatedText"])
-            elif isinstance(item, str):
-                out.append(item)
-            else:
-                out.append("")
-    elif isinstance(data, dict) and "translatedText" in data and len(texts) == 1:
-        out = [data["translatedText"]]
+def _plural_values(msg, num_plurals: int) -> list[str]:
+    """
+    Babel represents plural Message.string as a tuple, not a dict.
+    Normalize it to a mutable list of exactly num_plurals items.
+    """
+    if isinstance(msg.string, (tuple, list)):
+        values = [_to_text(v) for v in msg.string]
+    elif isinstance(msg.string, str) and msg.string:
+        values = [msg.string]
     else:
-        return [lt_translate_single(endpoint_base, t, target, source) for t in texts]
+        values = []
 
-    if len(out) != len(texts):
-        return [lt_translate_single(endpoint_base, t, target, source) for t in texts]
-    return out
-
-
-# --- Core translate/repair logic ---------------------------------------------
+    if len(values) < num_plurals:
+        values.extend([""] * (num_plurals - len(values)))
+    return values[:num_plurals]
 
 
-def translate_catalog(
-    po_path,
-    endpoint,
-    target_lang,
-    source_lang="en",
-    batch_size=50,
-    verbose=False,
-    repair_only=False,
-):
-    with open(po_path, encoding="utf-8") as f:
-        catalog = read_po(f, locale=target_lang)
-
-    changed = 0
+def repair_existing_catalog(catalog) -> int:
+    """Repair old placeholder damage in already translated entries."""
     repaired = 0
+    num_plurals = max(1, int(getattr(catalog, "num_plurals", 2) or 2))
 
-    # --- Pass 1: repair existing strings (you already have this) ---
-    # ... keep your current repair pass here ...
-
-    if repair_only:
-        if changed or repaired:
-            write_po_robust(po_path, catalog, width=80)
-        return changed, repaired
-
-    # --- Pass 2: collect what needs translation (empty OR fuzzy) ---
-    tasks = []  # (msg, part, protected_text, tokens)
     for msg in list(catalog):
         if not msg.id:
             continue
 
-        is_fuzzy = "fuzzy" in getattr(msg, "flags", [])
+        if msg.pluralizable:
+            values = _plural_values(msg, num_plurals)
+            source_singular, source_plural = msg.id
+            changed = False
+
+            for idx, old in enumerate(values):
+                if not old:
+                    continue
+                src = source_singular if idx == 0 else source_plural
+                fixed = repair_legacy_tokens(old, extract_placeholders(src))
+                if fixed != old:
+                    values[idx] = fixed
+                    repaired += 1
+                    changed = True
+
+            if changed:
+                msg.string = tuple(values)
+        else:
+            old = _to_text(msg.string)
+            if not old:
+                continue
+            src = msg.id if isinstance(msg.id, str) else msg.id[0]
+            fixed = repair_legacy_tokens(old, extract_placeholders(src))
+            if fixed != old:
+                msg.string = fixed
+                repaired += 1
+
+    return repaired
+
+
+# ---------------------------------------------------------------------------
+# LibreTranslate HTTP client
+# ---------------------------------------------------------------------------
+
+def _lt_post(url: str, payload: dict, timeout: int = 60):
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+def _http_error_body(exc: urllib.error.HTTPError) -> str:
+    try:
+        return exc.read().decode("utf-8", errors="replace")
+    except Exception:
+        return ""
+
+
+def get_supported_languages(endpoint_base: str) -> set[str] | None:
+    url = endpoint_base.rstrip("/") + "/languages"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            data = json.load(resp)
+    except Exception as exc:
+        print(f"WARN: could not read LibreTranslate /languages: {exc}", file=sys.stderr)
+        return None
+
+    codes = set()
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict) and item.get("code"):
+                codes.add(str(item["code"]))
+    return codes or None
+
+
+def lt_translate_single(
+    endpoint_base: str,
+    text: str,
+    target: str,
+    source: str,
+    verbose: bool = False,
+) -> str:
+    url = endpoint_base.rstrip("/") + "/translate"
+    payload = {"q": text, "source": source, "target": target, "format": "text"}
+
+    for attempt in range(5):
+        try:
+            with _lt_post(url, payload) as resp:
+                data = json.load(resp)
+
+            if isinstance(data, dict) and "translatedText" in data:
+                return _to_text(data["translatedText"])
+
+            if isinstance(data, list):
+                if not data:
+                    return ""
+                first = data[0]
+                if isinstance(first, dict) and "translatedText" in first:
+                    return _to_text(first["translatedText"])
+                return _to_text(first)
+
+            return ""
+
+        except urllib.error.HTTPError as exc:
+            body = _http_error_body(exc)
+            if exc.code in (429, 500, 502, 503, 504):
+                if verbose:
+                    print(
+                        f"WARN: LT HTTP {exc.code}; retry {attempt + 1}/5: {body}",
+                        file=sys.stderr,
+                    )
+                time.sleep(1.3 * (attempt + 1))
+                continue
+
+            print(
+                f"WARN: LT HTTP {exc.code} for {source}->{target}: {body}",
+                file=sys.stderr,
+            )
+            return ""
+
+        except (urllib.error.URLError, TimeoutError) as exc:
+            if verbose:
+                print(
+                    f"WARN: LT connection error; retry {attempt + 1}/5: {exc}",
+                    file=sys.stderr,
+                )
+            time.sleep(1.3 * (attempt + 1))
+
+    return ""
+
+
+def lt_translate_batch(
+    endpoint_base: str,
+    texts: list[str],
+    target: str,
+    source: str,
+    verbose: bool = False,
+) -> list[str]:
+    if not texts:
+        return []
+
+    url = endpoint_base.rstrip("/") + "/translate"
+    payload = {"q": texts, "source": source, "target": target, "format": "text"}
+
+    try:
+        with _lt_post(url, payload) as resp:
+            data = json.load(resp)
+    except Exception as exc:
+        if verbose:
+            print(f"[{target}] batch request failed ({exc}); using per-item calls")
+        return [
+            lt_translate_single(endpoint_base, text, target, source, verbose)
+            for text in texts
+        ]
+
+    out: list[str] = []
+
+    # Common LibreTranslate batch response:
+    # {"translatedText": ["...", "..."]}
+    if isinstance(data, dict) and "translatedText" in data:
+        translated = data["translatedText"]
+        if isinstance(translated, list):
+            out = [_to_text(v) for v in translated]
+        elif len(texts) == 1:
+            out = [_to_text(translated)]
+
+    # Some deployments return a list of strings/dicts instead.
+    elif isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict) and "translatedText" in item:
+                out.append(_to_text(item["translatedText"]))
+            else:
+                out.append(_to_text(item))
+
+    if len(out) != len(texts):
+        if verbose:
+            print(
+                f"[{target}] batch response length mismatch "
+                f"({len(out)} != {len(texts)}); using per-item calls"
+            )
+        return [
+            lt_translate_single(endpoint_base, text, target, source, verbose)
+            for text in texts
+        ]
+
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Translation logic
+# ---------------------------------------------------------------------------
+
+def translate_catalog(
+    po_path: str,
+    endpoint: str,
+    target_lang: str,
+    source_lang: str = "en",
+    batch_size: int = 50,
+    verbose: bool = False,
+    repair_only: bool = False,
+    force: bool = False,
+) -> tuple[int, int, int]:
+    with open(po_path, encoding="utf-8") as f:
+        catalog = read_po(f, locale=target_lang)
+
+    repaired = repair_existing_catalog(catalog)
+    translated = 0
+    failed = 0
+
+    if repair_only:
+        if repaired:
+            write_po_robust(po_path, catalog)
+        return translated, repaired, failed
+
+    num_plurals = max(1, int(getattr(catalog, "num_plurals", 2) or 2))
+
+    # Each task:
+    # (message, source_part, protected_source, tokens, target_indexes, overwrite)
+    tasks = []
+
+    for msg in list(catalog):
+        if not msg.id:
+            continue
+
+        is_fuzzy = "fuzzy" in getattr(msg, "flags", set())
 
         if msg.pluralizable:
-            # plural case
-            has_any = False
-            if isinstance(msg.string, dict):
-                has_any = any(bool(v) for v in msg.string.values())
+            singular_src, plural_src = msg.id
+            values = _plural_values(msg, num_plurals)
 
-            # translate if empty OR fuzzy
-            if (not has_any) or is_fuzzy:
-                s_sing, s_plu = msg.id
-                p_sing, t_sing = protect_placeholders(s_sing)
-                p_plu, t_plu = protect_placeholders(s_plu)
-                tasks.append((msg, "sing", p_sing, t_sing))
-                tasks.append((msg, "plur", p_plu, t_plu))
+            singular_needed = force or is_fuzzy or not values[0]
+            plural_indexes = list(range(1, num_plurals))
+            plural_needed = (
+                bool(plural_indexes)
+                and (force or is_fuzzy or any(not values[i] for i in plural_indexes))
+            )
+
+            if singular_needed:
+                protected, tokens = protect_placeholders(singular_src)
+                tasks.append(
+                    (msg, "singular", protected, tokens, [0], force or is_fuzzy)
+                )
+
+            if plural_needed:
+                protected, tokens = protect_placeholders(plural_src)
+                tasks.append(
+                    (
+                        msg,
+                        "plural",
+                        protected,
+                        tokens,
+                        plural_indexes,
+                        force or is_fuzzy,
+                    )
+                )
+
         else:
-            # simple (non-plural)
-            is_empty = not msg.string
-            if is_empty or is_fuzzy:
+            current = _to_text(msg.string)
+            if force or is_fuzzy or not current:
                 src = msg.id if isinstance(msg.id, str) else msg.id[0]
-                p_src, toks = protect_placeholders(src)
-                tasks.append((msg, "singular", p_src, toks))
+                protected, tokens = protect_placeholders(src)
+                tasks.append(
+                    (msg, "simple", protected, tokens, None, force or is_fuzzy)
+                )
 
-    # --- Now translate in batches, same as before ---
+    if verbose:
+        print(f"[{target_lang}] queued translation tasks: {len(tasks)}")
+
+    # Track per-message task success so fuzzy is removed only when all queued
+    # parts of that message translated successfully.
+    expected_by_msg = defaultdict(int)
+    success_by_msg = defaultdict(int)
+    msg_by_id = {}
+
+    for task in tasks:
+        msg = task[0]
+        key = id(msg)
+        expected_by_msg[key] += 1
+        msg_by_id[key] = msg
+
     i = 0
     while i < len(tasks):
         batch = tasks[i : i + batch_size]
-        texts = [t[2] for t in batch]
+        texts = [task[2] for task in batch]
+
         if verbose:
             print(f"[{target_lang}] batch {i}..{i + len(batch) - 1}")
-        outs = lt_translate_batch(endpoint, texts, target_lang, source_lang)
 
-        if len(outs) != len(batch):
-            if verbose:
-                print(f"[{target_lang}] WARN: batch mismatch; retrying per-item")
-            outs = []
-            for _, _, ptxt, _tok in batch:
-                outs.append(lt_translate_single(endpoint, ptxt, target_lang, source_lang))
+        outs = lt_translate_batch(
+            endpoint, texts, target_lang, source_lang, verbose=verbose
+        )
 
-        for (m, part, ptxt, toks), tr in zip(batch, outs):
-            tr = _to_text(tr)
-            tr = tr or ""
-            # restore placeholders
-            tr = restore_placeholders(tr, toks)
+        for task, raw_translation in zip(batch, outs):
+            msg, part, _protected, tokens, target_indexes, overwrite = task
 
-            # final safety
+            tr = restore_placeholders(_to_text(raw_translation), tokens).strip()
+            if not tr:
+                failed += 1
+                if verbose:
+                    print(
+                        f"[{target_lang}] WARN: no translation returned for: {msg.id!r}",
+                        file=sys.stderr,
+                    )
+                continue
+
             src = (
-                m.id
-                if isinstance(m.id, str)
-                else (m.id[0] if part in ("sing", "singular") else m.id[1])
+                msg.id
+                if isinstance(msg.id, str)
+                else (msg.id[0] if part in ("singular", "simple") else msg.id[1])
             )
-            tr = repair_legacy_tokens(tr, extract_placeholders(src)[0])
+            tr = repair_legacy_tokens(tr, extract_placeholders(src))
 
-            # write back
-            if m.pluralizable:
-                if not m.string or not isinstance(m.string, dict):
-                    m.string = {}
-                if part == "sing":
-                    m.string[0] = tr
-                else:
-                    # we only got one plural form from MT, reuse it
-                    for k in range(1, 6):
-                        m.string[k] = tr
+            if msg.pluralizable:
+                values = _plural_values(msg, num_plurals)
+                assert target_indexes is not None
+                for idx in target_indexes:
+                    if overwrite or not values[idx]:
+                        values[idx] = tr
+                        translated += 1
+                msg.string = tuple(values)
             else:
-                m.string = tr
+                msg.string = tr
+                translated += 1
 
-            # IMPORTANT: drop fuzzy flag if present
-            if hasattr(m, "flags") and "fuzzy" in m.flags:
-                m.flags.remove("fuzzy")
-
-            changed += 1
+            success_by_msg[id(msg)] += 1
 
         i += batch_size
 
-    if changed or repaired:
-        write_po_robust(po_path, catalog, width=80)
-    return changed, repaired
+    # Only clear fuzzy when every required source part for the message succeeded.
+    for key, expected in expected_by_msg.items():
+        msg = msg_by_id[key]
+        if success_by_msg[key] == expected and "fuzzy" in getattr(msg, "flags", set()):
+            msg.flags.remove("fuzzy")
+
+    if translated or repaired:
+        write_po_robust(po_path, catalog)
+
+    return translated, repaired, failed
 
 
-# --- CLI ---------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def discover_languages(trans_dir: str) -> list[str]:
+    langs = []
+    for name in os.listdir(trans_dir):
+        po = os.path.join(trans_dir, name, "LC_MESSAGES", "messages.po")
+        if os.path.isfile(po) and name != "en":
+            langs.append(name)
+    return sorted(langs)
 
 
-def main():
+def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--trans-dir",
@@ -330,38 +507,43 @@ def main():
     ap.add_argument(
         "--langs",
         nargs="+",
-        help="space-separated lang codes; if omitted, auto-detect from --trans-dir",
+        help="target language codes; if omitted, auto-detect from --trans-dir",
     )
     ap.add_argument(
         "--endpoint",
-        # default to service name in docker compose
-        default=os.environ.get("LT_URL", "http://libretranslate:5000"),
+        default=os.environ.get("LT_URL", "http://127.0.0.1:5001"),
         help="LibreTranslate base URL (no trailing /translate)",
     )
-    ap.add_argument("--source", default="en", help="source language code")
-    ap.add_argument("--batch", type=int, default=60, help="batch size")
-    ap.add_argument("--verbose", action="store_true", help="verbose logs")
+    ap.add_argument("--source", default="en")
+    ap.add_argument("--batch", type=int, default=60)
+    ap.add_argument("--verbose", action="store_true")
     ap.add_argument(
         "--repair-only",
         action="store_true",
-        help="only repair legacy PH tokens; do not call MT",
+        help="repair old placeholder damage without calling LibreTranslate",
+    )
+    ap.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite existing translations too (normally only empty/fuzzy entries are translated)",
     )
     args = ap.parse_args()
 
-    # 1) auto-detect langs if user didn't pass --langs
-    langs = args.langs
-    if not langs:
-        langs = []
-        # NOTE: this was the line with the typo
-        for name in os.listdir(args.trans_dir):
-            lang_dir = os.path.join(args.trans_dir, name)
-            po_path = os.path.join(lang_dir, "LC_MESSAGES", "messages.po")
-            if os.path.isfile(po_path):
-                langs.append(name)
-        langs.sort()
+    if not os.path.isdir(args.trans_dir):
+        print(f"ERROR: translation directory not found: {args.trans_dir}", file=sys.stderr)
+        return 2
 
-    total_changed = 0
+    langs = args.langs or discover_languages(args.trans_dir)
+    if not langs:
+        print("ERROR: no target language catalogues found", file=sys.stderr)
+        return 2
+
+    supported = None if args.repair_only else get_supported_languages(args.endpoint)
+
+    total_translated = 0
     total_repaired = 0
+    total_failed = 0
+    skipped = []
 
     for lang in langs:
         po = os.path.join(args.trans_dir, lang, "LC_MESSAGES", "messages.po")
@@ -369,29 +551,52 @@ def main():
             print(f"[{lang}] missing: {po} — skipping")
             continue
 
+        if supported is not None and lang not in supported:
+            print(
+                f"[{lang}] WARNING: target is not advertised by "
+                f"{args.endpoint}/languages — skipping"
+            )
+            skipped.append(lang)
+            continue
+
+        if args.repair_only:
+            print(f"[{lang}] repairing existing placeholder tokens …")
+        else:
+            mode = "all" if args.force else "empty/fuzzy"
+            print(f"[{lang}] translating {mode} entries via {args.endpoint} …")
+
+        translated, repaired, failed = translate_catalog(
+            po_path=po,
+            endpoint=args.endpoint,
+            target_lang=lang,
+            source_lang=args.source,
+            batch_size=args.batch,
+            verbose=args.verbose,
+            repair_only=args.repair_only,
+            force=args.force,
+        )
+
         print(
-            f"[{lang}] translating empty entries via {args.endpoint} …"
-            if not args.repair_only
-            else f"[{lang}] repairing placeholder tokens …"
+            f"[{lang}] translated values: {translated}; "
+            f"repaired: {repaired}; failed tasks: {failed}"
         )
+        total_translated += translated
+        total_repaired += repaired
+        total_failed += failed
 
-        ch, rep = translate_catalog(
-            po,
-            args.endpoint,
-            lang,
-            args.source,
-            args.batch,
-            args.verbose,
-            args.repair_only,
-        )
-        print(f"[{lang}] filled {ch} entries; repaired {rep} existing")
-        total_changed += ch
-        total_repaired += rep
+    print(
+        "ALL DONE — "
+        f"translated values: {total_translated}; "
+        f"repaired: {total_repaired}; "
+        f"failed tasks: {total_failed}"
+    )
+    if skipped:
+        print("Skipped unsupported languages: " + ", ".join(skipped))
 
-    print(f"ALL DONE — total filled: {total_changed}; repaired: {total_repaired}")
-    if total_changed == 0 and total_repaired == 0:
-        print("Note: If zero, verify LT_URL, languages, and that msgids exist/are empty.")
+    # We intentionally do not fail the whole pipeline merely because a few
+    # individual MT requests failed. Their msgstr/fuzzy state is preserved.
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
