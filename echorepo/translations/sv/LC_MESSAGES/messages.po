@@ -1,0 +1,964 @@
+# Swedish translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"PO-Revision-Date: 2026-08-22 16:23+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: sv\n"
+"Language-Team: sv <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: echorepo/services/firebase.py:55
+msgid "Password recovery is not configured for this site."
+msgstr "Lösenordsåterställning är inte konfigurerad för denna webbplats."
+
+#: echorepo/services/firebase.py:64
+msgid "Could not contact the password recovery service."
+msgstr "Kunde inte kontakta tjänsten för återställning av lösenord."
+
+#: echorepo/services/firebase.py:69
+msgid "If this address is registered, a reset link has been sent."
+msgstr "Om denna adress är registrerad har en återställningslänk skickats."
+
+#: echorepo/services/firebase.py:70
+msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+msgstr "Nytt lösenord kan ta upp till 30 minuter att aktivera i ECHOREPO."
+
+#: echorepo/services/firebase.py:74
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
+msgstr "Lösenordsåterhämtning är tillfälligt otillgänglig. Kontakta arrangörerna."
+
+#: echorepo/templates/base.html:7 echorepo/templates/base.html:11
+msgid "ECHOrepo — EU Soil Data"
+msgstr "ECHOrepo - EU:s jorddata"
+
+#: echorepo/templates/base.html:10
+msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
+msgstr "ECHOrepo - Medborgarvetenskapliga markprover under EU-finansierat ECHO-projekt"
+
+#: echorepo/templates/base.html:14
+msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
+msgstr ""
+"Access och ladda ner dina markprover. En del av EU-finansierade ECHO-"
+"projektet."
+
+#: echorepo/templates/base.html:179
+msgid "Skip to content"
+msgstr "Hoppa till innehåll"
+
+#: echorepo/templates/base.html:185
+msgid "Primary"
+msgstr "Primär"
+
+#: echorepo/templates/base.html:188
+msgid "ECHOrepo logo"
+msgstr "ECHOrepo logotyp"
+
+#: echorepo/templates/base.html:194
+msgid "Toggle navigation"
+msgstr "Växla navigering"
+
+#: echorepo/templates/base.html:201
+msgid "About"
+msgstr "Om"
+
+#: echorepo/templates/base.html:203
+msgid "For Participants"
+msgstr "För deltagare"
+
+#: echorepo/templates/base.html:205
+msgid "Partners"
+msgstr "Partners"
+
+#: echorepo/templates/base.html:207
+msgid "News & Events"
+msgstr "Nyheter och evenemang"
+
+#: echorepo/templates/base.html:210
+msgid "Resources"
+msgstr "Resurser"
+
+#: echorepo/templates/base.html:213
+msgid "Media Kit"
+msgstr "Media Kit"
+
+#: echorepo/templates/base.html:215
+msgid "Publications"
+msgstr "Publikationer"
+
+#: echorepo/templates/base.html:217
+msgid "Newsletter Archive"
+msgstr "Nyhetsbrev Arkiv"
+
+#: echorepo/templates/base.html:218
+msgid "Zenodo Publications"
+msgstr "Zenodo publikationer"
+
+#: echorepo/templates/base.html:233
+msgid "Change language"
+msgstr "Ändra språk"
+
+#: echorepo/templates/base.html:253
+msgid "Logged in as"
+msgstr "Logga in som"
+
+#: echorepo/templates/base.html:259
+msgid "Logout"
+msgstr "Logout"
+
+#: echorepo/templates/base.html:263
+msgid "Sign in"
+msgstr "Logga in"
+
+#: echorepo/templates/base.html:281
+msgid "ECHOrepo is part of the EU- and UKRI-funded"
+msgstr "ECHOrepo ingår i EU- och UKRI-finansierade"
+
+#: echorepo/templates/base.html:281
+msgid "project"
+msgstr "projektprojekt"
+
+#: echorepo/templates/base.html:283
+msgid "Need help?"
+msgstr "Behöver du hjälp?"
+
+#: echorepo/templates/base.html:291
+msgid "Funded by UK Research and Innovation (UKRI)"
+msgstr "Finansierad av UK Research and Innovation (UKRI)"
+
+#: echorepo/templates/base.html:297
+msgid "Co-funded by the European Union"
+msgstr "Samfinansierad av Europeiska unionen"
+
+#: echorepo/templates/base.html:301
+msgid "Funded by the European Union and UK Research and Innovation"
+msgstr "Finansierad av EU och UK Research and Innovation"
+
+#: echorepo/templates/coordinate_issues.html:2
+#: echorepo/templates/coordinate_issues.html:6
+msgid "Coordinate issues"
+msgstr "Samordna frågor"
+
+#: echorepo/templates/coordinate_issues.html:10
+msgid "The coordinate issues file was not found:"
+msgstr "Filen koordinatfrågor hittades inte:"
+
+#: echorepo/templates/coordinate_issues.html:18
+#: echorepo/templates/coordinate_issues.html:102 echorepo/templates/search.html:10
+#: echorepo/templates/search.html:76
+msgid "Sample / QR"
+msgstr "Prov / QR"
+
+#: echorepo/templates/coordinate_issues.html:23
+#: echorepo/templates/coordinate_issues.html:103
+msgid "User ID"
+msgstr "Användar-ID"
+
+#: echorepo/templates/coordinate_issues.html:28
+#: echorepo/templates/coordinate_issues.html:108
+msgid "Issue type"
+msgstr "Issue typ"
+
+#: echorepo/templates/coordinate_issues.html:30
+msgid "Any issue"
+msgstr "Alla problem"
+
+#: echorepo/templates/coordinate_issues.html:41 echorepo/templates/explore.html:107
+#: echorepo/templates/search.html:31
+msgid "Search"
+msgstr "Sök efter Sök"
+
+#: echorepo/templates/coordinate_issues.html:48
+#: echorepo/templates/coordinate_issues.html:106
+msgid "Actual country"
+msgstr "Faktiskt land"
+
+#: echorepo/templates/coordinate_issues.html:54
+#: echorepo/templates/coordinate_issues.html:107
+msgid "Planned country"
+msgstr "Planerat land"
+
+#: echorepo/templates/coordinate_issues.html:64
+msgid "Show approved"
+msgstr "Visa godkänd"
+
+#: echorepo/templates/coordinate_issues.html:78
+msgid "Export current results"
+msgstr "Exportera aktuella resultat"
+
+#: echorepo/templates/coordinate_issues.html:87
+msgid "coordinate issue(s)"
+msgstr "samordna emission(s)"
+
+#: echorepo/templates/coordinate_issues.html:90
+msgid "Source:"
+msgstr "Källa:"
+
+#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:153 echorepo/templates/issues.html:31
+#: echorepo/templates/issues.html:77 echorepo/templates/search.html:80
+msgid "Lat"
+msgstr "Lat"
+
+#: echorepo/templates/coordinate_issues.html:105
+#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/issues.html:78 echorepo/templates/search.html:81
+msgid "Lon"
+msgstr "Lon"
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid "Fix coordinates"
+msgstr "Fix koordinater"
+
+#: echorepo/templates/coordinate_issues.html:121
+msgid "Show only this sample on map"
+msgstr "Visa endast detta prov på kartan"
+
+#: echorepo/templates/coordinate_issues.html:160 echorepo/templates/issues.html:53
+#: echorepo/templates/issues.html:96
+msgid "Save"
+msgstr "Spara"
+
+#: echorepo/templates/coordinate_issues.html:169
+msgid "No coordinate issues for these filters."
+msgstr "Inga samordnade problem för dessa filter."
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "Showing page"
+msgstr "Visa sida"
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "of"
+msgstr "av"
+
+#: echorepo/templates/coordinate_issues.html:182 echorepo/templates/search.html:126
+msgid "results"
+msgstr "resultat"
+
+#: echorepo/templates/explore.html:2
+msgid "ECHOrepo — Explore"
+msgstr "ECHOrepo - Utforska"
+
+#: echorepo/templates/explore.html:89
+msgid "Explore the map"
+msgstr "Utforska kartan"
+
+#: echorepo/templates/explore.html:92
+msgid "Sign in to export data and access your personal samples."
+msgstr "Logga in för att exportera data och få tillgång till dina personliga prover."
+
+#: echorepo/templates/explore.html:101
+msgid "Download dataset from Zenodo"
+msgstr "Ladda ner dataset från Zenodo"
+
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:279
+msgid "Mobile version"
+msgstr "Mobilversion"
+
+#: echorepo/templates/explore.html:117 echorepo/templates/results.html:282
+msgid "Desktop version"
+msgstr "Desktop version"
+
+#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
+#: echorepo/templates/search.html:79 static/js/map.js:1490
+msgid "pH"
+msgstr "pH"
+
+#: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
+msgid "min"
+msgstr "min"
+
+#: echorepo/templates/explore.html:132 echorepo/templates/results.html:455
+msgid "max"
+msgstr "max"
+
+#: echorepo/templates/explore.html:136 echorepo/templates/search.html:15
+#: echorepo/templates/search.html:78
+msgid "Country"
+msgstr "Landet"
+
+#: echorepo/templates/explore.html:139
+msgid "All countries"
+msgstr "Alla länder"
+
+#: echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Datum"
+
+#: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
+msgid "Apply"
+msgstr "Applicera"
+
+#: echorepo/templates/explore.html:157 echorepo/templates/results.html:460
+msgid "Export filtered (0)"
+msgstr "Exportfiltrerat (0)"
+
+#: echorepo/templates/explore.html:163
+msgid "Copy view link"
+msgstr "Copy View Link"
+
+#: echorepo/templates/issues.html:2
+msgid "Data quality issues — ECHOrepo"
+msgstr "Datakvalitetsfrågor – ECHOrepo"
+
+#: echorepo/templates/issues.html:6 echorepo/templates/issues.html:14
+msgid "Back to My Data"
+msgstr "Tillbaka till mina data"
+
+#: echorepo/templates/issues.html:12
+msgid "Data quality issues"
+msgstr "Datakvalitetsfrågor"
+
+#: echorepo/templates/issues.html:19
+msgid "Data issues"
+msgstr "Datafrågor"
+
+#: echorepo/templates/issues.html:21
+#, python-format
+msgid "Default coordinates (%(lat)s, %(lon)s)"
+msgstr "Standardkoordinater (%(lat)s,%(lon)s)"
+
+#: echorepo/templates/issues.html:23
+msgid "No entries with default coordinates"
+msgstr "Inga bidrag med standardkoordinater"
+
+#: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
+msgid "Sample"
+msgstr "Sample"
+
+#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Användare"
+
+#: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
+msgid "QR"
+msgstr "QR"
+
+#: echorepo/templates/issues.html:33 echorepo/templates/issues.html:79
+msgid "Fix"
+msgstr "Fix"
+
+#: echorepo/templates/issues.html:49 echorepo/templates/issues.html:94
+msgid "Lat (dec or DMS)"
+msgstr "Lat (dec eller DMS)"
+
+#: echorepo/templates/issues.html:51 echorepo/templates/issues.html:95
+msgid "Lon (dec or DMS)"
+msgstr "Lon (dec eller DMS)"
+
+#: echorepo/templates/issues.html:66
+msgid "Country mismatches"
+msgstr "Land mismatches"
+
+#: echorepo/templates/issues.html:68
+msgid "No country mismatches"
+msgstr "Inget land mismatches"
+
+#: echorepo/templates/issues.html:70
+msgid "Actual country (from coords) is not in the planned list for this QR."
+msgstr "Faktiskt land (från koorder) finns inte i den planerade listan för denna QR."
+
+#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:269
+msgid "Upload lab data"
+msgstr "Ladda upp lab data"
+
+#: echorepo/templates/lab_upload.html:6
+msgid ""
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with "
+"sheet"
+msgstr ""
+"Ladda upp metallresultat (CSV / XLSX) eller biologisk mångfald OTU-bord (XLSX"
+" med ark"
+
+#: echorepo/templates/lab_upload.html:8
+msgid "The server will detect the format automatically."
+msgstr "Servern kommer att upptäcka formatet automatiskt."
+
+#: echorepo/templates/lab_upload.html:13
+msgid "Upload"
+msgstr "Upload"
+
+#: echorepo/templates/login.html:4
+msgid "ECHOrepo — Access"
+msgstr "ECHOrepo - Tillgång"
+
+#: echorepo/templates/login.html:13
+msgid "Access your data"
+msgstr "Få tillgång till dina data"
+
+#: echorepo/templates/login.html:17
+msgid "Sign in with your Keycloak credentials."
+msgstr "Logga in med dina Keycloak-uppgifter."
+
+#: echorepo/templates/login.html:48
+msgid "Email or username"
+msgstr "E-post eller användarnamn"
+
+#: echorepo/templates/login.html:57
+msgid "you@example.org"
+msgstr "you@example.org"
+
+#: echorepo/templates/login.html:65
+msgid "Password"
+msgstr "Lösenord"
+
+#: echorepo/templates/login.html:86
+msgid "Continue"
+msgstr "Fortsätt"
+
+#: echorepo/templates/login.html:94
+msgid "Forgot your password?"
+msgstr "Glömt ditt lösenord?"
+
+#: echorepo/templates/login.html:112
+msgid "or"
+msgstr "eller"
+
+#: echorepo/templates/login.html:123
+msgid "Sign in through Keycloak"
+msgstr "Logga in genom Keycloak"
+
+#: echorepo/templates/login.html:129
+msgid "Issues signing in? Contact the organisers."
+msgstr "Frågor att logga in? Kontakta arrangörerna."
+
+#: echorepo/templates/login.html:138
+msgid "GDPR-friendly access"
+msgstr "GDPR-vänlig åtkomst"
+
+#: echorepo/templates/login.html:143
+msgid "Download your data anytime"
+msgstr "Ladda ner dina data när som helst"
+
+#: echorepo/templates/results.html:3
+msgid "ECHOrepo — Your Data"
+msgstr "ECHOrepo - Dina data"
+
+#: echorepo/templates/results.html:9
+msgid "Download all samples (CSV)"
+msgstr "Ladda ner alla prover (CSV)"
+
+#: echorepo/templates/results.html:14 echorepo/templates/results.html:273
+#: echorepo/templates/search.html:2 echorepo/templates/search.html:5
+msgid "Search samples"
+msgstr "Sökprover"
+
+#: echorepo/templates/results.html:256
+msgid "Your data"
+msgstr "Dina data"
+
+#: echorepo/templates/results.html:257
+msgid ""
+"Explore your soil sample locations on the map, then export or browse the "
+"table."
+msgstr ""
+"Utforska dina markprovplatser på kartan, exportera eller surfa sedan på "
+"bordet."
+
+#: echorepo/templates/results.html:264
+#, python-format
+msgid "Fix data issues (%(n)s)"
+msgstr "Fix dataproblem (%(n)s)"
+
+#: echorepo/templates/results.html:291 echorepo/templates/results.html:352
+msgid "Final survey"
+msgstr "Final Enkät"
+
+#: echorepo/templates/results.html:293
+msgid "We sincerely thank you for your commitment to this project!"
+msgstr "Vi tackar dig uppriktigt för ditt engagemang för detta projekt!"
+
+#: echorepo/templates/results.html:296
+msgid ""
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after\n"
+"      soil sampling. The majority of questions are consistent with the "
+"previous surveys so that we can accurately\n"
+"      measure changes over time and understand the impact of project "
+"participation."
+msgstr ""
+"Detta är den tredje och sista undersökningen i projektet, efter de första som"
+" du slutfört före och efter\n"
+"jordprovtagning. Majoriteten av frågorna är förenliga med de tidigare "
+"undersökningarna så att vi kan korrekt\n"
+"mäta förändringar över tid och förstå effekterna av projektdeltagande."
+
+#: echorepo/templates/results.html:301
+msgid ""
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check "
+"back at a later time."
+msgstr ""
+"Innan du börjar: Fyll bara i den här undersökningen om laboratoriet resultat "
+"från ditt markprov (er) redan har\n"
+"har lagts till i förvaret. Om resultaten väntar, vänligen kolla tillbaka vid "
+"ett senare tillfälle."
+
+#: echorepo/templates/results.html:307
+msgid "Go to final survey"
+msgstr "Gå till slutundersökning"
+
+#: echorepo/templates/results.html:312
+msgid "Data use information"
+msgstr "Data använder information"
+
+#: echorepo/templates/results.html:317
+msgid "I have already completed it"
+msgstr "Jag har redan slutfört det"
+
+#: echorepo/templates/results.html:322
+msgid "Processing survey data in the ECHO project"
+msgstr "Behandling av undersökningsdata i ECHO-projektet"
+
+#: echorepo/templates/results.html:324
+msgid ""
+"The objective of this survey data is to examine the impact of project "
+"participation on participant\n"
+"        attitudes and motivation towards soil."
+msgstr ""
+"Syftet med undersökningsdata är att undersöka effekterna av projektdeltagande"
+" på deltagaren\n"
+"attityder och motivation mot jorden."
+
+#: echorepo/templates/results.html:328
+msgid ""
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your\n"
+"        details regarding age and gender are only used for statistical "
+"purposes and all details are collected and\n"
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
+msgstr ""
+"Din information kommer endast att användas för vetenskapliga ändamål. Vi "
+"samlar inte namn eller adresser. Dina Dina Dina Dina Dina Dina Dina Dina Dina"
+" Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina "
+"Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina "
+"Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina "
+"Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina "
+"Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina "
+"Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina Dina "
+"Dina Dina Dina Dina Dina Dina Din Din Din Din Din Din Din Din Din Dina Dina "
+"Din Dina Dina Dina Dina Dina Din Din Din Din Din Din Dina Din Dina Dina Dina "
+"Din Dina Din Din Din Din\n"
+"uppgifter om ålder och kön används endast för statistiska ändamål och alla "
+"detaljer samlas in och\n"
+"utvärderas anonymt. Det är inte möjligt att dra slutsatser om din person när "
+"som helst."
+
+#: echorepo/templates/results.html:333
+msgid ""
+"Answering each question in the survey is most appreciated as it plays a "
+"crucial role in providing valuable\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
+"        outcomes are meaningful and well-informed."
+msgstr ""
+"Att svara på varje fråga i undersökningen är mest uppskattat eftersom det "
+"spelar en avgörande roll för att ge värdefulla\n"
+"insikter som förbättrar ECHO-projektets relevans och påverkan. Dina ärliga "
+"svar är nödvändiga för\n"
+"förstå hur engagemanget med projektet påverkar attityder och motivationer, "
+"vilket säkerställer projektets\n"
+"Resultaten är meningsfulla och välinformerade."
+
+#: echorepo/templates/results.html:339
+msgid ""
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be\n"
+"        interrupted. There are no right or wrong answers — answer "
+"spontaneously."
+msgstr ""
+"Undersökningen tar cirka 8-10 minuter att slutföra. Hitta ett lugnt utrymme "
+"där du inte kommer att vara\n"
+"avbruten. Det finns inga rätta eller fel svar - svar spontant."
+
+#: echorepo/templates/results.html:343
+msgid ""
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
+msgstr ""
+"Baserat på den information som lämnats till dig, vänligen samtyck till att "
+"delta i undersökningen nedan."
+
+#: echorepo/templates/results.html:353
+msgid "thank you for your participation!"
+msgstr "tack för ditt deltagande!"
+
+#: echorepo/templates/results.html:357
+msgid "Show details"
+msgstr "Visa detaljer"
+
+#: echorepo/templates/results.html:361
+msgid "Dismiss"
+msgstr "Avfärda"
+
+#: echorepo/templates/results.html:371
+msgid "No data found for"
+msgstr "Inga data som finns för"
+
+#: echorepo/templates/results.html:371
+msgid ""
+"If you recently submitted samples, try again\n"
+"    later."
+msgstr ""
+"Om du nyligen skickade prover, försök igen\n"
+"senare."
+
+#: echorepo/templates/results.html:385
+msgid "Download"
+msgstr "Ladda ner"
+
+#: echorepo/templates/results.html:392
+msgid "CSV (per-user)"
+msgstr "CSV (per-user)"
+
+#: echorepo/templates/results.html:400
+msgid "XLSX (per-user)"
+msgstr "XLSX (per-user)"
+
+#: echorepo/templates/results.html:409
+msgid "All samples (CSV, anonymised)"
+msgstr "Alla prover (CSV, anonymiserade)"
+
+#: echorepo/templates/results.html:414
+msgid "GeoJSON (per-user)"
+msgstr "GeoJSON (per-user)"
+
+#: echorepo/templates/results.html:420
+msgid "Canonical exports"
+msgstr "Kanonisk export"
+
+#: echorepo/templates/results.html:423
+msgid "samples.csv"
+msgstr "samples.csv"
+
+#: echorepo/templates/results.html:428
+msgid "sample_images.csv"
+msgstr "sample images.csv"
+
+#: echorepo/templates/results.html:433
+msgid "sample_parameters.csv"
+msgstr "sample parameters.csv"
+
+#: echorepo/templates/results.html:438
+msgid "sample_biodiversity.csv"
+msgstr "sample biodiversity.csv"
+
+#: echorepo/templates/results.html:443
+msgid "All canonical (zip)"
+msgstr "Alla kanoniska (zip)"
+
+#: echorepo/templates/results.html:457
+msgid "Apply pH filter"
+msgstr "Applicera pH-filter"
+
+#: echorepo/templates/results.html:459
+msgid "Export rows matching current pH filter"
+msgstr "Exportrader som matchar aktuellt pH-filter"
+
+#: echorepo/templates/results.html:480
+msgid "Privacy information"
+msgstr "Integritetsinformation"
+
+#: echorepo/templates/results.html:507
+msgid ""
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for\n"
+"              this project."
+msgstr ""
+"Jag har läst sekretessinformationen ovan och jag samtycker till behandlingen "
+"av mina personuppgifter för\n"
+"Detta projekt."
+
+#: echorepo/templates/results.html:515
+msgid "Accept and continue"
+msgstr "Acceptera och fortsätta"
+
+#: echorepo/templates/results.html:889
+msgid "Show on map"
+msgstr "Visa på karta"
+
+#: echorepo/templates/results.html:902 echorepo/templates/results.html:926
+#: echorepo/templates/results.html:935
+msgid "Could not locate this sample on the map."
+msgstr "Kunde inte hitta detta prov på kartan."
+
+#: echorepo/templates/search.html:17 static/js/map.js:226
+msgid "Any country"
+msgstr "Alla länder"
+
+#: echorepo/templates/search.html:22
+msgid "pH min"
+msgstr "pH min"
+
+#: echorepo/templates/search.html:26
+msgid "pH max"
+msgstr "pH max"
+
+#: echorepo/templates/search.html:38
+msgid "Date from"
+msgstr "Datum från"
+
+#: echorepo/templates/search.html:42
+msgid "Date to"
+msgstr "Datum för"
+
+#: echorepo/templates/search.html:56
+msgid "Export current search"
+msgstr "Exportera aktuell sökning"
+
+#: echorepo/templates/search.html:60
+msgid "Sign in to export results as ZIP."
+msgstr "Logga in för att exportera resultat som ZIP."
+
+#: echorepo/templates/search.html:77
+msgid "Timestamp"
+msgstr "Timestamp"
+
+#: echorepo/templates/search.html:82
+msgid "Collected by"
+msgstr "Samlas av"
+
+#: echorepo/templates/search.html:97
+msgid "Show this sample on map"
+msgstr "Visa detta prov på kartan"
+
+#: echorepo/templates/search.html:114
+msgid "No results for these filters."
+msgstr "Inga resultat för dessa filter."
+
+#: echorepo/templates/zenodo_publications.html:3
+msgid "ECHOrepo — Zenodo Publications"
+msgstr "ECHOrepo - Zenodo Publikationer"
+
+#: echorepo/templates/zenodo_publications.html:8
+msgid "Published datasets on Zenodo"
+msgstr "Publicerade dataset på Zenodo"
+
+#: echorepo/templates/zenodo_publications.html:10
+msgid ""
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
+msgstr ""
+"Denna sida listar ECHOrepo-dataset publicerade på Zenodo, med DOI-länkar och "
+"föreslagna referenser."
+
+#: echorepo/templates/zenodo_publications.html:24
+#: echorepo/templates/zenodo_publications.html:27
+msgid "Untitled dataset"
+msgstr "Untitled Dataset"
+
+#: echorepo/templates/zenodo_publications.html:32
+msgid "Published at"
+msgstr "Publicerad på"
+
+#: echorepo/templates/zenodo_publications.html:43
+msgid "Version DOI"
+msgstr "Version DOI"
+
+#: echorepo/templates/zenodo_publications.html:50
+msgid "Concept DOI"
+msgstr "Koncept DOI"
+
+#: echorepo/templates/zenodo_publications.html:63
+msgid "API path"
+msgstr "API väg"
+
+#: echorepo/templates/zenodo_publications.html:64
+msgid "Uploaded file"
+msgstr "Uppladdad fil"
+
+#: echorepo/templates/zenodo_publications.html:65
+msgid "Deposition ID"
+msgstr "Deposition ID"
+
+#: echorepo/templates/zenodo_publications.html:66
+msgid "Concept record ID"
+msgstr "Concept Record ID"
+
+#: echorepo/templates/zenodo_publications.html:69
+msgid "Download source"
+msgstr "Ladda ner källa"
+
+#: echorepo/templates/zenodo_publications.html:71
+msgid "source URL"
+msgstr "källa URL"
+
+#: echorepo/templates/zenodo_publications.html:76
+msgid "Filters"
+msgstr "Filter"
+
+#: echorepo/templates/zenodo_publications.html:77
+msgid "Zenodo page"
+msgstr "Zenodo sidan"
+
+#: echorepo/templates/zenodo_publications.html:79
+msgid "record page"
+msgstr "record page"
+
+#: echorepo/templates/zenodo_publications.html:88
+msgid "Suggested reference"
+msgstr "Föreslagen referens"
+
+#: echorepo/templates/zenodo_publications.html:98
+msgid "No Zenodo publications have been logged yet."
+msgstr "Inga Zenodo-publikationer har loggats ännu."
+
+#: static/js/map.js:172
+msgid "Link copied to clipboard"
+msgstr "Link kopierad till Clipboard"
+
+#: static/js/map.js:175
+msgid "Copy this link:"
+msgstr "Kopiera denna länk:"
+
+#: static/js/map.js:778 static/js/map.js:3151
+#, python-brace-format
+msgid "Export filtered (${n})"
+msgstr "Exportfiltrerat (${n})"
+
+#: static/js/map.js:788 static/js/map.js:2945
+msgid "Release mouse to finish drawing."
+msgstr "Släpp musen för att avsluta ritningen."
+
+#: static/js/map.js:862
+msgid "Not available"
+msgstr "Inte tillgänglig"
+
+#: static/js/map.js:915
+msgid "Street map"
+msgstr "Street Karta"
+
+#: static/js/map.js:916
+msgid "Satellite"
+msgstr "Satellit"
+
+#: static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr "Procentvärdena (%) kan omvandlas till mg/kg genom att multiplicera med 10000."
+
+#: static/js/map.js:1138
+msgid "Unit conversion help"
+msgstr "Enhet konvertering hjälp"
+
+#: static/js/map.js:1485
+msgid "QR code"
+msgstr "QR-kod"
+
+#: static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Jordens organiska materia"
+
+#: static/js/map.js:1504
+msgid "Texture"
+msgstr "Texture"
+
+#: static/js/map.js:1509
+msgid "Structure"
+msgstr "Struktur"
+
+#: static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Jordmaskar"
+
+#: static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plast"
+
+#: static/js/map.js:1524
+msgid "Debris"
+msgstr "Debris"
+
+#: static/js/map.js:1529
+msgid "Contamination"
+msgstr "Förorening"
+
+#: static/js/map.js:1539
+msgid "Observations"
+msgstr "Observationer"
+
+#: static/js/map.js:2175 static/js/map.js:3437
+msgid "Loading map data..."
+msgstr "Ladda kartdata..."
+
+#: static/js/map.js:2179
+msgid "Please wait"
+msgstr "Vänligen vänta"
+
+#: static/js/map.js:2453
+msgid "Loading..."
+msgstr "Loading..."
+
+#: static/js/map.js:2775
+msgid "Draw selection rectangle"
+msgstr "Drag urval rektangel"
+
+#: static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "Avbryt ritning"
+
+#: static/js/map.js:2783
+msgid "Cancel"
+msgstr "Avbokning"
+
+#: static/js/map.js:2786
+msgid "Delete last point drawn"
+msgstr "Ta bort sista punkten dragen"
+
+#: static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Ta bort sista punkten"
+
+#: static/js/map.js:2794
+msgid "Click and drag to draw a selection rectangle. You can draw more than one."
+msgstr "Klicka och dra för att dra ett urval rektangel. Du kan dra mer än en."
+
+#: static/js/map.js:2800
+msgid "Release mouse to add this rectangle to the selection."
+msgstr "Släpp musen för att lägga till denna rektangel till valet."
+
+#: static/js/map.js:2881
+msgid "No selected samples to export."
+msgstr "Inga utvalda prover att exportera."
+
+#: static/js/map.js:3197
+msgid "Please sign in to export data."
+msgstr "Vänligen logga in för att exportera data."
+
+#: static/js/map.js:3264
+msgid "Loading sample..."
+msgstr "Ledande prov..."
+
+#: static/js/map.js:3348
+msgid "Loading samples..."
+msgstr "Ledande prover..."
+
+#: static/js/map.js:3349
+msgid "Fetching visible map area"
+msgstr "Fetching synlig karta område"
+
+#: static/js/map.js:3380
+msgid "Rendering markers..."
+msgstr "Gör markörer..."
+
+#: static/js/map.js:3381
+msgid "Building clusters and popups"
+msgstr "Bygga kluster och popups"
+
+#: static/js/map.js:3438
+msgid "Preparing map"
+msgstr "Förbereda karta"
+

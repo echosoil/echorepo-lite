@@ -1,0 +1,958 @@
+# Lithuanian translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"PO-Revision-Date: 2026-08-22 16:23+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: lt\n"
+"Language-Team: lt <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: echorepo/services/firebase.py:55
+msgid "Password recovery is not configured for this site."
+msgstr "Slaptažodžio atkūrimas nėra konfigūruotas šioje svetainėje."
+
+#: echorepo/services/firebase.py:64
+msgid "Could not contact the password recovery service."
+msgstr "Nepavyko susisiekti su slaptažodžio atkūrimo paslauga."
+
+#: echorepo/services/firebase.py:69
+msgid "If this address is registered, a reset link has been sent."
+msgstr "NAME OF TRANSLATORS."
+
+#: echorepo/services/firebase.py:70
+msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+msgstr "Naujas slaptažodis gali užtrukti iki 30 minučių, kad aktyvuotumėte ECHOREPO."
+
+#: echorepo/services/firebase.py:74
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
+msgstr ""
+"Slaptažodžio atkūrimas laikinai negalimas. Prašome susisiekti su "
+"organizatoriais."
+
+#: echorepo/templates/base.html:7 echorepo/templates/base.html:11
+msgid "ECHOrepo — EU Soil Data"
+msgstr "ECHORUSIJA - ES duomenys apie dirvožemį"
+
+#: echorepo/templates/base.html:10
+msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
+msgstr ""
+"ECHA - Europos Sąjungos finansuojamo ECHO projekto piliečių moksliniai "
+"dirvožemio mėginiai"
+
+#: echorepo/templates/base.html:14
+msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
+msgstr ""
+"Prieiga ir atsisiųsti savo dirvožemio pavyzdžius. ES finansuojamo ECHO "
+"projekto dalis."
+
+#: echorepo/templates/base.html:179
+msgid "Skip to content"
+msgstr "Praleisti į turinį"
+
+#: echorepo/templates/base.html:185
+msgid "Primary"
+msgstr "Pradinis"
+
+#: echorepo/templates/base.html:188
+msgid "ECHOrepo logo"
+msgstr "ECHA logotipas"
+
+#: echorepo/templates/base.html:194
+msgid "Toggle navigation"
+msgstr "@ info: tooltip"
+
+#: echorepo/templates/base.html:201
+msgid "About"
+msgstr "@ info: tooltip"
+
+#: echorepo/templates/base.html:203
+msgid "For Participants"
+msgstr "Dalyviai"
+
+#: echorepo/templates/base.html:205
+msgid "Partners"
+msgstr "Partneriai"
+
+#: echorepo/templates/base.html:207
+msgid "News & Events"
+msgstr "Naujienos ir įvykiai"
+
+#: echorepo/templates/base.html:210
+msgid "Resources"
+msgstr "Šaltiniai"
+
+#: echorepo/templates/base.html:213
+msgid "Media Kit"
+msgstr "Medijos rinkinys"
+
+#: echorepo/templates/base.html:215
+msgid "Publications"
+msgstr "Publikacijos"
+
+#: echorepo/templates/base.html:217
+msgid "Newsletter Archive"
+msgstr "Comment"
+
+#: echorepo/templates/base.html:218
+msgid "Zenodo Publications"
+msgstr "Zenodo leidiniai"
+
+#: echorepo/templates/base.html:233
+msgid "Change language"
+msgstr "Keisti kalbą"
+
+#: echorepo/templates/base.html:253
+msgid "Logged in as"
+msgstr "Prisijungė kaip"
+
+#: echorepo/templates/base.html:259
+msgid "Logout"
+msgstr "Comment"
+
+#: echorepo/templates/base.html:263
+msgid "Sign in"
+msgstr "Pasirašymas"
+
+#: echorepo/templates/base.html:281
+msgid "ECHOrepo is part of the EU- and UKRI-funded"
+msgstr "ECHA yra ES ir UKRI finansuojamų projektų dalis"
+
+#: echorepo/templates/base.html:281
+msgid "project"
+msgstr "projektas"
+
+#: echorepo/templates/base.html:283
+msgid "Need help?"
+msgstr "Man reikia pagalbos?"
+
+#: echorepo/templates/base.html:291
+msgid "Funded by UK Research and Innovation (UKRI)"
+msgstr "Finansuoja JK mokslinių tyrimų ir inovacijų (UKRI)"
+
+#: echorepo/templates/base.html:297
+msgid "Co-funded by the European Union"
+msgstr "Europos Sąjungos bendrai finansuojamas"
+
+#: echorepo/templates/base.html:301
+msgid "Funded by the European Union and UK Research and Innovation"
+msgstr "Finansuojama Europos Sąjungos ir JK mokslinių tyrimų ir inovacijų"
+
+#: echorepo/templates/coordinate_issues.html:2
+#: echorepo/templates/coordinate_issues.html:6
+msgid "Coordinate issues"
+msgstr "Koordinuoti klausimus"
+
+#: echorepo/templates/coordinate_issues.html:10
+msgid "The coordinate issues file was not found:"
+msgstr "Koordinačių klausimų failas nerastas:"
+
+#: echorepo/templates/coordinate_issues.html:18
+#: echorepo/templates/coordinate_issues.html:102 echorepo/templates/search.html:10
+#: echorepo/templates/search.html:76
+msgid "Sample / QR"
+msgstr "Ėminys / QR"
+
+#: echorepo/templates/coordinate_issues.html:23
+#: echorepo/templates/coordinate_issues.html:103
+msgid "User ID"
+msgstr "Vartotojo ID"
+
+#: echorepo/templates/coordinate_issues.html:28
+#: echorepo/templates/coordinate_issues.html:108
+msgid "Issue type"
+msgstr "Emisijos tipas"
+
+#: echorepo/templates/coordinate_issues.html:30
+msgid "Any issue"
+msgstr "Nr"
+
+#: echorepo/templates/coordinate_issues.html:41 echorepo/templates/explore.html:107
+#: echorepo/templates/search.html:31
+msgid "Search"
+msgstr "Ieškoti"
+
+#: echorepo/templates/coordinate_issues.html:48
+#: echorepo/templates/coordinate_issues.html:106
+msgid "Actual country"
+msgstr "Faktinė šalis"
+
+#: echorepo/templates/coordinate_issues.html:54
+#: echorepo/templates/coordinate_issues.html:107
+msgid "Planned country"
+msgstr "Planuojama šalis"
+
+#: echorepo/templates/coordinate_issues.html:64
+msgid "Show approved"
+msgstr "Rodyti patvirtintą"
+
+#: echorepo/templates/coordinate_issues.html:78
+msgid "Export current results"
+msgstr "Eksportuoti dabartinius rezultatus"
+
+#: echorepo/templates/coordinate_issues.html:87
+msgid "coordinate issue(s)"
+msgstr "koordinuoti problemą (-es)"
+
+#: echorepo/templates/coordinate_issues.html:90
+msgid "Source:"
+msgstr "Šaltiniai:"
+
+#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:153 echorepo/templates/issues.html:31
+#: echorepo/templates/issues.html:77 echorepo/templates/search.html:80
+msgid "Lat"
+msgstr "Lat"
+
+#: echorepo/templates/coordinate_issues.html:105
+#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/issues.html:78 echorepo/templates/search.html:81
+msgid "Lon"
+msgstr "Lon"
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid "Fix coordinates"
+msgstr "Fiksuoti koordinates"
+
+#: echorepo/templates/coordinate_issues.html:121
+msgid "Show only this sample on map"
+msgstr "Rodyti tik šį pavyzdį žemėlapyje"
+
+#: echorepo/templates/coordinate_issues.html:160 echorepo/templates/issues.html:53
+#: echorepo/templates/issues.html:96
+msgid "Save"
+msgstr "Įrašyti"
+
+#: echorepo/templates/coordinate_issues.html:169
+msgid "No coordinate issues for these filters."
+msgstr "Nr koordinuoti klausimus šių filtrų."
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "Showing page"
+msgstr "Rodomas puslapis"
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "of"
+msgstr "iš"
+
+#: echorepo/templates/coordinate_issues.html:182 echorepo/templates/search.html:126
+msgid "results"
+msgstr "rezultatai"
+
+#: echorepo/templates/explore.html:2
+msgid "ECHOrepo — Explore"
+msgstr "ECHA - Narystė"
+
+#: echorepo/templates/explore.html:89
+msgid "Explore the map"
+msgstr "Naršyti žemėlapį"
+
+#: echorepo/templates/explore.html:92
+msgid "Sign in to export data and access your personal samples."
+msgstr ""
+"Prisijunkite prie eksporto duomenų ir prisijunkite prie savo asmeninių "
+"pavyzdžių."
+
+#: echorepo/templates/explore.html:101
+msgid "Download dataset from Zenodo"
+msgstr "Parsisiųsti duomenų rinkinį iš Zenodo"
+
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:279
+msgid "Mobile version"
+msgstr "Mobilioji versija"
+
+#: echorepo/templates/explore.html:117 echorepo/templates/results.html:282
+msgid "Desktop version"
+msgstr "Darbastalio versija"
+
+#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
+#: echorepo/templates/search.html:79 static/js/map.js:1490
+msgid "pH"
+msgstr "pH"
+
+#: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
+msgid "min"
+msgstr "min"
+
+#: echorepo/templates/explore.html:132 echorepo/templates/results.html:455
+msgid "max"
+msgstr "maks"
+
+#: echorepo/templates/explore.html:136 echorepo/templates/search.html:15
+#: echorepo/templates/search.html:78
+msgid "Country"
+msgstr "Šalis"
+
+#: echorepo/templates/explore.html:139
+msgid "All countries"
+msgstr "Visos šalys"
+
+#: echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Data"
+
+#: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
+msgid "Apply"
+msgstr "Pritaikyti"
+
+#: echorepo/templates/explore.html:157 echorepo/templates/results.html:460
+msgid "Export filtered (0)"
+msgstr "Eksportas filtruotas (0)"
+
+#: echorepo/templates/explore.html:163
+msgid "Copy view link"
+msgstr "Kopijuoti peržiūros nuorodą"
+
+#: echorepo/templates/issues.html:2
+msgid "Data quality issues — ECHOrepo"
+msgstr "Duomenų kokybės klausimai - ECHRUP"
+
+#: echorepo/templates/issues.html:6 echorepo/templates/issues.html:14
+msgid "Back to My Data"
+msgstr "Back to My Data"
+
+#: echorepo/templates/issues.html:12
+msgid "Data quality issues"
+msgstr "Duomenų kokybės klausimai"
+
+#: echorepo/templates/issues.html:19
+msgid "Data issues"
+msgstr "Duomenų klausimai"
+
+#: echorepo/templates/issues.html:21
+#, python-format
+msgid "Default coordinates (%(lat)s, %(lon)s)"
+msgstr "Numatytosios koordinatės (%(lat)s,%(lon)s)"
+
+#: echorepo/templates/issues.html:23
+msgid "No entries with default coordinates"
+msgstr "Nėra įrašų su numatytosiomis koordinatėmis"
+
+#: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
+msgid "Sample"
+msgstr "Bandinys"
+
+#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Naudotojas"
+
+#: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
+msgid "QR"
+msgstr "KR"
+
+#: echorepo/templates/issues.html:33 echorepo/templates/issues.html:79
+msgid "Fix"
+msgstr "Fiksuoti"
+
+#: echorepo/templates/issues.html:49 echorepo/templates/issues.html:94
+msgid "Lat (dec or DMS)"
+msgstr "Platina (deka arba DMS)"
+
+#: echorepo/templates/issues.html:51 echorepo/templates/issues.html:95
+msgid "Lon (dec or DMS)"
+msgstr "Lon (dec arba DMS)"
+
+#: echorepo/templates/issues.html:66
+msgid "Country mismatches"
+msgstr "Šalių neatitiktis"
+
+#: echorepo/templates/issues.html:68
+msgid "No country mismatches"
+msgstr "Šalių neatitikimų nėra"
+
+#: echorepo/templates/issues.html:70
+msgid "Actual country (from coords) is not in the planned list for this QR."
+msgstr "Faktinė šalis (iš akordų) nėra šio KR planuojamame sąraše."
+
+#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:269
+msgid "Upload lab data"
+msgstr "Nusiųsti laboratorijos duomenis"
+
+#: echorepo/templates/lab_upload.html:6
+msgid ""
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with "
+"sheet"
+msgstr ""
+"Nusiųsti metalų rezultatus (CSV / XLSX) arba biologinės įvairovės OTU lentelę"
+" (XLSX su lapu"
+
+#: echorepo/templates/lab_upload.html:8
+msgid "The server will detect the format automatically."
+msgstr "Serveris automatiškai aptiks formatą."
+
+#: echorepo/templates/lab_upload.html:13
+msgid "Upload"
+msgstr "Siųsti"
+
+#: echorepo/templates/login.html:4
+msgid "ECHOrepo — Access"
+msgstr "ECHORPELE - prieiga"
+
+#: echorepo/templates/login.html:13
+msgid "Access your data"
+msgstr "Prieiga prie savo duomenų"
+
+#: echorepo/templates/login.html:17
+msgid "Sign in with your Keycloak credentials."
+msgstr "Pasirašykite su savo Keycloak įgaliojimais."
+
+#: echorepo/templates/login.html:48
+msgid "Email or username"
+msgstr "E. pašto arba naudotojo vardas"
+
+#: echorepo/templates/login.html:57
+msgid "you@example.org"
+msgstr "jūs @ example.org"
+
+#: echorepo/templates/login.html:65
+msgid "Password"
+msgstr "Slaptažodis"
+
+#: echorepo/templates/login.html:86
+msgid "Continue"
+msgstr "Tęsti"
+
+#: echorepo/templates/login.html:94
+msgid "Forgot your password?"
+msgstr "Pamiršote slaptažodį?"
+
+#: echorepo/templates/login.html:112
+msgid "or"
+msgstr "arba"
+
+#: echorepo/templates/login.html:123
+msgid "Sign in through Keycloak"
+msgstr "Pasirašykite per Keycloak"
+
+#: echorepo/templates/login.html:129
+msgid "Issues signing in? Contact the organisers."
+msgstr "Blokavimo klausimai? Kreipkitės į organizatorius."
+
+#: echorepo/templates/login.html:138
+msgid "GDPR-friendly access"
+msgstr "Lengvas priėjimas"
+
+#: echorepo/templates/login.html:143
+msgid "Download your data anytime"
+msgstr "Atsisiųsti savo duomenis bet kuriuo metu"
+
+#: echorepo/templates/results.html:3
+msgid "ECHOrepo — Your Data"
+msgstr "ECHORUSIJA - Jūsų duomenys"
+
+#: echorepo/templates/results.html:9
+msgid "Download all samples (CSV)"
+msgstr "Parsisiųsti visus pavyzdžius (CSV)"
+
+#: echorepo/templates/results.html:14 echorepo/templates/results.html:273
+#: echorepo/templates/search.html:2 echorepo/templates/search.html:5
+msgid "Search samples"
+msgstr "Paieškos pavyzdžiai"
+
+#: echorepo/templates/results.html:256
+msgid "Your data"
+msgstr "Jūsų duomenys"
+
+#: echorepo/templates/results.html:257
+msgid ""
+"Explore your soil sample locations on the map, then export or browse the "
+"table."
+msgstr ""
+"Naršykite savo dirvožemio mėginio vietas žemėlapyje, tada eksportuokite arba "
+"naršykite lentelę."
+
+#: echorepo/templates/results.html:264
+#, python-format
+msgid "Fix data issues (%(n)s)"
+msgstr "Taisyti duomenų emisijas (%(n)s)"
+
+#: echorepo/templates/results.html:291 echorepo/templates/results.html:352
+msgid "Final survey"
+msgstr "III PRIEDAS"
+
+#: echorepo/templates/results.html:293
+msgid "We sincerely thank you for your commitment to this project!"
+msgstr "Nuoširdžiai dėkojame už Jūsų atsidavimą šiam projektui!"
+
+#: echorepo/templates/results.html:296
+msgid ""
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after\n"
+"      soil sampling. The majority of questions are consistent with the "
+"previous surveys so that we can accurately\n"
+"      measure changes over time and understand the impact of project "
+"participation."
+msgstr ""
+"Čia - trečiasis ir paskutinis projekto tyrimas, kurį atliksite prieš ir po jo"
+"\n"
+"dirvožemio mėginių ėmimas. Dauguma klausimų atitinka ankstesnius tyrimus, kad"
+" galėtume tiksliai\n"
+"laikui bėgant įvertinti pokyčius ir suprasti projekto dalyvavimo poveikį."
+
+#: echorepo/templates/results.html:301
+msgid ""
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check "
+"back at a later time."
+msgstr ""
+"Prieš pradėdami: užpildykite šį tyrimą tik tuo atveju, jei jūsų dirvožemio "
+"mėginio (-ių) laboratorijos rezultatai jau yra\n"
+"buvo pridėtas prie saugyklos. Vos laukiama rezultatų, pasiteiraukite vėliau."
+
+#: echorepo/templates/results.html:307
+msgid "Go to final survey"
+msgstr "Pereiti prie galutinio tyrimo"
+
+#: echorepo/templates/results.html:312
+msgid "Data use information"
+msgstr "Duomenų naudojimo informacija"
+
+#: echorepo/templates/results.html:317
+msgid "I have already completed it"
+msgstr "Aš jau baigiau"
+
+#: echorepo/templates/results.html:322
+msgid "Processing survey data in the ECHO project"
+msgstr "ECHO projekto tyrimo duomenų apdorojimas"
+
+#: echorepo/templates/results.html:324
+msgid ""
+"The objective of this survey data is to examine the impact of project "
+"participation on participant\n"
+"        attitudes and motivation towards soil."
+msgstr ""
+"Šių tyrimų duomenų tikslas - ištirti projekto dalyvavimo poveikį dalyviams,\n"
+"požiūris ir motyvacija į dirvožemį."
+
+#: echorepo/templates/results.html:328
+msgid ""
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your\n"
+"        details regarding age and gender are only used for statistical "
+"purposes and all details are collected and\n"
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
+msgstr ""
+"Jūsų informacija bus naudojama tik mokslo tikslais. Mes nerenkame vardų ar "
+"adresų. Jūsų\n"
+"išsami informacija apie amžių ir lytį naudojama tik statistikos tikslais, "
+"visa informacija renkama ir\n"
+"įvertinti anonimiškai. Niekada negalima padaryti išvadų dėl Jūsų asmens."
+
+#: echorepo/templates/results.html:333
+msgid ""
+"Answering each question in the survey is most appreciated as it plays a "
+"crucial role in providing valuable\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
+"        outcomes are meaningful and well-informed."
+msgstr ""
+"Kiekvienas tyrimo klausimas yra labiausiai vertinamas, nes jis vaidina svarbų"
+" vaidmenį teikiant vertingą\n"
+"įžvalgos, kurios didina ECHO projekto svarbą ir poveikį. Jūsų sąžiningi "
+"atsakymai yra būtini\n"
+"supratimas, kaip bendradarbiavimas su projektu turi įtakos požiūriui ir "
+"motyvacijai,\n"
+"rezultatai yra prasmingi ir gerai informuoti."
+
+#: echorepo/templates/results.html:339
+msgid ""
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be\n"
+"        interrupted. There are no right or wrong answers — answer "
+"spontaneously."
+msgstr ""
+"Kampanija užtruks 8-10 minučių. Prašome rasti ramią erdvę, kurioje nebūsite\n"
+"- Nėra teisingų ar klaidingų atsakymų - atsakymas spontaniškai."
+
+#: echorepo/templates/results.html:343
+msgid ""
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
+msgstr ""
+"Prašome, remiantis Jums pateikta informacija, sutikti su toliau pateikiamu "
+"tyrimu."
+
+#: echorepo/templates/results.html:353
+msgid "thank you for your participation!"
+msgstr "ačiū už dalyvavimą!"
+
+#: echorepo/templates/results.html:357
+msgid "Show details"
+msgstr "Rodyti detales"
+
+#: echorepo/templates/results.html:361
+msgid "Dismiss"
+msgstr "Naikinti"
+
+#: echorepo/templates/results.html:371
+msgid "No data found for"
+msgstr "Duomenų apie"
+
+#: echorepo/templates/results.html:371
+msgid ""
+"If you recently submitted samples, try again\n"
+"    later."
+msgstr ""
+"NAME OF TRANSLATORS\n"
+"vėliau."
+
+#: echorepo/templates/results.html:385
+msgid "Download"
+msgstr "Atsisiųsti"
+
+#: echorepo/templates/results.html:392
+msgid "CSV (per-user)"
+msgstr "CSV (vartotojo)"
+
+#: echorepo/templates/results.html:400
+msgid "XLSX (per-user)"
+msgstr "XLSX (naudotojui)"
+
+#: echorepo/templates/results.html:409
+msgid "All samples (CSV, anonymised)"
+msgstr "III PRIEDAS"
+
+#: echorepo/templates/results.html:414
+msgid "GeoJSON (per-user)"
+msgstr "GeoJSON (naudotojas)"
+
+#: echorepo/templates/results.html:420
+msgid "Canonical exports"
+msgstr "Kanoninis eksportas"
+
+#: echorepo/templates/results.html:423
+msgid "samples.csv"
+msgstr "mėnesas.csv"
+
+#: echorepo/templates/results.html:428
+msgid "sample_images.csv"
+msgstr "pavyzdys _ imagess.csv"
+
+#: echorepo/templates/results.html:433
+msgid "sample_parameters.csv"
+msgstr "bandinys _ parameters.csv"
+
+#: echorepo/templates/results.html:438
+msgid "sample_biodiversity.csv"
+msgstr "bandinys _ biodiversity.csv"
+
+#: echorepo/templates/results.html:443
+msgid "All canonical (zip)"
+msgstr "All canonical (zip)"
+
+#: echorepo/templates/results.html:457
+msgid "Apply pH filter"
+msgstr "NAME OF TRANSLATORS"
+
+#: echorepo/templates/results.html:459
+msgid "Export rows matching current pH filter"
+msgstr "Eksportuoti eilutes, atitinkančias dabartinį pH filtrą"
+
+#: echorepo/templates/results.html:480
+msgid "Privacy information"
+msgstr "Privatumo informacija"
+
+#: echorepo/templates/results.html:507
+msgid ""
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for\n"
+"              this project."
+msgstr ""
+"Aš perskaičiau privatumo informaciją, ir aš sutinku, kad mano asmens duomenų "
+"apdorojimo\n"
+"šį projektą."
+
+#: echorepo/templates/results.html:515
+msgid "Accept and continue"
+msgstr "Priimti ir tęsti"
+
+#: echorepo/templates/results.html:889
+msgid "Show on map"
+msgstr "Rodyti žemėlapyje"
+
+#: echorepo/templates/results.html:902 echorepo/templates/results.html:926
+#: echorepo/templates/results.html:935
+msgid "Could not locate this sample on the map."
+msgstr "@ info: whatsthis."
+
+#: echorepo/templates/search.html:17 static/js/map.js:226
+msgid "Any country"
+msgstr "Šalis"
+
+#: echorepo/templates/search.html:22
+msgid "pH min"
+msgstr "pH min"
+
+#: echorepo/templates/search.html:26
+msgid "pH max"
+msgstr "pH max"
+
+#: echorepo/templates/search.html:38
+msgid "Date from"
+msgstr "Data nuo"
+
+#: echorepo/templates/search.html:42
+msgid "Date to"
+msgstr "Data"
+
+#: echorepo/templates/search.html:56
+msgid "Export current search"
+msgstr "Eksportuoti dabartinę paiešką"
+
+#: echorepo/templates/search.html:60
+msgid "Sign in to export results as ZIP."
+msgstr "Pasirašykite eksporto rezultatus kaip ZIP."
+
+#: echorepo/templates/search.html:77
+msgid "Timestamp"
+msgstr "Laikas"
+
+#: echorepo/templates/search.html:82
+msgid "Collected by"
+msgstr "Renkamas"
+
+#: echorepo/templates/search.html:97
+msgid "Show this sample on map"
+msgstr "Rodyti šį mėginį žemėlapyje"
+
+#: echorepo/templates/search.html:114
+msgid "No results for these filters."
+msgstr "Nr rezultatai šių filtrų."
+
+#: echorepo/templates/zenodo_publications.html:3
+msgid "ECHOrepo — Zenodo Publications"
+msgstr "ECHORUSIJA - ZENODO Publikacijos"
+
+#: echorepo/templates/zenodo_publications.html:8
+msgid "Published datasets on Zenodo"
+msgstr "Zenodo publikuoti duomenų rinkiniai"
+
+#: echorepo/templates/zenodo_publications.html:10
+msgid ""
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
+msgstr "NAME OF TRANSLATORS."
+
+#: echorepo/templates/zenodo_publications.html:24
+#: echorepo/templates/zenodo_publications.html:27
+msgid "Untitled dataset"
+msgstr "Bevardis duomenų rinkinys"
+
+#: echorepo/templates/zenodo_publications.html:32
+msgid "Published at"
+msgstr "Paskelbta"
+
+#: echorepo/templates/zenodo_publications.html:43
+msgid "Version DOI"
+msgstr "DOI versija"
+
+#: echorepo/templates/zenodo_publications.html:50
+msgid "Concept DOI"
+msgstr "Koncepcijos DOI"
+
+#: echorepo/templates/zenodo_publications.html:63
+msgid "API path"
+msgstr "API kelias"
+
+#: echorepo/templates/zenodo_publications.html:64
+msgid "Uploaded file"
+msgstr "Įkeltas failas"
+
+#: echorepo/templates/zenodo_publications.html:65
+msgid "Deposition ID"
+msgstr "Nustatymo ID"
+
+#: echorepo/templates/zenodo_publications.html:66
+msgid "Concept record ID"
+msgstr "Koncepcijos įrašo ID"
+
+#: echorepo/templates/zenodo_publications.html:69
+msgid "Download source"
+msgstr "Parsisiųsti šaltinį"
+
+#: echorepo/templates/zenodo_publications.html:71
+msgid "source URL"
+msgstr "šaltinio URL"
+
+#: echorepo/templates/zenodo_publications.html:76
+msgid "Filters"
+msgstr "Filtrai"
+
+#: echorepo/templates/zenodo_publications.html:77
+msgid "Zenodo page"
+msgstr "Zenodo puslapis"
+
+#: echorepo/templates/zenodo_publications.html:79
+msgid "record page"
+msgstr "įrašas puslapis"
+
+#: echorepo/templates/zenodo_publications.html:88
+msgid "Suggested reference"
+msgstr "Siūlyta nuoroda"
+
+#: echorepo/templates/zenodo_publications.html:98
+msgid "No Zenodo publications have been logged yet."
+msgstr "Zenodo publikacijų dar nėra."
+
+#: static/js/map.js:172
+msgid "Link copied to clipboard"
+msgstr "Nuoroda nukopijuota į iškarpinę"
+
+#: static/js/map.js:175
+msgid "Copy this link:"
+msgstr "Kopijuoti šią nuorodą:"
+
+#: static/js/map.js:778 static/js/map.js:3151
+#, python-brace-format
+msgid "Export filtered (${n})"
+msgstr "Eksportuoti filtruotą (${n})"
+
+#: static/js/map.js:788 static/js/map.js:2945
+msgid "Release mouse to finish drawing."
+msgstr "Paleisti pelę baigti piešimo."
+
+#: static/js/map.js:862
+msgid "Not available"
+msgstr "Netaikoma"
+
+#: static/js/map.js:915
+msgid "Street map"
+msgstr "Gatvės žemėlapis"
+
+#: static/js/map.js:916
+msgid "Satellite"
+msgstr "Palydovas"
+
+#: static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr "Procentines vertes (%) galima paversti mg / kg dauginant iš 10000."
+
+#: static/js/map.js:1138
+msgid "Unit conversion help"
+msgstr "Vieneto konvertavimo pagalba"
+
+#: static/js/map.js:1485
+msgid "QR code"
+msgstr "QR kodas"
+
+#: static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Dirvožemio organinės medžiagos"
+
+#: static/js/map.js:1504
+msgid "Texture"
+msgstr "Kėbulas"
+
+#: static/js/map.js:1509
+msgid "Structure"
+msgstr "Struktūra"
+
+#: static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Sliekai"
+
+#: static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plastikiniai"
+
+#: static/js/map.js:1524
+msgid "Debris"
+msgstr "Nuolaužos"
+
+#: static/js/map.js:1529
+msgid "Contamination"
+msgstr "Teršalai"
+
+#: static/js/map.js:1539
+msgid "Observations"
+msgstr "Pastabos"
+
+#: static/js/map.js:2175 static/js/map.js:3437
+msgid "Loading map data..."
+msgstr "Įkeliami žemėlapio duomenys..."
+
+#: static/js/map.js:2179
+msgid "Please wait"
+msgstr "Prašau palaukti"
+
+#: static/js/map.js:2453
+msgid "Loading..."
+msgstr "Įkeliama..."
+
+#: static/js/map.js:2775
+msgid "Draw selection rectangle"
+msgstr "Piešti pasirinkimo stačiakampį"
+
+#: static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "NAME OF TRANSLATORS"
+
+#: static/js/map.js:2783
+msgid "Cancel"
+msgstr "Atsisakyti"
+
+#: static/js/map.js:2786
+msgid "Delete last point drawn"
+msgstr "Išbraukti paskutinį punktą"
+
+#: static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Išbraukti paskutinį punktą:"
+
+#: static/js/map.js:2794
+msgid "Click and drag to draw a selection rectangle. You can draw more than one."
+msgstr ""
+"Spauskite ir vilkite norėdami piešti pažymėtą stačiakampį. Jūs galite piešti "
+"daugiau nei vieną."
+
+#: static/js/map.js:2800
+msgid "Release mouse to add this rectangle to the selection."
+msgstr "@ info: whatsthis."
+
+#: static/js/map.js:2881
+msgid "No selected samples to export."
+msgstr "Eksportuoti atrinktų mėginių nėra."
+
+#: static/js/map.js:3197
+msgid "Please sign in to export data."
+msgstr "Prašome prisijungti prie eksporto duomenų."
+
+#: static/js/map.js:3264
+msgid "Loading sample..."
+msgstr "Pakrovimo pavyzdys..."
+
+#: static/js/map.js:3348
+msgid "Loading samples..."
+msgstr "Pakrovimo pavyzdžiai..."
+
+#: static/js/map.js:3349
+msgid "Fetching visible map area"
+msgstr "Rodyti žemėlapio plotą"
+
+#: static/js/map.js:3380
+msgid "Rendering markers..."
+msgstr "Žymekliai..."
+
+#: static/js/map.js:3381
+msgid "Building clusters and popups"
+msgstr "Kliūčių ir langų statyba"
+
+#: static/js/map.js:3438
+msgid "Preparing map"
+msgstr "Ruošiamas žemėlapis"
+

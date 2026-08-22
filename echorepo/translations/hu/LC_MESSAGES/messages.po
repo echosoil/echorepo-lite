@@ -1,0 +1,961 @@
+# Hungarian translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"PO-Revision-Date: 2026-08-22 16:23+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: hu\n"
+"Language-Team: hu <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: echorepo/services/firebase.py:55
+msgid "Password recovery is not configured for this site."
+msgstr "A jelszó visszaállítása nem erre az oldalra van beállítva."
+
+#: echorepo/services/firebase.py:64
+msgid "Could not contact the password recovery service."
+msgstr "Nem sikerült kapcsolatba lépni a jelszó helyreállítási szolgáltatással."
+
+#: echorepo/services/firebase.py:69
+msgid "If this address is registered, a reset link has been sent."
+msgstr "Ha ez a cím regisztrálva van, akkor egy újraindító linket küldtek."
+
+#: echorepo/services/firebase.py:70
+msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+msgstr "Az új jelszó akár 30 percig is eltarthat az ECHOREPO aktiválásához."
+
+#: echorepo/services/firebase.py:74
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
+msgstr ""
+"A jelszó visszanyerése átmenetileg nem elérhető. Kérem, lépjen kapcsolatba a "
+"szervezőkkel."
+
+#: echorepo/templates/base.html:7 echorepo/templates/base.html:11
+msgid "ECHOrepo — EU Soil Data"
+msgstr "ECHOREPO - EU talajadatok"
+
+#: echorepo/templates/base.html:10
+msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
+msgstr ""
+"ECHOREPO - az uniós finanszírozású ECHO-projekt keretében végzett polgári "
+"tudományos talajminták"
+
+#: echorepo/templates/base.html:14
+msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
+msgstr ""
+"Hozzáférés és letölteni a talajmintákat. Az EU által finanszírozott ECHO "
+"projekt része."
+
+#: echorepo/templates/base.html:179
+msgid "Skip to content"
+msgstr "Ugrás a tartalomra"
+
+#: echorepo/templates/base.html:185
+msgid "Primary"
+msgstr "Elsődleges"
+
+#: echorepo/templates/base.html:188
+msgid "ECHOrepo logo"
+msgstr "ECHOREPO logó"
+
+#: echorepo/templates/base.html:194
+msgid "Toggle navigation"
+msgstr "Navigáció kikapcsolása"
+
+#: echorepo/templates/base.html:201
+msgid "About"
+msgstr "Körülbelül"
+
+#: echorepo/templates/base.html:203
+msgid "For Participants"
+msgstr "Résztvevők"
+
+#: echorepo/templates/base.html:205
+msgid "Partners"
+msgstr "Partnerek"
+
+#: echorepo/templates/base.html:207
+msgid "News & Events"
+msgstr "Hírek és események"
+
+#: echorepo/templates/base.html:210
+msgid "Resources"
+msgstr "Erőforrások"
+
+#: echorepo/templates/base.html:213
+msgid "Media Kit"
+msgstr "Média készlet"
+
+#: echorepo/templates/base.html:215
+msgid "Publications"
+msgstr "Kiadványok"
+
+#: echorepo/templates/base.html:217
+msgid "Newsletter Archive"
+msgstr "Hírlevél Archive"
+
+#: echorepo/templates/base.html:218
+msgid "Zenodo Publications"
+msgstr "Zenodo Publications"
+
+#: echorepo/templates/base.html:233
+msgid "Change language"
+msgstr "Nyelv megváltoztatása"
+
+#: echorepo/templates/base.html:253
+msgid "Logged in as"
+msgstr "Bejelentkezés"
+
+#: echorepo/templates/base.html:259
+msgid "Logout"
+msgstr "Kijelentkezés"
+
+#: echorepo/templates/base.html:263
+msgid "Sign in"
+msgstr "Jelentkezz be"
+
+#: echorepo/templates/base.html:281
+msgid "ECHOrepo is part of the EU- and UKRI-funded"
+msgstr "Az ECHOREPO az EU és az UKRI által finanszírozott"
+
+#: echorepo/templates/base.html:281
+msgid "project"
+msgstr "projekt"
+
+#: echorepo/templates/base.html:283
+msgid "Need help?"
+msgstr "Segítsek?"
+
+#: echorepo/templates/base.html:291
+msgid "Funded by UK Research and Innovation (UKRI)"
+msgstr "A brit kutatás és innováció (UKRI) finanszírozza"
+
+#: echorepo/templates/base.html:297
+msgid "Co-funded by the European Union"
+msgstr "Az Európai Unió által finanszírozott"
+
+#: echorepo/templates/base.html:301
+msgid "Funded by the European Union and UK Research and Innovation"
+msgstr "Az Európai Unió és az Egyesült Királyság kutatási és innovációs programja"
+
+#: echorepo/templates/coordinate_issues.html:2
+#: echorepo/templates/coordinate_issues.html:6
+msgid "Coordinate issues"
+msgstr "Koordinációs kérdések"
+
+#: echorepo/templates/coordinate_issues.html:10
+msgid "The coordinate issues file was not found:"
+msgstr "A koordináta probléma fájl nem található:"
+
+#: echorepo/templates/coordinate_issues.html:18
+#: echorepo/templates/coordinate_issues.html:102 echorepo/templates/search.html:10
+#: echorepo/templates/search.html:76
+msgid "Sample / QR"
+msgstr "Minta / QR"
+
+#: echorepo/templates/coordinate_issues.html:23
+#: echorepo/templates/coordinate_issues.html:103
+msgid "User ID"
+msgstr "Felhasználóazonosító"
+
+#: echorepo/templates/coordinate_issues.html:28
+#: echorepo/templates/coordinate_issues.html:108
+msgid "Issue type"
+msgstr "Kibocsátástípus"
+
+#: echorepo/templates/coordinate_issues.html:30
+msgid "Any issue"
+msgstr "Bármilyen kérdés"
+
+#: echorepo/templates/coordinate_issues.html:41 echorepo/templates/explore.html:107
+#: echorepo/templates/search.html:31
+msgid "Search"
+msgstr "Keresés"
+
+#: echorepo/templates/coordinate_issues.html:48
+#: echorepo/templates/coordinate_issues.html:106
+msgid "Actual country"
+msgstr "Tényleges ország"
+
+#: echorepo/templates/coordinate_issues.html:54
+#: echorepo/templates/coordinate_issues.html:107
+msgid "Planned country"
+msgstr "Tervezett ország"
+
+#: echorepo/templates/coordinate_issues.html:64
+msgid "Show approved"
+msgstr "Jóváhagyott"
+
+#: echorepo/templates/coordinate_issues.html:78
+msgid "Export current results"
+msgstr "Az aktuális eredmények exportálása"
+
+#: echorepo/templates/coordinate_issues.html:87
+msgid "coordinate issue(s)"
+msgstr "koordináta-kibocsátás (ok)"
+
+#: echorepo/templates/coordinate_issues.html:90
+msgid "Source:"
+msgstr "Forrás:"
+
+#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:153 echorepo/templates/issues.html:31
+#: echorepo/templates/issues.html:77 echorepo/templates/search.html:80
+msgid "Lat"
+msgstr "Lat"
+
+#: echorepo/templates/coordinate_issues.html:105
+#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/issues.html:78 echorepo/templates/search.html:81
+msgid "Lon"
+msgstr "Lon"
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid "Fix coordinates"
+msgstr "Koordináták beállítása"
+
+#: echorepo/templates/coordinate_issues.html:121
+msgid "Show only this sample on map"
+msgstr "Csak ez a minta jelenjen meg a térképen"
+
+#: echorepo/templates/coordinate_issues.html:160 echorepo/templates/issues.html:53
+#: echorepo/templates/issues.html:96
+msgid "Save"
+msgstr "Mentés"
+
+#: echorepo/templates/coordinate_issues.html:169
+msgid "No coordinate issues for these filters."
+msgstr "Nincs koordináta probléma a szűrőkkel."
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "Showing page"
+msgstr "Megjelenítő oldal"
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "of"
+msgstr "ii"
+
+#: echorepo/templates/coordinate_issues.html:182 echorepo/templates/search.html:126
+msgid "results"
+msgstr "eredmények"
+
+#: echorepo/templates/explore.html:2
+msgid "ECHOrepo — Explore"
+msgstr "ECHOREPO - Felfedezés"
+
+#: echorepo/templates/explore.html:89
+msgid "Explore the map"
+msgstr "Fedezze fel a térképet"
+
+#: echorepo/templates/explore.html:92
+msgid "Sign in to export data and access your personal samples."
+msgstr "Jelentkezzen be az adatok exportálásához és a személyes mintákhoz."
+
+#: echorepo/templates/explore.html:101
+msgid "Download dataset from Zenodo"
+msgstr "Adatkészlet letöltése Zenodóból"
+
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:279
+msgid "Mobile version"
+msgstr "Mobil változat"
+
+#: echorepo/templates/explore.html:117 echorepo/templates/results.html:282
+msgid "Desktop version"
+msgstr "Asztali verzió"
+
+#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
+#: echorepo/templates/search.html:79 static/js/map.js:1490
+msgid "pH"
+msgstr "pH"
+
+#: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
+msgid "min"
+msgstr "perc"
+
+#: echorepo/templates/explore.html:132 echorepo/templates/results.html:455
+msgid "max"
+msgstr "max"
+
+#: echorepo/templates/explore.html:136 echorepo/templates/search.html:15
+#: echorepo/templates/search.html:78
+msgid "Country"
+msgstr "Ország"
+
+#: echorepo/templates/explore.html:139
+msgid "All countries"
+msgstr "Valamennyi ország"
+
+#: echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Időpont"
+
+#: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
+msgid "Apply"
+msgstr "Alkalmazás"
+
+#: echorepo/templates/explore.html:157 echorepo/templates/results.html:460
+msgid "Export filtered (0)"
+msgstr "Szűrt export (0)"
+
+#: echorepo/templates/explore.html:163
+msgid "Copy view link"
+msgstr "A megtekintés másolása"
+
+#: echorepo/templates/issues.html:2
+msgid "Data quality issues — ECHOrepo"
+msgstr "Adatminőségi kérdések - ECHOREPO"
+
+#: echorepo/templates/issues.html:6 echorepo/templates/issues.html:14
+msgid "Back to My Data"
+msgstr "Vissza az adataimhoz"
+
+#: echorepo/templates/issues.html:12
+msgid "Data quality issues"
+msgstr "Adatminőségi kérdések"
+
+#: echorepo/templates/issues.html:19
+msgid "Data issues"
+msgstr "Adatkérdések"
+
+#: echorepo/templates/issues.html:21
+#, python-format
+msgid "Default coordinates (%(lat)s, %(lon)s)"
+msgstr "Alapértelmezett koordináták (%(lat)s,%(lon)s)"
+
+#: echorepo/templates/issues.html:23
+msgid "No entries with default coordinates"
+msgstr "Nincs bejegyzés alapértelmezett koordinátákkal"
+
+#: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
+msgid "Sample"
+msgstr "Minta"
+
+#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Felhasználó"
+
+#: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
+msgid "QR"
+msgstr "QR"
+
+#: echorepo/templates/issues.html:33 echorepo/templates/issues.html:79
+msgid "Fix"
+msgstr "Javítás"
+
+#: echorepo/templates/issues.html:49 echorepo/templates/issues.html:94
+msgid "Lat (dec or DMS)"
+msgstr "Lat (dec vagy DMS)"
+
+#: echorepo/templates/issues.html:51 echorepo/templates/issues.html:95
+msgid "Lon (dec or DMS)"
+msgstr "Lon (dec vagy DMS)"
+
+#: echorepo/templates/issues.html:66
+msgid "Country mismatches"
+msgstr "Az országok közötti eltérések"
+
+#: echorepo/templates/issues.html:68
+msgid "No country mismatches"
+msgstr "Nincs eltérés az országok között"
+
+#: echorepo/templates/issues.html:70
+msgid "Actual country (from coords) is not in the planned list for this QR."
+msgstr "A tényleges ország (koordák) nem szerepel a QR tervezett listáján."
+
+#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:269
+msgid "Upload lab data"
+msgstr "Laboratóriumi adatok feltöltése"
+
+#: echorepo/templates/lab_upload.html:6
+msgid ""
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with "
+"sheet"
+msgstr ""
+"Fémek (CSV / XLSX) vagy biológiai sokféleséggel foglalkozó OTU táblázat "
+"feltöltése (XLSX táblával)"
+
+#: echorepo/templates/lab_upload.html:8
+msgid "The server will detect the format automatically."
+msgstr "A szerver automatikusan észleli a formátumot."
+
+#: echorepo/templates/lab_upload.html:13
+msgid "Upload"
+msgstr "Feltöltés"
+
+#: echorepo/templates/login.html:4
+msgid "ECHOrepo — Access"
+msgstr "ECHOREPO - Hozzáférés"
+
+#: echorepo/templates/login.html:13
+msgid "Access your data"
+msgstr "Hozzáférés az adatokhoz"
+
+#: echorepo/templates/login.html:17
+msgid "Sign in with your Keycloak credentials."
+msgstr "Jelentkezzen be a Keycope igazolványával."
+
+#: echorepo/templates/login.html:48
+msgid "Email or username"
+msgstr "E-mail vagy felhasználónév"
+
+#: echorepo/templates/login.html:57
+msgid "you@example.org"
+msgstr "@ example.org"
+
+#: echorepo/templates/login.html:65
+msgid "Password"
+msgstr "Jelszó"
+
+#: echorepo/templates/login.html:86
+msgid "Continue"
+msgstr "Folytatás"
+
+#: echorepo/templates/login.html:94
+msgid "Forgot your password?"
+msgstr "Elfelejtetted a jelszavad?"
+
+#: echorepo/templates/login.html:112
+msgid "or"
+msgstr "vagy"
+
+#: echorepo/templates/login.html:123
+msgid "Sign in through Keycloak"
+msgstr "Bejelentkezés kulcstartón keresztül"
+
+#: echorepo/templates/login.html:129
+msgid "Issues signing in? Contact the organisers."
+msgstr "Kérdések? Lépjen kapcsolatba a szervezőkkel."
+
+#: echorepo/templates/login.html:138
+msgid "GDPR-friendly access"
+msgstr "Gideon-barát hozzáférés"
+
+#: echorepo/templates/login.html:143
+msgid "Download your data anytime"
+msgstr "Az adatok letöltése bármikor"
+
+#: echorepo/templates/results.html:3
+msgid "ECHOrepo — Your Data"
+msgstr "ECHOREPO - Az Ön adatai"
+
+#: echorepo/templates/results.html:9
+msgid "Download all samples (CSV)"
+msgstr "Az összes minta letöltése (CSV)"
+
+#: echorepo/templates/results.html:14 echorepo/templates/results.html:273
+#: echorepo/templates/search.html:2 echorepo/templates/search.html:5
+msgid "Search samples"
+msgstr "Keresés mintái"
+
+#: echorepo/templates/results.html:256
+msgid "Your data"
+msgstr "Az Ön adatai"
+
+#: echorepo/templates/results.html:257
+msgid ""
+"Explore your soil sample locations on the map, then export or browse the "
+"table."
+msgstr ""
+"Fedezze fel a talajminta helyét a térképen, majd exportálja vagy böngészi az "
+"asztalt."
+
+#: echorepo/templates/results.html:264
+#, python-format
+msgid "Fix data issues (%(n)s)"
+msgstr "Adatok javítása (%(n)s)"
+
+#: echorepo/templates/results.html:291 echorepo/templates/results.html:352
+msgid "Final survey"
+msgstr "Végső felmérés"
+
+#: echorepo/templates/results.html:293
+msgid "We sincerely thank you for your commitment to this project!"
+msgstr "Őszintén köszönjük a projekt iránti elkötelezettségüket!"
+
+#: echorepo/templates/results.html:296
+msgid ""
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after\n"
+"      soil sampling. The majority of questions are consistent with the "
+"previous surveys so that we can accurately\n"
+"      measure changes over time and understand the impact of project "
+"participation."
+msgstr ""
+"Ez a harmadik és egyben utolsó felmérés a projektben, az első, amit "
+"befejezett előtt és után\n"
+"talajból történő mintavétel. A kérdések többsége összhangban van az előző "
+"felmérésekkel, hogy pontosan tudjuk\n"
+"az időbeni változások mérése és a projektrészvétel hatásának megértése."
+
+#: echorepo/templates/results.html:301
+msgid ""
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check "
+"back at a later time."
+msgstr ""
+"Mielőtt elkezdené: kérjük, csak akkor fejezze be ezt a felmérést, ha a "
+"talajminta (ek) laboreredményei már elkészültek\n"
+"amelyet hozzáadtak a tárolóhoz. Ha az eredmények függőben vannak, kérjük, "
+"jelentkezzen később."
+
+#: echorepo/templates/results.html:307
+msgid "Go to final survey"
+msgstr "Menj a végső felmérésre"
+
+#: echorepo/templates/results.html:312
+msgid "Data use information"
+msgstr "Adatfelhasználási információk"
+
+#: echorepo/templates/results.html:317
+msgid "I have already completed it"
+msgstr "Már befejeztem"
+
+#: echorepo/templates/results.html:322
+msgid "Processing survey data in the ECHO project"
+msgstr "Az ECHO-projekt felmérési adatainak feldolgozása"
+
+#: echorepo/templates/results.html:324
+msgid ""
+"The objective of this survey data is to examine the impact of project "
+"participation on participant\n"
+"        attitudes and motivation towards soil."
+msgstr ""
+"A felmérés adatainak célja annak vizsgálata, hogy a projekt részvételének "
+"milyen hatása van a résztvevőre\n"
+"a talaj iránti hozzáállás és motiváció."
+
+#: echorepo/templates/results.html:328
+msgid ""
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your\n"
+"        details regarding age and gender are only used for statistical "
+"purposes and all details are collected and\n"
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
+msgstr ""
+"Információit csak tudományos célokra fogják felhasználni. Nem gyűjtünk "
+"neveket vagy címeket. A\n"
+"a korral és nemmel kapcsolatos adatokat csak statisztikai célokra használják,"
+" és minden adatot összegyűjtenek, és\n"
+"névtelenül értékelték. Nem lehet bármikor következtetéseket levonni az Ön "
+"személyéről."
+
+#: echorepo/templates/results.html:333
+msgid ""
+"Answering each question in the survey is most appreciated as it plays a "
+"crucial role in providing valuable\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
+"        outcomes are meaningful and well-informed."
+msgstr ""
+"A felmérés minden egyes kérdésére a leghálásabb választ adni, mivel fontos "
+"szerepet játszik az értékes\n"
+"az ECHO-projekt relevanciáját és hatását növelő betekintések. Az őszinte "
+"válaszai elengedhetetlenek a\n"
+"annak megértése, hogy a projekttel való együttműködés hogyan befolyásolja a "
+"hozzáállásokat és motivációkat, biztosítva a projekt\n"
+"Az eredmények tartalmasak és jól informáltak."
+
+#: echorepo/templates/results.html:339
+msgid ""
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be\n"
+"        interrupted. There are no right or wrong answers — answer "
+"spontaneously."
+msgstr ""
+"A felmérés körülbelül 8- 10 percig tart. Kérlek, keress egy csendes helyet, "
+"ahol nem leszel.\n"
+"Megszakították. Nincs jó vagy rossz válasz - spontán válasz."
+
+#: echorepo/templates/results.html:343
+msgid ""
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
+msgstr ""
+"Az Ön rendelkezésére bocsátott információk alapján kérjük, vegyen részt az "
+"alábbi felmérésben."
+
+#: echorepo/templates/results.html:353
+msgid "thank you for your participation!"
+msgstr "köszönöm a részvételt!"
+
+#: echorepo/templates/results.html:357
+msgid "Show details"
+msgstr "Részletek"
+
+#: echorepo/templates/results.html:361
+msgid "Dismiss"
+msgstr "Lelépés"
+
+#: echorepo/templates/results.html:371
+msgid "No data found for"
+msgstr "Nincs adat az alábbi esetekben:"
+
+#: echorepo/templates/results.html:371
+msgid ""
+"If you recently submitted samples, try again\n"
+"    later."
+msgstr ""
+"Ha a közelmúltban adott be mintákat, próbálja újra\n"
+"Később."
+
+#: echorepo/templates/results.html:385
+msgid "Download"
+msgstr "Letöltés"
+
+#: echorepo/templates/results.html:392
+msgid "CSV (per-user)"
+msgstr "CSV (per- felhasználó)"
+
+#: echorepo/templates/results.html:400
+msgid "XLSX (per-user)"
+msgstr "XLSX (per- felhasználó)"
+
+#: echorepo/templates/results.html:409
+msgid "All samples (CSV, anonymised)"
+msgstr "Minden minta (CSV, anonimizált)"
+
+#: echorepo/templates/results.html:414
+msgid "GeoJSON (per-user)"
+msgstr "GeoJSON (per- felhasználó)"
+
+#: echorepo/templates/results.html:420
+msgid "Canonical exports"
+msgstr "Kanonikai export"
+
+#: echorepo/templates/results.html:423
+msgid "samples.csv"
+msgstr "minták"
+
+#: echorepo/templates/results.html:428
+msgid "sample_images.csv"
+msgstr "minta _ images.csv"
+
+#: echorepo/templates/results.html:433
+msgid "sample_parameters.csv"
+msgstr "minta _ parameters.csv"
+
+#: echorepo/templates/results.html:438
+msgid "sample_biodiversity.csv"
+msgstr "minta _ biológiai diversity.csv"
+
+#: echorepo/templates/results.html:443
+msgid "All canonical (zip)"
+msgstr "Minden kanonikus (zip)"
+
+#: echorepo/templates/results.html:457
+msgid "Apply pH filter"
+msgstr "A pH-szűrő alkalmazása"
+
+#: echorepo/templates/results.html:459
+msgid "Export rows matching current pH filter"
+msgstr "Az aktuális pH-szűrőhöz illeszkedő sorok exportálása"
+
+#: echorepo/templates/results.html:480
+msgid "Privacy information"
+msgstr "Adatvédelmi információk"
+
+#: echorepo/templates/results.html:507
+msgid ""
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for\n"
+"              this project."
+msgstr ""
+"Elolvastam a fenti adatvédelmi információkat, és hozzájárulok személyes "
+"adataim feldolgozásához\n"
+"Ez a projekt."
+
+#: echorepo/templates/results.html:515
+msgid "Accept and continue"
+msgstr "Fogadja el és folytassa"
+
+#: echorepo/templates/results.html:889
+msgid "Show on map"
+msgstr "Térkép megjelenítése"
+
+#: echorepo/templates/results.html:902 echorepo/templates/results.html:926
+#: echorepo/templates/results.html:935
+msgid "Could not locate this sample on the map."
+msgstr "Nem sikerült megtalálni ezt a mintát a térképen."
+
+#: echorepo/templates/search.html:17 static/js/map.js:226
+msgid "Any country"
+msgstr "Bármely ország"
+
+#: echorepo/templates/search.html:22
+msgid "pH min"
+msgstr "pH min"
+
+#: echorepo/templates/search.html:26
+msgid "pH max"
+msgstr "max. pH"
+
+#: echorepo/templates/search.html:38
+msgid "Date from"
+msgstr "Dátum"
+
+#: echorepo/templates/search.html:42
+msgid "Date to"
+msgstr "Időpont"
+
+#: echorepo/templates/search.html:56
+msgid "Export current search"
+msgstr "Aktuális keresés exportálása"
+
+#: echorepo/templates/search.html:60
+msgid "Sign in to export results as ZIP."
+msgstr "Jelentkezzen be az exportra, mint ZIP."
+
+#: echorepo/templates/search.html:77
+msgid "Timestamp"
+msgstr "Időbélyegző"
+
+#: echorepo/templates/search.html:82
+msgid "Collected by"
+msgstr "Gyűjtötte:"
+
+#: echorepo/templates/search.html:97
+msgid "Show this sample on map"
+msgstr "A minta megjelenítése a térképen"
+
+#: echorepo/templates/search.html:114
+msgid "No results for these filters."
+msgstr "Ezekre a szűrőkre nincs eredmény."
+
+#: echorepo/templates/zenodo_publications.html:3
+msgid "ECHOrepo — Zenodo Publications"
+msgstr "ECHOREPO - Zenodo Publications"
+
+#: echorepo/templates/zenodo_publications.html:8
+msgid "Published datasets on Zenodo"
+msgstr "Megjelent adatok a Zenodo-n"
+
+#: echorepo/templates/zenodo_publications.html:10
+msgid ""
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
+msgstr ""
+"Ez az oldal a Zenodo-n közzétett ECHOREPO adatkészleteket tartalmazza, DOI "
+"linkekkel és javasolt hivatkozásokkal."
+
+#: echorepo/templates/zenodo_publications.html:24
+#: echorepo/templates/zenodo_publications.html:27
+msgid "Untitled dataset"
+msgstr "Névtelen adatkészlet"
+
+#: echorepo/templates/zenodo_publications.html:32
+msgid "Published at"
+msgstr "Megjelent:"
+
+#: echorepo/templates/zenodo_publications.html:43
+msgid "Version DOI"
+msgstr "DOI verzió"
+
+#: echorepo/templates/zenodo_publications.html:50
+msgid "Concept DOI"
+msgstr "COCept DOI"
+
+#: echorepo/templates/zenodo_publications.html:63
+msgid "API path"
+msgstr "API út"
+
+#: echorepo/templates/zenodo_publications.html:64
+msgid "Uploaded file"
+msgstr "Feltöltött fájl"
+
+#: echorepo/templates/zenodo_publications.html:65
+msgid "Deposition ID"
+msgstr "Azonosítás"
+
+#: echorepo/templates/zenodo_publications.html:66
+msgid "Concept record ID"
+msgstr "A koncepció rekordazonosítója"
+
+#: echorepo/templates/zenodo_publications.html:69
+msgid "Download source"
+msgstr "A forrás letöltése"
+
+#: echorepo/templates/zenodo_publications.html:71
+msgid "source URL"
+msgstr "forrás URL"
+
+#: echorepo/templates/zenodo_publications.html:76
+msgid "Filters"
+msgstr "Szűrők"
+
+#: echorepo/templates/zenodo_publications.html:77
+msgid "Zenodo page"
+msgstr "Zenodo oldal"
+
+#: echorepo/templates/zenodo_publications.html:79
+msgid "record page"
+msgstr "rekord oldal"
+
+#: echorepo/templates/zenodo_publications.html:88
+msgid "Suggested reference"
+msgstr "Javasolt hivatkozás"
+
+#: echorepo/templates/zenodo_publications.html:98
+msgid "No Zenodo publications have been logged yet."
+msgstr "A Zenodo kiadványait még nem jegyezték be."
+
+#: static/js/map.js:172
+msgid "Link copied to clipboard"
+msgstr "A vágólapra másolt link"
+
+#: static/js/map.js:175
+msgid "Copy this link:"
+msgstr "Másold ezt a linket:"
+
+#: static/js/map.js:778 static/js/map.js:3151
+#, python-brace-format
+msgid "Export filtered (${n})"
+msgstr "Kivitel szűrve (${n})"
+
+#: static/js/map.js:788 static/js/map.js:2945
+msgid "Release mouse to finish drawing."
+msgstr "Engedd el az egeret, hogy befejezze a rajzot."
+
+#: static/js/map.js:862
+msgid "Not available"
+msgstr "Nincs"
+
+#: static/js/map.js:915
+msgid "Street map"
+msgstr "Utcai térkép"
+
+#: static/js/map.js:916
+msgid "Satellite"
+msgstr "Műholdas"
+
+#: static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr "A százalékos értékek (%) átszámítható mg / kg-ra, megszorozva 10000-rel."
+
+#: static/js/map.js:1138
+msgid "Unit conversion help"
+msgstr "Egységkonverziós segítség"
+
+#: static/js/map.js:1485
+msgid "QR code"
+msgstr "QR-kód"
+
+#: static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Talajszerves anyag"
+
+#: static/js/map.js:1504
+msgid "Texture"
+msgstr "Textúra"
+
+#: static/js/map.js:1509
+msgid "Structure"
+msgstr "Struktúra"
+
+#: static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Földigiliszták"
+
+#: static/js/map.js:1519
+msgid "Plastic"
+msgstr "Műanyag"
+
+#: static/js/map.js:1524
+msgid "Debris"
+msgstr "Levonás"
+
+#: static/js/map.js:1529
+msgid "Contamination"
+msgstr "Szennyeződés"
+
+#: static/js/map.js:1539
+msgid "Observations"
+msgstr "Megfigyelések"
+
+#: static/js/map.js:2175 static/js/map.js:3437
+msgid "Loading map data..."
+msgstr "Térképadatok betöltése..."
+
+#: static/js/map.js:2179
+msgid "Please wait"
+msgstr "Kérem, várjon"
+
+#: static/js/map.js:2453
+msgid "Loading..."
+msgstr "Betöltés..."
+
+#: static/js/map.js:2775
+msgid "Draw selection rectangle"
+msgstr "A kijelölési téglalap rajzolása"
+
+#: static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "A rajz törlése"
+
+#: static/js/map.js:2783
+msgid "Cancel"
+msgstr "Törlés"
+
+#: static/js/map.js:2786
+msgid "Delete last point drawn"
+msgstr "Az utolsó lehívott pont törlése"
+
+#: static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Az utolsó pont törlése"
+
+#: static/js/map.js:2794
+msgid "Click and drag to draw a selection rectangle. You can draw more than one."
+msgstr ""
+"Kattintson és húzza, hogy rajzoljon egy választás téglalap. Többet is "
+"rajzolhatsz."
+
+#: static/js/map.js:2800
+msgid "Release mouse to add this rectangle to the selection."
+msgstr "Engedje el az egeret, hogy ezt a téglalapot a kiválasztáshoz."
+
+#: static/js/map.js:2881
+msgid "No selected samples to export."
+msgstr "Kiválasztott mintákat nem lehet exportálni."
+
+#: static/js/map.js:3197
+msgid "Please sign in to export data."
+msgstr "Kérem, jelentkezzen be az adatok exportálásához."
+
+#: static/js/map.js:3264
+msgid "Loading sample..."
+msgstr "A minta betöltése..."
+
+#: static/js/map.js:3348
+msgid "Loading samples..."
+msgstr "Minták betöltése..."
+
+#: static/js/map.js:3349
+msgid "Fetching visible map area"
+msgstr "Látható térkép területe"
+
+#: static/js/map.js:3380
+msgid "Rendering markers..."
+msgstr "Jelölések..."
+
+#: static/js/map.js:3381
+msgid "Building clusters and popups"
+msgstr "Építési klaszterek és poppok"
+
+#: static/js/map.js:3438
+msgid "Preparing map"
+msgstr "A térkép előkészítése"
+

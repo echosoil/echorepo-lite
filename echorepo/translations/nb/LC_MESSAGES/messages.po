@@ -1,0 +1,957 @@
+# Norwegian Bokmål translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"PO-Revision-Date: 2026-08-22 16:23+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: nb\n"
+"Language-Team: nb <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: echorepo/services/firebase.py:55
+msgid "Password recovery is not configured for this site."
+msgstr "Passordgjenoppretting er ikke konfigurert for dette nettstedet."
+
+#: echorepo/services/firebase.py:64
+msgid "Could not contact the password recovery service."
+msgstr "Klarte ikke kontakte gjenopprettingstjenesten for passord."
+
+#: echorepo/services/firebase.py:69
+msgid "If this address is registered, a reset link has been sent."
+msgstr "Hvis denne adressen er registrert, har en tilbakestillingslenke blitt sendt."
+
+#: echorepo/services/firebase.py:70
+msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+msgstr "Nytt passord kan ta opp til 30 minutter å aktivere i ECHOREPO."
+
+#: echorepo/services/firebase.py:74
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
+msgstr ""
+"Passordgjenoppretting er midlertidig utilgjengelig. Vennligst kontakt "
+"arrangørene."
+
+#: echorepo/templates/base.html:7 echorepo/templates/base.html:11
+msgid "ECHOrepo — EU Soil Data"
+msgstr "ECHOREPO — EUs jorddata"
+
+#: echorepo/templates/base.html:10
+msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
+msgstr "ECHOrepo — borgervitenskapelige jordprøver under EU-finansiert ECHO-prosjekt"
+
+#: echorepo/templates/base.html:14
+msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
+msgstr ""
+"Få tilgang til og laste ned jordprøver. En del av EU-finansierte ECHO-"
+"prosjekt."
+
+#: echorepo/templates/base.html:179
+msgid "Skip to content"
+msgstr "Hopp til innhold"
+
+#: echorepo/templates/base.html:185
+msgid "Primary"
+msgstr "Primær"
+
+#: echorepo/templates/base.html:188
+msgid "ECHOrepo logo"
+msgstr "ECHOrepo logo"
+
+#: echorepo/templates/base.html:194
+msgid "Toggle navigation"
+msgstr "Navigering"
+
+#: echorepo/templates/base.html:201
+msgid "About"
+msgstr "Om"
+
+#: echorepo/templates/base.html:203
+msgid "For Participants"
+msgstr "For deltakerne"
+
+#: echorepo/templates/base.html:205
+msgid "Partners"
+msgstr "Partnere"
+
+#: echorepo/templates/base.html:207
+msgid "News & Events"
+msgstr "Nyheter og hendelser"
+
+#: echorepo/templates/base.html:210
+msgid "Resources"
+msgstr "Ressurser"
+
+#: echorepo/templates/base.html:213
+msgid "Media Kit"
+msgstr "Media Kit"
+
+#: echorepo/templates/base.html:215
+msgid "Publications"
+msgstr "Publikasjoner"
+
+#: echorepo/templates/base.html:217
+msgid "Newsletter Archive"
+msgstr "Nyhetsbrev Arkiv"
+
+#: echorepo/templates/base.html:218
+msgid "Zenodo Publications"
+msgstr "Zenodo Publikasjoner"
+
+#: echorepo/templates/base.html:233
+msgid "Change language"
+msgstr "Endre språk"
+
+#: echorepo/templates/base.html:253
+msgid "Logged in as"
+msgstr "Logget inn som"
+
+#: echorepo/templates/base.html:259
+msgid "Logout"
+msgstr "Logg ut"
+
+#: echorepo/templates/base.html:263
+msgid "Sign in"
+msgstr "Logg inn"
+
+#: echorepo/templates/base.html:281
+msgid "ECHOrepo is part of the EU- and UKRI-funded"
+msgstr "ECHOrepo er en del av EU- og UKRI-finansiert"
+
+#: echorepo/templates/base.html:281
+msgid "project"
+msgstr "prosjekt"
+
+#: echorepo/templates/base.html:283
+msgid "Need help?"
+msgstr "Trenger du hjelp?"
+
+#: echorepo/templates/base.html:291
+msgid "Funded by UK Research and Innovation (UKRI)"
+msgstr "Støttet av UK Research and Innovation (UKRI)"
+
+#: echorepo/templates/base.html:297
+msgid "Co-funded by the European Union"
+msgstr "Medfinansiert av EU"
+
+#: echorepo/templates/base.html:301
+msgid "Funded by the European Union and UK Research and Innovation"
+msgstr "Støttet av EU og Storbritannias forskning og innovasjon"
+
+#: echorepo/templates/coordinate_issues.html:2
+#: echorepo/templates/coordinate_issues.html:6
+msgid "Coordinate issues"
+msgstr "Koordinatproblemer"
+
+#: echorepo/templates/coordinate_issues.html:10
+msgid "The coordinate issues file was not found:"
+msgstr "Koordinatproblemfilen ble ikke funnet:"
+
+#: echorepo/templates/coordinate_issues.html:18
+#: echorepo/templates/coordinate_issues.html:102 echorepo/templates/search.html:10
+#: echorepo/templates/search.html:76
+msgid "Sample / QR"
+msgstr "Prøve / QR"
+
+#: echorepo/templates/coordinate_issues.html:23
+#: echorepo/templates/coordinate_issues.html:103
+msgid "User ID"
+msgstr "Bruker-ID"
+
+#: echorepo/templates/coordinate_issues.html:28
+#: echorepo/templates/coordinate_issues.html:108
+msgid "Issue type"
+msgstr "Problemtype"
+
+#: echorepo/templates/coordinate_issues.html:30
+msgid "Any issue"
+msgstr "Ethvert problem"
+
+#: echorepo/templates/coordinate_issues.html:41 echorepo/templates/explore.html:107
+#: echorepo/templates/search.html:31
+msgid "Search"
+msgstr "Søk"
+
+#: echorepo/templates/coordinate_issues.html:48
+#: echorepo/templates/coordinate_issues.html:106
+msgid "Actual country"
+msgstr "Faktisk land"
+
+#: echorepo/templates/coordinate_issues.html:54
+#: echorepo/templates/coordinate_issues.html:107
+msgid "Planned country"
+msgstr "Planlagt land"
+
+#: echorepo/templates/coordinate_issues.html:64
+msgid "Show approved"
+msgstr "Vis godkjent"
+
+#: echorepo/templates/coordinate_issues.html:78
+msgid "Export current results"
+msgstr "Eksporter gjeldende resultater"
+
+#: echorepo/templates/coordinate_issues.html:87
+msgid "coordinate issue(s)"
+msgstr "koordinatproblem(er)"
+
+#: echorepo/templates/coordinate_issues.html:90
+msgid "Source:"
+msgstr "Kilde:"
+
+#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:153 echorepo/templates/issues.html:31
+#: echorepo/templates/issues.html:77 echorepo/templates/search.html:80
+msgid "Lat"
+msgstr "Lat"
+
+#: echorepo/templates/coordinate_issues.html:105
+#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/issues.html:78 echorepo/templates/search.html:81
+msgid "Lon"
+msgstr "Lon"
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid "Fix coordinates"
+msgstr "Løs koordinater"
+
+#: echorepo/templates/coordinate_issues.html:121
+msgid "Show only this sample on map"
+msgstr "Vis kun denne prøven på kartet"
+
+#: echorepo/templates/coordinate_issues.html:160 echorepo/templates/issues.html:53
+#: echorepo/templates/issues.html:96
+msgid "Save"
+msgstr "Lagre"
+
+#: echorepo/templates/coordinate_issues.html:169
+msgid "No coordinate issues for these filters."
+msgstr "Ingen koordinatproblemer for disse filtrene."
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "Showing page"
+msgstr "Viser side"
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "of"
+msgstr "av"
+
+#: echorepo/templates/coordinate_issues.html:182 echorepo/templates/search.html:126
+msgid "results"
+msgstr "resultater"
+
+#: echorepo/templates/explore.html:2
+msgid "ECHOrepo — Explore"
+msgstr "Echorepo — Utforsk"
+
+#: echorepo/templates/explore.html:89
+msgid "Explore the map"
+msgstr "Utforsk kart"
+
+#: echorepo/templates/explore.html:92
+msgid "Sign in to export data and access your personal samples."
+msgstr "Logg på for å eksportere data og få tilgang til dine personlige prøver."
+
+#: echorepo/templates/explore.html:101
+msgid "Download dataset from Zenodo"
+msgstr "Last ned datasett fra Zenodo"
+
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:279
+msgid "Mobile version"
+msgstr "Mobil versjon"
+
+#: echorepo/templates/explore.html:117 echorepo/templates/results.html:282
+msgid "Desktop version"
+msgstr "Skrivebordsversjon"
+
+#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
+#: echorepo/templates/search.html:79 static/js/map.js:1490
+msgid "pH"
+msgstr "pH"
+
+#: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
+msgid "min"
+msgstr "min"
+
+#: echorepo/templates/explore.html:132 echorepo/templates/results.html:455
+msgid "max"
+msgstr "max"
+
+#: echorepo/templates/explore.html:136 echorepo/templates/search.html:15
+#: echorepo/templates/search.html:78
+msgid "Country"
+msgstr "Land"
+
+#: echorepo/templates/explore.html:139
+msgid "All countries"
+msgstr "Alle land"
+
+#: echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Dato"
+
+#: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
+msgid "Apply"
+msgstr "Bruk"
+
+#: echorepo/templates/explore.html:157 echorepo/templates/results.html:460
+msgid "Export filtered (0)"
+msgstr "Eksporter filtrert (0)"
+
+#: echorepo/templates/explore.html:163
+msgid "Copy view link"
+msgstr "Kopier visningslenke"
+
+#: echorepo/templates/issues.html:2
+msgid "Data quality issues — ECHOrepo"
+msgstr "Datakvalitetsproblemer — ECHOrepo"
+
+#: echorepo/templates/issues.html:6 echorepo/templates/issues.html:14
+msgid "Back to My Data"
+msgstr "Tilbake til mine data"
+
+#: echorepo/templates/issues.html:12
+msgid "Data quality issues"
+msgstr "Datakvalitetsproblemer"
+
+#: echorepo/templates/issues.html:19
+msgid "Data issues"
+msgstr "Dataproblemer"
+
+#: echorepo/templates/issues.html:21
+#, python-format
+msgid "Default coordinates (%(lat)s, %(lon)s)"
+msgstr "Standard koordinater (%(lat)s,%(lon)s)"
+
+#: echorepo/templates/issues.html:23
+msgid "No entries with default coordinates"
+msgstr "Ingen oppføringer med standardkoordinater"
+
+#: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
+msgid "Sample"
+msgstr "Prøve"
+
+#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Bruker"
+
+#: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
+msgid "QR"
+msgstr "QR"
+
+#: echorepo/templates/issues.html:33 echorepo/templates/issues.html:79
+msgid "Fix"
+msgstr "Løs"
+
+#: echorepo/templates/issues.html:49 echorepo/templates/issues.html:94
+msgid "Lat (dec or DMS)"
+msgstr "Lat (dec eller DMS)"
+
+#: echorepo/templates/issues.html:51 echorepo/templates/issues.html:95
+msgid "Lon (dec or DMS)"
+msgstr "Lon (dec eller DMS)"
+
+#: echorepo/templates/issues.html:66
+msgid "Country mismatches"
+msgstr "Land mislykkes"
+
+#: echorepo/templates/issues.html:68
+msgid "No country mismatches"
+msgstr "Ingen land feiler"
+
+#: echorepo/templates/issues.html:70
+msgid "Actual country (from coords) is not in the planned list for this QR."
+msgstr "Faktisk land (fra coords) er ikke i den planlagte listen for denne QR."
+
+#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:269
+msgid "Upload lab data"
+msgstr "Last opp lab data"
+
+#: echorepo/templates/lab_upload.html:6
+msgid ""
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with "
+"sheet"
+msgstr ""
+"Last opp enten metallresultater (CSV/XLSX) eller biodiversitet OTU tabellen "
+"(XLSX med ark"
+
+#: echorepo/templates/lab_upload.html:8
+msgid "The server will detect the format automatically."
+msgstr "Serveren vil oppdage formatet automatisk."
+
+#: echorepo/templates/lab_upload.html:13
+msgid "Upload"
+msgstr "Last opp"
+
+#: echorepo/templates/login.html:4
+msgid "ECHOrepo — Access"
+msgstr "ECHOrepo — Tilgang"
+
+#: echorepo/templates/login.html:13
+msgid "Access your data"
+msgstr "Få tilgang til dataene dine"
+
+#: echorepo/templates/login.html:17
+msgid "Sign in with your Keycloak credentials."
+msgstr "Logg på med dine Keycloak-informasjon."
+
+#: echorepo/templates/login.html:48
+msgid "Email or username"
+msgstr "E-post eller brukernavn"
+
+#: echorepo/templates/login.html:57
+msgid "you@example.org"
+msgstr "du@example.org"
+
+#: echorepo/templates/login.html:65
+msgid "Password"
+msgstr "Passord"
+
+#: echorepo/templates/login.html:86
+msgid "Continue"
+msgstr "Fortsett"
+
+#: echorepo/templates/login.html:94
+msgid "Forgot your password?"
+msgstr "Glemt passordet ditt?"
+
+#: echorepo/templates/login.html:112
+msgid "or"
+msgstr "eller"
+
+#: echorepo/templates/login.html:123
+msgid "Sign in through Keycloak"
+msgstr "Logg inn gjennom Keycloak"
+
+#: echorepo/templates/login.html:129
+msgid "Issues signing in? Contact the organisers."
+msgstr "Problemer med å logge på? Kontakt arrangørene."
+
+#: echorepo/templates/login.html:138
+msgid "GDPR-friendly access"
+msgstr "GDPR-vennlig tilgang"
+
+#: echorepo/templates/login.html:143
+msgid "Download your data anytime"
+msgstr "Last ned dataene dine når som helst"
+
+#: echorepo/templates/results.html:3
+msgid "ECHOrepo — Your Data"
+msgstr "ECHOrepo - dine data"
+
+#: echorepo/templates/results.html:9
+msgid "Download all samples (CSV)"
+msgstr "Last ned alle prøver (CSV)"
+
+#: echorepo/templates/results.html:14 echorepo/templates/results.html:273
+#: echorepo/templates/search.html:2 echorepo/templates/search.html:5
+msgid "Search samples"
+msgstr "Søkeprøver"
+
+#: echorepo/templates/results.html:256
+msgid "Your data"
+msgstr "Dine data"
+
+#: echorepo/templates/results.html:257
+msgid ""
+"Explore your soil sample locations on the map, then export or browse the "
+"table."
+msgstr ""
+"Utforsk jordprøven plasseringer på kartet, deretter eksportere eller bla i "
+"tabellen."
+
+#: echorepo/templates/results.html:264
+#, python-format
+msgid "Fix data issues (%(n)s)"
+msgstr "Løs dataproblemer (%(n)s)"
+
+#: echorepo/templates/results.html:291 echorepo/templates/results.html:352
+msgid "Final survey"
+msgstr "Sluttundersøkelse"
+
+#: echorepo/templates/results.html:293
+msgid "We sincerely thank you for your commitment to this project!"
+msgstr "Vi takker virkelig for ditt engasjement i dette prosjektet!"
+
+#: echorepo/templates/results.html:296
+msgid ""
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after\n"
+"      soil sampling. The majority of questions are consistent with the "
+"previous surveys so that we can accurately\n"
+"      measure changes over time and understand the impact of project "
+"participation."
+msgstr ""
+"Dette er den tredje og siste undersøkelsen i prosjektet, etter de første du "
+"fullførte før og etter\n"
+"jordprøvetaking. De fleste spørsmål er i samsvar med de tidligere "
+"undersøkelsene slik at vi kan nøyaktig\n"
+"måle endringer over tid og forstå virkningen av prosjektdeltakelse."
+
+#: echorepo/templates/results.html:301
+msgid ""
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check "
+"back at a later time."
+msgstr ""
+"Før du starter: Vennligst bare fullføre denne undersøkelsen hvis laboratoriet"
+" resultater fra jordprøve(r) har allerede\n"
+"ble lagt til i lageret. Hvis resultatene venter, vennligst sjekk tilbake på "
+"et senere tidspunkt."
+
+#: echorepo/templates/results.html:307
+msgid "Go to final survey"
+msgstr "Gå til den endelige undersøkelsen"
+
+#: echorepo/templates/results.html:312
+msgid "Data use information"
+msgstr "Databruksinformasjon"
+
+#: echorepo/templates/results.html:317
+msgid "I have already completed it"
+msgstr "Jeg har allerede fullført det"
+
+#: echorepo/templates/results.html:322
+msgid "Processing survey data in the ECHO project"
+msgstr "Behandling av undersøkelsesdata i ECHO-prosjektet"
+
+#: echorepo/templates/results.html:324
+msgid ""
+"The objective of this survey data is to examine the impact of project "
+"participation on participant\n"
+"        attitudes and motivation towards soil."
+msgstr ""
+"Formålet med disse undersøkelsesdataene er å undersøke virkningen av "
+"prosjektdeltakelse på deltakeren\n"
+"holdninger og motivasjon til jord."
+
+#: echorepo/templates/results.html:328
+msgid ""
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your\n"
+"        details regarding age and gender are only used for statistical "
+"purposes and all details are collected and\n"
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
+msgstr ""
+"Informasjonen din vil bare bli brukt til vitenskapelige formål. Vi samler "
+"ikke navn eller adresser. Din\n"
+"opplysninger om alder og kjønn brukes kun til statistiske formål, og alle "
+"detaljer samles inn og\n"
+"evalueret anonymt. Det er ikke mulig å trekke konklusjoner om personen din "
+"når som helst."
+
+#: echorepo/templates/results.html:333
+msgid ""
+"Answering each question in the survey is most appreciated as it plays a "
+"crucial role in providing valuable\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
+"        outcomes are meaningful and well-informed."
+msgstr ""
+"Svar på hvert spørsmål i undersøkelsen er mest verdsatt som det spiller en "
+"avgjørende rolle i å gi verdifulle\n"
+"Innsikter som forbedrer relevansen og virkningen av ECHO-prosjektet. Deres "
+"ærlige svar er avgjørende for\n"
+"å forstå hvordan engasjement med prosjektet påvirker holdninger og "
+"motivasjoner, slik at prosjektets\n"
+"Resultatene er meningsfulle og godt informerte."
+
+#: echorepo/templates/results.html:339
+msgid ""
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be\n"
+"        interrupted. There are no right or wrong answers — answer "
+"spontaneously."
+msgstr ""
+"Det tar ca 8-10 minutter å fullføre undersøkelsen. Finn et stille sted der du"
+" ikke vil være\n"
+"avbrutt. Det er ikke noe riktig eller galt svar - svar spontant."
+
+#: echorepo/templates/results.html:343
+msgid ""
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
+msgstr ""
+"Basert på informasjonen til deg, vennligst samtykke til å delta i "
+"undersøkelsen nedenfor."
+
+#: echorepo/templates/results.html:353
+msgid "thank you for your participation!"
+msgstr "takk for din deltagelse!"
+
+#: echorepo/templates/results.html:357
+msgid "Show details"
+msgstr "Vis detaljer"
+
+#: echorepo/templates/results.html:361
+msgid "Dismiss"
+msgstr "Utstyr"
+
+#: echorepo/templates/results.html:371
+msgid "No data found for"
+msgstr "Ingen data funnet for"
+
+#: echorepo/templates/results.html:371
+msgid ""
+"If you recently submitted samples, try again\n"
+"    later."
+msgstr ""
+"Hvis du nylig har sendt prøver, prøv igjen\n"
+"senere."
+
+#: echorepo/templates/results.html:385
+msgid "Download"
+msgstr "Last ned"
+
+#: echorepo/templates/results.html:392
+msgid "CSV (per-user)"
+msgstr "CSV (per-bruker)"
+
+#: echorepo/templates/results.html:400
+msgid "XLSX (per-user)"
+msgstr "XLSX (per-brukere)"
+
+#: echorepo/templates/results.html:409
+msgid "All samples (CSV, anonymised)"
+msgstr "Alle prøver (CSV, anonymisert)"
+
+#: echorepo/templates/results.html:414
+msgid "GeoJSON (per-user)"
+msgstr "GeoJSON (per-bruker)"
+
+#: echorepo/templates/results.html:420
+msgid "Canonical exports"
+msgstr "Kanonisk eksport"
+
+#: echorepo/templates/results.html:423
+msgid "samples.csv"
+msgstr "examples.csv"
+
+#: echorepo/templates/results.html:428
+msgid "sample_images.csv"
+msgstr "sample images.csv"
+
+#: echorepo/templates/results.html:433
+msgid "sample_parameters.csv"
+msgstr "example parameters.csv"
+
+#: echorepo/templates/results.html:438
+msgid "sample_biodiversity.csv"
+msgstr "sample biodiversity.csv"
+
+#: echorepo/templates/results.html:443
+msgid "All canonical (zip)"
+msgstr "Alle kanoniske (zip)"
+
+#: echorepo/templates/results.html:457
+msgid "Apply pH filter"
+msgstr "Påfør pH-filter"
+
+#: echorepo/templates/results.html:459
+msgid "Export rows matching current pH filter"
+msgstr "Eksporter rader som passer til gjeldende pH-filter"
+
+#: echorepo/templates/results.html:480
+msgid "Privacy information"
+msgstr "Personverninformasjon"
+
+#: echorepo/templates/results.html:507
+msgid ""
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for\n"
+"              this project."
+msgstr ""
+"Jeg har lest personverninformasjonen ovenfor, og jeg samtykker i behandlingen"
+" av mine personopplysninger for\n"
+"dette prosjektet."
+
+#: echorepo/templates/results.html:515
+msgid "Accept and continue"
+msgstr "Godta og fortsette"
+
+#: echorepo/templates/results.html:889
+msgid "Show on map"
+msgstr "Vis på kart"
+
+#: echorepo/templates/results.html:902 echorepo/templates/results.html:926
+#: echorepo/templates/results.html:935
+msgid "Could not locate this sample on the map."
+msgstr "Kunne ikke finne denne prøven på kartet."
+
+#: echorepo/templates/search.html:17 static/js/map.js:226
+msgid "Any country"
+msgstr "Ethvert land"
+
+#: echorepo/templates/search.html:22
+msgid "pH min"
+msgstr "pH min"
+
+#: echorepo/templates/search.html:26
+msgid "pH max"
+msgstr "pH max"
+
+#: echorepo/templates/search.html:38
+msgid "Date from"
+msgstr "Dato fra"
+
+#: echorepo/templates/search.html:42
+msgid "Date to"
+msgstr "Dato til"
+
+#: echorepo/templates/search.html:56
+msgid "Export current search"
+msgstr "Eksporter gjeldende søk"
+
+#: echorepo/templates/search.html:60
+msgid "Sign in to export results as ZIP."
+msgstr "Logg på for å eksportere resultater som ZIP."
+
+#: echorepo/templates/search.html:77
+msgid "Timestamp"
+msgstr "Timestamp"
+
+#: echorepo/templates/search.html:82
+msgid "Collected by"
+msgstr "Samlet av"
+
+#: echorepo/templates/search.html:97
+msgid "Show this sample on map"
+msgstr "Vis denne prøven på kartet"
+
+#: echorepo/templates/search.html:114
+msgid "No results for these filters."
+msgstr "Ingen resultater for disse filtrene."
+
+#: echorepo/templates/zenodo_publications.html:3
+msgid "ECHOrepo — Zenodo Publications"
+msgstr "ECHOrepo — Zenodo Publikasjoner"
+
+#: echorepo/templates/zenodo_publications.html:8
+msgid "Published datasets on Zenodo"
+msgstr "Publiserte datasett på Zenodo"
+
+#: echorepo/templates/zenodo_publications.html:10
+msgid ""
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
+msgstr ""
+"Denne siden viser ECHOrepo datasett som er publisert på Zenodo, med DOI "
+"lenker og foreslåtte referanser."
+
+#: echorepo/templates/zenodo_publications.html:24
+#: echorepo/templates/zenodo_publications.html:27
+msgid "Untitled dataset"
+msgstr "Datasett uten navn"
+
+#: echorepo/templates/zenodo_publications.html:32
+msgid "Published at"
+msgstr "Publisert på"
+
+#: echorepo/templates/zenodo_publications.html:43
+msgid "Version DOI"
+msgstr "Versjon DOI"
+
+#: echorepo/templates/zenodo_publications.html:50
+msgid "Concept DOI"
+msgstr "Konsept DOI"
+
+#: echorepo/templates/zenodo_publications.html:63
+msgid "API path"
+msgstr "API-sti"
+
+#: echorepo/templates/zenodo_publications.html:64
+msgid "Uploaded file"
+msgstr "Lastet opp fil"
+
+#: echorepo/templates/zenodo_publications.html:65
+msgid "Deposition ID"
+msgstr "Deposisjons-ID"
+
+#: echorepo/templates/zenodo_publications.html:66
+msgid "Concept record ID"
+msgstr "Konseptpost-ID"
+
+#: echorepo/templates/zenodo_publications.html:69
+msgid "Download source"
+msgstr "Last ned kilde"
+
+#: echorepo/templates/zenodo_publications.html:71
+msgid "source URL"
+msgstr "kildeadresse"
+
+#: echorepo/templates/zenodo_publications.html:76
+msgid "Filters"
+msgstr "Filtre"
+
+#: echorepo/templates/zenodo_publications.html:77
+msgid "Zenodo page"
+msgstr "Zenodo siden"
+
+#: echorepo/templates/zenodo_publications.html:79
+msgid "record page"
+msgstr "rekordside"
+
+#: echorepo/templates/zenodo_publications.html:88
+msgid "Suggested reference"
+msgstr "Foreslått referanse"
+
+#: echorepo/templates/zenodo_publications.html:98
+msgid "No Zenodo publications have been logged yet."
+msgstr "Ingen Zenodo-publikasjoner er blitt logget ennå."
+
+#: static/js/map.js:172
+msgid "Link copied to clipboard"
+msgstr "Koble til utklippstavle"
+
+#: static/js/map.js:175
+msgid "Copy this link:"
+msgstr "Kopier denne lenken:"
+
+#: static/js/map.js:778 static/js/map.js:3151
+#, python-brace-format
+msgid "Export filtered (${n})"
+msgstr "Eksporter filtrert (${n})"
+
+#: static/js/map.js:788 static/js/map.js:2945
+msgid "Release mouse to finish drawing."
+msgstr "La musen bli ferdig."
+
+#: static/js/map.js:862
+msgid "Not available"
+msgstr "Ikke tilgjengelig"
+
+#: static/js/map.js:915
+msgid "Street map"
+msgstr "Gatekart"
+
+#: static/js/map.js:916
+msgid "Satellite"
+msgstr "Satellitt"
+
+#: static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr "Prosentverdier (%) kan omdannes til mg/kg ved å multiplisere med 10000."
+
+#: static/js/map.js:1138
+msgid "Unit conversion help"
+msgstr "Enhetskonverteringshjelp"
+
+#: static/js/map.js:1485
+msgid "QR code"
+msgstr "QR-kode"
+
+#: static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Jord organisk materiale"
+
+#: static/js/map.js:1504
+msgid "Texture"
+msgstr "Tekstur"
+
+#: static/js/map.js:1509
+msgid "Structure"
+msgstr "Struktur"
+
+#: static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Jordorm"
+
+#: static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plast"
+
+#: static/js/map.js:1524
+msgid "Debris"
+msgstr "Debris"
+
+#: static/js/map.js:1529
+msgid "Contamination"
+msgstr "Kontaminering"
+
+#: static/js/map.js:1539
+msgid "Observations"
+msgstr "Observasjoner"
+
+#: static/js/map.js:2175 static/js/map.js:3437
+msgid "Loading map data..."
+msgstr "Laster kartdata..."
+
+#: static/js/map.js:2179
+msgid "Please wait"
+msgstr "Vennligst vent"
+
+#: static/js/map.js:2453
+msgid "Loading..."
+msgstr "Laster..."
+
+#: static/js/map.js:2775
+msgid "Draw selection rectangle"
+msgstr "Teikn markeringsrektangel"
+
+#: static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "Avbryt tegning"
+
+#: static/js/map.js:2783
+msgid "Cancel"
+msgstr "Avbryt"
+
+#: static/js/map.js:2786
+msgid "Delete last point drawn"
+msgstr "Slett siste punkt tegnet"
+
+#: static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Slett siste punkt"
+
+#: static/js/map.js:2794
+msgid "Click and drag to draw a selection rectangle. You can draw more than one."
+msgstr "Klikk og dra for å tegne et utvalg rektangel. Du kan tegne mer enn én."
+
+#: static/js/map.js:2800
+msgid "Release mouse to add this rectangle to the selection."
+msgstr "La musen legge til dette rektangelet i utvalget."
+
+#: static/js/map.js:2881
+msgid "No selected samples to export."
+msgstr "Ingen utvalgte prøver å eksportere."
+
+#: static/js/map.js:3197
+msgid "Please sign in to export data."
+msgstr "Vennligst logg på for å eksportere data."
+
+#: static/js/map.js:3264
+msgid "Loading sample..."
+msgstr "Laster inn prøve..."
+
+#: static/js/map.js:3348
+msgid "Loading samples..."
+msgstr "Laster prøver..."
+
+#: static/js/map.js:3349
+msgid "Fetching visible map area"
+msgstr "Få synlig kartområde"
+
+#: static/js/map.js:3380
+msgid "Rendering markers..."
+msgstr "Regjerer markører..."
+
+#: static/js/map.js:3381
+msgid "Building clusters and popups"
+msgstr "Bygge klynger og popups"
+
+#: static/js/map.js:3438
+msgid "Preparing map"
+msgstr "Forbereder kart"
+
