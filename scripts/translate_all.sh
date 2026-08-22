@@ -58,8 +58,23 @@ echo "[3/8] Extracting translatable messages..."
     pybabel extract \
         -F babel.cfg \
         -o echorepo/translations/messages.pot \
-        echorepo static
+        .
 
+echo "[3b/8] Validating extracted catalogue..."
+
+MSG_COUNT="$(
+    grep -c '^msgid ' echorepo/translations/messages.pot || true
+)"
+
+# One msgid is always the PO metadata/header.
+if [[ "$MSG_COUNT" -le 1 ]]; then
+    echo "ERROR: Babel extraction produced no translatable messages." >&2
+    echo "Refusing to update existing .po files." >&2
+    echo "Check babel.cfg and the pybabel extraction paths." >&2
+    exit 1
+fi
+
+echo "Found $((MSG_COUNT - 1)) translatable msgids."
 
 echo "[4/8] Reading supported locales from echorepo/i18n.py..."
 

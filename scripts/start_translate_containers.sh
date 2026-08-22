@@ -6,6 +6,9 @@ cd "$REPO_ROOT"
 
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-echorepo_dev}"
 
+export LOCAL_UID="$(id -u)"
+export LOCAL_GID="$(id -g)"
+
 # echorepo-shared is declared external, so Docker Compose will not create it.
 if ! docker network inspect echorepo-shared >/dev/null 2>&1; then
     echo "Creating external Docker network: echorepo-shared"

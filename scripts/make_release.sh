@@ -75,12 +75,66 @@ if ! git merge --ff-only origin/main; then
 fi
 
 echo "[INFO] merging origin/develop into main..."
+
 if ! git merge --no-ff origin/develop; then
-  echo "[WARN] merge had conflicts, trying to auto-resolve docker-compose.prod.yml by keeping main version..."
-  # keep main’s version of the prod compose file
-  git checkout --ours docker-compose.prod.yml
-  git add docker-compose.prod.yml
-  git commit -m "Merge origin/develop into main (auto-resolve docker-compose.prod.yml)"
+  echo "[WARN] merge has conflicts."
+
+  # ------------------------------------------------------------
+  # docker-compose.prod.yml is production-specific:
+  # keep MAIN's version ("ours").
+  # ------------------------------------------------------------
+  if git diff --name-only --diff-filter=U \
+      | grep -qx 'docker-compose.prod.yml'; then
+
+    echo "[INFO] resolving docker-compose.prod.yml using main version..."
+    git checkout --ours -- docker-compose.prod.yml
+    git add docker-compose.prod.yml
+  fi
+
+  # ------------------------------------------------------------
+  # Translation catalogues are generated/maintained in DEVELOP:
+  # take DEVELOP's version ("theirs") when releasing.
+  # ------------------------------------------------------------
+  while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+
+    case "$file" in
+      echorepo/translations/*)
+        echo "[INFO] resolving translation conflict from develop: $file"
+        git checkout --theirs -- "$file"
+        git add "$file"
+        ;;
+    esac
+  done < <(git diff --name-only --diff-filter=U)
+
+  # ------------------------------------------------------------
+  # IMPORTANT:
+  # Never blindly commit while unresolved conflicts remain.
+  # ------------------------------------------------------------
+  REMAINING_CONFLICTS="$(git diff --name-only --diff-filter=U)"
+
+  if [[ -n "$REMAINING_CONFLICTS" ]]; then
+    echo
+    echo "[ERROR] Some merge conflicts require manual resolution:"
+    echo
+    echo "$REMAINING_CONFLICTS"
+    echo
+    echo "The repository has intentionally been left in merge state."
+    echo "Resolve the files above, then run:"
+    echo
+    echo "  git add <resolved-files>"
+    echo "  git commit"
+    echo
+    echo "Or abort with:"
+    echo
+    echo "  git merge --abort"
+    exit 1
+  fi
+
+  echo "[INFO] all known conflicts resolved automatically."
+
+  git commit \
+    -m "Merge origin/develop into main (release)"
 fi
 # ---------------------------------------------------------------------------
 # 4) restore into PROD

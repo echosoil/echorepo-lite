@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-21 15:10+0000\n"
+"POT-Creation-Date: 2026-08-22 16:23+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -17,6 +17,951 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: echorepo/services/firebase.py:55
+msgid "Password recovery is not configured for this site."
+msgstr "Il recupero di password non è configurato per questo sito."
+
+#: echorepo/services/firebase.py:64
+msgid "Could not contact the password recovery service."
+msgstr "Non poteva contattare il servizio di recupero password."
+
+#: echorepo/services/firebase.py:69
+msgid "If this address is registered, a reset link has been sent."
+msgstr "Se questo indirizzo è registrato, è stato inviato un link di reset."
+
+#: echorepo/services/firebase.py:70
+msgid "New password may take up to 30 minutes to activate in ECHOREPO."
+msgstr "La nuova password può richiedere fino a 30 minuti per attivare in ECHOREPO."
+
+#: echorepo/services/firebase.py:74
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
+msgstr ""
+"Il recupero di password è temporaneamente non disponibile. Contatta gli "
+"organizzatori."
+
+#: echorepo/templates/base.html:7 echorepo/templates/base.html:11
+msgid "ECHOrepo — EU Soil Data"
+msgstr "ECHOrepo — UE Dati del suolo"
+
+#: echorepo/templates/base.html:10
+msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
+msgstr ""
+"ECHOrepo — Campioni del suolo della scienza dei cittadini nell’ambito del "
+"progetto ECHO finanziato dall’UE"
+
+#: echorepo/templates/base.html:14
+msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
+msgstr ""
+"Accedi e scarica i campioni di terreno. Parte del progetto ECHO finanziato "
+"dall'UE."
+
+#: echorepo/templates/base.html:179
+msgid "Skip to content"
+msgstr "Salta al contenuto"
+
+#: echorepo/templates/base.html:185
+msgid "Primary"
+msgstr "Primario"
+
+#: echorepo/templates/base.html:188
+msgid "ECHOrepo logo"
+msgstr "Logo ECHOrepo"
+
+#: echorepo/templates/base.html:194
+msgid "Toggle navigation"
+msgstr "Toggle navigation"
+
+#: echorepo/templates/base.html:201
+msgid "About"
+msgstr "Informazioni"
+
+#: echorepo/templates/base.html:203
+msgid "For Participants"
+msgstr "Per i partecipanti"
+
+#: echorepo/templates/base.html:205
+msgid "Partners"
+msgstr "Partner"
+
+#: echorepo/templates/base.html:207
+msgid "News & Events"
+msgstr "News & Eventi"
+
+#: echorepo/templates/base.html:210
+msgid "Resources"
+msgstr "Risorse"
+
+#: echorepo/templates/base.html:213
+msgid "Media Kit"
+msgstr "Kit Media"
+
+#: echorepo/templates/base.html:215
+msgid "Publications"
+msgstr "Pubblicazioni"
+
+#: echorepo/templates/base.html:217
+msgid "Newsletter Archive"
+msgstr "Archivio Newsletter"
+
+#: echorepo/templates/base.html:218
+msgid "Zenodo Publications"
+msgstr "Pubblicazioni Zenodo"
+
+#: echorepo/templates/base.html:233
+msgid "Change language"
+msgstr "Cambia la lingua"
+
+#: echorepo/templates/base.html:253
+msgid "Logged in as"
+msgstr "Come si fa"
+
+#: echorepo/templates/base.html:259
+msgid "Logout"
+msgstr "Logout"
+
+#: echorepo/templates/base.html:263
+msgid "Sign in"
+msgstr "Firma"
+
+#: echorepo/templates/base.html:281
+msgid "ECHOrepo is part of the EU- and UKRI-funded"
+msgstr "ECHOrepo fa parte dell'UE e del Regno Unito finanziato"
+
+#: echorepo/templates/base.html:281
+msgid "project"
+msgstr "progetto"
+
+#: echorepo/templates/base.html:283
+msgid "Need help?"
+msgstr "Ti serve aiuto?"
+
+#: echorepo/templates/base.html:291
+msgid "Funded by UK Research and Innovation (UKRI)"
+msgstr "Finanziato da UK Research and Innovation (UKRI)"
+
+#: echorepo/templates/base.html:297
+msgid "Co-funded by the European Union"
+msgstr "Cofinanziato dall'Unione europea"
+
+#: echorepo/templates/base.html:301
+msgid "Funded by the European Union and UK Research and Innovation"
+msgstr "Finanziato dall'Unione europea e dal Regno Unito"
+
+#: echorepo/templates/coordinate_issues.html:2
+#: echorepo/templates/coordinate_issues.html:6
+msgid "Coordinate issues"
+msgstr "Coordinate questioni"
+
+#: echorepo/templates/coordinate_issues.html:10
+msgid "The coordinate issues file was not found:"
+msgstr "Il file delle coordinate non è stato trovato:"
+
+#: echorepo/templates/coordinate_issues.html:18
+#: echorepo/templates/coordinate_issues.html:102 echorepo/templates/search.html:10
+#: echorepo/templates/search.html:76
+msgid "Sample / QR"
+msgstr "Campione / QR"
+
+#: echorepo/templates/coordinate_issues.html:23
+#: echorepo/templates/coordinate_issues.html:103
+msgid "User ID"
+msgstr "ID utente"
+
+#: echorepo/templates/coordinate_issues.html:28
+#: echorepo/templates/coordinate_issues.html:108
+msgid "Issue type"
+msgstr "Tipo di emissione"
+
+#: echorepo/templates/coordinate_issues.html:30
+msgid "Any issue"
+msgstr "Qualsiasi problema"
+
+#: echorepo/templates/coordinate_issues.html:41 echorepo/templates/explore.html:107
+#: echorepo/templates/search.html:31
+msgid "Search"
+msgstr "Ricerca"
+
+#: echorepo/templates/coordinate_issues.html:48
+#: echorepo/templates/coordinate_issues.html:106
+msgid "Actual country"
+msgstr "Paese effettivo"
+
+#: echorepo/templates/coordinate_issues.html:54
+#: echorepo/templates/coordinate_issues.html:107
+msgid "Planned country"
+msgstr "Paese pianificato"
+
+#: echorepo/templates/coordinate_issues.html:64
+msgid "Show approved"
+msgstr "Mostra approvato"
+
+#: echorepo/templates/coordinate_issues.html:78
+msgid "Export current results"
+msgstr "Esporta i risultati correnti"
+
+#: echorepo/templates/coordinate_issues.html:87
+msgid "coordinate issue(s)"
+msgstr "emissione di coordinate"
+
+#: echorepo/templates/coordinate_issues.html:90
+msgid "Source:"
+msgstr "Fonte:"
+
+#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:153 echorepo/templates/issues.html:31
+#: echorepo/templates/issues.html:77 echorepo/templates/search.html:80
+msgid "Lat"
+msgstr "Latta"
+
+#: echorepo/templates/coordinate_issues.html:105
+#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/issues.html:78 echorepo/templates/search.html:81
+msgid "Lon"
+msgstr "Lon"
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid "Fix coordinates"
+msgstr "Fissare le coordinate"
+
+#: echorepo/templates/coordinate_issues.html:121
+msgid "Show only this sample on map"
+msgstr "Mostra solo questo campione sulla mappa"
+
+#: echorepo/templates/coordinate_issues.html:160 echorepo/templates/issues.html:53
+#: echorepo/templates/issues.html:96
+msgid "Save"
+msgstr "Salva"
+
+#: echorepo/templates/coordinate_issues.html:169
+msgid "No coordinate issues for these filters."
+msgstr "Nessun problema di coordinate per questi filtri."
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "Showing page"
+msgstr "Mostra la pagina"
+
+#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+msgid "of"
+msgstr "di"
+
+#: echorepo/templates/coordinate_issues.html:182 echorepo/templates/search.html:126
+msgid "results"
+msgstr "risultati"
+
+#: echorepo/templates/explore.html:2
+msgid "ECHOrepo — Explore"
+msgstr "ECHOrepo — Esplora"
+
+#: echorepo/templates/explore.html:89
+msgid "Explore the map"
+msgstr "Esplora la mappa"
+
+#: echorepo/templates/explore.html:92
+msgid "Sign in to export data and access your personal samples."
+msgstr "Accedi per esportare i dati e accedere ai tuoi campioni personali."
+
+#: echorepo/templates/explore.html:101
+msgid "Download dataset from Zenodo"
+msgstr "Scarica il dataset da Zenodo"
+
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:279
+msgid "Mobile version"
+msgstr "Versione mobile"
+
+#: echorepo/templates/explore.html:117 echorepo/templates/results.html:282
+msgid "Desktop version"
+msgstr "Versione desktop"
+
+#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
+#: echorepo/templates/search.html:79 static/js/map.js:1490
+msgid "pH"
+msgstr "p H"
+
+#: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
+msgid "min"
+msgstr "min"
+
+#: echorepo/templates/explore.html:132 echorepo/templates/results.html:455
+msgid "max"
+msgstr "massimo"
+
+#: echorepo/templates/explore.html:136 echorepo/templates/search.html:15
+#: echorepo/templates/search.html:78
+msgid "Country"
+msgstr "Paese"
+
+#: echorepo/templates/explore.html:139
+msgid "All countries"
+msgstr "Tutti i paesi"
+
+#: echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Data"
+
+#: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
+msgid "Apply"
+msgstr "Applicare"
+
+#: echorepo/templates/explore.html:157 echorepo/templates/results.html:460
+msgid "Export filtered (0)"
+msgstr "Esportazione filtrata (0)"
+
+#: echorepo/templates/explore.html:163
+msgid "Copy view link"
+msgstr "Copia il link"
+
+#: echorepo/templates/issues.html:2
+msgid "Data quality issues — ECHOrepo"
+msgstr "Problemi di qualità dei dati — ECHOrepo"
+
+#: echorepo/templates/issues.html:6 echorepo/templates/issues.html:14
+msgid "Back to My Data"
+msgstr "Torna ai miei dati"
+
+#: echorepo/templates/issues.html:12
+msgid "Data quality issues"
+msgstr "Problemi di qualità dei dati"
+
+#: echorepo/templates/issues.html:19
+msgid "Data issues"
+msgstr "Questioni di dati"
+
+#: echorepo/templates/issues.html:21
+#, python-format
+msgid "Default coordinates (%(lat)s, %(lon)s)"
+msgstr "Coordinate di default (%(lat)s, %(lon)s)"
+
+#: echorepo/templates/issues.html:23
+msgid "No entries with default coordinates"
+msgstr "Nessuna voce con coordinate predefinite"
+
+#: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
+msgid "Sample"
+msgstr "Esempio"
+
+#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Utente"
+
+#: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
+msgid "QR"
+msgstr "DESIGNO DEL QR"
+
+#: echorepo/templates/issues.html:33 echorepo/templates/issues.html:79
+msgid "Fix"
+msgstr "Fisso"
+
+#: echorepo/templates/issues.html:49 echorepo/templates/issues.html:94
+msgid "Lat (dec or DMS)"
+msgstr "Lat (dec o DMS)"
+
+#: echorepo/templates/issues.html:51 echorepo/templates/issues.html:95
+msgid "Lon (dec or DMS)"
+msgstr "Lon (dec o DMS)"
+
+#: echorepo/templates/issues.html:66
+msgid "Country mismatches"
+msgstr "Mismazioni di paese"
+
+#: echorepo/templates/issues.html:68
+msgid "No country mismatches"
+msgstr "Nessun errore di paese"
+
+#: echorepo/templates/issues.html:70
+msgid "Actual country (from coords) is not in the planned list for this QR."
+msgstr "Il paese effettivo (da coordi) non è nella lista prevista per questo QR."
+
+#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:269
+msgid "Upload lab data"
+msgstr "Caricare i dati del laboratorio"
+
+#: echorepo/templates/lab_upload.html:6
+msgid ""
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with "
+"sheet"
+msgstr ""
+"Caricare i risultati dei metalli (CSV/XLSX) o la tabella OTU della "
+"biodiversità (XLSX con foglio"
+
+#: echorepo/templates/lab_upload.html:8
+msgid "The server will detect the format automatically."
+msgstr "Il server rileva automaticamente il formato."
+
+#: echorepo/templates/lab_upload.html:13
+msgid "Upload"
+msgstr "Caricamento"
+
+#: echorepo/templates/login.html:4
+msgid "ECHOrepo — Access"
+msgstr "ECHOrepo — Accesso"
+
+#: echorepo/templates/login.html:13
+msgid "Access your data"
+msgstr "Accedi ai tuoi dati"
+
+#: echorepo/templates/login.html:17
+msgid "Sign in with your Keycloak credentials."
+msgstr "Accedi con le credenziali Keycloak."
+
+#: echorepo/templates/login.html:48
+msgid "Email or username"
+msgstr "Email o nome utente"
+
+#: echorepo/templates/login.html:57
+msgid "you@example.org"
+msgstr "you@example.org"
+
+#: echorepo/templates/login.html:65
+msgid "Password"
+msgstr "Password"
+
+#: echorepo/templates/login.html:86
+msgid "Continue"
+msgstr "Continua"
+
+#: echorepo/templates/login.html:94
+msgid "Forgot your password?"
+msgstr "Hai dimenticato la password?"
+
+#: echorepo/templates/login.html:112
+msgid "or"
+msgstr "o"
+
+#: echorepo/templates/login.html:123
+msgid "Sign in through Keycloak"
+msgstr "Accedi attraverso Keycloak"
+
+#: echorepo/templates/login.html:129
+msgid "Issues signing in? Contact the organisers."
+msgstr "Problemi di accesso? Contatta gli organizzatori."
+
+#: echorepo/templates/login.html:138
+msgid "GDPR-friendly access"
+msgstr "Accesso favorevole al GDPR"
+
+#: echorepo/templates/login.html:143
+msgid "Download your data anytime"
+msgstr "Scarica i tuoi dati in qualsiasi momento"
+
+#: echorepo/templates/results.html:3
+msgid "ECHOrepo — Your Data"
+msgstr "ECHOrepo — I tuoi dati"
+
+#: echorepo/templates/results.html:9
+msgid "Download all samples (CSV)"
+msgstr "Scarica tutti i campioni (CSV)"
+
+#: echorepo/templates/results.html:14 echorepo/templates/results.html:273
+#: echorepo/templates/search.html:2 echorepo/templates/search.html:5
+msgid "Search samples"
+msgstr "Esempi di ricerca"
+
+#: echorepo/templates/results.html:256
+msgid "Your data"
+msgstr "I tuoi dati"
+
+#: echorepo/templates/results.html:257
+msgid ""
+"Explore your soil sample locations on the map, then export or browse the "
+"table."
+msgstr ""
+"Esplora le posizioni del campione del suolo sulla mappa, quindi esporta o "
+"naviga la tabella."
+
+#: echorepo/templates/results.html:264
+#, python-format
+msgid "Fix data issues (%(n)s)"
+msgstr "Risolvere i problemi dei dati (__%(n)s_)"
+
+#: echorepo/templates/results.html:291 echorepo/templates/results.html:352
+msgid "Final survey"
+msgstr "Indagine finale"
+
+#: echorepo/templates/results.html:293
+msgid "We sincerely thank you for your commitment to this project!"
+msgstr "Vi ringraziamo sinceramente per il vostro impegno a questo progetto!"
+
+#: echorepo/templates/results.html:296
+msgid ""
+"This is the third and final survey in the project, following the initial ones"
+" you completed before and after\n"
+"      soil sampling. The majority of questions are consistent with the "
+"previous surveys so that we can accurately\n"
+"      measure changes over time and understand the impact of project "
+"participation."
+msgstr ""
+"Questo è il terzo e ultimo sondaggio del progetto, seguendo le prime che hai "
+"completato prima e dopo\n"
+"campionamento del suolo. La maggior parte delle domande sono coerenti con le "
+"indagini precedenti in modo che possiamo esattamente\n"
+"misurare i cambiamenti nel tempo e comprendere l'impatto della partecipazione"
+" del progetto."
+
+#: echorepo/templates/results.html:301
+msgid ""
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check "
+"back at a later time."
+msgstr ""
+"Prima di iniziare: si prega di completare questo sondaggio solo se i "
+"risultati del laboratorio dal campione del terreno (s) hanno già\n"
+"è stato aggiunto al repository. Se i risultati sono in sospeso, si prega di "
+"controllare indietro in un secondo momento."
+
+#: echorepo/templates/results.html:307
+msgid "Go to final survey"
+msgstr "Vai al sondaggio finale"
+
+#: echorepo/templates/results.html:312
+msgid "Data use information"
+msgstr "Informazioni sull'uso dei dati"
+
+#: echorepo/templates/results.html:317
+msgid "I have already completed it"
+msgstr "Io ho già completato"
+
+#: echorepo/templates/results.html:322
+msgid "Processing survey data in the ECHO project"
+msgstr "Dati dell'indagine di elaborazione nel progetto ECHO"
+
+#: echorepo/templates/results.html:324
+msgid ""
+"The objective of this survey data is to examine the impact of project "
+"participation on participant\n"
+"        attitudes and motivation towards soil."
+msgstr ""
+"L'obiettivo di questo sondaggio è quello di esaminare l'impatto della "
+"partecipazione del progetto al partecipante\n"
+"atteggiamenti e motivazione verso il suolo."
+
+#: echorepo/templates/results.html:328
+msgid ""
+"Your information will only be used for scientific purposes. We do not collect"
+" names or addresses. Your\n"
+"        details regarding age and gender are only used for statistical "
+"purposes and all details are collected and\n"
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
+msgstr ""
+"Le tue informazioni saranno utilizzate solo per scopi scientifici. Non "
+"raccogliamo nomi o indirizzi. Il tuo\n"
+"i dettagli relativi all'età e al sesso sono utilizzati solo per scopi "
+"statistici e tutti i dettagli sono raccolti e\n"
+"valutato in forma anonima. Non è possibile trarre conclusioni sulla vostra "
+"persona in qualsiasi momento."
+
+#: echorepo/templates/results.html:333
+msgid ""
+"Answering each question in the survey is most appreciated as it plays a "
+"crucial role in providing valuable\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
+"        outcomes are meaningful and well-informed."
+msgstr ""
+"Rispondere a ogni domanda nell'indagine è più apprezzato in quanto svolge un "
+"ruolo cruciale nel fornire valore\n"
+"approfondimenti che valorizzano la rilevanza e l'impatto del progetto ECHO. "
+"Le tue risposte sincere sono essenziali per\n"
+"comprendere come l’impegno con il progetto influisce su atteggiamenti e "
+"motivazioni, assicurando il progetto\n"
+"i risultati sono significativi e ben informati."
+
+#: echorepo/templates/results.html:339
+msgid ""
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be\n"
+"        interrupted. There are no right or wrong answers — answer "
+"spontaneously."
+msgstr ""
+"L'indagine richiederà circa 8-10 minuti per completare. Si prega di trovare "
+"uno spazio tranquillo dove non sarà\n"
+"interrotto. Non ci sono risposte giuste o sbagliate — rispondere "
+"spontaneamente."
+
+#: echorepo/templates/results.html:343
+msgid ""
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
+msgstr ""
+"Sulla base delle informazioni fornite, si prega di acconsentire a partecipare"
+" all'indagine qui sotto."
+
+#: echorepo/templates/results.html:353
+msgid "thank you for your participation!"
+msgstr "grazie per la vostra partecipazione!"
+
+#: echorepo/templates/results.html:357
+msgid "Show details"
+msgstr "Mostra dettagli"
+
+#: echorepo/templates/results.html:361
+msgid "Dismiss"
+msgstr "Oggetto"
+
+#: echorepo/templates/results.html:371
+msgid "No data found for"
+msgstr "Nessun dato trovato per"
+
+#: echorepo/templates/results.html:371
+msgid ""
+"If you recently submitted samples, try again\n"
+"    later."
+msgstr ""
+"Se hai recentemente presentato i campioni, riprova\n"
+"più tardi."
+
+#: echorepo/templates/results.html:385
+msgid "Download"
+msgstr "Scarica"
+
+#: echorepo/templates/results.html:392
+msgid "CSV (per-user)"
+msgstr "CSV (per utente)"
+
+#: echorepo/templates/results.html:400
+msgid "XLSX (per-user)"
+msgstr "XLSX (per utente)"
+
+#: echorepo/templates/results.html:409
+msgid "All samples (CSV, anonymised)"
+msgstr "Tutti i campioni (CSV, anonimizzato)"
+
+#: echorepo/templates/results.html:414
+msgid "GeoJSON (per-user)"
+msgstr "GeoJSON (per utente)"
+
+#: echorepo/templates/results.html:420
+msgid "Canonical exports"
+msgstr "Esportazioni canoniche"
+
+#: echorepo/templates/results.html:423
+msgid "samples.csv"
+msgstr "campioni.csv"
+
+#: echorepo/templates/results.html:428
+msgid "sample_images.csv"
+msgstr "sample_images.csv"
+
+#: echorepo/templates/results.html:433
+msgid "sample_parameters.csv"
+msgstr "campione_parametri.csv"
+
+#: echorepo/templates/results.html:438
+msgid "sample_biodiversity.csv"
+msgstr "campione biodiversity.csv"
+
+#: echorepo/templates/results.html:443
+msgid "All canonical (zip)"
+msgstr "Tutto canonica (zip)"
+
+#: echorepo/templates/results.html:457
+msgid "Apply pH filter"
+msgstr "Applicare il filtro pH"
+
+#: echorepo/templates/results.html:459
+msgid "Export rows matching current pH filter"
+msgstr "Esporta righe corrispondenti al filtro pH corrente"
+
+#: echorepo/templates/results.html:480
+msgid "Privacy information"
+msgstr "Informazioni sulla privacy"
+
+#: echorepo/templates/results.html:507
+msgid ""
+"I have read the privacy information above and I consent to the processing of "
+"my personal data for\n"
+"              this project."
+msgstr ""
+"Ho letto le informazioni sulla privacy sopra e acconsento al trattamento dei "
+"miei dati personali per\n"
+"questo progetto."
+
+#: echorepo/templates/results.html:515
+msgid "Accept and continue"
+msgstr "Accettare e continuare"
+
+#: echorepo/templates/results.html:889
+msgid "Show on map"
+msgstr "Visualizza sulla mappa"
+
+#: echorepo/templates/results.html:902 echorepo/templates/results.html:926
+#: echorepo/templates/results.html:935
+msgid "Could not locate this sample on the map."
+msgstr "Non è possibile individuare questo campione sulla mappa."
+
+#: echorepo/templates/search.html:17 static/js/map.js:226
+msgid "Any country"
+msgstr "Paese"
+
+#: echorepo/templates/search.html:22
+msgid "pH min"
+msgstr "p H min"
+
+#: echorepo/templates/search.html:26
+msgid "pH max"
+msgstr "p H max"
+
+#: echorepo/templates/search.html:38
+msgid "Date from"
+msgstr "Data da"
+
+#: echorepo/templates/search.html:42
+msgid "Date to"
+msgstr "Data di"
+
+#: echorepo/templates/search.html:56
+msgid "Export current search"
+msgstr "Ricerca corrente di esportazione"
+
+#: echorepo/templates/search.html:60
+msgid "Sign in to export results as ZIP."
+msgstr "Accedi per esportare i risultati come ZIP."
+
+#: echorepo/templates/search.html:77
+msgid "Timestamp"
+msgstr "Timestamp"
+
+#: echorepo/templates/search.html:82
+msgid "Collected by"
+msgstr "Collezionato da"
+
+#: echorepo/templates/search.html:97
+msgid "Show this sample on map"
+msgstr "Mostra questo campione sulla mappa"
+
+#: echorepo/templates/search.html:114
+msgid "No results for these filters."
+msgstr "Nessun risultato per questi filtri."
+
+#: echorepo/templates/zenodo_publications.html:3
+msgid "ECHOrepo — Zenodo Publications"
+msgstr "ECHOrepo — Pubblicazioni Zenodo"
+
+#: echorepo/templates/zenodo_publications.html:8
+msgid "Published datasets on Zenodo"
+msgstr "Dataset pubblicati su Zenodo"
+
+#: echorepo/templates/zenodo_publications.html:10
+msgid ""
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
+msgstr ""
+"Questa pagina elenca i dataset ECHOrepo pubblicati su Zenodo, con link DOI e "
+"riferimenti suggeriti."
+
+#: echorepo/templates/zenodo_publications.html:24
+#: echorepo/templates/zenodo_publications.html:27
+msgid "Untitled dataset"
+msgstr "Dataset non legato"
+
+#: echorepo/templates/zenodo_publications.html:32
+msgid "Published at"
+msgstr "Pubblicato in"
+
+#: echorepo/templates/zenodo_publications.html:43
+msgid "Version DOI"
+msgstr "Versione DOI"
+
+#: echorepo/templates/zenodo_publications.html:50
+msgid "Concept DOI"
+msgstr "Concept DOI"
+
+#: echorepo/templates/zenodo_publications.html:63
+msgid "API path"
+msgstr "Percorso API"
+
+#: echorepo/templates/zenodo_publications.html:64
+msgid "Uploaded file"
+msgstr "File caricato"
+
+#: echorepo/templates/zenodo_publications.html:65
+msgid "Deposition ID"
+msgstr "ID di deposizione"
+
+#: echorepo/templates/zenodo_publications.html:66
+msgid "Concept record ID"
+msgstr "Concept record ID"
+
+#: echorepo/templates/zenodo_publications.html:69
+msgid "Download source"
+msgstr "Scarica sorgente"
+
+#: echorepo/templates/zenodo_publications.html:71
+msgid "source URL"
+msgstr "uRL sorgente"
+
+#: echorepo/templates/zenodo_publications.html:76
+msgid "Filters"
+msgstr "Filtri"
+
+#: echorepo/templates/zenodo_publications.html:77
+msgid "Zenodo page"
+msgstr "Pagina Zenodo"
+
+#: echorepo/templates/zenodo_publications.html:79
+msgid "record page"
+msgstr "pagina di registrazione"
+
+#: echorepo/templates/zenodo_publications.html:88
+msgid "Suggested reference"
+msgstr "Riferimento consigliato"
+
+#: echorepo/templates/zenodo_publications.html:98
+msgid "No Zenodo publications have been logged yet."
+msgstr "Non sono ancora state registrate pubblicazioni Zenodo."
+
+#: static/js/map.js:172
+msgid "Link copied to clipboard"
+msgstr "Link copiato a clipboard"
+
+#: static/js/map.js:175
+msgid "Copy this link:"
+msgstr "Copia questo link:"
+
+#: static/js/map.js:778 static/js/map.js:3151
+#, python-brace-format
+msgid "Export filtered (${n})"
+msgstr "Esportazione filtrata (${n})"
+
+#: static/js/map.js:788 static/js/map.js:2945
+msgid "Release mouse to finish drawing."
+msgstr "Rilasciare il mouse per terminare il disegno."
+
+#: static/js/map.js:862
+msgid "Not available"
+msgstr "Non disponibile"
+
+#: static/js/map.js:915
+msgid "Street map"
+msgstr "Mappa stradale"
+
+#: static/js/map.js:916
+msgid "Satellite"
+msgstr "Satellite"
+
+#: static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr ""
+"Valori percentuali (%) possono essere convertiti in mg/kg moltiplicando per "
+"10000."
+
+#: static/js/map.js:1138
+msgid "Unit conversion help"
+msgstr "Aiuto per la conversione unità"
+
+#: static/js/map.js:1485
+msgid "QR code"
+msgstr "Codice QR"
+
+#: static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Soil materia organica"
+
+#: static/js/map.js:1504
+msgid "Texture"
+msgstr "Texture"
+
+#: static/js/map.js:1509
+msgid "Structure"
+msgstr "Struttura"
+
+#: static/js/map.js:1514
+msgid "Earthworms"
+msgstr "I vermi terrestri"
+
+#: static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plastica"
+
+#: static/js/map.js:1524
+msgid "Debris"
+msgstr "Debris"
+
+#: static/js/map.js:1529
+msgid "Contamination"
+msgstr "Contaminazione"
+
+#: static/js/map.js:1539
+msgid "Observations"
+msgstr "Osservazioni"
+
+#: static/js/map.js:2175 static/js/map.js:3437
+msgid "Loading map data..."
+msgstr "Caricamento dei dati della mappa..."
+
+#: static/js/map.js:2179
+msgid "Please wait"
+msgstr "Per favore"
+
+#: static/js/map.js:2453
+msgid "Loading..."
+msgstr "Caricamento..."
+
+#: static/js/map.js:2775
+msgid "Draw selection rectangle"
+msgstr "Disegno selezione rettangolo"
+
+#: static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "Cancella disegno"
+
+#: static/js/map.js:2783
+msgid "Cancel"
+msgstr "Annulla"
+
+#: static/js/map.js:2786
+msgid "Delete last point drawn"
+msgstr "Eliminare l'ultimo punto disegnato"
+
+#: static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Eliminare l'ultimo punto"
+
+#: static/js/map.js:2794
+msgid "Click and drag to draw a selection rectangle. You can draw more than one."
+msgstr ""
+"Fare clic e trascinare per disegnare un rettangolo di selezione. Puoi "
+"disegnare più di uno."
+
+#: static/js/map.js:2800
+msgid "Release mouse to add this rectangle to the selection."
+msgstr "Rilasciare il mouse per aggiungere questo rettangolo alla selezione."
+
+#: static/js/map.js:2881
+msgid "No selected samples to export."
+msgstr "Nessun campione selezionato per esportare."
+
+#: static/js/map.js:3197
+msgid "Please sign in to export data."
+msgstr "Iscriviti per esportare i dati."
+
+#: static/js/map.js:3264
+msgid "Loading sample..."
+msgstr "Carico campione..."
+
+#: static/js/map.js:3348
+msgid "Loading samples..."
+msgstr "Campioni di carico..."
+
+#: static/js/map.js:3349
+msgid "Fetching visible map area"
+msgstr "Area di mappa visibile"
+
+#: static/js/map.js:3380
+msgid "Rendering markers..."
+msgstr "Rendering marcatori..."
+
+#: static/js/map.js:3381
+msgid "Building clusters and popups"
+msgstr "Costruire cluster e popup"
+
+#: static/js/map.js:3438
+msgid "Preparing map"
+msgstr "Preparazione della mappa"
 
 #~ msgid "Export filtered (%(n)s)"
 #~ msgstr "Esportazione filtrata (__%(n)s_)"
@@ -29,9 +974,8 @@ msgstr ""
 
 #~ msgid "Some samples need attention to ensure correct maps and downloads."
 #~ msgstr ""
-#~ "Alcuni campioni hanno bisogno di "
-#~ "attenzione per garantire mappe e "
-#~ "download corretti."
+#~ "Alcuni campioni hanno bisogno di attenzione"
+#~ " per garantire mappe e download corretti."
 
 #~ msgid "Any country"
 #~ msgstr "Paese"
@@ -141,38 +1085,8 @@ msgstr ""
 #~ msgid "Export filtered ({n})"
 #~ msgstr "Esportazione filtrata (__{n}_)"
 
-#~ msgid "Date"
-#~ msgstr "Data"
-
-#~ msgid "QR code"
-#~ msgstr "Codice QR"
-
-#~ msgid "pH"
-#~ msgstr "p H"
-
 #~ msgid "Colour"
 #~ msgstr "Colore"
-
-#~ msgid "Soil organic matter"
-#~ msgstr "Soil materia organica"
-
-#~ msgid "Texture"
-#~ msgstr "Texture"
-
-#~ msgid "Structure"
-#~ msgstr "Struttura"
-
-#~ msgid "Earthworms"
-#~ msgstr "I vermi terrestri"
-
-#~ msgid "Plastic"
-#~ msgstr "Plastica"
-
-#~ msgid "Debris"
-#~ msgstr "Debris"
-
-#~ msgid "Contamination"
-#~ msgstr "Contaminazione"
 
 #~ msgid "Metals"
 #~ msgstr "Metalli"
@@ -183,20 +1097,8 @@ msgstr ""
 #~ msgid "Draw a selection rectangle"
 #~ msgstr "Disegnare un rettangolo di selezione"
 
-#~ msgid "Cancel drawing"
-#~ msgstr "Cancella disegno"
-
-#~ msgid "Cancel"
-#~ msgstr "Annulla"
-
-#~ msgid "Delete last point"
-#~ msgstr "Eliminare l'ultimo punto"
-
 #~ msgid "Click and drag to draw a selection rectangle."
 #~ msgstr "Fare clic e trascinare per disegnare un rettangolo di selezione."
-
-#~ msgid "Release mouse to add this rectangle to the selection."
-#~ msgstr "Rilasciare il mouse per aggiungere questo rettangolo alla selezione."
 
 #~ msgid "Selection export to a file"
 #~ msgstr "Selezione esportazione in un file"
@@ -221,749 +1123,4 @@ msgstr ""
 
 #~ msgid "Clear all selection rectangles"
 #~ msgstr "Cancella tutti i rettangoli di selezione"
-
-#~ msgid "Draw selection rectangle"
-#~ msgstr "Disegno selezione rettangolo"
-
-#~ msgid "Not available"
-#~ msgstr "Non disponibile"
-
-#~ msgid "Download dataset from Zenodo"
-#~ msgstr "Scarica il dataset da Zenodo"
-
-#~ msgid ""
-#~ "Percentage values (%) can be converted"
-#~ " to mg/kg by multiplying by 10000."
-#~ msgstr ""
-#~ "Valori percentuali (%) possono essere "
-#~ "convertiti in mg/kg moltiplicando per "
-#~ "10000."
-
-#~ msgid "Unit conversion help"
-#~ msgstr "Aiuto per la conversione unità"
-
-#~ msgid "Street map"
-#~ msgstr "Mappa stradale"
-
-#~ msgid "Satellite"
-#~ msgstr "Satellite"
-
-#~ msgid "Password recovery is not configured for this site."
-#~ msgstr "Il recupero di password non è configurato per questo sito."
-
-#~ msgid "Could not contact the password recovery service."
-#~ msgstr "Non poteva contattare il servizio di recupero password."
-
-#~ msgid "If this address is registered, a reset link has been sent."
-#~ msgstr "Se questo indirizzo è registrato, è stato inviato un link di reset."
-
-#~ msgid "New password may take up to 30 minutes to activate in ECHOREPO."
-#~ msgstr ""
-#~ "La nuova password può richiedere fino"
-#~ " a 30 minuti per attivare in "
-#~ "ECHOREPO."
-
-#~ msgid ""
-#~ "Password recovery is temporarily unavailable."
-#~ " Please contact the organisers."
-#~ msgstr ""
-#~ "Il recupero di password è "
-#~ "temporaneamente non disponibile. Contatta gli"
-#~ " organizzatori."
-
-#~ msgid "ECHOrepo — EU Soil Data"
-#~ msgstr "ECHOrepo — UE Dati del suolo"
-
-#~ msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
-#~ msgstr ""
-#~ "ECHOrepo — Campioni del suolo della "
-#~ "scienza dei cittadini nell’ambito del "
-#~ "progetto ECHO finanziato dall’UE"
-
-#~ msgid ""
-#~ "Access and download your soil samples."
-#~ " Part of the EU-funded ECHO "
-#~ "project."
-#~ msgstr ""
-#~ "Accedi e scarica i campioni di "
-#~ "terreno. Parte del progetto ECHO "
-#~ "finanziato dall'UE."
-
-#~ msgid "Skip to content"
-#~ msgstr "Salta al contenuto"
-
-#~ msgid "Primary"
-#~ msgstr "Primario"
-
-#~ msgid "ECHOrepo logo"
-#~ msgstr "Logo ECHOrepo"
-
-#~ msgid "Toggle navigation"
-#~ msgstr "Toggle navigation"
-
-#~ msgid "About"
-#~ msgstr "Informazioni"
-
-#~ msgid "For Participants"
-#~ msgstr "Per i partecipanti"
-
-#~ msgid "Partners"
-#~ msgstr "Partner"
-
-#~ msgid "News & Events"
-#~ msgstr "News & Eventi"
-
-#~ msgid "Resources"
-#~ msgstr "Risorse"
-
-#~ msgid "Media Kit"
-#~ msgstr "Kit Media"
-
-#~ msgid "Publications"
-#~ msgstr "Pubblicazioni"
-
-#~ msgid "Newsletter Archive"
-#~ msgstr "Archivio Newsletter"
-
-#~ msgid "Zenodo Publications"
-#~ msgstr "Pubblicazioni Zenodo"
-
-#~ msgid "Change language"
-#~ msgstr "Cambia la lingua"
-
-#~ msgid "Logged in as"
-#~ msgstr "Come si fa"
-
-#~ msgid "Logout"
-#~ msgstr "Logout"
-
-#~ msgid "Sign in"
-#~ msgstr "Firma"
-
-#~ msgid "ECHOrepo is part of the EU- and UKRI-funded"
-#~ msgstr "ECHOrepo fa parte dell'UE e del Regno Unito finanziato"
-
-#~ msgid "project"
-#~ msgstr "progetto"
-
-#~ msgid "Need help?"
-#~ msgstr "Ti serve aiuto?"
-
-#~ msgid "Funded by UK Research and Innovation (UKRI)"
-#~ msgstr "Finanziato da UK Research and Innovation (UKRI)"
-
-#~ msgid "Co-funded by the European Union"
-#~ msgstr "Cofinanziato dall'Unione europea"
-
-#~ msgid "Funded by the European Union and UK Research and Innovation"
-#~ msgstr "Finanziato dall'Unione europea e dal Regno Unito"
-
-#~ msgid "Coordinate issues"
-#~ msgstr "Coordinate questioni"
-
-#~ msgid "The coordinate issues file was not found:"
-#~ msgstr "Il file delle coordinate non è stato trovato:"
-
-#~ msgid "Sample / QR"
-#~ msgstr "Campione / QR"
-
-#~ msgid "User ID"
-#~ msgstr "ID utente"
-
-#~ msgid "Issue type"
-#~ msgstr "Tipo di emissione"
-
-#~ msgid "Any issue"
-#~ msgstr "Qualsiasi problema"
-
-#~ msgid "Search"
-#~ msgstr "Ricerca"
-
-#~ msgid "Actual country"
-#~ msgstr "Paese effettivo"
-
-#~ msgid "Planned country"
-#~ msgstr "Paese pianificato"
-
-#~ msgid "Show approved"
-#~ msgstr "Mostra approvato"
-
-#~ msgid "Export current results"
-#~ msgstr "Esporta i risultati correnti"
-
-#~ msgid "coordinate issue(s)"
-#~ msgstr "emissione di coordinate"
-
-#~ msgid "Source:"
-#~ msgstr "Fonte:"
-
-#~ msgid "Lat"
-#~ msgstr "Latta"
-
-#~ msgid "Lon"
-#~ msgstr "Lon"
-
-#~ msgid "Fix coordinates"
-#~ msgstr "Fissare le coordinate"
-
-#~ msgid "Show only this sample on map"
-#~ msgstr "Mostra solo questo campione sulla mappa"
-
-#~ msgid "Save"
-#~ msgstr "Salva"
-
-#~ msgid "No coordinate issues for these filters."
-#~ msgstr "Nessun problema di coordinate per questi filtri."
-
-#~ msgid "Showing page"
-#~ msgstr "Mostra la pagina"
-
-#~ msgid "of"
-#~ msgstr "di"
-
-#~ msgid "results"
-#~ msgstr "risultati"
-
-#~ msgid "ECHOrepo — Explore"
-#~ msgstr "ECHOrepo — Esplora"
-
-#~ msgid "Explore the map"
-#~ msgstr "Esplora la mappa"
-
-#~ msgid "Sign in to export data and access your personal samples."
-#~ msgstr "Accedi per esportare i dati e accedere ai tuoi campioni personali."
-
-#~ msgid "Mobile version"
-#~ msgstr "Versione mobile"
-
-#~ msgid "Desktop version"
-#~ msgstr "Versione desktop"
-
-#~ msgid "min"
-#~ msgstr "min"
-
-#~ msgid "max"
-#~ msgstr "massimo"
-
-#~ msgid "Country"
-#~ msgstr "Paese"
-
-#~ msgid "All countries"
-#~ msgstr "Tutti i paesi"
-
-#~ msgid "Apply"
-#~ msgstr "Applicare"
-
-#~ msgid "Export filtered (0)"
-#~ msgstr "Esportazione filtrata (0)"
-
-#~ msgid "Copy view link"
-#~ msgstr "Copia il link"
-
-#~ msgid "Data quality issues — ECHOrepo"
-#~ msgstr "Problemi di qualità dei dati — ECHOrepo"
-
-#~ msgid "Back to My Data"
-#~ msgstr "Torna ai miei dati"
-
-#~ msgid "Data quality issues"
-#~ msgstr "Problemi di qualità dei dati"
-
-#~ msgid "Data issues"
-#~ msgstr "Questioni di dati"
-
-#~ msgid "Default coordinates (%(lat)s, %(lon)s)"
-#~ msgstr "Coordinate di default (%(lat)s, %(lon)s)"
-
-#~ msgid "No entries with default coordinates"
-#~ msgstr "Nessuna voce con coordinate predefinite"
-
-#~ msgid "Sample"
-#~ msgstr "Esempio"
-
-#~ msgid "User"
-#~ msgstr "Utente"
-
-#~ msgid "QR"
-#~ msgstr "DESIGNO DEL QR"
-
-#~ msgid "Fix"
-#~ msgstr "Fisso"
-
-#~ msgid "Lat (dec or DMS)"
-#~ msgstr "Lat (dec o DMS)"
-
-#~ msgid "Lon (dec or DMS)"
-#~ msgstr "Lon (dec o DMS)"
-
-#~ msgid "Country mismatches"
-#~ msgstr "Mismazioni di paese"
-
-#~ msgid "No country mismatches"
-#~ msgstr "Nessun errore di paese"
-
-#~ msgid "Actual country (from coords) is not in the planned list for this QR."
-#~ msgstr ""
-#~ "Il paese effettivo (da coordi) non "
-#~ "è nella lista prevista per questo "
-#~ "QR."
-
-#~ msgid "Upload lab data"
-#~ msgstr "Caricare i dati del laboratorio"
-
-#~ msgid ""
-#~ "Upload either metals results (CSV/XLSX) "
-#~ "or biodiversity OTU table (XLSX with "
-#~ "sheet"
-#~ msgstr ""
-#~ "Caricare i risultati dei metalli "
-#~ "(CSV/XLSX) o la tabella OTU della "
-#~ "biodiversità (XLSX con foglio"
-
-#~ msgid "The server will detect the format automatically."
-#~ msgstr "Il server rileva automaticamente il formato."
-
-#~ msgid "Upload"
-#~ msgstr "Caricamento"
-
-#~ msgid "ECHOrepo — Access"
-#~ msgstr "ECHOrepo — Accesso"
-
-#~ msgid "Access your data"
-#~ msgstr "Accedi ai tuoi dati"
-
-#~ msgid "Sign in with your Keycloak credentials."
-#~ msgstr "Accedi con le credenziali Keycloak."
-
-#~ msgid "Email or username"
-#~ msgstr "Email o nome utente"
-
-#~ msgid "you@example.org"
-#~ msgstr "you@example.org"
-
-#~ msgid "Password"
-#~ msgstr "Password"
-
-#~ msgid "Continue"
-#~ msgstr "Continua"
-
-#~ msgid "Forgot your password?"
-#~ msgstr "Hai dimenticato la password?"
-
-#~ msgid "or"
-#~ msgstr "o"
-
-#~ msgid "Sign in through Keycloak"
-#~ msgstr "Accedi attraverso Keycloak"
-
-#~ msgid "Issues signing in? Contact the organisers."
-#~ msgstr "Problemi di accesso? Contatta gli organizzatori."
-
-#~ msgid "GDPR-friendly access"
-#~ msgstr "Accesso favorevole al GDPR"
-
-#~ msgid "Download your data anytime"
-#~ msgstr "Scarica i tuoi dati in qualsiasi momento"
-
-#~ msgid "ECHOrepo — Your Data"
-#~ msgstr "ECHOrepo — I tuoi dati"
-
-#~ msgid "Download all samples (CSV)"
-#~ msgstr "Scarica tutti i campioni (CSV)"
-
-#~ msgid "Search samples"
-#~ msgstr "Esempi di ricerca"
-
-#~ msgid "Your data"
-#~ msgstr "I tuoi dati"
-
-#~ msgid ""
-#~ "Explore your soil sample locations on"
-#~ " the map, then export or browse "
-#~ "the table."
-#~ msgstr ""
-#~ "Esplora le posizioni del campione del"
-#~ " suolo sulla mappa, quindi esporta o"
-#~ " naviga la tabella."
-
-#~ msgid "Fix data issues (%(n)s)"
-#~ msgstr "Risolvere i problemi dei dati (__%(n)s_)"
-
-#~ msgid "Final survey"
-#~ msgstr "Indagine finale"
-
-#~ msgid "We sincerely thank you for your commitment to this project!"
-#~ msgstr "Vi ringraziamo sinceramente per il vostro impegno a questo progetto!"
-
-#~ msgid ""
-#~ "This is the third and final survey"
-#~ " in the project, following the "
-#~ "initial ones you completed before and"
-#~ " after\n"
-#~ "      soil sampling. The majority of "
-#~ "questions are consistent with the "
-#~ "previous surveys so that we can "
-#~ "accurately\n"
-#~ "      measure changes over time and "
-#~ "understand the impact of project "
-#~ "participation."
-#~ msgstr ""
-#~ "Questo è il terzo e ultimo "
-#~ "sondaggio del progetto, seguendo le "
-#~ "prime che hai completato prima e "
-#~ "dopo\n"
-#~ "campionamento del suolo. La maggior "
-#~ "parte delle domande sono coerenti con"
-#~ " le indagini precedenti in modo che"
-#~ " possiamo esattamente\n"
-#~ "misurare i cambiamenti nel tempo e "
-#~ "comprendere l'impatto della partecipazione del"
-#~ " progetto."
-
-#~ msgid ""
-#~ "Before you start: please only complete"
-#~ " this survey if the lab results "
-#~ "from your soil sample(s) have already"
-#~ "\n"
-#~ "      been added to the repository. "
-#~ "If the results are pending, please "
-#~ "check back at a later time."
-#~ msgstr ""
-#~ "Prima di iniziare: si prega di "
-#~ "completare questo sondaggio solo se i"
-#~ " risultati del laboratorio dal campione "
-#~ "del terreno (s) hanno già\n"
-#~ "è stato aggiunto al repository. Se "
-#~ "i risultati sono in sospeso, si "
-#~ "prega di controllare indietro in un "
-#~ "secondo momento."
-
-#~ msgid "Go to final survey"
-#~ msgstr "Vai al sondaggio finale"
-
-#~ msgid "Data use information"
-#~ msgstr "Informazioni sull'uso dei dati"
-
-#~ msgid "I have already completed it"
-#~ msgstr "Io ho già completato"
-
-#~ msgid "Processing survey data in the ECHO project"
-#~ msgstr "Dati dell'indagine di elaborazione nel progetto ECHO"
-
-#~ msgid ""
-#~ "The objective of this survey data "
-#~ "is to examine the impact of "
-#~ "project participation on participant\n"
-#~ "        attitudes and motivation towards soil."
-#~ msgstr ""
-#~ "L'obiettivo di questo sondaggio è quello"
-#~ " di esaminare l'impatto della "
-#~ "partecipazione del progetto al partecipante"
-#~ "\n"
-#~ "atteggiamenti e motivazione verso il suolo."
-
-#~ msgid ""
-#~ "Your information will only be used "
-#~ "for scientific purposes. We do not "
-#~ "collect names or addresses. Your\n"
-#~ "        details regarding age and gender"
-#~ " are only used for statistical "
-#~ "purposes and all details are collected"
-#~ " and\n"
-#~ "        evaluated anonymously. It is not"
-#~ " possible to draw conclusions about "
-#~ "your person at any time."
-#~ msgstr ""
-#~ "Le tue informazioni saranno utilizzate "
-#~ "solo per scopi scientifici. Non "
-#~ "raccogliamo nomi o indirizzi. Il tuo"
-#~ "\n"
-#~ "i dettagli relativi all'età e al "
-#~ "sesso sono utilizzati solo per scopi "
-#~ "statistici e tutti i dettagli sono "
-#~ "raccolti e\n"
-#~ "valutato in forma anonima. Non è "
-#~ "possibile trarre conclusioni sulla vostra "
-#~ "persona in qualsiasi momento."
-
-#~ msgid ""
-#~ "Answering each question in the survey"
-#~ " is most appreciated as it plays "
-#~ "a crucial role in providing valuable"
-#~ "\n"
-#~ "        insights that enhance the "
-#~ "relevance and impact of the ECHO "
-#~ "project. Your honest responses are "
-#~ "essential for\n"
-#~ "        understanding how engagement with "
-#~ "the project influences attitudes and "
-#~ "motivations, ensuring the project’s\n"
-#~ "        outcomes are meaningful and well-informed."
-#~ msgstr ""
-#~ "Rispondere a ogni domanda nell'indagine "
-#~ "è più apprezzato in quanto svolge "
-#~ "un ruolo cruciale nel fornire valore"
-#~ "\n"
-#~ "approfondimenti che valorizzano la rilevanza"
-#~ " e l'impatto del progetto ECHO. Le"
-#~ " tue risposte sincere sono essenziali "
-#~ "per\n"
-#~ "comprendere come l’impegno con il "
-#~ "progetto influisce su atteggiamenti e "
-#~ "motivazioni, assicurando il progetto\n"
-#~ "i risultati sono significativi e ben informati."
-
-#~ msgid ""
-#~ "The survey will take approximately 8–10"
-#~ " minutes to complete. Please find a"
-#~ " quiet space where you won’t be\n"
-#~ ""
-#~ "        interrupted. There are no right"
-#~ " or wrong answers — answer "
-#~ "spontaneously."
-#~ msgstr ""
-#~ "L'indagine richiederà circa 8-10 minuti "
-#~ "per completare. Si prega di trovare "
-#~ "uno spazio tranquillo dove non sarà\n"
-#~ ""
-#~ "interrotto. Non ci sono risposte giuste"
-#~ " o sbagliate — rispondere spontaneamente."
-
-#~ msgid ""
-#~ "Based on the information provided to "
-#~ "you, please consent to participate in"
-#~ " the survey below."
-#~ msgstr ""
-#~ "Sulla base delle informazioni fornite, "
-#~ "si prega di acconsentire a partecipare"
-#~ " all'indagine qui sotto."
-
-#~ msgid "thank you for your participation!"
-#~ msgstr "grazie per la vostra partecipazione!"
-
-#~ msgid "Show details"
-#~ msgstr "Mostra dettagli"
-
-#~ msgid "Dismiss"
-#~ msgstr "Oggetto"
-
-#~ msgid "No data found for"
-#~ msgstr "Nessun dato trovato per"
-
-#~ msgid ""
-#~ "If you recently submitted samples, try again\n"
-#~ "    later."
-#~ msgstr ""
-#~ "Se hai recentemente presentato i campioni, riprova\n"
-#~ "più tardi."
-
-#~ msgid "Download"
-#~ msgstr "Scarica"
-
-#~ msgid "CSV (per-user)"
-#~ msgstr "CSV (per utente)"
-
-#~ msgid "XLSX (per-user)"
-#~ msgstr "XLSX (per utente)"
-
-#~ msgid "All samples (CSV, anonymised)"
-#~ msgstr "Tutti i campioni (CSV, anonimizzato)"
-
-#~ msgid "GeoJSON (per-user)"
-#~ msgstr "GeoJSON (per utente)"
-
-#~ msgid "Canonical exports"
-#~ msgstr "Esportazioni canoniche"
-
-#~ msgid "samples.csv"
-#~ msgstr "campioni.csv"
-
-#~ msgid "sample_images.csv"
-#~ msgstr "sample_images.csv"
-
-#~ msgid "sample_parameters.csv"
-#~ msgstr "campione_parametri.csv"
-
-#~ msgid "sample_biodiversity.csv"
-#~ msgstr "campione biodiversity.csv"
-
-#~ msgid "All canonical (zip)"
-#~ msgstr "Tutto canonica (zip)"
-
-#~ msgid "Apply pH filter"
-#~ msgstr "Applicare il filtro pH"
-
-#~ msgid "Export rows matching current pH filter"
-#~ msgstr "Esporta righe corrispondenti al filtro pH corrente"
-
-#~ msgid "Privacy information"
-#~ msgstr "Informazioni sulla privacy"
-
-#~ msgid ""
-#~ "I have read the privacy information "
-#~ "above and I consent to the "
-#~ "processing of my personal data for\n"
-#~ ""
-#~ "              this project."
-#~ msgstr ""
-#~ "Ho letto le informazioni sulla privacy"
-#~ " sopra e acconsento al trattamento "
-#~ "dei miei dati personali per\n"
-#~ "questo progetto."
-
-#~ msgid "Accept and continue"
-#~ msgstr "Accettare e continuare"
-
-#~ msgid "Show on map"
-#~ msgstr "Visualizza sulla mappa"
-
-#~ msgid "Could not locate this sample on the map."
-#~ msgstr "Non è possibile individuare questo campione sulla mappa."
-
-#~ msgid "pH min"
-#~ msgstr "p H min"
-
-#~ msgid "pH max"
-#~ msgstr "p H max"
-
-#~ msgid "Date from"
-#~ msgstr "Data da"
-
-#~ msgid "Date to"
-#~ msgstr "Data di"
-
-#~ msgid "Export current search"
-#~ msgstr "Ricerca corrente di esportazione"
-
-#~ msgid "Sign in to export results as ZIP."
-#~ msgstr "Accedi per esportare i risultati come ZIP."
-
-#~ msgid "Timestamp"
-#~ msgstr "Timestamp"
-
-#~ msgid "Collected by"
-#~ msgstr "Collezionato da"
-
-#~ msgid "Show this sample on map"
-#~ msgstr "Mostra questo campione sulla mappa"
-
-#~ msgid "No results for these filters."
-#~ msgstr "Nessun risultato per questi filtri."
-
-#~ msgid "ECHOrepo — Zenodo Publications"
-#~ msgstr "ECHOrepo — Pubblicazioni Zenodo"
-
-#~ msgid "Published datasets on Zenodo"
-#~ msgstr "Dataset pubblicati su Zenodo"
-
-#~ msgid ""
-#~ "This page lists ECHOrepo datasets "
-#~ "published on Zenodo, with DOI links "
-#~ "and suggested references."
-#~ msgstr ""
-#~ "Questa pagina elenca i dataset ECHOrepo"
-#~ " pubblicati su Zenodo, con link DOI"
-#~ " e riferimenti suggeriti."
-
-#~ msgid "Untitled dataset"
-#~ msgstr "Dataset non legato"
-
-#~ msgid "Published at"
-#~ msgstr "Pubblicato in"
-
-#~ msgid "Version DOI"
-#~ msgstr "Versione DOI"
-
-#~ msgid "Concept DOI"
-#~ msgstr "Concept DOI"
-
-#~ msgid "API path"
-#~ msgstr "Percorso API"
-
-#~ msgid "Uploaded file"
-#~ msgstr "File caricato"
-
-#~ msgid "Deposition ID"
-#~ msgstr "ID di deposizione"
-
-#~ msgid "Concept record ID"
-#~ msgstr "Concept record ID"
-
-#~ msgid "Download source"
-#~ msgstr "Scarica sorgente"
-
-#~ msgid "source URL"
-#~ msgstr "uRL sorgente"
-
-#~ msgid "Filters"
-#~ msgstr "Filtri"
-
-#~ msgid "Zenodo page"
-#~ msgstr "Pagina Zenodo"
-
-#~ msgid "record page"
-#~ msgstr "pagina di registrazione"
-
-#~ msgid "Suggested reference"
-#~ msgstr "Riferimento consigliato"
-
-#~ msgid "No Zenodo publications have been logged yet."
-#~ msgstr "Non sono ancora state registrate pubblicazioni Zenodo."
-
-#~ msgid "Link copied to clipboard"
-#~ msgstr "Link copiato a clipboard"
-
-#~ msgid "Copy this link:"
-#~ msgstr "Copia questo link:"
-
-#~ msgid "Export filtered (${n})"
-#~ msgstr "Esportazione filtrata (${n})"
-
-#~ msgid "Release mouse to finish drawing."
-#~ msgstr "Rilasciare il mouse per terminare il disegno."
-
-#~ msgid "Loading map data..."
-#~ msgstr "Caricamento dei dati della mappa..."
-
-#~ msgid "Please wait"
-#~ msgstr "Per favore"
-
-#~ msgid "Loading..."
-#~ msgstr "Caricamento..."
-
-#~ msgid "Delete last point drawn"
-#~ msgstr "Eliminare l'ultimo punto disegnato"
-
-#~ msgid ""
-#~ "Click and drag to draw a selection"
-#~ " rectangle. You can draw more than"
-#~ " one."
-#~ msgstr ""
-#~ "Fare clic e trascinare per disegnare "
-#~ "un rettangolo di selezione. Puoi "
-#~ "disegnare più di uno."
-
-#~ msgid "No selected samples to export."
-#~ msgstr "Nessun campione selezionato per esportare."
-
-#~ msgid "Please sign in to export data."
-#~ msgstr "Iscriviti per esportare i dati."
-
-#~ msgid "Loading sample..."
-#~ msgstr "Carico campione..."
-
-#~ msgid "Loading samples..."
-#~ msgstr "Campioni di carico..."
-
-#~ msgid "Fetching visible map area"
-#~ msgstr "Area di mappa visibile"
-
-#~ msgid "Rendering markers..."
-#~ msgstr "Rendering marcatori..."
-
-#~ msgid "Building clusters and popups"
-#~ msgstr "Costruire cluster e popup"
-
-#~ msgid "Preparing map"
-#~ msgstr "Preparazione della mappa"
 
