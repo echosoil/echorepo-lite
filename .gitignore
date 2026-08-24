@@ -117,3 +117,10 @@ pgdata/*
 # Still allow a placeholder so the dir can exist in git if needed
 !test/echorepo/.gitkeep
 !tests/echorepo/.gitkeep
+
+# Jupyter temporary files
+notebooks/**/.ipynb_checkpoints/
+
+# Generated exports
+notebooks/exports/*
+!notebooks/exports/.gitkeep

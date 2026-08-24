@@ -1,23 +1,22 @@
 services:
   jupyter:
     image: quay.io/jupyter/scipy-notebook:2026-07-28
-    container_name: echorepo-jupyter
     restart: unless-stopped
 
     ports:
-      # IMPORTANT: only reachable from the ECHOREPO host itself.
       - "127.0.0.1:8888:8888"
 
     volumes:
-      # Persistent notebooks
       - ${JUPYTER_WORK_DIR:-./notebooks}:/home/jovyan/work
+
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN}
+      ECHOREPO_URL: "http://echorepo-lite:8000"
+      PYTHONPATH: "/home/jovyan/work"
 
     command:
       - start-notebook.py
-      - --ServerApp.base_url=/jupyter/
       - --ServerApp.root_dir=/home/jovyan/work
-      - --ServerApp.trust_xheaders=True
-      - --IdentityProvider.token=
 
     networks:
       - echorepo-shared
