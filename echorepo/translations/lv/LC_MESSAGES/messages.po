@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"POT-Creation-Date: 2026-08-24 13:38+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lv\n"
@@ -18,6 +18,162 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: echorepo/i18n.py:108
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
+msgstr "Privātuma rādiuss (~±{km}km)"
+
+#: echorepo/i18n.py:109
+msgid "Soil pH"
+msgstr "Augsnes pH"
+
+#: echorepo/i18n.py:110
+msgid "Acidic (≤5.5)"
+msgstr "Skābums (≤5,5)"
+
+#: echorepo/i18n.py:111
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Nedaudz skābs (5.5–6.5)"
+
+#: echorepo/i18n.py:112
+msgid "Neutral (6.5–7.5)"
+msgstr "Neitrāls (6,5–7,5)"
+
+#: echorepo/i18n.py:113
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Nedaudz sārmains (7,5–8,5)"
+
+#: echorepo/i18n.py:114
+msgid "Alkaline (≥8.5)"
+msgstr "Sārma (≥8,5)"
+
+#: echorepo/i18n.py:115
+msgid "Your samples"
+msgstr "Jūsu paraugi"
+
+#: echorepo/i18n.py:116
+msgid "Other samples"
+msgstr "Citi paraugi"
+
+#: echorepo/i18n.py:117
+msgid "Export"
+msgstr "Eksports"
+
+#: echorepo/i18n.py:118
+msgid "Clear"
+msgstr "Tīrīt"
+
+#: echorepo/i18n.py:119
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr "Eksportēt filtrētu ({n})"
+
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Datums"
+
+#: echorepo/i18n.py:121 static/js/map.js:1485
+msgid "QR code"
+msgstr "QR kods"
+
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:124
+#: echorepo/templates/results.html:450 echorepo/templates/search.html:79
+#: static/js/map.js:1490
+msgid "pH"
+msgstr "pH"
+
+#: echorepo/i18n.py:123
+msgid "Colour"
+msgstr "Krāsa"
+
+#: echorepo/i18n.py:124 static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Augsnes organiskās vielas"
+
+#: echorepo/i18n.py:125 static/js/map.js:1509
+msgid "Structure"
+msgstr "Struktūra"
+
+#: echorepo/i18n.py:126 static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Sliekas"
+
+#: echorepo/i18n.py:127 static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plastmasas"
+
+#: echorepo/i18n.py:128 static/js/map.js:1524
+msgid "Debris"
+msgstr "Debri"
+
+#: echorepo/i18n.py:129 static/js/map.js:1529
+msgid "Contamination"
+msgstr "Piesārņojums"
+
+#: echorepo/i18n.py:130
+msgid "Metals"
+msgstr "Metāli"
+
+#: echorepo/i18n.py:131
+msgid "Elemental concentrations"
+msgstr "Elementu koncentrācijas"
+
+#: echorepo/i18n.py:132
+msgid "Draw a rectangle"
+msgstr "Zīmēt"
+
+#: echorepo/i18n.py:133
+msgid "Click and drag to draw a rectangle."
+msgstr "Noklikšķiniet un velciet, lai zīmētu taisnstūri."
+
+#: echorepo/i18n.py:134 static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "Atcelt zīmēšanu"
+
+#: echorepo/i18n.py:135 static/js/map.js:2783
+msgid "Cancel"
+msgstr "Atcelt"
+
+#: echorepo/i18n.py:136 static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Svītrot pēdējo punktu"
+
+#: echorepo/i18n.py:137 static/js/map.js:915
+msgid "Street map"
+msgstr "Ielu karte"
+
+#: echorepo/i18n.py:138 static/js/map.js:916
+msgid "Satellite"
+msgstr "Satelīts"
+
+#: echorepo/i18n.py:139
+msgid "Selection export to a file"
+msgstr "Eksportēt failā"
+
+#: echorepo/i18n.py:140
+msgid "Selection export"
+msgstr "Atlases eksports"
+
+#: echorepo/i18n.py:141
+msgid "Use selection tool"
+msgstr "Lietot iezīmēšanas rīku"
+
+#: echorepo/i18n.py:142
+msgid "to draw one or more areas"
+msgstr "izdarīt vienu vai vairākas jomas"
+
+#: echorepo/i18n.py:143
+msgid "Export selection"
+msgstr "Eksportēt izvēli"
+
+#: echorepo/i18n.py:144
+msgid "Clear selection"
+msgstr "Notīrīt izvēli"
+
+#: echorepo/i18n.py:145 static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr "Procentuālās vērtības (%) var pārrēķināt mg/kg, reizinot ar 10000."
 
 #: echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
@@ -270,11 +426,6 @@ msgstr "Mobilā versija"
 msgid "Desktop version"
 msgstr "Darbvirsmas versija"
 
-#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
-#: echorepo/templates/search.html:79 static/js/map.js:1490
-msgid "pH"
-msgstr "pH"
-
 #: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
 msgid "min"
 msgstr "min"
@@ -291,10 +442,6 @@ msgstr "Valsts"
 #: echorepo/templates/explore.html:139
 msgid "All countries"
 msgstr "Visas valstis"
-
-#: echorepo/templates/explore.html:142 static/js/map.js:1480
-msgid "Date"
-msgstr "Datums"
 
 #: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
 msgid "Apply"
@@ -829,53 +976,13 @@ msgstr "Atlaid peli, lai pabeigtu zīmēšanu."
 msgid "Not available"
 msgstr "Nav pieejams"
 
-#: static/js/map.js:915
-msgid "Street map"
-msgstr "Ielu karte"
-
-#: static/js/map.js:916
-msgid "Satellite"
-msgstr "Satelīts"
-
-#: static/js/map.js:1132
-msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
-msgstr "Procentuālās vērtības (%) var pārrēķināt mg/kg, reizinot ar 10000."
-
 #: static/js/map.js:1138
 msgid "Unit conversion help"
 msgstr "Palīdzība vienību konversijā"
 
-#: static/js/map.js:1485
-msgid "QR code"
-msgstr "QR kods"
-
-#: static/js/map.js:1495
-msgid "Soil organic matter"
-msgstr "Augsnes organiskās vielas"
-
 #: static/js/map.js:1504
 msgid "Texture"
 msgstr "Tekstūra"
-
-#: static/js/map.js:1509
-msgid "Structure"
-msgstr "Struktūra"
-
-#: static/js/map.js:1514
-msgid "Earthworms"
-msgstr "Sliekas"
-
-#: static/js/map.js:1519
-msgid "Plastic"
-msgstr "Plastmasas"
-
-#: static/js/map.js:1524
-msgid "Debris"
-msgstr "Debri"
-
-#: static/js/map.js:1529
-msgid "Contamination"
-msgstr "Piesārņojums"
 
 #: static/js/map.js:1539
 msgid "Observations"
@@ -897,21 +1004,9 @@ msgstr "Ielādē..."
 msgid "Draw selection rectangle"
 msgstr "Zīmēt iezīmēto taisnstūri"
 
-#: static/js/map.js:2782
-msgid "Cancel drawing"
-msgstr "Atcelt zīmēšanu"
-
-#: static/js/map.js:2783
-msgid "Cancel"
-msgstr "Atcelt"
-
 #: static/js/map.js:2786
 msgid "Delete last point drawn"
 msgstr "Dzēst pēdējo punktu"
-
-#: static/js/map.js:2787
-msgid "Delete last point"
-msgstr "Svītrot pēdējo punktu"
 
 #: static/js/map.js:2794
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."

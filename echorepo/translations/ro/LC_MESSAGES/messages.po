@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"POT-Creation-Date: 2026-08-24 13:38+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ro\n"
@@ -18,6 +18,164 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: echorepo/i18n.py:108
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
+msgstr "Raza de confidențialitate (~±{km}km)"
+
+#: echorepo/i18n.py:109
+msgid "Soil pH"
+msgstr "PH-ul solului"
+
+#: echorepo/i18n.py:110
+msgid "Acidic (≤5.5)"
+msgstr "Acid (≤5,5)"
+
+#: echorepo/i18n.py:111
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Ușor acidă (pph)"
+
+#: echorepo/i18n.py:112
+msgid "Neutral (6.5–7.5)"
+msgstr "Neutru (65/57)"
+
+#: echorepo/i18n.py:113
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Ușor alcalină (7,5"
+
+#: echorepo/i18n.py:114
+msgid "Alkaline (≥8.5)"
+msgstr "Alcalină (≥ 8, 5)"
+
+#: echorepo/i18n.py:115
+msgid "Your samples"
+msgstr "Mostrele tale"
+
+#: echorepo/i18n.py:116
+msgid "Other samples"
+msgstr "Alte eșantioane"
+
+#: echorepo/i18n.py:117
+msgid "Export"
+msgstr "Exportă"
+
+#: echorepo/i18n.py:118
+msgid "Clear"
+msgstr "Clar"
+
+#: echorepo/i18n.py:119
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr "Export filtrat ({n})"
+
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Dată"
+
+#: echorepo/i18n.py:121 static/js/map.js:1485
+msgid "QR code"
+msgstr "Codul QR"
+
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:124
+#: echorepo/templates/results.html:450 echorepo/templates/search.html:79
+#: static/js/map.js:1490
+msgid "pH"
+msgstr "p H"
+
+#: echorepo/i18n.py:123
+msgid "Colour"
+msgstr "Culoare"
+
+#: echorepo/i18n.py:124 static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Materia organică din sol"
+
+#: echorepo/i18n.py:125 static/js/map.js:1509
+msgid "Structure"
+msgstr "Structura"
+
+#: echorepo/i18n.py:126 static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Viermi"
+
+#: echorepo/i18n.py:127 static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plastic"
+
+#: echorepo/i18n.py:128 static/js/map.js:1524
+msgid "Debris"
+msgstr "Debris"
+
+#: echorepo/i18n.py:129 static/js/map.js:1529
+msgid "Contamination"
+msgstr "Contaminarea"
+
+#: echorepo/i18n.py:130
+msgid "Metals"
+msgstr "Metale"
+
+#: echorepo/i18n.py:131
+msgid "Elemental concentrations"
+msgstr "Concentrații elementare"
+
+#: echorepo/i18n.py:132
+msgid "Draw a rectangle"
+msgstr "Desenează un dreptunghi"
+
+#: echorepo/i18n.py:133
+msgid "Click and drag to draw a rectangle."
+msgstr "Faceţi clic şi trageţi pentru a trage un dreptunghi."
+
+#: echorepo/i18n.py:134 static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "Anulează desenul"
+
+#: echorepo/i18n.py:135 static/js/map.js:2783
+msgid "Cancel"
+msgstr "Renunță"
+
+#: echorepo/i18n.py:136 static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Se elimină ultimul punct"
+
+#: echorepo/i18n.py:137 static/js/map.js:915
+msgid "Street map"
+msgstr "Hartă de stradă"
+
+#: echorepo/i18n.py:138 static/js/map.js:916
+msgid "Satellite"
+msgstr "Satelit"
+
+#: echorepo/i18n.py:139
+msgid "Selection export to a file"
+msgstr "Selectare exportă într- un fișier"
+
+#: echorepo/i18n.py:140
+msgid "Selection export"
+msgstr "Exportul de selecție"
+
+#: echorepo/i18n.py:141
+msgid "Use selection tool"
+msgstr "Folosește instrumentul de selecție"
+
+#: echorepo/i18n.py:142
+msgid "to draw one or more areas"
+msgstr "să deseneze una sau mai multe zone"
+
+#: echorepo/i18n.py:143
+msgid "Export selection"
+msgstr "Selectare export"
+
+#: echorepo/i18n.py:144
+msgid "Clear selection"
+msgstr "Șterge selecția"
+
+#: echorepo/i18n.py:145 static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr ""
+"Valorile procentuale (%) pot fi convertite în mg/kg prin multiplicarea cu "
+"10000."
 
 #: echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
@@ -272,11 +430,6 @@ msgstr "Versiunea mobilă"
 msgid "Desktop version"
 msgstr "Versiunea biroului"
 
-#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
-#: echorepo/templates/search.html:79 static/js/map.js:1490
-msgid "pH"
-msgstr "p H"
-
 #: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
 msgid "min"
 msgstr "min"
@@ -293,10 +446,6 @@ msgstr "Țara"
 #: echorepo/templates/explore.html:139
 msgid "All countries"
 msgstr "Toate țările"
-
-#: echorepo/templates/explore.html:142 static/js/map.js:1480
-msgid "Date"
-msgstr "Dată"
 
 #: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
 msgid "Apply"
@@ -833,55 +982,13 @@ msgstr "Eliberați mouse-ul pentru a termina desenul."
 msgid "Not available"
 msgstr "Nu este disponibil"
 
-#: static/js/map.js:915
-msgid "Street map"
-msgstr "Hartă de stradă"
-
-#: static/js/map.js:916
-msgid "Satellite"
-msgstr "Satelit"
-
-#: static/js/map.js:1132
-msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
-msgstr ""
-"Valorile procentuale (%) pot fi convertite în mg/kg prin multiplicarea cu "
-"10000."
-
 #: static/js/map.js:1138
 msgid "Unit conversion help"
 msgstr "Ajutor de conversie unitate"
 
-#: static/js/map.js:1485
-msgid "QR code"
-msgstr "Codul QR"
-
-#: static/js/map.js:1495
-msgid "Soil organic matter"
-msgstr "Materia organică din sol"
-
 #: static/js/map.js:1504
 msgid "Texture"
 msgstr "Textură"
-
-#: static/js/map.js:1509
-msgid "Structure"
-msgstr "Structura"
-
-#: static/js/map.js:1514
-msgid "Earthworms"
-msgstr "Viermi"
-
-#: static/js/map.js:1519
-msgid "Plastic"
-msgstr "Plastic"
-
-#: static/js/map.js:1524
-msgid "Debris"
-msgstr "Debris"
-
-#: static/js/map.js:1529
-msgid "Contamination"
-msgstr "Contaminarea"
 
 #: static/js/map.js:1539
 msgid "Observations"
@@ -903,21 +1010,9 @@ msgstr "Se încarcă..."
 msgid "Draw selection rectangle"
 msgstr "Trage dreptunghiul de selecție"
 
-#: static/js/map.js:2782
-msgid "Cancel drawing"
-msgstr "Anulează desenul"
-
-#: static/js/map.js:2783
-msgid "Cancel"
-msgstr "Renunță"
-
 #: static/js/map.js:2786
 msgid "Delete last point drawn"
 msgstr "Se elimină ultimul punct extras"
-
-#: static/js/map.js:2787
-msgid "Delete last point"
-msgstr "Se elimină ultimul punct"
 
 #: static/js/map.js:2794
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."

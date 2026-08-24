@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"POT-Creation-Date: 2026-08-24 13:38+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -17,6 +17,162 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: echorepo/i18n.py:108
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
+msgstr "Sekretessradius (~{km}km)"
+
+#: echorepo/i18n.py:109
+msgid "Soil pH"
+msgstr "Jorden pH"
+
+#: echorepo/i18n.py:110
+msgid "Acidic (≤5.5)"
+msgstr "Sur (≤5,5)"
+
+#: echorepo/i18n.py:111
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Lite sur (5,5-6,5)"
+
+#: echorepo/i18n.py:112
+msgid "Neutral (6.5–7.5)"
+msgstr "Neutral (6,5–7,5)"
+
+#: echorepo/i18n.py:113
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Något alkaliskt (7,5–8,5)"
+
+#: echorepo/i18n.py:114
+msgid "Alkaline (≥8.5)"
+msgstr "Alkaliskt (≥8,5)"
+
+#: echorepo/i18n.py:115
+msgid "Your samples"
+msgstr "Dina prov"
+
+#: echorepo/i18n.py:116
+msgid "Other samples"
+msgstr "Andra prover"
+
+#: echorepo/i18n.py:117
+msgid "Export"
+msgstr "Export"
+
+#: echorepo/i18n.py:118
+msgid "Clear"
+msgstr "Clear"
+
+#: echorepo/i18n.py:119
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr "Exportfiltrerat ({n})"
+
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Datum"
+
+#: echorepo/i18n.py:121 static/js/map.js:1485
+msgid "QR code"
+msgstr "QR-kod"
+
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:124
+#: echorepo/templates/results.html:450 echorepo/templates/search.html:79
+#: static/js/map.js:1490
+msgid "pH"
+msgstr "pH"
+
+#: echorepo/i18n.py:123
+msgid "Colour"
+msgstr "Färg"
+
+#: echorepo/i18n.py:124 static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Jordens organiska materia"
+
+#: echorepo/i18n.py:125 static/js/map.js:1509
+msgid "Structure"
+msgstr "Struktur"
+
+#: echorepo/i18n.py:126 static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Jordmaskar"
+
+#: echorepo/i18n.py:127 static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plast"
+
+#: echorepo/i18n.py:128 static/js/map.js:1524
+msgid "Debris"
+msgstr "Debris"
+
+#: echorepo/i18n.py:129 static/js/map.js:1529
+msgid "Contamination"
+msgstr "Förorening"
+
+#: echorepo/i18n.py:130
+msgid "Metals"
+msgstr "Metals"
+
+#: echorepo/i18n.py:131
+msgid "Elemental concentrations"
+msgstr "Elementala koncentrationer"
+
+#: echorepo/i18n.py:132
+msgid "Draw a rectangle"
+msgstr "Rita en rektangel"
+
+#: echorepo/i18n.py:133
+msgid "Click and drag to draw a rectangle."
+msgstr "Klicka och dra för att dra en rektangel."
+
+#: echorepo/i18n.py:134 static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "Avbryt ritning"
+
+#: echorepo/i18n.py:135 static/js/map.js:2783
+msgid "Cancel"
+msgstr "Avbokning"
+
+#: echorepo/i18n.py:136 static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Ta bort sista punkten"
+
+#: echorepo/i18n.py:137 static/js/map.js:915
+msgid "Street map"
+msgstr "Street Karta"
+
+#: echorepo/i18n.py:138 static/js/map.js:916
+msgid "Satellite"
+msgstr "Satellit"
+
+#: echorepo/i18n.py:139
+msgid "Selection export to a file"
+msgstr "Urval export till en fil"
+
+#: echorepo/i18n.py:140
+msgid "Selection export"
+msgstr "Urval export"
+
+#: echorepo/i18n.py:141
+msgid "Use selection tool"
+msgstr "Använd urvalsverktyg"
+
+#: echorepo/i18n.py:142
+msgid "to draw one or more areas"
+msgstr "att dra ett eller flera områden"
+
+#: echorepo/i18n.py:143
+msgid "Export selection"
+msgstr "Exportval"
+
+#: echorepo/i18n.py:144
+msgid "Clear selection"
+msgstr "Klart urval"
+
+#: echorepo/i18n.py:145 static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr "Procentvärdena (%) kan omvandlas till mg/kg genom att multiplicera med 10000."
 
 #: echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
@@ -269,11 +425,6 @@ msgstr "Mobilversion"
 msgid "Desktop version"
 msgstr "Desktop version"
 
-#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
-#: echorepo/templates/search.html:79 static/js/map.js:1490
-msgid "pH"
-msgstr "pH"
-
 #: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
 msgid "min"
 msgstr "min"
@@ -290,10 +441,6 @@ msgstr "Landet"
 #: echorepo/templates/explore.html:139
 msgid "All countries"
 msgstr "Alla länder"
-
-#: echorepo/templates/explore.html:142 static/js/map.js:1480
-msgid "Date"
-msgstr "Datum"
 
 #: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
 msgid "Apply"
@@ -838,53 +985,13 @@ msgstr "Släpp musen för att avsluta ritningen."
 msgid "Not available"
 msgstr "Inte tillgänglig"
 
-#: static/js/map.js:915
-msgid "Street map"
-msgstr "Street Karta"
-
-#: static/js/map.js:916
-msgid "Satellite"
-msgstr "Satellit"
-
-#: static/js/map.js:1132
-msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
-msgstr "Procentvärdena (%) kan omvandlas till mg/kg genom att multiplicera med 10000."
-
 #: static/js/map.js:1138
 msgid "Unit conversion help"
 msgstr "Enhet konvertering hjälp"
 
-#: static/js/map.js:1485
-msgid "QR code"
-msgstr "QR-kod"
-
-#: static/js/map.js:1495
-msgid "Soil organic matter"
-msgstr "Jordens organiska materia"
-
 #: static/js/map.js:1504
 msgid "Texture"
 msgstr "Texture"
-
-#: static/js/map.js:1509
-msgid "Structure"
-msgstr "Struktur"
-
-#: static/js/map.js:1514
-msgid "Earthworms"
-msgstr "Jordmaskar"
-
-#: static/js/map.js:1519
-msgid "Plastic"
-msgstr "Plast"
-
-#: static/js/map.js:1524
-msgid "Debris"
-msgstr "Debris"
-
-#: static/js/map.js:1529
-msgid "Contamination"
-msgstr "Förorening"
 
 #: static/js/map.js:1539
 msgid "Observations"
@@ -906,21 +1013,9 @@ msgstr "Loading..."
 msgid "Draw selection rectangle"
 msgstr "Drag urval rektangel"
 
-#: static/js/map.js:2782
-msgid "Cancel drawing"
-msgstr "Avbryt ritning"
-
-#: static/js/map.js:2783
-msgid "Cancel"
-msgstr "Avbokning"
-
 #: static/js/map.js:2786
 msgid "Delete last point drawn"
 msgstr "Ta bort sista punkten dragen"
-
-#: static/js/map.js:2787
-msgid "Delete last point"
-msgstr "Ta bort sista punkten"
 
 #: static/js/map.js:2794
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."

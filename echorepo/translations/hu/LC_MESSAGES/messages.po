@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"POT-Creation-Date: 2026-08-24 13:38+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: hu\n"
@@ -17,6 +17,162 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: echorepo/i18n.py:108
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
+msgstr "Adatvédelmi sugár (~ ±{km}km)"
+
+#: echorepo/i18n.py:109
+msgid "Soil pH"
+msgstr "Talaj pH-ja"
+
+#: echorepo/i18n.py:110
+msgid "Acidic (≤5.5)"
+msgstr "Acidiás (≤ 5, 5)"
+
+#: echorepo/i18n.py:111
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Enyhén savas (5, 5- 6, 5)"
+
+#: echorepo/i18n.py:112
+msgid "Neutral (6.5–7.5)"
+msgstr "Semleges (6, 5- 7, 5)"
+
+#: echorepo/i18n.py:113
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Enyhe lúgos (7, 5- 8, 5)"
+
+#: echorepo/i18n.py:114
+msgid "Alkaline (≥8.5)"
+msgstr "Alkalin (≥ 8, 5)"
+
+#: echorepo/i18n.py:115
+msgid "Your samples"
+msgstr "A minták"
+
+#: echorepo/i18n.py:116
+msgid "Other samples"
+msgstr "Egyéb minták"
+
+#: echorepo/i18n.py:117
+msgid "Export"
+msgstr "Exportálás"
+
+#: echorepo/i18n.py:118
+msgid "Clear"
+msgstr "Tiszta"
+
+#: echorepo/i18n.py:119
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr "Kivitel szűrve ({n})"
+
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Időpont"
+
+#: echorepo/i18n.py:121 static/js/map.js:1485
+msgid "QR code"
+msgstr "QR-kód"
+
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:124
+#: echorepo/templates/results.html:450 echorepo/templates/search.html:79
+#: static/js/map.js:1490
+msgid "pH"
+msgstr "pH"
+
+#: echorepo/i18n.py:123
+msgid "Colour"
+msgstr "Szín"
+
+#: echorepo/i18n.py:124 static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Talajszerves anyag"
+
+#: echorepo/i18n.py:125 static/js/map.js:1509
+msgid "Structure"
+msgstr "Struktúra"
+
+#: echorepo/i18n.py:126 static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Földigiliszták"
+
+#: echorepo/i18n.py:127 static/js/map.js:1519
+msgid "Plastic"
+msgstr "Műanyag"
+
+#: echorepo/i18n.py:128 static/js/map.js:1524
+msgid "Debris"
+msgstr "Levonás"
+
+#: echorepo/i18n.py:129 static/js/map.js:1529
+msgid "Contamination"
+msgstr "Szennyeződés"
+
+#: echorepo/i18n.py:130
+msgid "Metals"
+msgstr "Fémek"
+
+#: echorepo/i18n.py:131
+msgid "Elemental concentrations"
+msgstr "Elemi koncentrációk"
+
+#: echorepo/i18n.py:132
+msgid "Draw a rectangle"
+msgstr "Egy téglalap rajzolása"
+
+#: echorepo/i18n.py:133
+msgid "Click and drag to draw a rectangle."
+msgstr "Kattintson és húzza, hogy rajzoljon egy téglalap."
+
+#: echorepo/i18n.py:134 static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "A rajz törlése"
+
+#: echorepo/i18n.py:135 static/js/map.js:2783
+msgid "Cancel"
+msgstr "Törlés"
+
+#: echorepo/i18n.py:136 static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Az utolsó pont törlése"
+
+#: echorepo/i18n.py:137 static/js/map.js:915
+msgid "Street map"
+msgstr "Utcai térkép"
+
+#: echorepo/i18n.py:138 static/js/map.js:916
+msgid "Satellite"
+msgstr "Műholdas"
+
+#: echorepo/i18n.py:139
+msgid "Selection export to a file"
+msgstr "A fájlba történő kivitel kiválasztása"
+
+#: echorepo/i18n.py:140
+msgid "Selection export"
+msgstr "Kiválasztási export"
+
+#: echorepo/i18n.py:141
+msgid "Use selection tool"
+msgstr "Kiválasztási eszköz használata"
+
+#: echorepo/i18n.py:142
+msgid "to draw one or more areas"
+msgstr "egy vagy több terület rajzolása"
+
+#: echorepo/i18n.py:143
+msgid "Export selection"
+msgstr "Kiválasztás exportálása"
+
+#: echorepo/i18n.py:144
+msgid "Clear selection"
+msgstr "Kiválasztás törlése"
+
+#: echorepo/i18n.py:145 static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr "A százalékos értékek (%) átszámítható mg / kg-ra, megszorozva 10000-rel."
 
 #: echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
@@ -273,11 +429,6 @@ msgstr "Mobil változat"
 msgid "Desktop version"
 msgstr "Asztali verzió"
 
-#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
-#: echorepo/templates/search.html:79 static/js/map.js:1490
-msgid "pH"
-msgstr "pH"
-
 #: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
 msgid "min"
 msgstr "perc"
@@ -294,10 +445,6 @@ msgstr "Ország"
 #: echorepo/templates/explore.html:139
 msgid "All countries"
 msgstr "Valamennyi ország"
-
-#: echorepo/templates/explore.html:142 static/js/map.js:1480
-msgid "Date"
-msgstr "Időpont"
 
 #: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
 msgid "Apply"
@@ -833,53 +980,13 @@ msgstr "Engedd el az egeret, hogy befejezze a rajzot."
 msgid "Not available"
 msgstr "Nincs"
 
-#: static/js/map.js:915
-msgid "Street map"
-msgstr "Utcai térkép"
-
-#: static/js/map.js:916
-msgid "Satellite"
-msgstr "Műholdas"
-
-#: static/js/map.js:1132
-msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
-msgstr "A százalékos értékek (%) átszámítható mg / kg-ra, megszorozva 10000-rel."
-
 #: static/js/map.js:1138
 msgid "Unit conversion help"
 msgstr "Egységkonverziós segítség"
 
-#: static/js/map.js:1485
-msgid "QR code"
-msgstr "QR-kód"
-
-#: static/js/map.js:1495
-msgid "Soil organic matter"
-msgstr "Talajszerves anyag"
-
 #: static/js/map.js:1504
 msgid "Texture"
 msgstr "Textúra"
-
-#: static/js/map.js:1509
-msgid "Structure"
-msgstr "Struktúra"
-
-#: static/js/map.js:1514
-msgid "Earthworms"
-msgstr "Földigiliszták"
-
-#: static/js/map.js:1519
-msgid "Plastic"
-msgstr "Műanyag"
-
-#: static/js/map.js:1524
-msgid "Debris"
-msgstr "Levonás"
-
-#: static/js/map.js:1529
-msgid "Contamination"
-msgstr "Szennyeződés"
 
 #: static/js/map.js:1539
 msgid "Observations"
@@ -901,21 +1008,9 @@ msgstr "Betöltés..."
 msgid "Draw selection rectangle"
 msgstr "A kijelölési téglalap rajzolása"
 
-#: static/js/map.js:2782
-msgid "Cancel drawing"
-msgstr "A rajz törlése"
-
-#: static/js/map.js:2783
-msgid "Cancel"
-msgstr "Törlés"
-
 #: static/js/map.js:2786
 msgid "Delete last point drawn"
 msgstr "Az utolsó lehívott pont törlése"
-
-#: static/js/map.js:2787
-msgid "Delete last point"
-msgstr "Az utolsó pont törlése"
 
 #: static/js/map.js:2794
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
