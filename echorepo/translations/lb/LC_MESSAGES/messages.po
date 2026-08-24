@@ -1,14 +1,14 @@
 # Luxembourgish translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
+# Copyright (C) 2025 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2026-08-24 13:38+0000\n"
-"PO-Revision-Date: 2026-08-22 16:23+0000\n"
+"PO-Revision-Date: 2026-08-24 14:15+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lb\n"
 "Language-Team: lb <LL@li.org>\n"
@@ -21,611 +21,626 @@ msgstr ""
 #: echorepo/i18n.py:108
 #, python-brace-format
 msgid "Privacy radius (~±{km} km)"
-msgstr ""
+msgstr "Dateschutzradius (~±{km} km)"
 
 #: echorepo/i18n.py:109
 msgid "Soil pH"
-msgstr ""
+msgstr "Buedem-pH"
 
 #: echorepo/i18n.py:110
 msgid "Acidic (≤5.5)"
-msgstr ""
+msgstr "Sauer (≤5.5)"
 
 #: echorepo/i18n.py:111
 msgid "Slightly acidic (5.5–6.5)"
-msgstr ""
+msgstr "Liicht sauer (5.5–6.5)"
 
 #: echorepo/i18n.py:112
 msgid "Neutral (6.5–7.5)"
-msgstr ""
+msgstr "Neutral (6.5–7.5)"
 
 #: echorepo/i18n.py:113
 msgid "Slightly alkaline (7.5–8.5)"
-msgstr ""
+msgstr "Liicht alkalesch (7.5–8.5)"
 
 #: echorepo/i18n.py:114
 msgid "Alkaline (≥8.5)"
-msgstr ""
+msgstr "Alkalesch (≥8.5)"
 
 #: echorepo/i18n.py:115
 msgid "Your samples"
-msgstr ""
+msgstr "Är Prouwen"
 
 #: echorepo/i18n.py:116
 msgid "Other samples"
-msgstr ""
+msgstr "Aner Prouwen"
 
 #: echorepo/i18n.py:117
 msgid "Export"
-msgstr ""
+msgstr "Exportéieren"
 
 #: echorepo/i18n.py:118
 msgid "Clear"
-msgstr ""
+msgstr "Läschen"
 
 #: echorepo/i18n.py:119
 #, python-brace-format
 msgid "Export filtered ({n})"
-msgstr ""
+msgstr "Gefiltert exportéieren ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:142
-#: static/js/map.js:1480
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:142 static/js/map.js:1480
 msgid "Date"
-msgstr ""
+msgstr "Datum"
 
 #: echorepo/i18n.py:121 static/js/map.js:1485
 msgid "QR code"
-msgstr ""
+msgstr "QR-Code"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:124
 #: echorepo/templates/results.html:450 echorepo/templates/search.html:79
 #: static/js/map.js:1490
 msgid "pH"
-msgstr ""
+msgstr "pH"
 
 #: echorepo/i18n.py:123
 msgid "Colour"
-msgstr ""
+msgstr "Faarf"
 
 #: echorepo/i18n.py:124 static/js/map.js:1495
 msgid "Soil organic matter"
-msgstr ""
+msgstr "Organesch Matière am Buedem"
 
 #: echorepo/i18n.py:125 static/js/map.js:1509
 msgid "Structure"
-msgstr ""
+msgstr "Struktur"
 
 #: echorepo/i18n.py:126 static/js/map.js:1514
 msgid "Earthworms"
-msgstr ""
+msgstr "Reewierm"
 
 #: echorepo/i18n.py:127 static/js/map.js:1519
 msgid "Plastic"
-msgstr ""
+msgstr "Plastik"
 
 #: echorepo/i18n.py:128 static/js/map.js:1524
 msgid "Debris"
-msgstr ""
+msgstr "Reschter"
 
 #: echorepo/i18n.py:129 static/js/map.js:1529
 msgid "Contamination"
-msgstr ""
+msgstr "Verschmotzung"
 
 #: echorepo/i18n.py:130
 msgid "Metals"
-msgstr ""
+msgstr "Metaller"
 
 #: echorepo/i18n.py:131
 msgid "Elemental concentrations"
-msgstr ""
+msgstr "Elementkonzentratiounen"
 
 #: echorepo/i18n.py:132
 msgid "Draw a rectangle"
-msgstr ""
+msgstr "E Rechteck zeechnen"
 
 #: echorepo/i18n.py:133
 msgid "Click and drag to draw a rectangle."
-msgstr ""
+msgstr "Klickt an zitt, fir e Rechteck ze zeechnen."
 
 #: echorepo/i18n.py:134 static/js/map.js:2782
 msgid "Cancel drawing"
-msgstr ""
+msgstr "Zeechnen ofbriechen"
 
 #: echorepo/i18n.py:135 static/js/map.js:2783
 msgid "Cancel"
-msgstr ""
+msgstr "Ofbriechen"
 
 #: echorepo/i18n.py:136 static/js/map.js:2787
 msgid "Delete last point"
-msgstr ""
+msgstr "Leschte Punkt läschen"
 
 #: echorepo/i18n.py:137 static/js/map.js:915
 msgid "Street map"
-msgstr ""
+msgstr "Stroossekaart"
 
 #: echorepo/i18n.py:138 static/js/map.js:916
 msgid "Satellite"
-msgstr ""
+msgstr "Satellit"
 
 #: echorepo/i18n.py:139
 msgid "Selection export to a file"
-msgstr ""
+msgstr "Auswiel an eng Datei exportéieren"
 
 #: echorepo/i18n.py:140
 msgid "Selection export"
-msgstr ""
+msgstr "Auswiel exportéieren"
 
 #: echorepo/i18n.py:141
 msgid "Use selection tool"
-msgstr ""
+msgstr "Benotzt d’Auswielwierkzeug"
 
 #: echorepo/i18n.py:142
 msgid "to draw one or more areas"
-msgstr ""
+msgstr "fir een oder méi Beräicher ze zeechnen"
 
 #: echorepo/i18n.py:143
 msgid "Export selection"
-msgstr ""
+msgstr "Auswiel exportéieren"
 
 #: echorepo/i18n.py:144
 msgid "Clear selection"
-msgstr ""
+msgstr "Auswiel läschen"
 
 #: echorepo/i18n.py:145 static/js/map.js:1132
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
+"Prozentwäerter (%) kënnen a mg/kg ëmgerechent ginn, andeems se mat 10000 "
+"multiplizéiert ginn."
 
 #: echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
-msgstr ""
+msgstr "D’Passwuert-Widderhierstellung ass fir dës Säit net konfiguréiert."
 
 #: echorepo/services/firebase.py:64
 msgid "Could not contact the password recovery service."
-msgstr ""
+msgstr "De Service fir d’Passwuert-Widderhierstellung konnt net erreecht ginn."
 
 #: echorepo/services/firebase.py:69
 msgid "If this address is registered, a reset link has been sent."
 msgstr ""
+"Wann dës Adress registréiert ass, gouf e Link fir d’Passwuert zeréckzesetzen"
+" geschéckt."
 
 #: echorepo/services/firebase.py:70
 msgid "New password may take up to 30 minutes to activate in ECHOREPO."
 msgstr ""
+"Et kann bis zu 30 Minutten daueren, bis dat neit Passwuert an ECHOREPO aktiv"
+" ass."
 
 #: echorepo/services/firebase.py:74
-msgid ""
-"Password recovery is temporarily unavailable. Please contact the "
-"organisers."
+msgid "Password recovery is temporarily unavailable. Please contact the organisers."
 msgstr ""
+"D’Passwuert-Widderhierstellung ass momentan net verfügbar. W.e.g. "
+"kontaktéiert d’Organisateuren."
 
 #: echorepo/templates/base.html:7 echorepo/templates/base.html:11
 msgid "ECHOrepo — EU Soil Data"
-msgstr ""
+msgstr "ECHOrepo — EU-Buedemdonnéeën"
 
 #: echorepo/templates/base.html:10
 msgid "ECHOrepo — citizen science soil samples under EU-funded ECHO project"
 msgstr ""
+"ECHOrepo — Buedemprouwen aus der Biergerwëssenschaft am EU-finanzéierten "
+"ECHO-Projet"
 
 #: echorepo/templates/base.html:14
 msgid "Access and download your soil samples. Part of the EU-funded ECHO project."
 msgstr ""
+"Gitt op Är Buedemprouwen zou a luet se erof. Deel vum EU-finanzéierten ECHO-"
+"Projet."
 
 #: echorepo/templates/base.html:179
 msgid "Skip to content"
-msgstr ""
+msgstr "Direkt bei den Inhalt"
 
 #: echorepo/templates/base.html:185
 msgid "Primary"
-msgstr ""
+msgstr "Haaptnavigatioun"
 
 #: echorepo/templates/base.html:188
 msgid "ECHOrepo logo"
-msgstr ""
+msgstr "ECHOrepo-Logo"
 
 #: echorepo/templates/base.html:194
 msgid "Toggle navigation"
-msgstr ""
+msgstr "Navigatioun op- oder zouklappen"
 
 #: echorepo/templates/base.html:201
 msgid "About"
-msgstr ""
+msgstr "Iwwer eis"
 
 #: echorepo/templates/base.html:203
 msgid "For Participants"
-msgstr ""
+msgstr "Fir Participanten"
 
 #: echorepo/templates/base.html:205
 msgid "Partners"
-msgstr ""
+msgstr "Partner"
 
 #: echorepo/templates/base.html:207
 msgid "News & Events"
-msgstr ""
+msgstr "Neiegkeeten & Evenementer"
 
 #: echorepo/templates/base.html:210
 msgid "Resources"
-msgstr ""
+msgstr "Ressourcen"
 
 #: echorepo/templates/base.html:213
 msgid "Media Kit"
-msgstr ""
+msgstr "Medie-Kit"
 
 #: echorepo/templates/base.html:215
 msgid "Publications"
-msgstr ""
+msgstr "Publikatiounen"
 
 #: echorepo/templates/base.html:217
 msgid "Newsletter Archive"
-msgstr ""
+msgstr "Newsletter-Archiv"
 
 #: echorepo/templates/base.html:218
 msgid "Zenodo Publications"
-msgstr ""
+msgstr "Zenodo-Publikatiounen"
 
 #: echorepo/templates/base.html:233
 msgid "Change language"
-msgstr ""
+msgstr "Sprooch änneren"
 
 #: echorepo/templates/base.html:253
 msgid "Logged in as"
-msgstr ""
+msgstr "Ageloggt als"
 
 #: echorepo/templates/base.html:259
 msgid "Logout"
-msgstr ""
+msgstr "Ofmellen"
 
 #: echorepo/templates/base.html:263
 msgid "Sign in"
-msgstr ""
+msgstr "Umellen"
 
 #: echorepo/templates/base.html:281
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
-msgstr ""
+msgstr "ECHOrepo ass Deel vum EU- an UKRI-finanzéierten"
 
 #: echorepo/templates/base.html:281
 msgid "project"
-msgstr ""
+msgstr "Projet"
 
 #: echorepo/templates/base.html:283
 msgid "Need help?"
-msgstr ""
+msgstr "Braucht Dir Hëllef?"
 
 #: echorepo/templates/base.html:291
 msgid "Funded by UK Research and Innovation (UKRI)"
-msgstr ""
+msgstr "Finanzéiert vun UK Research and Innovation (UKRI)"
 
 #: echorepo/templates/base.html:297
 msgid "Co-funded by the European Union"
-msgstr ""
+msgstr "Matfinanzéiert vun der Europäescher Unioun"
 
 #: echorepo/templates/base.html:301
 msgid "Funded by the European Union and UK Research and Innovation"
-msgstr ""
+msgstr "Finanzéiert vun der Europäescher Unioun an UK Research and Innovation"
 
 #: echorepo/templates/coordinate_issues.html:2
 #: echorepo/templates/coordinate_issues.html:6
 msgid "Coordinate issues"
-msgstr ""
+msgstr "Problemer mat Koordinaten"
 
 #: echorepo/templates/coordinate_issues.html:10
 msgid "The coordinate issues file was not found:"
-msgstr ""
+msgstr "D’Datei mat de Koordinateproblemer gouf net fonnt:"
 
 #: echorepo/templates/coordinate_issues.html:18
-#: echorepo/templates/coordinate_issues.html:102
-#: echorepo/templates/search.html:10 echorepo/templates/search.html:76
+#: echorepo/templates/coordinate_issues.html:102 echorepo/templates/search.html:10
+#: echorepo/templates/search.html:76
 msgid "Sample / QR"
-msgstr ""
+msgstr "Prouf / QR"
 
 #: echorepo/templates/coordinate_issues.html:23
 #: echorepo/templates/coordinate_issues.html:103
 msgid "User ID"
-msgstr ""
+msgstr "Benotzer-ID"
 
 #: echorepo/templates/coordinate_issues.html:28
 #: echorepo/templates/coordinate_issues.html:108
 msgid "Issue type"
-msgstr ""
+msgstr "Aart vum Problem"
 
 #: echorepo/templates/coordinate_issues.html:30
 msgid "Any issue"
-msgstr ""
+msgstr "All Problem"
 
 #: echorepo/templates/coordinate_issues.html:41
 #: echorepo/templates/explore.html:107 echorepo/templates/search.html:31
 msgid "Search"
-msgstr ""
+msgstr "Sichen"
 
 #: echorepo/templates/coordinate_issues.html:48
 #: echorepo/templates/coordinate_issues.html:106
 msgid "Actual country"
-msgstr ""
+msgstr "Tatsächlecht Land"
 
 #: echorepo/templates/coordinate_issues.html:54
 #: echorepo/templates/coordinate_issues.html:107
 msgid "Planned country"
-msgstr ""
+msgstr "Geplangt Land"
 
 #: echorepo/templates/coordinate_issues.html:64
 msgid "Show approved"
-msgstr ""
+msgstr "Geneemegter weisen"
 
 #: echorepo/templates/coordinate_issues.html:78
 msgid "Export current results"
-msgstr ""
+msgstr "Aktuell Resultater exportéieren"
 
 #: echorepo/templates/coordinate_issues.html:87
 msgid "coordinate issue(s)"
-msgstr ""
+msgstr "Koordinateproblem(er)"
 
 #: echorepo/templates/coordinate_issues.html:90
 msgid "Source:"
-msgstr ""
+msgstr "Quell:"
 
 #: echorepo/templates/coordinate_issues.html:104
-#: echorepo/templates/coordinate_issues.html:153
-#: echorepo/templates/issues.html:31 echorepo/templates/issues.html:77
-#: echorepo/templates/search.html:80
+#: echorepo/templates/coordinate_issues.html:153 echorepo/templates/issues.html:31
+#: echorepo/templates/issues.html:77 echorepo/templates/search.html:80
 msgid "Lat"
-msgstr ""
+msgstr "Breet"
 
 #: echorepo/templates/coordinate_issues.html:105
-#: echorepo/templates/coordinate_issues.html:156
-#: echorepo/templates/issues.html:32 echorepo/templates/issues.html:78
-#: echorepo/templates/search.html:81
+#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/issues.html:78 echorepo/templates/search.html:81
 msgid "Lon"
-msgstr ""
+msgstr "Längt"
 
 #: echorepo/templates/coordinate_issues.html:109
 msgid "Fix coordinates"
-msgstr ""
+msgstr "Koordinate korrigéieren"
 
 #: echorepo/templates/coordinate_issues.html:121
 msgid "Show only this sample on map"
-msgstr ""
+msgstr "Nëmmen dës Prouf op der Kaart weisen"
 
-#: echorepo/templates/coordinate_issues.html:160
-#: echorepo/templates/issues.html:53 echorepo/templates/issues.html:96
+#: echorepo/templates/coordinate_issues.html:160 echorepo/templates/issues.html:53
+#: echorepo/templates/issues.html:96
 msgid "Save"
-msgstr ""
+msgstr "Späicheren"
 
 #: echorepo/templates/coordinate_issues.html:169
 msgid "No coordinate issues for these filters."
-msgstr ""
+msgstr "Keng Koordinateproblemer fir dës Filteren."
 
 #: echorepo/templates/coordinate_issues.html:181
 #: echorepo/templates/search.html:126
 msgid "Showing page"
-msgstr ""
+msgstr "Säit"
 
 #: echorepo/templates/coordinate_issues.html:181
 #: echorepo/templates/search.html:126
 msgid "of"
-msgstr ""
+msgstr "vun"
 
 #: echorepo/templates/coordinate_issues.html:182
 #: echorepo/templates/search.html:126
 msgid "results"
-msgstr ""
+msgstr "Resultater"
 
 #: echorepo/templates/explore.html:2
 msgid "ECHOrepo — Explore"
-msgstr ""
+msgstr "ECHOrepo — Entdecken"
 
 #: echorepo/templates/explore.html:89
 msgid "Explore the map"
-msgstr ""
+msgstr "D’Kaart entdecken"
 
 #: echorepo/templates/explore.html:92
 msgid "Sign in to export data and access your personal samples."
 msgstr ""
+"Mellt Iech un, fir Donnéeën ze exportéieren an op Är perséinlech Prouwen "
+"zouzegräifen."
 
 #: echorepo/templates/explore.html:101
 msgid "Download dataset from Zenodo"
-msgstr ""
+msgstr "Datesaz vun Zenodo eroflueden"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:279
 msgid "Mobile version"
-msgstr ""
+msgstr "Mobil Versioun"
 
 #: echorepo/templates/explore.html:117 echorepo/templates/results.html:282
 msgid "Desktop version"
-msgstr ""
+msgstr "Desktop-Versioun"
 
 #: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
 msgid "min"
-msgstr ""
+msgstr "min"
 
 #: echorepo/templates/explore.html:132 echorepo/templates/results.html:455
 msgid "max"
-msgstr ""
+msgstr "max"
 
 #: echorepo/templates/explore.html:136 echorepo/templates/search.html:15
 #: echorepo/templates/search.html:78
 msgid "Country"
-msgstr ""
+msgstr "Land"
 
 #: echorepo/templates/explore.html:139
 msgid "All countries"
-msgstr ""
+msgstr "All Länner"
 
 #: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
 msgid "Apply"
-msgstr ""
+msgstr "Uwenden"
 
 #: echorepo/templates/explore.html:157 echorepo/templates/results.html:460
 msgid "Export filtered (0)"
-msgstr ""
+msgstr "Gefiltert exportéieren (0)"
 
 #: echorepo/templates/explore.html:163
 msgid "Copy view link"
-msgstr ""
+msgstr "Link op dës Vue kopéieren"
 
 #: echorepo/templates/issues.html:2
 msgid "Data quality issues — ECHOrepo"
-msgstr ""
+msgstr "Datequalitéitsproblemer — ECHOrepo"
 
 #: echorepo/templates/issues.html:6 echorepo/templates/issues.html:14
 msgid "Back to My Data"
-msgstr ""
+msgstr "Zeréck op Meng Donnéeën"
 
 #: echorepo/templates/issues.html:12
 msgid "Data quality issues"
-msgstr ""
+msgstr "Datequalitéitsproblemer"
 
 #: echorepo/templates/issues.html:19
 msgid "Data issues"
-msgstr ""
+msgstr "Problemer mat den Donnéeën"
 
 #: echorepo/templates/issues.html:21
 #, python-format
 msgid "Default coordinates (%(lat)s, %(lon)s)"
-msgstr ""
+msgstr "Standardkoordinaten (%(lat)s, %(lon)s)"
 
 #: echorepo/templates/issues.html:23
 msgid "No entries with default coordinates"
-msgstr ""
+msgstr "Keng Entréë mat Standardkoordinaten"
 
 #: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
 msgid "Sample"
-msgstr ""
+msgstr "Prouf"
 
 #: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
 msgid "User"
-msgstr ""
+msgstr "Benotzer"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
 msgid "QR"
-msgstr ""
+msgstr "QR"
 
 #: echorepo/templates/issues.html:33 echorepo/templates/issues.html:79
 msgid "Fix"
-msgstr ""
+msgstr "Korrigéieren"
 
 #: echorepo/templates/issues.html:49 echorepo/templates/issues.html:94
 msgid "Lat (dec or DMS)"
-msgstr ""
+msgstr "Breet (dez. oder DMS)"
 
 #: echorepo/templates/issues.html:51 echorepo/templates/issues.html:95
 msgid "Lon (dec or DMS)"
-msgstr ""
+msgstr "Längt (dez. oder DMS)"
 
 #: echorepo/templates/issues.html:66
 msgid "Country mismatches"
-msgstr ""
+msgstr "Ofwäichunge beim Land"
 
 #: echorepo/templates/issues.html:68
 msgid "No country mismatches"
-msgstr ""
+msgstr "Keng Ofwäichunge beim Land"
 
 #: echorepo/templates/issues.html:70
 msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr ""
+"Dat tatsächlecht Land (aus de Koordinaten) steet net an der geplangter "
+"Lëscht fir dëse QR-Code."
 
 #: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:269
 msgid "Upload lab data"
-msgstr ""
+msgstr "Labordonnéeën eroplueden"
 
 #: echorepo/templates/lab_upload.html:6
 msgid ""
-"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX "
-"with sheet"
+"Upload either metals results (CSV/XLSX) or biodiversity OTU table (XLSX with"
+" sheet"
 msgstr ""
+"Luet entweder Metallresultater (CSV/XLSX) oder eng Biodiversitéits-OTU-"
+"Tabell erop (XLSX mat Blat"
 
 #: echorepo/templates/lab_upload.html:8
 msgid "The server will detect the format automatically."
-msgstr ""
+msgstr "De Server erkennt de Format automatesch."
 
 #: echorepo/templates/lab_upload.html:13
 msgid "Upload"
-msgstr ""
+msgstr "Eroplueden"
 
 #: echorepo/templates/login.html:4
 msgid "ECHOrepo — Access"
-msgstr ""
+msgstr "ECHOrepo — Zougang"
 
 #: echorepo/templates/login.html:13
 msgid "Access your data"
-msgstr ""
+msgstr "Op Är Donnéeën zougräifen"
 
 #: echorepo/templates/login.html:17
 msgid "Sign in with your Keycloak credentials."
-msgstr ""
+msgstr "Mellt Iech mat Äre Keycloak-Zougangsdonnéeën un."
 
 #: echorepo/templates/login.html:48
 msgid "Email or username"
-msgstr ""
+msgstr "E-Mail oder Benotzernumm"
 
 #: echorepo/templates/login.html:57
 msgid "you@example.org"
-msgstr ""
+msgstr "you@example.org"
 
 #: echorepo/templates/login.html:65
 msgid "Password"
-msgstr ""
+msgstr "Passwuert"
 
 #: echorepo/templates/login.html:86
 msgid "Continue"
-msgstr ""
+msgstr "Weider"
 
 #: echorepo/templates/login.html:94
 msgid "Forgot your password?"
-msgstr ""
+msgstr "Passwuert vergiess?"
 
 #: echorepo/templates/login.html:112
 msgid "or"
-msgstr ""
+msgstr "oder"
 
 #: echorepo/templates/login.html:123
 msgid "Sign in through Keycloak"
-msgstr ""
+msgstr "Iwwer Keycloak umellen"
 
 #: echorepo/templates/login.html:129
 msgid "Issues signing in? Contact the organisers."
-msgstr ""
+msgstr "Problemer beim Umellen? Kontaktéiert d’Organisateuren."
 
 #: echorepo/templates/login.html:138
 msgid "GDPR-friendly access"
-msgstr ""
+msgstr "DSGVO-konformen Zougang"
 
 #: echorepo/templates/login.html:143
 msgid "Download your data anytime"
-msgstr ""
+msgstr "Är Donnéeën zu all Moment eroflueden"
 
 #: echorepo/templates/results.html:3
 msgid "ECHOrepo — Your Data"
-msgstr ""
+msgstr "ECHOrepo — Är Donnéeën"
 
 #: echorepo/templates/results.html:9
 msgid "Download all samples (CSV)"
-msgstr ""
+msgstr "All Prouwen eroflueden (CSV)"
 
 #: echorepo/templates/results.html:14 echorepo/templates/results.html:273
 #: echorepo/templates/search.html:2 echorepo/templates/search.html:5
 msgid "Search samples"
-msgstr ""
+msgstr "Prouwe sichen"
 
 #: echorepo/templates/results.html:256
 msgid "Your data"
-msgstr ""
+msgstr "Är Donnéeën"
 
 #: echorepo/templates/results.html:257
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
 msgstr ""
+"Entdeckt d’Plaze vun Äre Buedemprouwen op der Kaart a exportéiert duerno "
+"d’Donnéeën oder duerchsicht d’Tabell."
 
 #: echorepo/templates/results.html:264
 #, python-format
 msgid "Fix data issues (%(n)s)"
-msgstr ""
+msgstr "Dateproblemer korrigéieren (%(n)s)"
 
 #: echorepo/templates/results.html:291 echorepo/templates/results.html:352
 msgid "Final survey"
-msgstr ""
+msgstr "Ofschlossëmfro"
 
 #: echorepo/templates/results.html:293
 msgid "We sincerely thank you for your commitment to this project!"
-msgstr ""
+msgstr "Mir soen Iech villmools Merci fir Ären Engagement an dësem Projet!"
 
 #: echorepo/templates/results.html:296
 msgid ""
@@ -636,30 +651,40 @@ msgid ""
 "      measure changes over time and understand the impact of project "
 "participation."
 msgstr ""
+"Dëst ass déi drëtt a lescht Ëmfro am Projet, no deenen éischten Ëmfroen, déi"
+" Dir virun an no der\n"
+"      Buedemprouwenahm ausgefëllt hutt. Déi meescht Froe sinn d’selwecht wéi"
+" an de viregten Ëmfroen, sou datt mir präzis\n"
+"      Verännerungen iwwer d’Zäit moossen an den Impakt vun der "
+"Participatioun um Projet verstoen kënnen."
 
 #: echorepo/templates/results.html:301
 msgid ""
-"Before you start: please only complete this survey if the lab results "
-"from your soil sample(s) have already\n"
-"      been added to the repository. If the results are pending, please "
-"check back at a later time."
+"Before you start: please only complete this survey if the lab results from "
+"your soil sample(s) have already\n"
+"      been added to the repository. If the results are pending, please check"
+" back at a later time."
 msgstr ""
+"Ier Dir ufänkt: fëllt dës Ëmfro w.e.g. nëmmen aus, wann d’Laborresultater "
+"vun Ärer Buedemprouf oder Äre Buedemprouwen schonn\n"
+"      an de Repository bäigesat goufen. Wann d’Resultater nach ausstinn, "
+"kommt w.e.g. méi spéit nach eng Kéier zeréck."
 
 #: echorepo/templates/results.html:307
 msgid "Go to final survey"
-msgstr ""
+msgstr "Bei d’Ofschlossëmfro goen"
 
 #: echorepo/templates/results.html:312
 msgid "Data use information"
-msgstr ""
+msgstr "Informatioun iwwer d’Benotzung vun den Donnéeën"
 
 #: echorepo/templates/results.html:317
 msgid "I have already completed it"
-msgstr ""
+msgstr "Ech hunn se schonn ausgefëllt"
 
 #: echorepo/templates/results.html:322
 msgid "Processing survey data in the ECHO project"
-msgstr ""
+msgstr "Veraarbechtung vun Ëmfrodonnéeën am ECHO-Projet"
 
 #: echorepo/templates/results.html:324
 msgid ""
@@ -667,6 +692,9 @@ msgid ""
 "participation on participant\n"
 "        attitudes and motivation towards soil."
 msgstr ""
+"D’Zil vun dësen Ëmfrodonnéeën ass et, den Afloss vun der Participatioun um "
+"Projet op d’Astellungen an d’Motivatioun\n"
+"        vun de Participante vis-à-vis vum Buedem z’ënnersichen."
 
 #: echorepo/templates/results.html:328
 msgid ""
@@ -674,342 +702,533 @@ msgid ""
 "collect names or addresses. Your\n"
 "        details regarding age and gender are only used for statistical "
 "purposes and all details are collected and\n"
-"        evaluated anonymously. It is not possible to draw conclusions "
-"about your person at any time."
+"        evaluated anonymously. It is not possible to draw conclusions about "
+"your person at any time."
 msgstr ""
+"Är Informatioune ginn nëmme fir wëssenschaftlech Zwecker benotzt. Mir "
+"sammelen weder Nimm nach Adressen. Är\n"
+"        Informatiounen iwwer Alter a Geschlecht ginn nëmme fir statistesch "
+"Zwecker benotzt, an all Donnéeë ginn anonym gesammelt an\n"
+"        ausgewäert. Et ass zu kengem Zäitpunkt méiglech, Réckschlëss op Är "
+"Persoun ze zéien."
 
 #: echorepo/templates/results.html:333
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
 "crucial role in providing valuable\n"
-"        insights that enhance the relevance and impact of the ECHO "
-"project. Your honest responses are essential for\n"
-"        understanding how engagement with the project influences "
-"attitudes and motivations, ensuring the project’s\n"
+"        insights that enhance the relevance and impact of the ECHO project. "
+"Your honest responses are essential for\n"
+"        understanding how engagement with the project influences attitudes "
+"and motivations, ensuring the project’s\n"
 "        outcomes are meaningful and well-informed."
 msgstr ""
+"Mir wiere ganz dankbar, wann Dir all Fro an der Ëmfro beäntwert, well dat "
+"eng entscheedend Roll spillt fir wäertvoll\n"
+"        Erkenntnisser ze kréien, déi d’Relevanz an den Impakt vum ECHO-"
+"Projet verbesseren. Är éierlech Äntwerte si wichteg, fir\n"
+"        ze verstoen, wéi d’Bedeelegung um Projet Astellungen a Motivatioune "
+"beaflosst, a fir sécherzestellen, datt d’Resultater vum Projet\n"
+"        sënnvoll a gutt fundéiert sinn."
 
 #: echorepo/templates/results.html:339
 msgid ""
-"The survey will take approximately 8–10 minutes to complete. Please find "
-"a quiet space where you won’t be\n"
+"The survey will take approximately 8–10 minutes to complete. Please find a "
+"quiet space where you won’t be\n"
 "        interrupted. There are no right or wrong answers — answer "
 "spontaneously."
 msgstr ""
+"D’Ëmfro dauert ongeféier 8–10 Minutten. Sicht Iech w.e.g. eng roueg Plaz, "
+"wou Dir net\n"
+"        gestéiert gitt. Et gëtt keng richteg oder falsch Äntwerten — äntwert"
+" spontan."
 
 #: echorepo/templates/results.html:343
 msgid ""
-"Based on the information provided to you, please consent to participate "
-"in the survey below."
+"Based on the information provided to you, please consent to participate in "
+"the survey below."
 msgstr ""
+"Op Basis vun den Informatiounen, déi Dir kritt hutt, gitt w.e.g. hei "
+"ënnendrënner Är Zoustëmmung fir un der Ëmfro deelzehuelen."
 
 #: echorepo/templates/results.html:353
 msgid "thank you for your participation!"
-msgstr ""
+msgstr "Merci fir Är Participatioun!"
 
 #: echorepo/templates/results.html:357
 msgid "Show details"
-msgstr ""
+msgstr "Detailer weisen"
 
 #: echorepo/templates/results.html:361
 msgid "Dismiss"
-msgstr ""
+msgstr "Zoumaachen"
 
 #: echorepo/templates/results.html:371
 msgid "No data found for"
-msgstr ""
+msgstr "Keng Donnéeë fonnt fir"
 
 #: echorepo/templates/results.html:371
 msgid ""
 "If you recently submitted samples, try again\n"
 "    later."
 msgstr ""
+"Wann Dir viru Kuerzem Prouwen agereecht hutt, probéiert et\n"
+"    méi spéit nach eng Kéier."
 
 #: echorepo/templates/results.html:385
 msgid "Download"
-msgstr ""
+msgstr "Eroflueden"
 
 #: echorepo/templates/results.html:392
 msgid "CSV (per-user)"
-msgstr ""
+msgstr "CSV (pro Benotzer)"
 
 #: echorepo/templates/results.html:400
 msgid "XLSX (per-user)"
-msgstr ""
+msgstr "XLSX (pro Benotzer)"
 
 #: echorepo/templates/results.html:409
 msgid "All samples (CSV, anonymised)"
-msgstr ""
+msgstr "All Prouwen (CSV, anonymiséiert)"
 
 #: echorepo/templates/results.html:414
 msgid "GeoJSON (per-user)"
-msgstr ""
+msgstr "GeoJSON (pro Benotzer)"
 
 #: echorepo/templates/results.html:420
 msgid "Canonical exports"
-msgstr ""
+msgstr "Kanonesch Exporter"
 
 #: echorepo/templates/results.html:423
 msgid "samples.csv"
-msgstr ""
+msgstr "samples.csv"
 
 #: echorepo/templates/results.html:428
 msgid "sample_images.csv"
-msgstr ""
+msgstr "sample_images.csv"
 
 #: echorepo/templates/results.html:433
 msgid "sample_parameters.csv"
-msgstr ""
+msgstr "sample_parameters.csv"
 
 #: echorepo/templates/results.html:438
 msgid "sample_biodiversity.csv"
-msgstr ""
+msgstr "sample_biodiversity.csv"
 
 #: echorepo/templates/results.html:443
 msgid "All canonical (zip)"
-msgstr ""
+msgstr "All kanonesch Donnéeën (zip)"
 
 #: echorepo/templates/results.html:457
 msgid "Apply pH filter"
-msgstr ""
+msgstr "pH-Filter uwenden"
 
 #: echorepo/templates/results.html:459
 msgid "Export rows matching current pH filter"
-msgstr ""
+msgstr "Zeilen exportéieren, déi dem aktuelle pH-Filter entspriechen"
 
 #: echorepo/templates/results.html:480
 msgid "Privacy information"
-msgstr ""
+msgstr "Dateschutzinformatioun"
 
 #: echorepo/templates/results.html:507
 msgid ""
-"I have read the privacy information above and I consent to the processing"
-" of my personal data for\n"
+"I have read the privacy information above and I consent to the processing of"
+" my personal data for\n"
 "              this project."
 msgstr ""
+"Ech hunn d’Dateschutzinformatioun hei uewen gelies a stëmmen der "
+"Veraarbechtung vu menge perséinlechen Donnéeë fir\n"
+"              dëse Projet zou."
 
 #: echorepo/templates/results.html:515
 msgid "Accept and continue"
-msgstr ""
+msgstr "Akzeptéieren a weider"
 
 #: echorepo/templates/results.html:889
 msgid "Show on map"
-msgstr ""
+msgstr "Op der Kaart weisen"
 
 #: echorepo/templates/results.html:902 echorepo/templates/results.html:926
 #: echorepo/templates/results.html:935
 msgid "Could not locate this sample on the map."
-msgstr ""
+msgstr "Dës Prouf konnt net op der Kaart lokaliséiert ginn."
 
 #: echorepo/templates/search.html:17 static/js/map.js:226
 msgid "Any country"
-msgstr ""
+msgstr "All Land"
 
 #: echorepo/templates/search.html:22
 msgid "pH min"
-msgstr ""
+msgstr "pH min"
 
 #: echorepo/templates/search.html:26
 msgid "pH max"
-msgstr ""
+msgstr "pH max"
 
 #: echorepo/templates/search.html:38
 msgid "Date from"
-msgstr ""
+msgstr "Datum vun"
 
 #: echorepo/templates/search.html:42
 msgid "Date to"
-msgstr ""
+msgstr "Datum bis"
 
 #: echorepo/templates/search.html:56
 msgid "Export current search"
-msgstr ""
+msgstr "Aktuell Sich exportéieren"
 
 #: echorepo/templates/search.html:60
 msgid "Sign in to export results as ZIP."
-msgstr ""
+msgstr "Mellt Iech un, fir d’Resultater als ZIP ze exportéieren."
 
 #: echorepo/templates/search.html:77
 msgid "Timestamp"
-msgstr ""
+msgstr "Zäitstempel"
 
 #: echorepo/templates/search.html:82
 msgid "Collected by"
-msgstr ""
+msgstr "Gesammelt vun"
 
 #: echorepo/templates/search.html:97
 msgid "Show this sample on map"
-msgstr ""
+msgstr "Dës Prouf op der Kaart weisen"
 
 #: echorepo/templates/search.html:114
 msgid "No results for these filters."
-msgstr ""
+msgstr "Keng Resultater fir dës Filteren."
 
 #: echorepo/templates/zenodo_publications.html:3
 msgid "ECHOrepo — Zenodo Publications"
-msgstr ""
+msgstr "ECHOrepo — Zenodo-Publikatiounen"
 
 #: echorepo/templates/zenodo_publications.html:8
 msgid "Published datasets on Zenodo"
-msgstr ""
+msgstr "Verëffentlecht Datesätz op Zenodo"
 
 #: echorepo/templates/zenodo_publications.html:10
 msgid ""
-"This page lists ECHOrepo datasets published on Zenodo, with DOI links and"
-" suggested references."
+"This page lists ECHOrepo datasets published on Zenodo, with DOI links and "
+"suggested references."
 msgstr ""
+"Dës Säit weist ECHOrepo-Datesätz, déi op Zenodo verëffentlecht goufen, mat "
+"DOI-Linken a virgeschloene Referenzen."
 
 #: echorepo/templates/zenodo_publications.html:24
 #: echorepo/templates/zenodo_publications.html:27
 msgid "Untitled dataset"
-msgstr ""
+msgstr "Datesaz ouni Titel"
 
 #: echorepo/templates/zenodo_publications.html:32
 msgid "Published at"
-msgstr ""
+msgstr "Verëffentlecht den"
 
 #: echorepo/templates/zenodo_publications.html:43
 msgid "Version DOI"
-msgstr ""
+msgstr "Versiouns-DOI"
 
 #: echorepo/templates/zenodo_publications.html:50
 msgid "Concept DOI"
-msgstr ""
+msgstr "Konzept-DOI"
 
 #: echorepo/templates/zenodo_publications.html:63
 msgid "API path"
-msgstr ""
+msgstr "API-Pad"
 
 #: echorepo/templates/zenodo_publications.html:64
 msgid "Uploaded file"
-msgstr ""
+msgstr "Eropgelueden Datei"
 
 #: echorepo/templates/zenodo_publications.html:65
 msgid "Deposition ID"
-msgstr ""
+msgstr "Depositiouns-ID"
 
 #: echorepo/templates/zenodo_publications.html:66
 msgid "Concept record ID"
-msgstr ""
+msgstr "Konzept-Record-ID"
 
 #: echorepo/templates/zenodo_publications.html:69
 msgid "Download source"
-msgstr ""
+msgstr "Download-Quell"
 
 #: echorepo/templates/zenodo_publications.html:71
 msgid "source URL"
-msgstr ""
+msgstr "Quell-URL"
 
 #: echorepo/templates/zenodo_publications.html:76
 msgid "Filters"
-msgstr ""
+msgstr "Filteren"
 
 #: echorepo/templates/zenodo_publications.html:77
 msgid "Zenodo page"
-msgstr ""
+msgstr "Zenodo-Säit"
 
 #: echorepo/templates/zenodo_publications.html:79
 msgid "record page"
-msgstr ""
+msgstr "Record-Säit"
 
 #: echorepo/templates/zenodo_publications.html:88
 msgid "Suggested reference"
-msgstr ""
+msgstr "Virgeschloe Referenz"
 
 #: echorepo/templates/zenodo_publications.html:98
 msgid "No Zenodo publications have been logged yet."
-msgstr ""
+msgstr "Et goufen nach keng Zenodo-Publikatioune protokolléiert."
 
 #: static/js/map.js:172
 msgid "Link copied to clipboard"
-msgstr ""
+msgstr "Link an d’Tëschenoflag kopéiert"
 
 #: static/js/map.js:175
 msgid "Copy this link:"
-msgstr ""
+msgstr "Dëse Link kopéieren:"
 
 #: static/js/map.js:778 static/js/map.js:3151
 #, python-brace-format
 msgid "Export filtered (${n})"
-msgstr ""
+msgstr "Gefiltert exportéieren (${n})"
 
 #: static/js/map.js:788 static/js/map.js:2945
 msgid "Release mouse to finish drawing."
-msgstr ""
+msgstr "Maustast lassloossen, fir d’Zeechnen ofzeschléissen."
 
 #: static/js/map.js:862
 msgid "Not available"
-msgstr ""
+msgstr "Net verfügbar"
 
 #: static/js/map.js:1138
 msgid "Unit conversion help"
-msgstr ""
+msgstr "Hëllef bei der Ëmrechnung vun Eenheeten"
 
 #: static/js/map.js:1504
 msgid "Texture"
-msgstr ""
+msgstr "Textur"
 
 #: static/js/map.js:1539
 msgid "Observations"
-msgstr ""
+msgstr "Observatiounen"
 
 #: static/js/map.js:2175 static/js/map.js:3437
 msgid "Loading map data..."
-msgstr ""
+msgstr "Kaartendonnéeë ginn gelueden..."
 
 #: static/js/map.js:2179
 msgid "Please wait"
-msgstr ""
+msgstr "W.e.g. waarden"
 
 #: static/js/map.js:2453
 msgid "Loading..."
-msgstr ""
+msgstr "Luet..."
 
 #: static/js/map.js:2775
 msgid "Draw selection rectangle"
-msgstr ""
+msgstr "Auswielrechteck zeechnen"
 
 #: static/js/map.js:2786
 msgid "Delete last point drawn"
-msgstr ""
+msgstr "Leschte gezeechente Punkt läschen"
 
 #: static/js/map.js:2794
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
+"Klickt an zitt, fir en Auswielrechteck ze zeechnen. Dir kënnt méi wéi een "
+"zeechnen."
 
 #: static/js/map.js:2800
 msgid "Release mouse to add this rectangle to the selection."
-msgstr ""
+msgstr "Maustast lassloossen, fir dëst Rechteck bei d’Auswiel bäizefügen."
 
 #: static/js/map.js:2881
 msgid "No selected samples to export."
-msgstr ""
+msgstr "Keng ausgewielte Prouwe fir ze exportéieren."
 
 #: static/js/map.js:3197
 msgid "Please sign in to export data."
-msgstr ""
+msgstr "Mellt Iech w.e.g. un, fir Donnéeën ze exportéieren."
 
 #: static/js/map.js:3264
 msgid "Loading sample..."
-msgstr ""
+msgstr "Prouf gëtt gelueden..."
 
 #: static/js/map.js:3348
 msgid "Loading samples..."
-msgstr ""
+msgstr "Prouwe ginn gelueden..."
 
 #: static/js/map.js:3349
 msgid "Fetching visible map area"
-msgstr ""
+msgstr "Siichtbare Kaartberäich gëtt ofgeruff"
 
 #: static/js/map.js:3380
 msgid "Rendering markers..."
-msgstr ""
+msgstr "Markéierunge ginn duergestallt..."
 
 #: static/js/map.js:3381
 msgid "Building clusters and popups"
-msgstr ""
+msgstr "Cluster a Pop-ups ginn erstallt"
 
 #: static/js/map.js:3438
 msgid "Preparing map"
-msgstr ""
+msgstr "Kaart gëtt virbereet"
+
+#~ msgid "Export filtered (%(n)s)"
+#~ msgstr "Gefiltert exportéieren (%(n)s)"
+
+#~ msgid "Privacy radius (~±%(km)s km)"
+#~ msgstr "Dateschutzradius (~±%(km)s km)"
+
+#~ msgid "It helps us improve EchoSoil."
+#~ msgstr "Et hëlleft eis, EchoSoil ze verbesseren."
+
+#~ msgid "Some samples need attention to ensure correct maps and downloads."
+#~ msgstr ""
+#~ "E puer Prouwe brauchen Opmierksamkeet, fir"
+#~ " korrekt Kaarten an Downloads sécherzestellen."
+
+#~ msgid "Any country"
+#~ msgstr "All Land"
+
+#~ msgid "Copy user key"
+#~ msgstr "Benotzerschlëssel kopéieren"
+
+#~ msgid "EU-funded"
+#~ msgstr "EU-finanzéiert"
+
+#~ msgid "EU-funded initiative"
+#~ msgstr "EU-finanzéiert Initiativ"
+
+#~ msgid "Sign in to export data"
+#~ msgstr "Umellen, fir Donnéeën ze exportéieren"
+
+#~ msgid "Expected columns:"
+#~ msgstr "Erwaart Kolonnen:"
+
+#~ msgid "Czechia"
+#~ msgstr "Tschechien"
+
+#~ msgid "Germany"
+#~ msgstr "Däitschland"
+
+#~ msgid "Spain"
+#~ msgstr "Spuenien"
+
+#~ msgid "Finland"
+#~ msgstr "Finnland"
+
+#~ msgid "France"
+#~ msgstr "Frankräich"
+
+#~ msgid "United Kingdom"
+#~ msgstr "Vereenegt Kinnekräich"
+
+#~ msgid "Greece"
+#~ msgstr "Griicheland"
+
+#~ msgid "Italy"
+#~ msgstr "Italien"
+
+#~ msgid "Netherlands"
+#~ msgstr "Holland"
+
+#~ msgid "Poland"
+#~ msgstr "Polen"
+
+#~ msgid "Portugal"
+#~ msgstr "Portugal"
+
+#~ msgid "Romania"
+#~ msgstr "Rumänien"
+
+#~ msgid "Slovakia"
+#~ msgstr "Slowakei"
+
+#~ msgid "OK"
+#~ msgstr "OK"
+
+#~ msgid "Approved"
+#~ msgstr "Geneemegt"
+
+#~ msgid "Approval comment"
+#~ msgstr "Geneemegungskommentar"
+
+#~ msgid "Optional: e.g. border sample, algorithm false positive"
+#~ msgstr ""
+#~ "Optional: z. B. Prouf un der Grenz,"
+#~ " falsch-positivt Resultat vum Algorithmus"
+
+#~ msgid "Save selected as OK"
+#~ msgstr "Ausgewielten als OK späicheren"
+
+#~ msgid "Privacy radius (~±{km} km)"
+#~ msgstr "Dateschutzradius (~±{km} km)"
+
+#~ msgid "Soil pH"
+#~ msgstr "Buedem-pH"
+
+#~ msgid "Acidic (≤5.5)"
+#~ msgstr "Sauer (≤5.5)"
+
+#~ msgid "Slightly acidic (5.5–6.5)"
+#~ msgstr "Liicht sauer (5.5–6.5)"
+
+#~ msgid "Neutral (6.5–7.5)"
+#~ msgstr "Neutral (6.5–7.5)"
+
+#~ msgid "Slightly alkaline (7.5–8.5)"
+#~ msgstr "Liicht alkalesch (7.5–8.5)"
+
+#~ msgid "Alkaline (≥8.5)"
+#~ msgstr "Alkalesch (≥8.5)"
+
+#~ msgid "Your samples"
+#~ msgstr "Är Prouwen"
+
+#~ msgid "Other samples"
+#~ msgstr "Aner Prouwen"
+
+#~ msgid "Export"
+#~ msgstr "Exportéieren"
+
+#~ msgid "Clear"
+#~ msgstr "Läschen"
+
+#~ msgid "Export filtered ({n})"
+#~ msgstr "Gefiltert exportéieren ({n})"
+
+#~ msgid "Colour"
+#~ msgstr "Faarf"
+
+#~ msgid "Metals"
+#~ msgstr "Metaller"
+
+#~ msgid "Elemental concentrations"
+#~ msgstr "Elementkonzentratiounen"
+
+#~ msgid "Draw a selection rectangle"
+#~ msgstr "En Auswielrechteck zeechnen"
+
+#~ msgid "Click and drag to draw a selection rectangle."
+#~ msgstr "Klickt an zitt, fir en Auswielrechteck ze zeechnen."
+
+#~ msgid "Selection export to a file"
+#~ msgstr "Auswiel an eng Datei exportéieren"
+
+#~ msgid "Selection export"
+#~ msgstr "Auswiel exportéieren"
+
+#~ msgid "Use selection tool"
+#~ msgstr "Benotzt d’Auswielwierkzeug"
+
+#~ msgid "to draw one or more areas"
+#~ msgstr "fir een oder méi Beräicher ze zeechnen"
+
+#~ msgid "Export selection"
+#~ msgstr "Auswiel exportéieren"
+
+#~ msgid "Export selected samples"
+#~ msgstr "Ausgewielte Prouwen exportéieren"
+
+#~ msgid "Clear selection"
+#~ msgstr "Auswiel läschen"
+
+#~ msgid "Clear all selection rectangles"
+#~ msgstr "All Auswielrechtecker läschen"
 
