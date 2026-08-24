@@ -1,0 +1,180 @@
+/* ECHOREPO JupyterLab branding */
+
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Inter:wght@400;500;700&display=swap");
+
+:root {
+    --ech-green: #2e7d32;
+    --ech-green-600: #256a29;
+    --ech-brown: #6b4f2a;
+    --ech-sand: #f5efe6;
+    --ech-cream: #faf7f0;
+    --ech-ink: #1c1c1c;
+    --ech-gold: #d5a11d;
+    --ech-border: rgba(0, 0, 0, 0.08);
+
+    /* Jupyter theme variables */
+    --jp-brand-color0: #256a29;
+    --jp-brand-color1: #2e7d32;
+    --jp-brand-color2: #4d9951;
+
+    --jp-ui-font-family:
+        "Inter",
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    --jp-content-font-family:
+        "Inter",
+        system-ui,
+        sans-serif;
+
+    --jp-layout-color0: #faf7f0;
+    --jp-border-color1: rgba(0, 0, 0, 0.08);
+}
+
+
+/* ---------------------------------------------------------
+   Top application bar
+   --------------------------------------------------------- */
+
+#top-panel-wrapper,
+#jp-top-bar {
+    background: var(--ech-green) !important;
+    color: white !important;
+}
+
+
+/* ---------------------------------------------------------
+   Main menu
+   --------------------------------------------------------- */
+
+#menu-panel-wrapper,
+#jp-MainMenu,
+#menu-panel {
+    background: var(--ech-green) !important;
+}
+
+.lm-MenuBar-content {
+    color: rgba(255, 255, 255, 0.92) !important;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 500;
+}
+
+.lm-MenuBar-item:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+
+/* ---------------------------------------------------------
+   File browser / left sidebar
+   --------------------------------------------------------- */
+
+.jp-FileBrowser-Panel,
+.jp-FileBrowser-toolbar {
+    background: var(--ech-cream) !important;
+}
+
+.jp-DirListing-content {
+    background: #fff;
+}
+
+
+/* ---------------------------------------------------------
+   Notebook toolbar
+   --------------------------------------------------------- */
+
+.jp-NotebookPanel-toolbar {
+    background: var(--ech-sand) !important;
+    border-bottom: 1px solid var(--ech-border);
+}
+
+
+/* ---------------------------------------------------------
+   Main workspace
+   --------------------------------------------------------- */
+
+.jp-MainAreaWidget,
+.jp-NotebookPanel {
+    background: var(--ech-cream);
+}
+
+
+/* Notebook itself remains clean white */
+
+.jp-Notebook {
+    background: #fff !important;
+}
+
+
+/* ---------------------------------------------------------
+   Tabs
+   --------------------------------------------------------- */
+
+.lm-TabBar-tab {
+    font-family: "Inter", sans-serif;
+}
+
+.lm-TabBar-tab.lm-mod-current {
+    border-top: 3px solid var(--ech-green) !important;
+}
+
+
+/* ---------------------------------------------------------
+   Buttons / selected items
+   --------------------------------------------------------- */
+
+.jp-mod-styled.jp-mod-accept {
+    background-color: var(--ech-green) !important;
+}
+
+.jp-DirListing-item.jp-mod-selected {
+    background-color: rgba(46, 125, 50, 0.12) !important;
+}
+
+
+/* ---------------------------------------------------------
+   Focus styling — mirrors ECHOREPO
+   --------------------------------------------------------- */
+
+:focus-visible {
+    outline: 3px solid var(--ech-gold) !important;
+    outline-offset: 2px;
+}
+
+
+/* ---------------------------------------------------------
+   Rendered Markdown
+   --------------------------------------------------------- */
+
+.jp-RenderedHTMLCommon h1,
+.jp-RenderedHTMLCommon h2,
+.jp-RenderedHTMLCommon h3 {
+    font-family: "Montserrat", sans-serif;
+    color: var(--ech-ink);
+}
+
+.jp-RenderedHTMLCommon h1 {
+    border-bottom: 2px solid var(--ech-green);
+    padding-bottom: 0.35rem;
+}
+
+.jp-RenderedHTMLCommon a {
+    color: var(--ech-green);
+}
+
+
+/* ---------------------------------------------------------
+   Tables rendered by pandas
+   --------------------------------------------------------- */
+
+.jp-RenderedHTMLCommon table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.jp-RenderedHTMLCommon thead {
+    background: var(--ech-green);
+    color: white;
+}
