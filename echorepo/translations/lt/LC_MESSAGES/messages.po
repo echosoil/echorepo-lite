@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"POT-Creation-Date: 2026-08-24 13:38+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lt\n"
@@ -18,6 +18,162 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: echorepo/i18n.py:108
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
+msgstr "Privatumo spindulys (~ ±{km}km)"
+
+#: echorepo/i18n.py:109
+msgid "Soil pH"
+msgstr "Dirvožemio pH"
+
+#: echorepo/i18n.py:110
+msgid "Acidic (≤5.5)"
+msgstr "Acidinis (≤ 5.5)"
+
+#: echorepo/i18n.py:111
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Lengvai rūgštus (5, 5- 6, 5)"
+
+#: echorepo/i18n.py:112
+msgid "Neutral (6.5–7.5)"
+msgstr "Neutralus (6, 5- 7, 5)"
+
+#: echorepo/i18n.py:113
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Lengvai šarminis (7.5-8.5)"
+
+#: echorepo/i18n.py:114
+msgid "Alkaline (≥8.5)"
+msgstr "Šarminis (≥ 8, 5)"
+
+#: echorepo/i18n.py:115
+msgid "Your samples"
+msgstr "Jūsų pavyzdžiai"
+
+#: echorepo/i18n.py:116
+msgid "Other samples"
+msgstr "Kiti mėginiai"
+
+#: echorepo/i18n.py:117
+msgid "Export"
+msgstr "Eksportas"
+
+#: echorepo/i18n.py:118
+msgid "Clear"
+msgstr "Išvalyti"
+
+#: echorepo/i18n.py:119
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr "Eksportuoti filtruotą ({n})"
+
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Data"
+
+#: echorepo/i18n.py:121 static/js/map.js:1485
+msgid "QR code"
+msgstr "QR kodas"
+
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:124
+#: echorepo/templates/results.html:450 echorepo/templates/search.html:79
+#: static/js/map.js:1490
+msgid "pH"
+msgstr "pH"
+
+#: echorepo/i18n.py:123
+msgid "Colour"
+msgstr "Spalva"
+
+#: echorepo/i18n.py:124 static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Dirvožemio organinės medžiagos"
+
+#: echorepo/i18n.py:125 static/js/map.js:1509
+msgid "Structure"
+msgstr "Struktūra"
+
+#: echorepo/i18n.py:126 static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Sliekai"
+
+#: echorepo/i18n.py:127 static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plastikiniai"
+
+#: echorepo/i18n.py:128 static/js/map.js:1524
+msgid "Debris"
+msgstr "Nuolaužos"
+
+#: echorepo/i18n.py:129 static/js/map.js:1529
+msgid "Contamination"
+msgstr "Teršalai"
+
+#: echorepo/i18n.py:130
+msgid "Metals"
+msgstr "Metalai"
+
+#: echorepo/i18n.py:131
+msgid "Elemental concentrations"
+msgstr "Frakcinės koncentracijos"
+
+#: echorepo/i18n.py:132
+msgid "Draw a rectangle"
+msgstr "Piešti stačiakampį"
+
+#: echorepo/i18n.py:133
+msgid "Click and drag to draw a rectangle."
+msgstr "Spauskite ir vilkite, kad pieštumėte stačiakampį."
+
+#: echorepo/i18n.py:134 static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "NAME OF TRANSLATORS"
+
+#: echorepo/i18n.py:135 static/js/map.js:2783
+msgid "Cancel"
+msgstr "Atsisakyti"
+
+#: echorepo/i18n.py:136 static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Išbraukti paskutinį punktą:"
+
+#: echorepo/i18n.py:137 static/js/map.js:915
+msgid "Street map"
+msgstr "Gatvės žemėlapis"
+
+#: echorepo/i18n.py:138 static/js/map.js:916
+msgid "Satellite"
+msgstr "Palydovas"
+
+#: echorepo/i18n.py:139
+msgid "Selection export to a file"
+msgstr "Žymėti eksportą į failą"
+
+#: echorepo/i18n.py:140
+msgid "Selection export"
+msgstr "Eksportas"
+
+#: echorepo/i18n.py:141
+msgid "Use selection tool"
+msgstr "@ info: tooltip"
+
+#: echorepo/i18n.py:142
+msgid "to draw one or more areas"
+msgstr "atkreipti vieną ar kelias sritis"
+
+#: echorepo/i18n.py:143
+msgid "Export selection"
+msgstr "Eksportas"
+
+#: echorepo/i18n.py:144
+msgid "Clear selection"
+msgstr "Išvalyti žymėjimą"
+
+#: echorepo/i18n.py:145 static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr "Procentines vertes (%) galima paversti mg / kg dauginant iš 10000."
 
 #: echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
@@ -276,11 +432,6 @@ msgstr "Mobilioji versija"
 msgid "Desktop version"
 msgstr "Darbastalio versija"
 
-#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
-#: echorepo/templates/search.html:79 static/js/map.js:1490
-msgid "pH"
-msgstr "pH"
-
 #: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
 msgid "min"
 msgstr "min"
@@ -297,10 +448,6 @@ msgstr "Šalis"
 #: echorepo/templates/explore.html:139
 msgid "All countries"
 msgstr "Visos šalys"
-
-#: echorepo/templates/explore.html:142 static/js/map.js:1480
-msgid "Date"
-msgstr "Data"
 
 #: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
 msgid "Apply"
@@ -830,53 +977,13 @@ msgstr "Paleisti pelę baigti piešimo."
 msgid "Not available"
 msgstr "Netaikoma"
 
-#: static/js/map.js:915
-msgid "Street map"
-msgstr "Gatvės žemėlapis"
-
-#: static/js/map.js:916
-msgid "Satellite"
-msgstr "Palydovas"
-
-#: static/js/map.js:1132
-msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
-msgstr "Procentines vertes (%) galima paversti mg / kg dauginant iš 10000."
-
 #: static/js/map.js:1138
 msgid "Unit conversion help"
 msgstr "Vieneto konvertavimo pagalba"
 
-#: static/js/map.js:1485
-msgid "QR code"
-msgstr "QR kodas"
-
-#: static/js/map.js:1495
-msgid "Soil organic matter"
-msgstr "Dirvožemio organinės medžiagos"
-
 #: static/js/map.js:1504
 msgid "Texture"
 msgstr "Kėbulas"
-
-#: static/js/map.js:1509
-msgid "Structure"
-msgstr "Struktūra"
-
-#: static/js/map.js:1514
-msgid "Earthworms"
-msgstr "Sliekai"
-
-#: static/js/map.js:1519
-msgid "Plastic"
-msgstr "Plastikiniai"
-
-#: static/js/map.js:1524
-msgid "Debris"
-msgstr "Nuolaužos"
-
-#: static/js/map.js:1529
-msgid "Contamination"
-msgstr "Teršalai"
 
 #: static/js/map.js:1539
 msgid "Observations"
@@ -898,21 +1005,9 @@ msgstr "Įkeliama..."
 msgid "Draw selection rectangle"
 msgstr "Piešti pasirinkimo stačiakampį"
 
-#: static/js/map.js:2782
-msgid "Cancel drawing"
-msgstr "NAME OF TRANSLATORS"
-
-#: static/js/map.js:2783
-msgid "Cancel"
-msgstr "Atsisakyti"
-
 #: static/js/map.js:2786
 msgid "Delete last point drawn"
 msgstr "Išbraukti paskutinį punktą"
-
-#: static/js/map.js:2787
-msgid "Delete last point"
-msgstr "Išbraukti paskutinį punktą:"
 
 #: static/js/map.js:2794
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."

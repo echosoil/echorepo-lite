@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-22 16:23+0000\n"
+"POT-Creation-Date: 2026-08-24 13:38+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -17,6 +17,164 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: echorepo/i18n.py:108
+#, python-brace-format
+msgid "Privacy radius (~±{km} km)"
+msgstr "Radio de privacidad (~±{km}km)"
+
+#: echorepo/i18n.py:109
+msgid "Soil pH"
+msgstr "PH de suelo"
+
+#: echorepo/i18n.py:110
+msgid "Acidic (≤5.5)"
+msgstr "Acidic (≤5.5)"
+
+#: echorepo/i18n.py:111
+msgid "Slightly acidic (5.5–6.5)"
+msgstr "Ligeramente ácido (5.5–6.5)"
+
+#: echorepo/i18n.py:112
+msgid "Neutral (6.5–7.5)"
+msgstr "Neutral (6.5–7.5)"
+
+#: echorepo/i18n.py:113
+msgid "Slightly alkaline (7.5–8.5)"
+msgstr "Ligeramente alcalino (7.5–8.5)"
+
+#: echorepo/i18n.py:114
+msgid "Alkaline (≥8.5)"
+msgstr "Alkaline (≥8.5)"
+
+#: echorepo/i18n.py:115
+msgid "Your samples"
+msgstr "Sus muestras"
+
+#: echorepo/i18n.py:116
+msgid "Other samples"
+msgstr "Otras muestras"
+
+#: echorepo/i18n.py:117
+msgid "Export"
+msgstr "Exportación"
+
+#: echorepo/i18n.py:118
+msgid "Clear"
+msgstr "Despejado"
+
+#: echorepo/i18n.py:119
+#, python-brace-format
+msgid "Export filtered ({n})"
+msgstr "Exportación filtrada ({n})"
+
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:142 static/js/map.js:1480
+msgid "Date"
+msgstr "Fecha"
+
+#: echorepo/i18n.py:121 static/js/map.js:1485
+msgid "QR code"
+msgstr "Código QR"
+
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:124
+#: echorepo/templates/results.html:450 echorepo/templates/search.html:79
+#: static/js/map.js:1490
+msgid "pH"
+msgstr "p H"
+
+#: echorepo/i18n.py:123
+msgid "Colour"
+msgstr "Color"
+
+#: echorepo/i18n.py:124 static/js/map.js:1495
+msgid "Soil organic matter"
+msgstr "Material orgánico del suelo"
+
+#: echorepo/i18n.py:125 static/js/map.js:1509
+msgid "Structure"
+msgstr "Estructura"
+
+#: echorepo/i18n.py:126 static/js/map.js:1514
+msgid "Earthworms"
+msgstr "Terrestres"
+
+#: echorepo/i18n.py:127 static/js/map.js:1519
+msgid "Plastic"
+msgstr "Plástico"
+
+#: echorepo/i18n.py:128 static/js/map.js:1524
+msgid "Debris"
+msgstr "Debris"
+
+#: echorepo/i18n.py:129 static/js/map.js:1529
+msgid "Contamination"
+msgstr "Contaminación"
+
+#: echorepo/i18n.py:130
+msgid "Metals"
+msgstr "Metales"
+
+#: echorepo/i18n.py:131
+msgid "Elemental concentrations"
+msgstr "Concentraciones elementales"
+
+#: echorepo/i18n.py:132
+msgid "Draw a rectangle"
+msgstr "Dibuja un rectángulo"
+
+#: echorepo/i18n.py:133
+msgid "Click and drag to draw a rectangle."
+msgstr "Hacer clic y arrastrar para dibujar un rectángulo."
+
+#: echorepo/i18n.py:134 static/js/map.js:2782
+msgid "Cancel drawing"
+msgstr "Dibujo Cancelar"
+
+#: echorepo/i18n.py:135 static/js/map.js:2783
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: echorepo/i18n.py:136 static/js/map.js:2787
+msgid "Delete last point"
+msgstr "Eliminar el último punto"
+
+#: echorepo/i18n.py:137 static/js/map.js:915
+msgid "Street map"
+msgstr "Calle mapa"
+
+#: echorepo/i18n.py:138 static/js/map.js:916
+msgid "Satellite"
+msgstr "Satélite"
+
+#: echorepo/i18n.py:139
+msgid "Selection export to a file"
+msgstr "Exportación de selección a un archivo"
+
+#: echorepo/i18n.py:140
+msgid "Selection export"
+msgstr "Exportación de selección"
+
+#: echorepo/i18n.py:141
+msgid "Use selection tool"
+msgstr "Use herramienta de selección"
+
+#: echorepo/i18n.py:142
+msgid "to draw one or more areas"
+msgstr "para dibujar una o más áreas"
+
+#: echorepo/i18n.py:143
+msgid "Export selection"
+msgstr "Selección de exportaciones"
+
+#: echorepo/i18n.py:144
+msgid "Clear selection"
+msgstr "Selección clara"
+
+#: echorepo/i18n.py:145 static/js/map.js:1132
+msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+msgstr ""
+"Los valores porcentuales (%) se pueden convertir a mg/kg multiplicando en "
+"10.000."
 
 #: echorepo/services/firebase.py:55
 msgid "Password recovery is not configured for this site."
@@ -273,11 +431,6 @@ msgstr "Versión móvil"
 msgid "Desktop version"
 msgstr "Versión de escritorio"
 
-#: echorepo/templates/explore.html:124 echorepo/templates/results.html:450
-#: echorepo/templates/search.html:79 static/js/map.js:1490
-msgid "pH"
-msgstr "p H"
-
 #: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
 msgid "min"
 msgstr "min"
@@ -294,10 +447,6 @@ msgstr "País"
 #: echorepo/templates/explore.html:139
 msgid "All countries"
 msgstr "Todos los países"
-
-#: echorepo/templates/explore.html:142 static/js/map.js:1480
-msgid "Date"
-msgstr "Fecha"
 
 #: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
 msgid "Apply"
@@ -835,55 +984,13 @@ msgstr "Libera el ratón para terminar el dibujo."
 msgid "Not available"
 msgstr "No disponible"
 
-#: static/js/map.js:915
-msgid "Street map"
-msgstr "Calle mapa"
-
-#: static/js/map.js:916
-msgid "Satellite"
-msgstr "Satélite"
-
-#: static/js/map.js:1132
-msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
-msgstr ""
-"Los valores porcentuales (%) se pueden convertir a mg/kg multiplicando en "
-"10.000."
-
 #: static/js/map.js:1138
 msgid "Unit conversion help"
 msgstr "Ayuda para la conversión de unidades"
 
-#: static/js/map.js:1485
-msgid "QR code"
-msgstr "Código QR"
-
-#: static/js/map.js:1495
-msgid "Soil organic matter"
-msgstr "Material orgánico del suelo"
-
 #: static/js/map.js:1504
 msgid "Texture"
 msgstr "Textura"
-
-#: static/js/map.js:1509
-msgid "Structure"
-msgstr "Estructura"
-
-#: static/js/map.js:1514
-msgid "Earthworms"
-msgstr "Terrestres"
-
-#: static/js/map.js:1519
-msgid "Plastic"
-msgstr "Plástico"
-
-#: static/js/map.js:1524
-msgid "Debris"
-msgstr "Debris"
-
-#: static/js/map.js:1529
-msgid "Contamination"
-msgstr "Contaminación"
 
 #: static/js/map.js:1539
 msgid "Observations"
@@ -905,21 +1012,9 @@ msgstr "Cargando..."
 msgid "Draw selection rectangle"
 msgstr "Dibujo rectángulo de selección"
 
-#: static/js/map.js:2782
-msgid "Cancel drawing"
-msgstr "Dibujo Cancelar"
-
-#: static/js/map.js:2783
-msgid "Cancel"
-msgstr "Cancelar"
-
 #: static/js/map.js:2786
 msgid "Delete last point drawn"
 msgstr "Eliminar el último punto dibujado"
-
-#: static/js/map.js:2787
-msgid "Delete last point"
-msgstr "Eliminar el último punto"
 
 #: static/js/map.js:2794
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
