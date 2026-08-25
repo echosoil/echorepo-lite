@@ -178,3 +178,50 @@
     background: var(--ech-green);
     color: white;
 }
+
+/* ---------------------------------------------------------
+   ECHOREPO logo
+   --------------------------------------------------------- */
+
+/* Green top/menu background */
+#jp-top-panel,
+#jp-top-bar,
+#top-panel-wrapper,
+#menu-panel-wrapper,
+#menu-panel {
+    background-color: var(--ech-green) !important;
+}
+
+
+/* Replace Jupyter logo */
+#jp-MainLogo {
+    background-image: url("echorepo_logo.svg") !important;
+    background-repeat: no-repeat !important;
+    background-position: center center !important;
+
+    /* Fit inside Jupyter's menu bar */
+    background-size: auto 24px !important;
+
+    background-color: transparent !important;
+
+    width: 72px !important;
+    min-width: 72px !important;
+
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+
+    margin: 0 8px !important;
+    padding: 0 !important;
+
+    box-sizing: border-box !important;
+    border: none !important;
+    box-shadow: none !important;
+
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+}
+
+#jp-MainLogo svg {
+    display: none !important;
+}

@@ -9,6 +9,7 @@ services:
     volumes:
       - ${JUPYTER_WORK_DIR:-./notebooks}:/home/jovyan/work
       - ./jupyter/custom/custom.css:/home/jovyan/.jupyter/custom/custom.css:ro
+      - ./static/img/echorepo_logo_light.svg:/home/jovyan/.jupyter/custom/echorepo_logo.svg:ro
 
     environment:
       JUPYTER_TOKEN: ${JUPYTER_TOKEN}
@@ -19,6 +20,7 @@ services:
       - start-notebook.py
       - --ServerApp.root_dir=/home/jovyan/work
       - --custom-css
+
     networks:
       - echorepo-shared
 
