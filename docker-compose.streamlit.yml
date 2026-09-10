@@ -1,0 +1,26 @@
+services:
+  streamlit:
+    build:
+      context: ./streamlit
+
+    container_name: echorepo-streamlit
+
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8501:8501"
+
+    environment:
+      ECHOREPO_URL: "http://echorepo-lite:8000"
+      PYTHONPATH: "/app"
+
+    volumes:
+      - ./notebooks/lib:/app/lib:ro
+
+    networks:
+      - echorepo-shared
+
+
+networks:
+  echorepo-shared:
+    external: true

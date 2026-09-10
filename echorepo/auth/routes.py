@@ -1,3 +1,4 @@
+import os
 from urllib.parse import urlsplit
 
 import requests
@@ -8,7 +9,6 @@ from ..extensions import oauth
 from ..services.firebase import send_password_reset_email
 from .keycloak import KC_ISSUER, KC_LOGOUT, KC_TOKEN, KC_USERINFO, KC_WELLKNOWN
 from .tokens import before_request_refresh, create_session_from_tokens
-
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -66,27 +66,21 @@ def current_next_url() -> str | None:
     """
     Read the stored destination without removing it.
     """
-    return safe_next_url(
-        session.get(POST_LOGIN_REDIRECT_KEY)
-    )
+    return safe_next_url(session.get(POST_LOGIN_REDIRECT_KEY))
 
 
 def get_post_login_redirect() -> str:
     """
     Return and remove the stored post-login destination.
     """
-    next_url = safe_next_url(
-        session.pop(POST_LOGIN_REDIRECT_KEY, None)
-    )
+    next_url = safe_next_url(session.pop(POST_LOGIN_REDIRECT_KEY, None))
 
     return next_url or url_for("web.home")
 
 
 def init_oauth(app):
     if not settings.KC_CLIENT_SECRET:
-        raise ValueError(
-            "KEYCLOAK_CLIENT_SECRET must be set"
-        )
+        raise ValueError("KEYCLOAK_CLIENT_SECRET must be set")
 
     oauth.init_app(app)
 
@@ -115,9 +109,7 @@ def diag_oidc():
             "logout": KC_LOGOUT,
             "use_auth_prefix": settings.KC_USE_AUTH_PREFIX,
             "client_id": settings.KC_CLIENT_ID,
-            "has_client_secret": bool(
-                settings.KC_CLIENT_SECRET
-            ),
+            "has_client_secret": bool(settings.KC_CLIENT_SECRET),
         }
     )
 
@@ -128,18 +120,13 @@ def login():
     Display the login page and remember where the user
     should be sent after authentication.
     """
-    next_url = remember_next_url(
-        request.args.get("next")
-    )
+    next_url = remember_next_url(request.args.get("next"))
 
     if not next_url:
         next_url = current_next_url()
 
     # Demo shortcut.
-    if (
-        settings.DEMO_MODE
-        and request.host == settings.DEMO_HOST
-    ):
+    if settings.DEMO_MODE and request.host == settings.DEMO_HOST:
         session["kc"] = {
             "access_token": "demo",
             "refresh_token": "demo",
@@ -155,9 +142,7 @@ def login():
 
         session["user"] = settings.DEMO_USER
 
-        return redirect(
-            get_post_login_redirect()
-        )
+        return redirect(get_post_login_redirect())
 
     return render_template(
         "login.html",
@@ -172,9 +157,7 @@ def sso_password_login():
     redirect to the originally requested page.
     """
     # Preserve the hidden next value submitted by login.html.
-    remember_next_url(
-        request.form.get("next")
-    )
+    remember_next_url(request.form.get("next"))
 
     username = request.form.get(
         "username",
@@ -189,9 +172,7 @@ def sso_password_login():
     if not username or not password:
         return render_template(
             "login.html",
-            error=(
-                "Please enter your email and password."
-            ),
+            error=("Please enter your email and password."),
             next_url=current_next_url() or "",
         )
 
@@ -213,10 +194,7 @@ def sso_password_login():
     except requests.RequestException as exc:
         return render_template(
             "login.html",
-            error=(
-                "Cannot reach identity provider: "
-                f"{exc}"
-            ),
+            error=(f"Cannot reach identity provider: {exc}"),
             next_url=current_next_url() or "",
         )
 
@@ -228,12 +206,7 @@ def sso_password_login():
             "",
         ).startswith("application/json"):
             try:
-                message = (
-                    response.json().get(
-                        "error_description"
-                    )
-                    or message
-                )
+                message = response.json().get("error_description") or message
             except ValueError:
                 pass
 
@@ -248,9 +221,7 @@ def sso_password_login():
     redirect_target = current_next_url()
 
     try:
-        create_session_from_tokens(
-            response.json()
-        )
+        create_session_from_tokens(response.json())
     except Exception as exc:
         return render_template(
             "login.html",
@@ -264,10 +235,7 @@ def sso_password_login():
         None,
     )
 
-    return redirect(
-        redirect_target
-        or url_for("web.home")
-    )
+    return redirect(redirect_target or url_for("web.home"))
 
 
 @auth_bp.get("/sso/login")
@@ -275,9 +243,7 @@ def sso_login():
     """
     Start the browser-based Keycloak/OIDC login.
     """
-    remember_next_url(
-        request.args.get("next")
-    )
+    remember_next_url(request.args.get("next"))
 
     redirect_uri = url_for(
         "auth.sso_callback",
@@ -285,9 +251,7 @@ def sso_login():
         _scheme="https",
     )
 
-    return oauth.keycloak.authorize_redirect(
-        redirect_uri
-    )
+    return oauth.keycloak.authorize_redirect(redirect_uri)
 
 
 @auth_bp.get("/sso/callback")
@@ -299,9 +263,7 @@ def sso_callback():
     # potentially modify the Flask session.
     redirect_target = current_next_url()
 
-    token = (
-        oauth.keycloak.authorize_access_token()
-    )
+    token = oauth.keycloak.authorize_access_token()
 
     # Prefer ID token; fallback to userinfo already happens
     # inside create_session_from_tokens().
@@ -313,10 +275,7 @@ def sso_callback():
         None,
     )
 
-    return redirect(
-        redirect_target
-        or url_for("web.home")
-    )
+    return redirect(redirect_target or url_for("web.home"))
 
 
 @auth_bp.get("/logout")
@@ -328,17 +287,12 @@ def logout():
             requests.post(
                 KC_LOGOUT,
                 data={
-                    "client_id":
-                        settings.KC_CLIENT_ID,
-
-                    "client_secret":
-                        settings.KC_CLIENT_SECRET,
-
-                    "refresh_token":
-                        kc.get(
-                            "refresh_token",
-                            "",
-                        ),
+                    "client_id": settings.KC_CLIENT_ID,
+                    "client_secret": settings.KC_CLIENT_SECRET,
+                    "refresh_token": kc.get(
+                        "refresh_token",
+                        "",
+                    ),
                 },
                 timeout=10,
             )
@@ -347,9 +301,7 @@ def logout():
 
     session.clear()
 
-    return redirect(
-        url_for("auth.login")
-    )
+    return redirect(url_for("auth.login"))
 
 
 @auth_bp.post("/password-reset")
@@ -364,16 +316,11 @@ def password_reset():
     if not email:
         return render_template(
             "login.html",
-            error=(
-                "Please enter your email address "
-                "to reset your password."
-            ),
+            error=("Please enter your email address to reset your password."),
             next_url=next_url,
         )
 
-    ok, message = send_password_reset_email(
-        email
-    )
+    ok, message = send_password_reset_email(email)
 
     if ok:
         return render_template(
@@ -387,3 +334,29 @@ def password_reset():
         error=message,
         next_url=next_url,
     )
+
+
+@auth_bp.get("/internal/jupyter-auth")
+def jupyter_auth():
+    kc = session.get("kc")
+
+    if not kc:
+        return "", 401
+
+    profile = kc.get("profile") or {}
+    email = (profile.get("email") or "").strip().lower()
+
+    allowed = {
+        value.strip().lower()
+        for value in os.getenv(
+            "JUPYTER_ALLOWED_EMAILS",
+            "",
+        ).split(",")
+        if value.strip()
+    }
+
+    # Fail closed.
+    if not allowed or email not in allowed:
+        return "", 403
+
+    return "", 204

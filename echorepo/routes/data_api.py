@@ -12,8 +12,9 @@ import re
 import sqlite3
 import threading
 import time
+from collections.abc import Iterable, Mapping
 from datetime import date, datetime, timedelta, timezone
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 import jwt
 import pandas as pd
@@ -30,19 +31,20 @@ from flask import (
 )
 from psycopg2.extras import RealDictCursor
 
+from echorepo.services.biodiversity_raw_exports import (
+    build_biodiversity_raw_bundle,
+)
 from echorepo.services.canonical_exports import (
     BIODIVERSITY_COLUMNS,
+    BIODIVERSITY_PUBLIC_COLUMN_MAP,
     IMAGE_COLUMNS,
-    PARAMETER_COLUMNS,
+    PARAMETER_PUBLIC_COLUMNS,
     SAMPLE_COLUMNS,
     build_machine_bundle,
     get_parameters_df,
 )
 from echorepo.services.db import _ensure_lab_enrichment, get_pg_conn
 from echorepo.services.storage.minio import upload_canonical_zip
-from echorepo.services.biodiversity_raw_exports import (
-    build_biodiversity_raw_bundle,
-)
 
 log = logging.getLogger(__name__)
 data_api = Blueprint("data_api", __name__)
@@ -51,8 +53,12 @@ data_api = Blueprint("data_api", __name__)
 # defining the canonical schemas in exactly one module.
 CANONICAL_SAMPLE_COLS = SAMPLE_COLUMNS
 CANONICAL_IMAGE_COLS = IMAGE_COLUMNS
-CANONICAL_PARAM_COLS = PARAMETER_COLUMNS
-CANONICAL_BIODIV_COLS = BIODIVERSITY_COLUMNS
+
+CANONICAL_PARAM_COLS = PARAMETER_PUBLIC_COLUMNS
+
+CANONICAL_BIODIV_COLS = [
+    BIODIVERSITY_PUBLIC_COLUMN_MAP.get(column, column) for column in BIODIVERSITY_COLUMNS
+]
 
 MAX_PAGE_SIZE = 1_000
 MAX_MAP_PAGE_SIZE = 10_000
@@ -117,10 +123,7 @@ def _parse_format(*allowed: str, default: str = "json") -> str:
     if value not in allowed:
         abort(
             400,
-            description=(
-                f"Unsupported format {value!r}; expected one of: "
-                + ", ".join(allowed)
-            ),
+            description=(f"Unsupported format {value!r}; expected one of: " + ", ".join(allowed)),
         )
     return value
 
@@ -183,9 +186,7 @@ def _time_window_from_request(
     except ValueError:
         abort(
             400,
-            description=(
-                "Invalid date/time filter; use YYYY-MM-DD or an ISO-8601 datetime"
-            ),
+            description=("Invalid date/time filter; use YYYY-MM-DD or an ISO-8601 datetime"),
         )
 
     return from_value, to_value, to_operator
@@ -291,9 +292,7 @@ def get_sample_table(conn: sqlite3.Connection) -> str:
         try:
             columns = {
                 row[1]
-                for row in conn.execute(
-                    f"PRAGMA table_info({quote_ident(table)})"
-                ).fetchall()
+                for row in conn.execute(f"PRAGMA table_info({quote_ident(table)})").fetchall()
             }
             if "sampleId" in columns:
                 return table
@@ -340,19 +339,13 @@ _OIDC_CACHE_LOCK = threading.Lock()
 def oidc_cfg(*, force_refresh: bool = False) -> dict[str, Any]:
     """Return cached OIDC discovery/JWKS configuration."""
     issuer_url = (
-        current_app.config.get("OIDC_ISSUER_URL")
-        or os.environ.get("OIDC_ISSUER_URL")
-        or ""
+        current_app.config.get("OIDC_ISSUER_URL") or os.environ.get("OIDC_ISSUER_URL") or ""
     ).strip()
     audience = (
-        current_app.config.get("OIDC_AUDIENCE")
-        or os.environ.get("OIDC_AUDIENCE")
-        or ""
+        current_app.config.get("OIDC_AUDIENCE") or os.environ.get("OIDC_AUDIENCE") or ""
     ).strip()
     client_id = (
-        current_app.config.get("OIDC_CLIENT_ID")
-        or os.environ.get("OIDC_CLIENT_ID")
-        or ""
+        current_app.config.get("OIDC_CLIENT_ID") or os.environ.get("OIDC_CLIENT_ID") or ""
     ).strip()
 
     if not issuer_url:
@@ -411,22 +404,14 @@ def verify_bearer() -> dict[str, Any] | None:
 
         kid = header.get("kid")
         jwk_data = next(
-            (
-                item
-                for item in cfg.get("jwks", {}).get("keys", [])
-                if item.get("kid") == kid
-            ),
+            (item for item in cfg.get("jwks", {}).get("keys", []) if item.get("kid") == kid),
             None,
         )
 
         if jwk_data is None:
             cfg = oidc_cfg(force_refresh=True)
             jwk_data = next(
-                (
-                    item
-                    for item in cfg.get("jwks", {}).get("keys", [])
-                    if item.get("kid") == kid
-                ),
+                (item for item in cfg.get("jwks", {}).get("keys", []) if item.get("kid") == kid),
                 None,
             )
         if jwk_data is None:
@@ -450,11 +435,7 @@ def verify_bearer() -> dict[str, Any] | None:
         if client_id:
             aud_claim = claims.get("aud")
             audiences = set(
-                aud_claim
-                if isinstance(aud_claim, list)
-                else [aud_claim]
-                if aud_claim
-                else []
+                aud_claim if isinstance(aud_claim, list) else [aud_claim] if aud_claim else []
             )
             if claims.get("azp") != client_id and client_id not in audiences:
                 return None
@@ -471,11 +452,7 @@ def verify_bearer() -> dict[str, Any] | None:
 
 def require_api_auth() -> dict[str, Any] | None:
     """Require API key, Keycloak bearer token, or logged-in web session."""
-    required_key = (
-        current_app.config.get("API_KEY")
-        or os.environ.get("API_KEY")
-        or ""
-    ).strip()
+    required_key = (current_app.config.get("API_KEY") or os.environ.get("API_KEY") or "").strip()
 
     if required_key:
         authz = request.headers.get("Authorization", "")
@@ -557,11 +534,7 @@ def to_geojson(rows: Iterable[Mapping[str, Any]], lon_col: str, lat_col: str) ->
             continue
         if not math.isfinite(lon) or not math.isfinite(lat):
             continue
-        properties = {
-            key: value
-            for key, value in data.items()
-            if key not in (lon_col, lat_col)
-        }
+        properties = {key: value for key, value in data.items() if key not in (lon_col, lat_col)}
         features.append(
             {
                 "type": "Feature",
@@ -686,11 +659,7 @@ def _canonical_where_from_request(
         where.append(f"{prefix}timestamp_utc {to_operator} %s")
         params.append(to_value)
 
-    raw_country = (
-        request.args.get("country")
-        or request.args.get("country_code")
-        or ""
-    ).strip()
+    raw_country = (request.args.get("country") or request.args.get("country_code") or "").strip()
     country = raw_country.upper() if raw_country else None
     if country:
         where.append(f"{prefix}country_code = %s")
@@ -707,20 +676,14 @@ def _canonical_where_from_request(
 
     if bbox:
         west, south, east, north = bbox
-        where.append(
-            f"({prefix}lon BETWEEN %s AND %s "
-            f"AND {prefix}lat BETWEEN %s AND %s)"
-        )
+        where.append(f"({prefix}lon BETWEEN %s AND %s AND {prefix}lat BETWEEN %s AND %s)")
         params.extend([west, east, south, north])
 
     if within:
         lat0, lon0, radius_km = within
         dlat = approx_deg_for_km_lat(radius_km)
         dlon = approx_deg_for_km_lon(radius_km, lat0)
-        where.append(
-            f"({prefix}lat BETWEEN %s AND %s "
-            f"AND {prefix}lon BETWEEN %s AND %s)"
-        )
+        where.append(f"({prefix}lat BETWEEN %s AND %s AND {prefix}lon BETWEEN %s AND %s)")
         params.extend([lat0 - dlat, lat0 + dlat, lon0 - dlon, lon0 + dlon])
 
     return (
@@ -743,9 +706,7 @@ def _canonical_matching_sample_ids(
     if not where_sql.strip():
         return None
 
-    with get_pg_conn() as conn, conn.cursor(
-        cursor_factory=RealDictCursor
-    ) as cur:
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             f"""
             SELECT s.sample_id
@@ -755,11 +716,7 @@ def _canonical_matching_sample_ids(
             """,
             params,
         )
-        return [
-            str(row["sample_id"]).strip()
-            for row in cur.fetchall()
-            if row.get("sample_id")
-        ]
+        return [str(row["sample_id"]).strip() for row in cur.fetchall() if row.get("sample_id")]
 
 
 def _sample_ids_for_resource_filters(
@@ -824,10 +781,7 @@ def samples():
     conn = get_conn()
     table = get_sample_table(conn)
     columns = {
-        row[1]
-        for row in conn.execute(
-            f"PRAGMA table_info({quote_ident(table)})"
-        ).fetchall()
+        row[1] for row in conn.execute(f"PRAGMA table_info({quote_ident(table)})").fetchall()
     }
 
     raw_fields = request.args.get("fields", "")
@@ -839,11 +793,7 @@ def samples():
     if requested == ["*"]:
         requested = sorted(column for column in columns if not is_excluded_field(column))
 
-    fields = [
-        field
-        for field in requested
-        if field in columns and not is_excluded_field(field)
-    ]
+    fields = [field for field in requested if field in columns and not is_excluded_field(field)]
     if not fields:
         fields = [field for field in DEFAULT_FIELDS if field in columns]
     if not fields:
@@ -991,6 +941,7 @@ def _csv_rows_from_bytes(data: bytes, *, delimiter: str | None = None) -> list[d
         except csv.Error:
             dialect = csv.get_dialect("excel")
     else:
+
         class ExplicitDialect(csv.excel):
             pass
 
@@ -1035,9 +986,7 @@ def _parse_lab_upload_rows() -> tuple[list[dict[str, Any]], str | None]:
         except (UnicodeDecodeError, csv.Error, ValueError) as exc:
             abort(400, description=f"Cannot parse tabular request body: {exc}")
 
-    if content_type.startswith(
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    ):
+    if content_type.startswith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
         if not raw_data:
             abort(400, description="Request body is empty")
         try:
@@ -1049,9 +998,7 @@ def _parse_lab_upload_rows() -> tuple[list[dict[str, Any]], str | None]:
     if payload is None:
         abort(
             400,
-            description=(
-                "Expected JSON rows, CSV/TSV/XLSX request body, or multipart file upload"
-            ),
+            description=("Expected JSON rows, CSV/TSV/XLSX request body, or multipart file upload"),
         )
     rows = payload.get("rows") if isinstance(payload, dict) and "rows" in payload else payload
     if not isinstance(rows, list):
@@ -1234,8 +1181,10 @@ def lab_enrichment_upload():
 def canonical_samples():
     _require_canonical_access(public_allowed=True)
     fmt = _parse_format("json", "csv", "geojson")
-    limit = None if fmt == "csv" else _parse_int_arg(
-        "limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE
+    limit = (
+        None
+        if fmt == "csv"
+        else _parse_int_arg("limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE)
     )
     offset = 0 if fmt == "csv" else _parse_int_arg("offset", 0, minimum=0)
 
@@ -1305,8 +1254,10 @@ def canonical_samples_count():
 def canonical_sample_images():
     _require_canonical_access(public_allowed=True)
     fmt = _parse_format("json", "csv")
-    limit = None if fmt == "csv" else _parse_int_arg(
-        "limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE
+    limit = (
+        None
+        if fmt == "csv"
+        else _parse_int_arg("limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE)
     )
     offset = 0 if fmt == "csv" else _parse_int_arg("offset", 0, minimum=0)
     fields = _parse_fields((request.args.get("fields") or "").strip(), CANONICAL_IMAGE_COLS)
@@ -1317,7 +1268,9 @@ def canonical_sample_images():
     if sample_id:
         where.append("UPPER(sample_id) = UPPER(%s)")
         params.append(sample_id)
-    country = (request.args.get("country") or request.args.get("country_code") or "").strip().upper()
+    country = (
+        (request.args.get("country") or request.args.get("country_code") or "").strip().upper()
+    )
     if country:
         where.append("country_code = %s")
         params.append(country)
@@ -1368,8 +1321,10 @@ def canonical_sample_images():
 def canonical_sample_parameters():
     _require_canonical_access(public_allowed=True)
     fmt = _parse_format("json", "csv")
-    limit = None if fmt == "csv" else _parse_int_arg(
-        "limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE
+    limit = (
+        None
+        if fmt == "csv"
+        else _parse_int_arg("limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE)
     )
     offset = 0 if fmt == "csv" else _parse_int_arg("offset", 0, minimum=0)
     fields = _parse_fields((request.args.get("fields") or "").strip(), CANONICAL_PARAM_COLS)
@@ -1415,11 +1370,13 @@ def canonical_sample_parameters():
 def canonical_sample_biodiversity():
     _require_canonical_access(public_allowed=True)
     fmt = _parse_format("json", "csv")
-    limit = None if fmt == "csv" else _parse_int_arg(
-        "limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE
+    limit = (
+        None
+        if fmt == "csv"
+        else _parse_int_arg("limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE)
     )
     offset = 0 if fmt == "csv" else _parse_int_arg("offset", 0, minimum=0)
-    fields = _parse_fields((request.args.get("fields") or "").strip(), BIODIVERSITY_COLUMNS)
+    fields = _parse_fields((request.args.get("fields") or "").strip(), CANONICAL_BIODIV_COLS)
 
     if request.args.get("otu_id"):
         abort(
@@ -1434,17 +1391,16 @@ def canonical_sample_biodiversity():
         "sample_id": "sta.sample_id",
         "country_code": "s.country_code",
         "marker": "sta.marker",
-        "taxonomic_level": "sta.level",
-        "taxon": "sta.taxon",
+        "taxon_rank": "sta.level",
+        "scientific_name": "sta.taxon",
         "read_count": "sta.read_count",
         "relative_abundance_pct": "sta.relative_abundance_pct",
-        "analysis_date": "sta.uploaded_at",
+        "ingested_datetime_utc": "sta.uploaded_at",
         "source_file": "sta.source_file",
         "licence": "COALESCE(NULLIF(s.licence, ''), 'CC-BY-4.0')",
     }
-    selected_sql = ", ".join(
-        f"{field_sql[field]} AS {field}" for field in fields
-    )
+
+    selected_sql = ", ".join(f"{field_sql[field]} AS {field}" for field in fields)
 
     where: list[str] = []
     params: list[Any] = []
@@ -1464,7 +1420,9 @@ def canonical_sample_biodiversity():
     if taxon:
         where.append("sta.taxon ILIKE %s")
         params.append(f"%{taxon}%")
-    country = (request.args.get("country") or request.args.get("country_code") or "").strip().upper()
+    country = (
+        (request.args.get("country") or request.args.get("country_code") or "").strip().upper()
+    )
     if country:
         where.append("s.country_code = %s")
         params.append(country)
@@ -1526,9 +1484,7 @@ def _usable_metals_value(value: Any) -> str:
 @data_api.get("/canonical/map.geojson")
 def canonical_map_geojson():
     _require_canonical_access(public_allowed=True)
-    limit = _parse_int_arg(
-        "limit", DEFAULT_MAP_PAGE_SIZE, minimum=1, maximum=MAX_MAP_PAGE_SIZE
-    )
+    limit = _parse_int_arg("limit", DEFAULT_MAP_PAGE_SIZE, minimum=1, maximum=MAX_MAP_PAGE_SIZE)
     offset = _parse_int_arg("offset", 0, minimum=0)
     where_sql, params, filter_meta = _canonical_where_from_request(alias="s")
 
@@ -1539,18 +1495,17 @@ def canonical_map_geojson():
         params.append(sample_id)
 
     include_wrong = (request.args.get("include_wrong") or "").strip().lower() in {
-        "1", "true", "yes", "on"
+        "1",
+        "true",
+        "yes",
+        "on",
     }
     if not include_wrong:
         extra = "(s.qa_status IS NULL OR s.qa_status NOT LIKE %s)"
         where_sql = f"{where_sql} AND {extra}" if where_sql else f"WHERE {extra}"
         params.append("wrong_coordinates%")
 
-    fields = [
-        field
-        for field in CANONICAL_SAMPLE_COLS
-        if field != "collected_by"
-    ]
+    fields = [field for field in CANONICAL_SAMPLE_COLS if field != "collected_by"]
     columns_sql = ", ".join(f"s.{field}" for field in fields)
 
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -1607,12 +1562,10 @@ def canonical_map_geojson():
                 "collectedAt": properties.get("timestamp_utc"),
                 "PH_ph": properties.get("ph"),
                 "SOIL_STRUCTURE_structure": (
-                    properties.get("soil_structure_en")
-                    or properties.get("soil_structure_orig")
+                    properties.get("soil_structure_en") or properties.get("soil_structure_orig")
                 ),
                 "SOIL_TEXTURE_texture": (
-                    properties.get("soil_texture_en")
-                    or properties.get("soil_texture_orig")
+                    properties.get("soil_texture_en") or properties.get("soil_texture_orig")
                 ),
                 "SOIL_CONTAMINATION_comments": (
                     properties.get("contamination_other_en")
@@ -1661,10 +1614,8 @@ def canonical_map_count():
     params: list[Any] = []
 
     country = (
-        request.args.get("country_code")
-        or request.args.get("country")
-        or ""
-    ).strip().upper()
+        (request.args.get("country_code") or request.args.get("country") or "").strip().upper()
+    )
     if country:
         where.append("country_code = %s")
         params.append(country)
@@ -1695,7 +1646,10 @@ def canonical_map_count():
         abort(400, description="ph_min must not exceed ph_max")
 
     include_wrong = (request.args.get("include_wrong") or "").strip().lower() in {
-        "1", "true", "yes", "on"
+        "1",
+        "true",
+        "yes",
+        "on",
     }
     if not include_wrong:
         where.append("(qa_status IS NULL OR qa_status NOT LIKE %s)")
