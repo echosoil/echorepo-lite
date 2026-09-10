@@ -23,10 +23,27 @@ BIODIVERSITY_SAMPLE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Import-time OTU filtering.
-# A retained OTU/feature row must have at least this many reads summed across
-# all sample columns in the uploaded source row.
+# Optional import-time abundance filtering.
+#
+# The normal split-file workflow applies total<10 in preprocessing, before
+# sample columns are divided into parts. Therefore it must not be applied
+# again by default here.
+#
+# For exceptional/legacy UNSPLIT uploads, include this token in the filename:
+#
+#     __POSTMIN10__
+#
+# Matching is case-insensitive and uses only the basename.
 BIODIVERSITY_MIN_OTU_TOTAL_READS = 10.0
+BIODIVERSITY_POST_MIN10_FILENAME_TOKEN = "__POSTMIN10__"
+
+
+def _apply_min10_postfilter_for_filename(filename: str) -> bool:
+    basename = Path(filename or "").name
+    return (
+        BIODIVERSITY_POST_MIN10_FILENAME_TOKEN.casefold()
+        in basename.casefold()
+    )
 
 
 def _normalise_biodiversity_header(value) -> str:
@@ -285,6 +302,38 @@ def _import_biodiversity_streaming(
     log = logging.getLogger(__name__)
 
     level = "Phylum"
+
+    apply_min10_postfilter = _apply_min10_postfilter_for_filename(
+        filename
+    )
+
+    # Never apply a second <10 calculation to a sample-split part: such a
+    # part contains only a subset of the original sample columns.
+    if (
+        apply_min10_postfilter
+        and re.search(
+            r"_part\d{3}(?:\.|_|$)",
+            Path(filename or "").name,
+            re.IGNORECASE,
+        )
+    ):
+        abort(
+            400,
+            description=(
+                f"Filename token {BIODIVERSITY_POST_MIN10_FILENAME_TOKEN} "
+                "cannot be used on a split _partNNN file. The <10 rule "
+                "must already have been applied before splitting."
+            ),
+        )
+
+    log.warning(
+        "BIOUPLOAD: importer-side total<%g filter is %s for file=%s "
+        "(enable with filename token %s)",
+        BIODIVERSITY_MIN_OTU_TOTAL_READS,
+        "ENABLED" if apply_min10_postfilter else "disabled",
+        filename,
+        BIODIVERSITY_POST_MIN10_FILENAME_TOKEN,
+    )
 
     # ------------------------------------------------------------------
     # Helpers
@@ -1228,9 +1277,13 @@ def _import_biodiversity_streaming(
                     )
                     row_total += float(count)
 
-                # Remove an OTU row only when its total is STRICTLY below 10.
-                # A total of exactly 10 is retained.
-                if row_total < BIODIVERSITY_MIN_OTU_TOTAL_READS:
+                # The normal split-file workflow already applied this rule
+                # against the COMPLETE original matrix during preprocessing.
+                # Re-apply it here only for explicitly marked unsplit files.
+                if (
+                    apply_min10_postfilter
+                    and row_total < BIODIVERSITY_MIN_OTU_TOTAL_READS
+                ):
                     excluded_low_total_features += 1
                     continue
 
@@ -1467,6 +1520,7 @@ def _import_biodiversity_streaming(
         (
             "BIOUPLOAD: source_rows=%d, stored_raw_features=%d, "
             "excluded_taxonomy=%d, excluded_total_below_10=%d, "
+            "post_min10_enabled=%s, "
             "nonzero_values=%d, aggregate_rows=%d, "
             "samples=%d, markers=%s, raw_archive=%s, "
             "taxonomy_exclusion_reasons=%s"
@@ -1475,6 +1529,7 @@ def _import_biodiversity_streaming(
         feature_index,
         excluded_taxonomy_features,
         excluded_low_total_features,
+        apply_min10_postfilter,
         nonzero_values,
         inserted,
         sample_count,
