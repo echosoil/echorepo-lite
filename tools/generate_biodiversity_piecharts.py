@@ -3,187 +3,73 @@
 ECHOrepo biodiversity image generator
 ======================================
 
-Run commands from the repository root, where the project .env file is located.
+Run from the repository root, where the project .env file is located.
 
-The script skips images already present in MinIO by default. Use --force to
-recreate and overwrite them.
+NORMAL IMAGE GENERATION
+-----------------------
 
-IMAGE TYPES AND COMMANDS
-------------------------
+If the FAPROTAX sample-by-function CSV is already up to date, generate every
+image family with one command:
 
-1. Bacterial taxonomic pie charts: 16S / Phylum
+    python3 tools/generate_biodiversity_piecharts.py --all-images
 
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker 16S \
-     --level Phylum
+This generates any missing:
 
-   MinIO destination:
+  - 16S Phylum taxonomic pie charts
+  - ITS Phylum taxonomic pie charts
+  - bacterial ecological guild plots (from FAPROTAX_FUNCTION_CSV)
+  - fungal ecological guild plots
 
-     biodiversity/piecharts/16S/Phylum/<sample_id>.png
+Existing MinIO images are skipped by default. Add --force to recreate them all:
 
+    python3 tools/generate_biodiversity_piecharts.py --all-images --force
 
-2. Fungal taxonomic pie charts: ITS / Phylum
+Use --dry-run to preview what would be generated.
 
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker ITS \
-     --level Phylum
+FAPROTAX PREPARATION
+--------------------
 
-   MinIO destination:
+Bacterial guild images depend on an external FAPROTAX analysis. This script can
+prepare the FAPROTAX input files, but it does NOT run FAPROTAX itself.
 
-     biodiversity/piecharts/ITS/Phylum/<sample_id>.png
+After new 16S data are imported:
 
+    python3 tools/generate_biodiversity_piecharts.py \
+      --marker 16S \
+      --build-faprotax-inputs
 
-3. Fungal ecological guild images
+This creates:
 
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker ITS \
-     --level Phylum \
-     --fungal-guilds
+    data/biodiversity/faprotax_work/6_otu_clean_counts_no_blanks.csv
+    data/biodiversity/faprotax_work/7_taxonomy_clean.csv
 
-   This command also generates any missing ITS Phylum pie charts.
+Run the external FAPROTAX workflow, then place its sample-by-function result at
+FAPROTAX_FUNCTION_CSV (default:
+`data/biodiversity/8_faprotax_samples_x_functions.csv`). Only then run
+`--all-images`.
 
-   Fungal guild data are reconstructed from the current raw ITS archives in
-   MinIO. The legacy sample_otu_counts table is used only as a fallback for
-   older samples.
+Do not combine --build-faprotax-inputs with --all-images: an external FAPROTAX
+step must happen between those operations.
 
-   The raw ITS data must contain usable genus-level taxonomy.
+INDIVIDUAL IMAGE FAMILIES
+-------------------------
 
-   MinIO destination:
+Taxonomic charts only:
 
-     biodiversity/guildplots/fungi/<sample_id>.png
+    python3 tools/generate_biodiversity_piecharts.py --marker 16S --level Phylum
+    python3 tools/generate_biodiversity_piecharts.py --marker ITS --level Phylum
 
+Taxonomic chart + matching guild family:
 
-4. Build FAPROTAX input files for bacterial guild analysis
+    python3 tools/generate_biodiversity_piecharts.py --marker 16S --bacterial-guilds
+    python3 tools/generate_biodiversity_piecharts.py --marker ITS --fungal-guilds
 
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker 16S \
-     --level Phylum \
-     --build-faprotax-inputs
+Useful options:
 
-   Generated files:
-
-     data/biodiversity/faprotax_work/6_otu_clean_counts_no_blanks.csv
-     data/biodiversity/faprotax_work/7_taxonomy_clean.csv
-
-   This step reads the current structured raw OTU data from PostgreSQL:
-
-     biodiversity_raw_samples
-     biodiversity_raw_features
-     biodiversity_raw_abundance
-
-   sample_taxon_abundance.source_upload_id is used to select the current source
-   upload for each sample, so historical/replaced uploads are not mixed in.
-
-   Run the separate FAPROTAX analysis after creating these files. Its resulting
-   sample-by-function file must be available at FAPROTAX_FUNCTION_CSV, whose
-   default value is:
-
-     data/biodiversity/8_faprotax_samples_x_functions.csv
-
-
-5. Bacterial ecological guild images
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker 16S \
-     --level Phylum \
-     --bacterial-guilds
-
-   This command also generates any missing 16S Phylum pie charts.
-
-   Bacterial guild images are generated from the configured FAPROTAX
-   sample-by-function CSV.
-
-   MinIO destination:
-
-     biodiversity/guildplots/bacteria/<sample_id>.png
-
-
-GENERATE ALL IMAGE TYPES
-------------------------
-
-First build the FAPROTAX inputs:
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker 16S \
-     --level Phylum \
-     --build-faprotax-inputs
-
-Run the external FAPROTAX processing and place its result at the path configured
-by FAPROTAX_FUNCTION_CSV.
-
-Then generate all bacterial images:
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker 16S \
-     --level Phylum \
-     --bacterial-guilds
-
-Finally, generate all fungal images:
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker ITS \
-     --level Phylum \
-     --fungal-guilds
-
-
-USEFUL OPTIONS
---------------
-
-Generate images for one sample only:
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker ITS \
-     --fungal-guilds \
-     --sample-id CLMW-8393
-
-Generate images for several selected samples:
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker ITS \
-     --fungal-guilds \
-     --sample-id CLMW-8393,AACW-5934
-
-The --sample-id option may also be repeated:
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker ITS \
-     --fungal-guilds \
-     --sample-id CLMW-8393 \
-     --sample-id AACW-5934
-
-Preview missing images without generating or uploading them:
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker ITS \
-     --fungal-guilds \
-     --dry-run
-
-Recreate all selected images, including images already present in MinIO:
-
-   python3 tools/generate_biodiversity_piecharts.py \
-     --marker ITS \
-     --fungal-guilds \
-     --force
-
-
-ENVIRONMENT-VARIABLE ALTERNATIVES
----------------------------------
-
-The following environment variables can be used instead of the corresponding
-command-line flags:
-
-   GENERATE_FUNGAL_GUILDS=1
-   GENERATE_BACTERIAL_GUILDS=1
-   BUILD_FAPROTAX_INPUTS=1
-   BIODIV_FORCE_REGENERATE=1
-   BIODIV_MARKER=16S
-   BIODIV_LEVEL=Phylum
-
-Example:
-
-   GENERATE_FUNGAL_GUILDS=1 \
-   BIODIV_MARKER=ITS \
-   python3 tools/generate_biodiversity_piecharts.py
+    --sample-id CLMW-8393
+    --sample-id CLMW-8393,AACW-5934
+    --dry-run
+    --force
 """
 
 from __future__ import annotations
@@ -200,6 +86,8 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
+import threading
+import time
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -1099,6 +987,54 @@ def extract_taxon_label(row: pd.Series, level: str) -> str:
     return "Unclassified"
 
 
+def run_with_heartbeat(label, func, interval=30):
+    """
+    Run a blocking operation while printing a heartbeat periodically.
+
+    Useful for long PostgreSQL queries where no row-level progress is available.
+    """
+    started = time.monotonic()
+    stop_event = threading.Event()
+
+    print(f"[INFO] {label}...", flush=True)
+
+    def heartbeat():
+        while not stop_event.wait(interval):
+            elapsed = time.monotonic() - started
+            print(
+                f"[INFO] {label}: still running "
+                f"({elapsed / 60:.1f} min elapsed)",
+                flush=True,
+            )
+
+    thread = threading.Thread(
+        target=heartbeat,
+        daemon=True,
+    )
+    thread.start()
+
+    try:
+        result = func()
+    except Exception:
+        elapsed = time.monotonic() - started
+        print(
+            f"[ERROR] {label} failed after {elapsed:.1f} s",
+            flush=True,
+        )
+        raise
+    finally:
+        stop_event.set()
+        thread.join(timeout=1)
+
+    elapsed = time.monotonic() - started
+    print(
+        f"[OK] {label} finished in {elapsed:.1f} s",
+        flush=True,
+    )
+
+    return result
+    
+
 def make_piechart_for_sample(
     sample_df: pd.DataFrame, sample_id: str, marker: str, level: str, out_path: Path
 ):
@@ -1339,7 +1275,18 @@ def fetch_current_raw_faprotax_data(
     """
     marker = marker.upper()
 
-    sources = _current_raw_sample_sources(marker)
+    sources = run_with_heartbeat(
+        "[1/6] Resolving current sample sources",
+        lambda: _current_raw_sample_sources(marker),
+        interval=15,
+    )
+
+    print(
+        f"[INFO] Current {marker} samples resolved: "
+        f"{sources['sample_id'].nunique()}",
+        flush=True,
+    )
+
     if sources.empty:
         raise RuntimeError(
             f"No current sample_taxon_abundance sources found for marker={marker}"
@@ -1482,20 +1429,61 @@ def fetch_current_raw_faprotax_data(
     """
 
     with get_pg_conn() as conn:
-        stats = pd.read_sql(stats_sql, conn, params=[marker])
-        df = pd.read_sql(
-            data_sql,
-            conn,
-            params=[marker, int(min_prev), int(min_total)],
+
+        stats = run_with_heartbeat(
+            "[2/6] Counting current raw OTUs",
+            lambda: pd.read_sql(
+                stats_sql,
+                conn,
+                params=[marker],
+            ),
+            interval=30,
         )
 
-    otu_before = int(stats.iloc[0]["otu_count"] or 0) if not stats.empty else 0
+        otu_before = (
+            int(stats.iloc[0]["otu_count"] or 0)
+            if not stats.empty
+            else 0
+        )
+
+        print(
+            f"[INFO] Raw OTUs before FAPROTAX filtering: {otu_before:,}",
+            flush=True,
+        )
+
+        df = run_with_heartbeat(
+            (
+                "[3/6] Filtering and loading eligible OTU abundances "
+                f"(min_prev={min_prev}, min_total={min_total})"
+            ),
+            lambda: pd.read_sql(
+                data_sql,
+                conn,
+                params=[
+                    marker,
+                    int(min_prev),
+                    int(min_total),
+                ],
+            ),
+            interval=30,
+        )
+
+    print(
+        f"[INFO] Loaded {len(df):,} non-zero sample/OTU rows "
+        f"covering {df['otu_id'].nunique():,} OTUs",
+        flush=True,
+    )
 
     if df.empty:
         raise RuntimeError(
             f"No current raw OTUs survive FAPROTAX filtering for marker={marker} "
             f"(min_prev={min_prev}, min_total={min_total})"
         )
+
+    print(
+        "[INFO] [4/6] Normalising data and checking taxonomy consistency...",
+        flush=True,
+    )
 
     df["sample_id"] = df["sample_id"].astype(str).str.strip().str.upper()
     df["otu_id"] = df["otu_id"].astype(str).str.strip()
@@ -1578,6 +1566,13 @@ def build_clean_otu_and_taxonomy_files(
     # ------------------------------------------------------------------
     # 1) OTU count matrix: rows = OTU IDs, columns = current sample IDs
     # ------------------------------------------------------------------
+    step_started = time.monotonic()
+
+    print(
+        "[INFO] [5/6] Building dense OTU x sample matrix...",
+        flush=True,
+    )
+
     otu_clean = df.pivot_table(
         index="otu_id",
         columns="sample_id",
@@ -1591,6 +1586,14 @@ def build_clean_otu_and_taxonomy_files(
     otu_clean = otu_clean.reindex(
         columns=current_sample_ids,
         fill_value=0,
+    )
+
+    print(
+        f"[OK] Matrix built: "
+        f"{otu_clean.shape[0]:,} OTUs x "
+        f"{otu_clean.shape[1]:,} samples "
+        f"in {time.monotonic() - step_started:.1f} s",
+        flush=True,
     )
 
     zero_samples = [
@@ -1642,9 +1645,22 @@ def build_clean_otu_and_taxonomy_files(
     otu_path = out_dir / "6_otu_clean_counts_no_blanks.csv"
     tax_path = out_dir / "7_taxonomy_clean.csv"
 
+    print(
+        "[INFO] [6/6] Writing FAPROTAX input CSV files...",
+        flush=True,
+    )
+
+    write_started = time.monotonic()
+
     otu_clean.to_csv(otu_path)
     tax_df.to_csv(tax_path, sep=";")
 
+    print(
+        f"[OK] CSV files written in "
+        f"{time.monotonic() - write_started:.1f} s",
+        flush=True,
+    )
+    
     print(f"[OK] Wrote {otu_path}")
     print(f"[OK] Wrote {tax_path}")
     print(
@@ -2632,6 +2648,15 @@ def parse_args():
         help="Show missing chart objects without creating or uploading them.",
     )
     parser.add_argument(
+        "--all-images",
+        action="store_true",
+        help=(
+            "Generate all image families: 16S and ITS taxonomic charts, "
+            "bacterial guild plots, and fungal guild plots. Requires an "
+            "up-to-date FAPROTAX_FUNCTION_CSV for bacterial guild plots."
+        ),
+    )
+    parser.add_argument(
         "--fungal-guilds",
         action="store_true",
         default=GENERATE_FUNGAL_GUILDS,
@@ -2662,46 +2687,24 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
 
-    marker = args.marker.upper()
-    level = normalize_taxonomic_level(args.level)
-    sample_ids = normalize_sample_filter(args.sample_id)
+def generate_taxonomic_charts(
+    *,
+    marker: str,
+    level: str,
+    mclient,
+    force: bool,
+    sample_ids: set[str] | None,
+    dry_run: bool,
+) -> tuple[int, int]:
+    """Generate one marker/level taxonomic chart family."""
+    marker = marker.upper()
+    level = normalize_taxonomic_level(level)
 
     out_dir = PROJECT_ROOT / "data" / "biodiversity_piecharts" / marker / level
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(
-        f"[INFO] marker={marker} level={level} "
-        f"force={args.force} dry_run={args.dry_run}"
-    )
-    if sample_ids:
-        print(f"[INFO] sample filter: {sorted(sample_ids)}")
-
-    if args.build_faprotax_inputs:
-        build_clean_otu_and_taxonomy_files(
-            marker=marker,
-            out_dir=Path(
-                os.getenv(
-                    "FAPROTAX_WORK_DIR",
-                    str(PROJECT_ROOT / "data" / "biodiversity" / "faprotax_work"),
-                )
-            ),
-            min_prev=int(os.getenv("FAPROTAX_MIN_PREV", "2")),
-            min_total=int(os.getenv("FAPROTAX_MIN_TOTAL", "50")),
-        )
-
-        # When this flag is used on its own, it is a data-preparation command.
-        # Do not require MinIO or regenerate/inspect chart images unnecessarily.
-        if not args.fungal_guilds and not args.bacterial_guilds:
-            return
-
-    # Current ingestion stores compact Phylum statistics here.
-    df = fetch_taxon_abundance(
-        marker=marker,
-        level=level,
-    )
+    df = fetch_taxon_abundance(marker=marker, level=level)
 
     if sample_ids and not df.empty:
         df = df[
@@ -2712,15 +2715,13 @@ def main():
             .isin(sample_ids)
         ].copy()
 
-    mclient = init_minio()
-
     generated = 0
     uploaded = 0
     skipped_existing = 0
     missing = 0
 
     prefix = f"biodiversity/piecharts/{marker}/{level}/"
-    existing_objects = set() if args.force else list_existing_minio_objects(
+    existing_objects = set() if force else list_existing_minio_objects(
         mclient,
         prefix,
     )
@@ -2739,13 +2740,13 @@ def main():
             safe_id = sanitize_filename(sample_id)
             object_name = f"{prefix}{safe_id}.png"
 
-            if not args.force and object_name in existing_objects:
+            if not force and object_name in existing_objects:
                 skipped_existing += 1
                 continue
 
             missing += 1
 
-            if args.dry_run:
+            if dry_run:
                 print(f"[NEW] would generate {object_name}")
                 continue
 
@@ -2772,10 +2773,101 @@ def main():
             if uploaded_url:
                 uploaded += 1
 
-    print(f"[OK] Missing taxonomic charts: {missing}")
-    print(f"[OK] Skipped existing taxonomic charts: {skipped_existing}")
-    print(f"[OK] Generated {generated} taxonomic charts")
-    print(f"[OK] Uploaded {uploaded} taxonomic charts to MinIO")
+    print(f"[OK] {marker}/{level}: missing taxonomic charts: {missing}")
+    print(
+        f"[OK] {marker}/{level}: skipped existing taxonomic charts: "
+        f"{skipped_existing}"
+    )
+    print(f"[OK] {marker}/{level}: generated {generated} taxonomic charts")
+    print(f"[OK] {marker}/{level}: uploaded {uploaded} taxonomic charts to MinIO")
+    return generated, uploaded
+
+
+def main():
+    args = parse_args()
+
+    marker = args.marker.upper()
+    level = normalize_taxonomic_level(args.level)
+    sample_ids = normalize_sample_filter(args.sample_id)
+
+    print(
+        f"[INFO] marker={marker} level={level} "
+        f"all_images={args.all_images} force={args.force} dry_run={args.dry_run}"
+    )
+    if sample_ids:
+        print(f"[INFO] sample filter: {sorted(sample_ids)}")
+
+    # FAPROTAX input preparation is intentionally a separate phase because an
+    # external FAPROTAX run must happen before bacterial guild images can use
+    # the resulting sample-by-function CSV.
+    if args.build_faprotax_inputs:
+        if args.all_images:
+            raise SystemExit(
+                "ERROR: --build-faprotax-inputs cannot be combined with "
+                "--all-images. Build the inputs, run external FAPROTAX, then "
+                "run --all-images."
+            )
+
+        build_clean_otu_and_taxonomy_files(
+            marker=marker,
+            out_dir=Path(
+                os.getenv(
+                    "FAPROTAX_WORK_DIR",
+                    str(PROJECT_ROOT / "data" / "biodiversity" / "faprotax_work"),
+                )
+            ),
+            min_prev=int(os.getenv("FAPROTAX_MIN_PREV", "2")),
+            min_total=int(os.getenv("FAPROTAX_MIN_TOTAL", "50")),
+        )
+
+        if not args.fungal_guilds and not args.bacterial_guilds:
+            return
+
+    mclient = init_minio()
+
+    if args.all_images:
+        # Generate both taxonomic marker families.
+        generate_taxonomic_charts(
+            marker="16S",
+            level=level,
+            mclient=mclient,
+            force=args.force,
+            sample_ids=sample_ids,
+            dry_run=args.dry_run,
+        )
+        generate_taxonomic_charts(
+            marker="ITS",
+            level=level,
+            mclient=mclient,
+            force=args.force,
+            sample_ids=sample_ids,
+            dry_run=args.dry_run,
+        )
+
+        # Then both ecological guild families.
+        generate_bacterial_guildplots_from_faprotax(
+            mclient,
+            force=args.force,
+            sample_ids=sample_ids,
+            dry_run=args.dry_run,
+        )
+        generate_fungal_guildplots(
+            mclient,
+            force=args.force,
+            sample_ids=sample_ids,
+            dry_run=args.dry_run,
+        )
+        return
+
+    # Original single-marker behavior.
+    generate_taxonomic_charts(
+        marker=marker,
+        level=level,
+        mclient=mclient,
+        force=args.force,
+        sample_ids=sample_ids,
+        dry_run=args.dry_run,
+    )
 
     if args.fungal_guilds:
         generate_fungal_guildplots(
