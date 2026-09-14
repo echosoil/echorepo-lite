@@ -178,6 +178,246 @@ mpl.rcParams["axes.labelcolor"] = PIE_TEXT
 mpl.rcParams["xtick.color"] = PIE_TEXT
 mpl.rcParams["ytick.color"] = PIE_TEXT
 
+# ----------------------------------------------------------------------------
+# Helper functions
+# ---------------------------------------------------------------------------
+def _normalise_tax_value(value):
+    if pd.isna(value):
+        return ""
+
+    value = str(value).strip()
+
+    if value.lower() in {
+        "",
+        "nan",
+        "none",
+        "null",
+        "na",
+        "n/a",
+    }:
+        return ""
+
+    return value
+
+FAPROTAX_TAX_COLS = [
+    "kingdom",
+    "phylum",
+    "class_name",
+    "order_name",
+    "family",
+    "genus",
+    "species",
+]
+
+
+def reconcile_faprotax_taxonomy(
+    taxonomy_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Produce exactly one canonical taxonomy lineage per OTU.
+
+    Rules:
+      1. Normalize blanks / NA-like values.
+      2. Repair the known Excel MM-YY -> date coercion only when it can be
+         corroborated by another current source for the same OTU.
+      3. If an Excel-looking date cannot be corroborated, treat the Order as
+         missing rather than pretending the calendar date is taxonomy.
+      4. Merge compatible incomplete lineages.
+      5. Stop on genuinely conflicting non-empty taxonomy values.
+    """
+    df = taxonomy_df.copy()
+
+    if df.empty:
+        raise RuntimeError(
+            "No taxonomy rows were returned for eligible FAPROTAX OTUs"
+        )
+
+    df["otu_id"] = (
+        df["otu_id"]
+        .astype(str)
+        .str.strip()
+    )
+
+    for col in FAPROTAX_TAX_COLS:
+        df[col] = df[col].map(_normalise_tax_value)
+
+    # --------------------------------------------------------------
+    # Repair the known Excel date coercion.
+    #
+    # Example:
+    #
+    #   original taxonomy label: 11-24
+    #   XLSX/openpyxl value:      2024-11-01 00:00:00
+    #
+    # We only restore 11-24 when that exact value also occurs for
+    # the same OTU in another current source.
+    #
+    # If no corroborating source exists, the date-shaped value is
+    # discarded as unknown taxonomy instead of inventing a label.
+    # --------------------------------------------------------------
+    excel_date_re = re.compile(
+        r"^[12]\d{3}-(0[1-9]|1[0-2])-01"
+        r"(?:[ T]00:00:00)?$"
+    )
+
+    order_values_by_otu = {
+        otu_id: {
+            value
+            for value in group["order_name"]
+            if value
+        }
+        for otu_id, group in df.groupby(
+            "otu_id",
+            sort=False,
+        )
+    }
+
+    repaired_rows = 0
+    repaired_otus: set[str] = set()
+
+    discarded_rows = 0
+    discarded_otus: set[str] = set()
+
+    for idx in df.index:
+        value = df.at[idx, "order_name"]
+
+        if not value or not excel_date_re.fullmatch(value):
+            continue
+
+        parsed = pd.to_datetime(
+            value,
+            errors="coerce",
+        )
+
+        if pd.isna(parsed):
+            continue
+
+        candidate = parsed.strftime("%m-%y")
+        otu_id = df.at[idx, "otu_id"]
+
+        known_values = order_values_by_otu.get(
+            otu_id,
+            set(),
+        )
+
+        if candidate in known_values:
+            df.at[idx, "order_name"] = candidate
+            repaired_rows += 1
+            repaired_otus.add(otu_id)
+
+        else:
+            # Calendar dates are not valid taxonomy Order labels.
+            # Without corroboration, missing data is safer than an
+            # invented conversion.
+            df.at[idx, "order_name"] = ""
+            discarded_rows += 1
+            discarded_otus.add(otu_id)
+
+    if repaired_rows:
+        print(
+            "[INFO] Repaired corroborated Excel taxonomy-date coercion: "
+            f"{repaired_rows:,} source rows covering "
+            f"{len(repaired_otus):,} OTUs",
+            flush=True,
+        )
+
+    if discarded_rows:
+        print(
+            "[WARN] Removed uncorroborated date-shaped taxonomy Orders: "
+            f"{discarded_rows:,} source rows covering "
+            f"{len(discarded_otus):,} OTUs",
+            flush=True,
+        )
+
+    # Drop duplicate copies after normalization/repair.
+    tax_unique = (
+        df[
+            [
+                "otu_id",
+                *FAPROTAX_TAX_COLS,
+            ]
+        ]
+        .drop_duplicates()
+    )
+
+    resolved_rows = []
+    true_conflicts = []
+
+    for otu_id, variants in tax_unique.groupby(
+        "otu_id",
+        sort=False,
+    ):
+        resolved = {
+            "otu_id": otu_id,
+        }
+
+        conflict_found = False
+
+        for col in FAPROTAX_TAX_COLS:
+            values = sorted(
+                {
+                    value
+                    for value in variants[col]
+                    if value
+                }
+            )
+
+            if len(values) > 1:
+                true_conflicts.append(
+                    (
+                        otu_id,
+                        col,
+                        values,
+                    )
+                )
+                conflict_found = True
+                break
+
+            resolved[col] = (
+                values[0]
+                if values
+                else ""
+            )
+
+        if not conflict_found:
+            resolved_rows.append(resolved)
+
+    if true_conflicts:
+        examples = "; ".join(
+            f"{otu_id}: {rank}={values}"
+            for otu_id, rank, values
+            in true_conflicts[:20]
+        )
+
+        raise RuntimeError(
+            "Cannot safely merge raw source files for FAPROTAX: "
+            f"{len(true_conflicts)} OTUs have genuinely conflicting "
+            f"non-empty taxonomy values after normalization. "
+            f"Examples: {examples}"
+        )
+
+    resolved_df = pd.DataFrame(
+        resolved_rows,
+        columns=[
+            "otu_id",
+            *FAPROTAX_TAX_COLS,
+        ],
+    )
+
+    if resolved_df["otu_id"].duplicated().any():
+        raise RuntimeError(
+            "Internal error: duplicate OTU IDs remain after "
+            "taxonomy reconciliation"
+        )
+
+    print(
+        "[OK] Canonical FAPROTAX taxonomy: "
+        f"{len(resolved_df):,} OTUs",
+        flush=True,
+    )
+
+    return resolved_df
+
 # ---------------------------------------------------------------------------
 # Postgres config
 # ---------------------------------------------------------------------------
@@ -1260,31 +1500,32 @@ def fetch_current_raw_faprotax_data(
     marker: str = "16S",
     min_prev: int = 2,
     min_total: int = 50,
-) -> tuple[pd.DataFrame, list[str], int]:
+) -> tuple[pd.DataFrame, pd.DataFrame, list[str], int]:
     """
-    Fetch current raw OTU counts/taxonomy for FAPROTAX.
+    Fetch the current sparse abundance matrix and taxonomy needed by FAPROTAX.
 
-    The raw importer stores each source file independently. Historical 16S
-    uploads were split into several files containing different sample columns
-    from the same OTU table, so source_feature_id is the cross-file OTU key.
+    Returns:
+        counts_df:
+            sample_id, otu_id, count
 
-    We therefore merge matching source_feature_id values across the *current*
-    uploads and validate below that the same OTU ID does not carry conflicting
-    taxonomy. Filtering is performed in PostgreSQL before pivoting to avoid
-    constructing a huge dense unfiltered OTU x sample matrix in Python.
+        taxonomy_df:
+            one or more taxonomy variants per OTU, including source provenance
+
+        current_sample_ids:
+            complete current sample set
+
+        otu_before:
+            number of distinct OTUs before FAPROTAX filtering
+
+    The expensive filtering is performed once in PostgreSQL. Taxonomy is fetched
+    separately so it is not repeated for every non-zero abundance value.
     """
     marker = marker.upper()
 
     sources = run_with_heartbeat(
-        "[1/6] Resolving current sample sources",
+        "[1/7] Resolving current sample sources",
         lambda: _current_raw_sample_sources(marker),
         interval=15,
-    )
-
-    print(
-        f"[INFO] Current {marker} samples resolved: "
-        f"{sources['sample_id'].nunique()}",
-        flush=True,
     )
 
     if sources.empty:
@@ -1292,10 +1533,20 @@ def fetch_current_raw_faprotax_data(
             f"No current sample_taxon_abundance sources found for marker={marker}"
         )
 
+    print(
+        f"[INFO] Current {marker} samples resolved: "
+        f"{sources['sample_id'].nunique()}",
+        flush=True,
+    )
+
     missing_raw = sources[sources["sample_index"].isna()].copy()
+
     if not missing_raw.empty:
-        missing_ids = sorted(missing_raw["sample_id"].astype(str).unique())
+        missing_ids = sorted(
+            missing_raw["sample_id"].astype(str).unique()
+        )
         preview = ", ".join(missing_ids[:20])
+
         raise RuntimeError(
             f"Structured raw data are incomplete for marker={marker}: "
             f"{len(missing_ids)} current samples are missing raw rows. "
@@ -1303,219 +1554,346 @@ def fetch_current_raw_faprotax_data(
         )
 
     current_sample_ids = sorted(
-        sources["sample_id"].astype(str).str.upper().unique().tolist()
+        sources["sample_id"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .unique()
+        .tolist()
     )
 
-    stats_sql = """
-        WITH current_sample_sources AS (
-            SELECT DISTINCT ON (
-                UPPER(sta.sample_id),
-                UPPER(sta.marker)
-            )
-                UPPER(sta.sample_id) AS sample_id,
-                UPPER(sta.marker) AS marker,
-                sta.source_upload_id AS upload_id,
-                bu.uploaded_at
-            FROM sample_taxon_abundance AS sta
-            JOIN biodiversity_uploads AS bu
-              ON bu.upload_id = sta.source_upload_id
-            WHERE UPPER(sta.marker) = UPPER(%s)
-              AND sta.source_upload_id IS NOT NULL
-            ORDER BY
-                UPPER(sta.sample_id),
-                UPPER(sta.marker),
-                bu.uploaded_at DESC,
-                sta.source_upload_id DESC
-        ),
-        current_samples AS (
-            SELECT
-                css.sample_id,
-                css.upload_id,
-                rs.sample_index
-            FROM current_sample_sources AS css
-            JOIN biodiversity_raw_samples AS rs
-              ON rs.upload_id = css.upload_id
-             AND UPPER(rs.sample_id) = css.sample_id
-             AND UPPER(rs.marker) = css.marker
-        )
-        SELECT COUNT(DISTINCT f.source_feature_id) AS otu_count
-        FROM current_samples AS cs
-        JOIN biodiversity_raw_abundance AS a
-          ON a.upload_id = cs.upload_id
-         AND a.sample_index = cs.sample_index
-        JOIN biodiversity_raw_features AS f
-          ON f.upload_id = a.upload_id
-         AND f.feature_index = a.feature_index
-        WHERE a.read_count > 0
-          AND NULLIF(BTRIM(f.source_feature_id), '') IS NOT NULL
-    """
+    with get_pg_conn() as conn:
+        with conn.cursor() as cur:
 
-    data_sql = """
-        WITH current_sample_sources AS (
-            SELECT DISTINCT ON (
-                UPPER(sta.sample_id),
-                UPPER(sta.marker)
+            # ----------------------------------------------------------
+            # Current sample -> raw upload/sample-column mapping
+            # ----------------------------------------------------------
+            print(
+                "[INFO] [2/7] Building current-sample working table...",
+                flush=True,
             )
-                UPPER(sta.sample_id) AS sample_id,
-                UPPER(sta.marker) AS marker,
-                sta.source_upload_id AS upload_id,
-                bu.uploaded_at
-            FROM sample_taxon_abundance AS sta
-            JOIN biodiversity_uploads AS bu
-              ON bu.upload_id = sta.source_upload_id
-            WHERE UPPER(sta.marker) = UPPER(%s)
-              AND sta.source_upload_id IS NOT NULL
-            ORDER BY
-                UPPER(sta.sample_id),
-                UPPER(sta.marker),
-                bu.uploaded_at DESC,
-                sta.source_upload_id DESC
-        ),
-        current_samples AS (
-            SELECT
-                css.sample_id,
-                css.upload_id,
-                rs.sample_index
-            FROM current_sample_sources AS css
-            JOIN biodiversity_raw_samples AS rs
-              ON rs.upload_id = css.upload_id
-             AND UPPER(rs.sample_id) = css.sample_id
-             AND UPPER(rs.marker) = css.marker
-        ),
-        current_counts AS (
+
+            cur.execute(
+                """
+                CREATE TEMP TABLE _fap_current_samples
+                ON COMMIT DROP
+                AS
+                WITH current_sample_sources AS (
+                    SELECT DISTINCT ON (
+                        UPPER(sta.sample_id),
+                        UPPER(sta.marker)
+                    )
+                        UPPER(sta.sample_id) AS sample_id,
+                        UPPER(sta.marker) AS marker,
+                        sta.source_upload_id AS upload_id,
+                        bu.uploaded_at
+                    FROM sample_taxon_abundance AS sta
+                    JOIN biodiversity_uploads AS bu
+                      ON bu.upload_id = sta.source_upload_id
+                    WHERE UPPER(sta.marker) = UPPER(%s)
+                      AND sta.source_upload_id IS NOT NULL
+                    ORDER BY
+                        UPPER(sta.sample_id),
+                        UPPER(sta.marker),
+                        bu.uploaded_at DESC,
+                        sta.source_upload_id DESC
+                )
+                SELECT
+                    css.sample_id,
+                    css.upload_id,
+                    rs.sample_index
+                FROM current_sample_sources AS css
+                JOIN biodiversity_raw_samples AS rs
+                  ON rs.upload_id = css.upload_id
+                 AND UPPER(rs.sample_id) = css.sample_id
+                 AND UPPER(rs.marker) = UPPER(%s)
+                """,
+                (marker, marker),
+            )
+
+            cur.execute(
+                """
+                CREATE UNIQUE INDEX
+                ON _fap_current_samples (
+                    sample_id,
+                    upload_id,
+                    sample_index
+                )
+                """
+            )
+
+            cur.execute(
+                """
+                CREATE INDEX
+                ON _fap_current_samples (
+                    upload_id,
+                    sample_index
+                )
+                """
+            )
+
+            cur.execute("ANALYZE _fap_current_samples")
+
+            cur.execute(
+                """
+                SELECT
+                    sample_id,
+                    COUNT(*) AS n
+                FROM _fap_current_samples
+                GROUP BY sample_id
+                HAVING COUNT(*) <> 1
+                ORDER BY sample_id
+                LIMIT 20
+                """
+            )
+
+            ambiguous_samples = cur.fetchall()
+
+            if ambiguous_samples:
+                raise RuntimeError(
+                    "Some current 16S samples resolve to more than one raw "
+                    "sample column. Examples: "
+                    + ", ".join(
+                        f"{sample_id} ({n} rows)"
+                        for sample_id, n in ambiguous_samples
+                    )
+                )
+
+            cur.execute(
+                "SELECT COUNT(*) FROM _fap_current_samples"
+            )
+            resolved_count = int(cur.fetchone()[0])
+
+            if resolved_count != len(current_sample_ids):
+                raise RuntimeError(
+                    "Current raw sample resolution mismatch: "
+                    f"expected={len(current_sample_ids)}, "
+                    f"resolved={resolved_count}"
+                )
+
+            print(
+                f"[OK] Current raw sample columns validated: "
+                f"{resolved_count:,}",
+                flush=True,
+            )
+            # ----------------------------------------------------------
+            # Count distinct OTUs before the FAPROTAX-specific filter
+            # ----------------------------------------------------------
+            started = time.monotonic()
+
+            print(
+                "[INFO] [3/7] Counting current raw OTUs...",
+                flush=True,
+            )
+
+            cur.execute(
+                """
+                SELECT COUNT(DISTINCT f.source_feature_id)
+                FROM _fap_current_samples AS cs
+                JOIN biodiversity_raw_abundance AS a
+                  ON a.upload_id = cs.upload_id
+                 AND a.sample_index = cs.sample_index
+                JOIN biodiversity_raw_features AS f
+                  ON f.upload_id = a.upload_id
+                 AND f.feature_index = a.feature_index
+                WHERE a.read_count > 0
+                  AND NULLIF(BTRIM(f.source_feature_id), '') IS NOT NULL
+                """
+            )
+
+            otu_before = int(cur.fetchone()[0] or 0)
+
+            print(
+                f"[OK] Raw OTUs before FAPROTAX filtering: "
+                f"{otu_before:,} "
+                f"({time.monotonic() - started:.1f} s)",
+                flush=True,
+            )
+
+            # ----------------------------------------------------------
+            # Calculate eligible OTUs ONCE.
+            # ----------------------------------------------------------
+            started = time.monotonic()
+
+            print(
+                "[INFO] [4/7] Identifying eligible FAPROTAX OTUs "
+                f"(min_prev={min_prev}, min_total={min_total})...",
+                flush=True,
+            )
+
+            cur.execute(
+                """
+                CREATE TEMP TABLE _fap_eligible_otus
+                ON COMMIT DROP
+                AS
+                SELECT
+                    f.source_feature_id AS otu_id
+                FROM _fap_current_samples AS cs
+                JOIN biodiversity_raw_abundance AS a
+                  ON a.upload_id = cs.upload_id
+                 AND a.sample_index = cs.sample_index
+                JOIN biodiversity_raw_features AS f
+                  ON f.upload_id = a.upload_id
+                 AND f.feature_index = a.feature_index
+                WHERE a.read_count > 0
+                  AND NULLIF(BTRIM(f.source_feature_id), '') IS NOT NULL
+                GROUP BY f.source_feature_id
+                HAVING COUNT(DISTINCT cs.sample_id) >= %s
+                   AND SUM(a.read_count) >= %s
+                """,
+                (
+                    int(min_prev),
+                    int(min_total),
+                ),
+            )
+
+            cur.execute(
+                """
+                CREATE UNIQUE INDEX
+                ON _fap_eligible_otus (otu_id)
+                """
+            )
+
+            cur.execute("ANALYZE _fap_eligible_otus")
+
+            cur.execute(
+                "SELECT COUNT(*) FROM _fap_eligible_otus"
+            )
+
+            eligible_count = int(cur.fetchone()[0])
+
+            print(
+                f"[OK] Eligible OTUs: {eligible_count:,} "
+                f"({time.monotonic() - started:.1f} s)",
+                flush=True,
+            )
+
+        # --------------------------------------------------------------
+        # Sparse abundance matrix.
+        #
+        # IMPORTANT:
+        #   - no taxonomy repeated millions of times
+        #   - no unnecessary ORDER BY
+        #   - aggregate by sample + biological OTU
+        # --------------------------------------------------------------
+        counts_sql = """
             SELECT
                 cs.sample_id,
-                a.upload_id,
-                a.feature_index,
-                a.read_count
-            FROM current_samples AS cs
+                f.source_feature_id AS otu_id,
+                SUM(a.read_count)::double precision AS count
+            FROM _fap_current_samples AS cs
             JOIN biodiversity_raw_abundance AS a
               ON a.upload_id = cs.upload_id
              AND a.sample_index = cs.sample_index
-            WHERE a.read_count > 0
-        ),
-        eligible_otus AS (
-            SELECT
-                f.source_feature_id AS otu_id
-            FROM current_counts AS c
             JOIN biodiversity_raw_features AS f
-              ON f.upload_id = c.upload_id
-             AND f.feature_index = c.feature_index
+              ON f.upload_id = a.upload_id
+             AND f.feature_index = a.feature_index
+            JOIN _fap_eligible_otus AS e
+              ON e.otu_id = f.source_feature_id
+            WHERE a.read_count > 0
+            GROUP BY
+                cs.sample_id,
+                f.source_feature_id
+        """
+
+        counts_df = run_with_heartbeat(
+            "[5/7] Loading sparse eligible OTU abundances",
+            lambda: pd.read_sql(
+                counts_sql,
+                conn,
+            ),
+            interval=30,
+        )
+
+        # --------------------------------------------------------------
+        # Taxonomy fetched separately.
+        #
+        # Keep upload/file provenance here because it is useful when
+        # diagnosing cross-source taxonomy disagreements.
+        # --------------------------------------------------------------
+        taxonomy_sql = """
+            SELECT DISTINCT
+                f.source_feature_id AS otu_id,
+                f.upload_id,
+                bu.original_filename,
+                f.kingdom,
+                f.phylum,
+                f.class_name,
+                f.order_name,
+                f.family,
+                f.genus,
+                f.species
+            FROM biodiversity_raw_features AS f
+            JOIN (
+                SELECT DISTINCT upload_id
+                FROM _fap_current_samples
+            ) AS current_uploads
+              ON current_uploads.upload_id = f.upload_id
+            JOIN _fap_eligible_otus AS e
+              ON e.otu_id = f.source_feature_id
+            JOIN biodiversity_uploads AS bu
+              ON bu.upload_id = f.upload_id
             WHERE NULLIF(BTRIM(f.source_feature_id), '') IS NOT NULL
-            GROUP BY f.source_feature_id
-            HAVING COUNT(DISTINCT c.sample_id) >= %s
-               AND SUM(c.read_count) >= %s
-        )
-        SELECT
-            c.sample_id,
-            f.source_feature_id AS otu_id,
-            c.read_count AS count,
-            f.kingdom,
-            f.phylum,
-            f.class_name,
-            f.order_name,
-            f.family,
-            f.genus,
-            f.species
-        FROM current_counts AS c
-        JOIN biodiversity_raw_features AS f
-          ON f.upload_id = c.upload_id
-         AND f.feature_index = c.feature_index
-        JOIN eligible_otus AS e
-          ON e.otu_id = f.source_feature_id
-        ORDER BY
-            f.source_feature_id,
-            c.sample_id
-    """
+        """
 
-    with get_pg_conn() as conn:
-
-        stats = run_with_heartbeat(
-            "[2/6] Counting current raw OTUs",
+        taxonomy_df = run_with_heartbeat(
+            "[6/7] Loading taxonomy for eligible OTUs",
             lambda: pd.read_sql(
-                stats_sql,
+                taxonomy_sql,
                 conn,
-                params=[marker],
             ),
             interval=30,
         )
 
-        otu_before = (
-            int(stats.iloc[0]["otu_count"] or 0)
-            if not stats.empty
-            else 0
-        )
-
-        print(
-            f"[INFO] Raw OTUs before FAPROTAX filtering: {otu_before:,}",
-            flush=True,
-        )
-
-        df = run_with_heartbeat(
-            (
-                "[3/6] Filtering and loading eligible OTU abundances "
-                f"(min_prev={min_prev}, min_total={min_total})"
-            ),
-            lambda: pd.read_sql(
-                data_sql,
-                conn,
-                params=[
-                    marker,
-                    int(min_prev),
-                    int(min_total),
-                ],
-            ),
-            interval=30,
-        )
-
-    print(
-        f"[INFO] Loaded {len(df):,} non-zero sample/OTU rows "
-        f"covering {df['otu_id'].nunique():,} OTUs",
-        flush=True,
-    )
-
-    if df.empty:
+    if counts_df.empty:
         raise RuntimeError(
-            f"No current raw OTUs survive FAPROTAX filtering for marker={marker} "
+            f"No current raw OTUs survive FAPROTAX filtering "
+            f"for marker={marker} "
             f"(min_prev={min_prev}, min_total={min_total})"
         )
 
+    counts_df["sample_id"] = (
+        counts_df["sample_id"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    counts_df["otu_id"] = (
+        counts_df["otu_id"]
+        .astype(str)
+        .str.strip()
+    )
+
+    counts_df["count"] = pd.to_numeric(
+        counts_df["count"],
+        errors="coerce",
+    ).fillna(0)
+
+    taxonomy_df["otu_id"] = (
+        taxonomy_df["otu_id"]
+        .astype(str)
+        .str.strip()
+    )
+
     print(
-        "[INFO] [4/6] Normalising data and checking taxonomy consistency...",
+        f"[OK] Sparse FAPROTAX data: "
+        f"{len(counts_df):,} non-zero sample/OTU rows; "
+        f"{counts_df['otu_id'].nunique():,} OTUs",
         flush=True,
     )
 
-    df["sample_id"] = df["sample_id"].astype(str).str.strip().str.upper()
-    df["otu_id"] = df["otu_id"].astype(str).str.strip()
-    df["count"] = pd.to_numeric(df["count"], errors="coerce").fillna(0)
-
-    # The historical *_part_*.csv files are sample-column partitions of the
-    # same OTU table. Reusing source_feature_id across them is intentional, but
-    # it is only safe when each OTU ID has one taxonomy lineage.
-    tax_cols = [
-        "kingdom",
-        "phylum",
-        "class_name",
-        "order_name",
-        "family",
-        "genus",
-        "species",
-    ]
-    tax_unique = df[["otu_id", *tax_cols]].drop_duplicates()
-    conflicting = (
-        tax_unique.groupby("otu_id", sort=False)
-        .size()
-        .loc[lambda x: x > 1]
+    print(
+        f"[OK] Taxonomy source rows: {len(taxonomy_df):,}",
+        flush=True,
     )
-    if not conflicting.empty:
-        examples = ", ".join(conflicting.index.astype(str).tolist()[:20])
-        raise RuntimeError(
-            "Cannot safely merge raw source files for FAPROTAX: "
-            f"{len(conflicting)} source_feature_id values have conflicting "
-            f"taxonomy across current uploads. Examples: {examples}"
-        )
 
-    return df, current_sample_ids, otu_before
+    return (
+        counts_df,
+        taxonomy_df,
+        current_sample_ids,
+        otu_before,
+    )
 
 
 def build_clean_otu_and_taxonomy_files(
@@ -1552,16 +1930,44 @@ def build_clean_otu_and_taxonomy_files(
         f"(min_prev={min_prev}, min_total={min_total})"
     )
 
-    df, current_sample_ids, otu_before = fetch_current_raw_faprotax_data(
+    (
+        counts_df,
+        taxonomy_raw_df,
+        current_sample_ids,
+        otu_before,
+    ) = fetch_current_raw_faprotax_data(
         marker=marker,
         min_prev=min_prev,
         min_total=min_total,
     )
 
-    print(f"[INFO] Current structured raw samples: {len(current_sample_ids)}")
-    print(f"[INFO] OTUs before filtering: {otu_before}")
-    print(f"[INFO] OTUs after filtering : {df['otu_id'].nunique()}")
-    print(f"[INFO] Non-zero values after filtering: {len(df)}")
+    print(
+        "[INFO] [7/7] Normalising and reconciling taxonomy...",
+        flush=True,
+    )
+
+    taxonomy_df = reconcile_faprotax_taxonomy(
+        taxonomy_raw_df
+    )
+
+    print(
+        f"[INFO] Current structured raw samples: "
+        f"{len(current_sample_ids)}"
+    )
+
+    print(
+        f"[INFO] OTUs before filtering: {otu_before:,}"
+    )
+
+    print(
+        f"[INFO] OTUs after filtering: "
+        f"{counts_df['otu_id'].nunique():,}"
+    )
+
+    print(
+        f"[INFO] Non-zero values after filtering: "
+        f"{len(counts_df):,}"
+    )
 
     # ------------------------------------------------------------------
     # 1) OTU count matrix: rows = OTU IDs, columns = current sample IDs
@@ -1573,7 +1979,7 @@ def build_clean_otu_and_taxonomy_files(
         flush=True,
     )
 
-    otu_clean = df.pivot_table(
+    otu_clean = counts_df.pivot_table(
         index="otu_id",
         columns="sample_id",
         values="count",
@@ -1619,9 +2025,26 @@ def build_clean_otu_and_taxonomy_files(
         "genus",
         "species",
     ]
+
+    count_otus = set(
+        otu_clean.index.astype(str)
+    )
+
+    taxonomy_otus = set(
+        taxonomy_df["otu_id"].astype(str)
+    )
+
+    missing_taxonomy = count_otus - taxonomy_otus
+
+    if missing_taxonomy:
+        raise RuntimeError(
+            "Some retained OTUs have no reconciled taxonomy: "
+            f"{len(missing_taxonomy)} missing. "
+            f"Examples: {sorted(missing_taxonomy)[:20]}"
+        )
+
     tax_source = (
-        df[["otu_id", *tax_cols]]
-        .drop_duplicates(subset=["otu_id"])
+        taxonomy_df
         .set_index("otu_id")
         .reindex(otu_clean.index)
     )
@@ -1636,7 +2059,18 @@ def build_clean_otu_and_taxonomy_files(
             "genus": "Genus",
             "species": "Species",
         }
-    ).fillna("")
+    )[
+        [
+            "Kingdom",
+            "Phylum",
+            "Class",
+            "Order",
+            "Family",
+            "Genus",
+            "Species",
+        ]
+    ].fillna("")
+
     tax_df.index.name = "OTU_ID"
 
     # ------------------------------------------------------------------
@@ -1652,8 +2086,26 @@ def build_clean_otu_and_taxonomy_files(
 
     write_started = time.monotonic()
 
-    otu_clean.to_csv(otu_path)
-    tax_df.to_csv(tax_path, sep=";")
+    otu_tmp = otu_path.with_name(otu_path.name + ".tmp")
+    tax_tmp = tax_path.with_name(tax_path.name + ".tmp")
+
+    try:
+        otu_clean.to_csv(otu_tmp)
+        tax_df.to_csv(tax_tmp, sep=";")
+
+        # Basic integrity checks before replacing the official files.
+        if not otu_tmp.exists() or otu_tmp.stat().st_size == 0:
+            raise RuntimeError("Temporary OTU file was not written correctly")
+
+        if not tax_tmp.exists() or tax_tmp.stat().st_size == 0:
+            raise RuntimeError("Temporary taxonomy file was not written correctly")
+
+        os.replace(otu_tmp, otu_path)
+        os.replace(tax_tmp, tax_path)
+
+    finally:
+        otu_tmp.unlink(missing_ok=True)
+        tax_tmp.unlink(missing_ok=True)
 
     print(
         f"[OK] CSV files written in "
@@ -2093,14 +2545,9 @@ def make_bacterial_guildplot_for_sample(
 
     df = pd.DataFrame([{"guild": k, "value": v} for k, v in values.items()])
 
-    # R script does Percent = 100 * sum(Value).
-    # But if the CSV already contains percentages, avoid multiplying again.
-    max_v = df["value"].max()
-    if max_v <= 1.5:
-        df["percent"] = df["value"] * 100.0
-    else:
-        df["percent"] = df["value"]
-
+    # File 8 contains FAPROTAX fractions.
+    # Match the R workflow: Percent = 100 * sum(Value).
+    df["percent"] = df["value"] * 100.0
     df = df[df["percent"] >= 1.0].copy()
     if df.empty:
         return False
@@ -2209,9 +2656,10 @@ def make_bacterial_guildplot_for_sample(
     )
 
     caption = (
-        "Values indicate the estimated percentage of the bacterial community associated with each ecological guild.\n"
-        "Only guilds exceeding 1% are shown; absent categories may reflect low detection rather than true absence.\n"
-        "Guild assignments are based on FAPROTAX (Louca et al. 2016)."
+        "Values represent summed FAPROTAX-predicted functional abundance relative "
+        "to the bacterial community.\n"
+        "Functional assignments may overlap, so categories are not compositional "
+        "and do not necessarily sum to 100%."
     )
 
     fig.text(
@@ -2447,6 +2895,41 @@ def generate_bacterial_guildplots_from_faprotax(
         print("[INFO] FAPROTAX function matrix is empty; skipping bacterial guild plots.")
         return 0, 0
 
+    # Validate file 8 against the current database before generating bacterial images.
+    func_sxf.index = (
+        func_sxf.index.astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    if func_sxf.index.duplicated().any():
+        dup = func_sxf.index[func_sxf.index.duplicated()].unique()
+        raise RuntimeError(
+            f"Duplicate sample IDs in FAPROTAX output: {list(dup[:20])}"
+        )
+
+    current = _current_raw_sample_sources("16S")
+    expected = set(
+        current["sample_id"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    actual = set(func_sxf.index)
+
+    missing = expected - actual
+    extra = actual - expected
+
+    if missing or extra:
+        raise RuntimeError(
+            "FAPROTAX output does not match current 16S dataset: "
+            f"current={len(expected)}, output={len(actual)}, "
+            f"missing={len(missing)}, extra={len(extra)}. "
+            f"Missing examples={sorted(missing)[:10]}; "
+            f"extra examples={sorted(extra)[:10]}"
+        )
+
     print(f"[INFO] FAPROTAX matrix: {func_sxf.shape[0]} samples x {func_sxf.shape[1]} functions")
 
     available = set(func_sxf.columns)
@@ -2603,6 +3086,11 @@ def generate_fungal_guildplots(
         )
         if uploaded_url:
             uploaded += 1
+
+        if not uploaded_url:
+            raise RuntimeError(f"Upload failed: {object_name}")
+
+        local_png.unlink(missing_ok=True)
 
     print(f"[OK] Skipped {skipped_existing} existing fungal guild plots")
     print(f"[OK] Generated {generated} fungal guild plots")
@@ -2772,6 +3260,11 @@ def generate_taxonomic_charts(
             )
             if uploaded_url:
                 uploaded += 1
+            
+            if not uploaded_url:
+                raise RuntimeError(f"Upload failed: {object_name}")
+
+            local_png.unlink(missing_ok=True)
 
     print(f"[OK] {marker}/{level}: missing taxonomic charts: {missing}")
     print(
@@ -2801,11 +3294,10 @@ def main():
     # external FAPROTAX run must happen before bacterial guild images can use
     # the resulting sample-by-function CSV.
     if args.build_faprotax_inputs:
-        if args.all_images:
+        if args.all_images or args.fungal_guilds or args.bacterial_guilds:
             raise SystemExit(
-                "ERROR: --build-faprotax-inputs cannot be combined with "
-                "--all-images. Build the inputs, run external FAPROTAX, then "
-                "run --all-images."
+                "ERROR: --build-faprotax-inputs is a standalone phase. "
+                "Build files 6/7, run FAPROTAX, then generate images."
             )
 
         build_clean_otu_and_taxonomy_files(
