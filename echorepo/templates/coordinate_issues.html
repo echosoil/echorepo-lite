@@ -56,16 +56,6 @@
         class="form-control" placeholder="SE">
     </div>
 
-    <div class="col-md-3 d-flex align-items-end">
-      <div class="form-check mb-2">
-        <input class="form-check-input" type="checkbox" id="show_approved" name="show_approved" value="1" {% if
-          criteria.show_approved %}checked{% endif %}>
-        <label class="form-check-label" for="show_approved">
-          {{ _('Show approved') }}
-        </label>
-      </div>
-    </div>
-
     <div class="col-md-3 d-flex align-items-end justify-content-md-end">
       <a class="btn btn-outline-secondary" href="{{ url_for('web.coordinate_issues',
                 sample_id=criteria.sample_id,
@@ -73,7 +63,6 @@
                 reason=criteria.reason,
                 actual_country=criteria.actual_country,
                 planned_country=criteria.planned_country,
-                show_approved=criteria.show_approved,
                 format='csv') }}">
         <i class="bi bi-download"></i> {{ _('Export current results') }}
       </a>
@@ -191,7 +180,6 @@
                           reason=criteria.reason,
                           actual_country=criteria.actual_country,
                           planned_country=criteria.planned_country,
-                          show_approved=criteria.show_approved,
                           page=page-1) }}">&laquo;</a>
         </li>
 
@@ -204,7 +192,6 @@
                             reason=criteria.reason,
                             actual_country=criteria.actual_country,
                             planned_country=criteria.planned_country,
-                            show_approved=criteria.show_approved,
                             page=p) }}">{{ p }}</a>
           </li>
           {% endfor %}
@@ -216,7 +203,6 @@
                           reason=criteria.reason,
                           actual_country=criteria.actual_country,
                           planned_country=criteria.planned_country,
-                          show_approved=criteria.show_approved,
                           page=page+1) }}">&raquo;</a>
           </li>
       </ul>

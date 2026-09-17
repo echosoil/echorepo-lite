@@ -9,10 +9,16 @@ Input:
 Output:
   OTU ID,<ECHOREPO sample columns>,Kingdom,Phylum,Class,Order,Family,Genus,Species
 
-The script intentionally does NOT reproduce ECHOREPO's scientific cleaning
-rules (taxonomy trash filtering, chloroplast/mitochondria filtering, total
-reads < 10). Those remain in biodiversity_import.py so there is one source of
-truth for data-cleaning policy.
+Example usage:
+  python3 prepare_split_biodiversity_for_echorepo_premin10.py \
+    --max-output-mb 50 \
+    --report-json biodiversity_ITS_import_report.json \
+    --table table_ITS_dn_97.tsv \
+    --taxonomy taxa_ITS_97.txt  \
+    --output biodiversity_ITS_plate6-11_import.csv  \
+    --marker ITS  \
+    --fail-on-missing-taxonomy
+
 """
 
 from __future__ import annotations
@@ -136,12 +142,18 @@ def clean_taxon_value(value: str) -> str:
 
 def parse_taxonomy_annotation(annotation: str) -> dict[str, str]:
     """
-    Parse strings such as:
+    Parse both taxonomy formats currently supplied by the laboratory.
 
+    ITS-style example:
       MT762711|k__Fungi;p__Ascomycota;c__Sordariomycetes;...|SH1063900.10FU
 
-    Only the k__/p__/c__/o__/f__/g__/s__ part is used.
-    Other fields in taxa_*.txt are intentionally ignored.
+    16S-style example:
+      Z95737.1.1508|Bacteria;Acidobacteriota;Vicinamibacteria;
+      Vicinamibacterales;Vicinamibacteraceae;Incertae_Sedis;
+      uncultured_Acidobacteria_bacterium
+
+    The first form is rank-prefixed (k__/p__/...), while the second is
+    positional: Kingdom;Phylum;Class;Order;Family;Genus;Species.
     """
     result = {column: "" for column in OUTPUT_TAXONOMY_COLUMNS}
 
@@ -149,16 +161,23 @@ def parse_taxonomy_annotation(annotation: str) -> dict[str, str]:
     if not annotation:
         return result
 
-    # Taxonomy is normally the pipe-delimited chunk containing rank prefixes.
-    # Parsing every semicolon token across all chunks also makes this tolerant
-    # of small layout variations.
+    # --------------------------------------------------------------
+    # 1) Preferred/prefixed form: k__, p__, c__, o__, f__, g__, s__
+    # --------------------------------------------------------------
+    found_prefixed = False
+
     for pipe_chunk in annotation.split("|"):
         for token in pipe_chunk.split(";"):
             token = token.strip()
-            match = re.match(r"^([kpcofgs])__(.*)$", token, re.IGNORECASE)
+            match = re.match(
+                r"^([kpcofgs])__(.*)$",
+                token,
+                re.IGNORECASE,
+            )
             if not match:
                 continue
 
+            found_prefixed = True
             prefix = match.group(1).lower()
             value = clean_taxon_value(match.group(2))
             column = RANK_PREFIXES[prefix]
@@ -168,9 +187,48 @@ def parse_taxonomy_annotation(annotation: str) -> dict[str, str]:
                     f"Conflicting {column} values inside taxonomy annotation: "
                     f"{result[column]!r} vs {value!r} in {annotation!r}"
                 )
+
             result[column] = value
 
+    if found_prefixed:
+        return result
+
+    # --------------------------------------------------------------
+    # 2) Positional 16S form:
+    #      accession|Kingdom;Phylum;Class;Order;Family;Genus;Species
+    #
+    # Pick the pipe-delimited chunk that looks like a taxonomic lineage.
+    # Incomplete lower ranks are allowed; missing positions remain blank.
+    # --------------------------------------------------------------
+    candidate_chunks = [
+        chunk.strip()
+        for chunk in annotation.split("|")
+        if chunk.count(";") >= 1
+    ]
+
+    if not candidate_chunks:
+        return result
+
+    # Prefer the chunk with the largest number of taxonomy-like positions.
+    candidate = max(
+        candidate_chunks,
+        key=lambda value: len(value.split(";")),
+    )
+
+    ranks = [
+        clean_taxon_value(value)
+        for value in candidate.split(";")
+    ]
+
+    # A positional taxonomy should have at least Kingdom and Phylum.
+    if len(ranks) < 2:
+        return result
+
+    for column, value in zip(OUTPUT_TAXONOMY_COLUMNS, ranks[:7]):
+        result[column] = value
+
     return result
+
 
 
 def load_taxonomy_file(
@@ -186,6 +244,8 @@ def load_taxonomy_file(
     taxonomy_by_otu: dict[str, dict[str, str]] = {}
     duplicate_identical = 0
     no_rank_information = 0
+    with_kingdom = 0
+    with_kingdom_and_phylum = 0
     rows = 0
 
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -210,6 +270,10 @@ def load_taxonomy_file(
             taxonomy = parse_taxonomy_annotation(row[1])
             if not any(taxonomy.values()):
                 no_rank_information += 1
+            if taxonomy.get("Kingdom"):
+                with_kingdom += 1
+            if taxonomy.get("Kingdom") and taxonomy.get("Phylum"):
+                with_kingdom_and_phylum += 1
 
             previous = taxonomy_by_otu.get(otu_id)
             if previous is not None:
@@ -231,6 +295,8 @@ def load_taxonomy_file(
         "taxonomy_unique_otus": len(taxonomy_by_otu),
         "taxonomy_duplicate_identical_rows": duplicate_identical,
         "taxonomy_rows_without_rank_information": no_rank_information,
+        "taxonomy_rows_with_kingdom": with_kingdom,
+        "taxonomy_rows_with_kingdom_and_phylum": with_kingdom_and_phylum,
     }
     return taxonomy_by_otu, stats
 
@@ -436,6 +502,32 @@ def convert(
     retained_missing_taxonomy = 0
     taxonomy_otus_used: set[str] = set()
 
+    abundance_total_distribution = {
+        "0": 0,
+        "1-4": 0,
+        "5-9": 0,
+        "10-19": 0,
+        "20-99": 0,
+        "100-999": 0,
+        ">=1000": 0,
+    }
+
+    def record_abundance_total(total: float) -> None:
+        if total == 0:
+            abundance_total_distribution["0"] += 1
+        elif total < 5:
+            abundance_total_distribution["1-4"] += 1
+        elif total < 10:
+            abundance_total_distribution["5-9"] += 1
+        elif total < 20:
+            abundance_total_distribution["10-19"] += 1
+        elif total < 100:
+            abundance_total_distribution["20-99"] += 1
+        elif total < 1000:
+            abundance_total_distribution["100-999"] += 1
+        else:
+            abundance_total_distribution[">=1000"] += 1
+
     with table_path.open("r", encoding="utf-8-sig", newline="") as source:
         reader = csv.reader(source, delimiter="\t")
         for _ in range(header_line):
@@ -510,6 +602,8 @@ def convert(
                     full_total += numeric
 
                 sample_values.append(value)
+
+            record_abundance_total(full_total)
 
             # IMPORTANT:
             # this decision is made before the sample columns are split.
@@ -732,6 +826,7 @@ def convert(
         "input_otu_rows": input_otu_rows,
         "retained_otu_rows": retained_otu_rows,
         "excluded_below_min_total": excluded_below_min_total,
+        "abundance_total_distribution": abundance_total_distribution,
         "table_otus_missing_taxonomy": missing_taxonomy,
         "retained_otus_missing_taxonomy": retained_missing_taxonomy,
         "taxonomy_otus_not_present_in_table": taxonomy_not_in_table,
@@ -781,6 +876,18 @@ def main() -> int:
         "  Taxonomy-only OTUs:        "
         f"{report['taxonomy_otus_not_present_in_table']}"
     )
+    print(
+        "  Taxonomy rows with K+P:    "
+        f"{report['taxonomy_rows_with_kingdom_and_phylum']}"
+    )
+    print(
+        "  Taxonomy rows unparsed:    "
+        f"{report['taxonomy_rows_without_rank_information']}"
+    )
+
+    print("  OTU total-read distribution:")
+    for label, count in report["abundance_total_distribution"].items():
+        print(f"    {label:>7}: {count}")
 
     dropped = report["noncanonical_columns_dropped"]
     if dropped:

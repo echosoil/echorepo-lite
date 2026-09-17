@@ -1088,22 +1088,12 @@ def lab_upload():
 @login_required
 def coordinate_issues():
     """
-    Show coordinate validation problems from coordinate_check_wrong.csv.
+    Show all coordinate validation problems from coordinate_check_wrong.csv.
 
     This is an internal/login-only QA page because it can expose exact coordinates,
     QR codes and user IDs.
     """
     csv_path = _coordinate_wrong_csv_path()
-
-    approvals_df = _load_coordinate_approvals()
-    approved_ids = set(
-        approvals_df["sample_id"]
-        .fillna("")
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .tolist()
-    )
 
     criteria = {
         "sample_id": (request.args.get("sample_id") or "").strip(),
@@ -1111,7 +1101,6 @@ def coordinate_issues():
         "reason": (request.args.get("reason") or "").strip(),
         "actual_country": (request.args.get("actual_country") or "").strip().upper(),
         "planned_country": (request.args.get("planned_country") or "").strip().upper(),
-        "show_approved": (request.args.get("show_approved") or "").strip(),
     }
 
     fmt = (request.args.get("format") or "").strip().lower()
@@ -1136,10 +1125,16 @@ def coordinate_issues():
             csv_path=str(csv_path),
         )
 
-    df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
+    df = pd.read_csv(
+        csv_path,
+        dtype=str,
+        keep_default_na=False,
+    )
 
-    # Tolerant display columns. These keep the template simple even if
-    # the pipeline CSV evolves.
+    # ----------------------------------------------------------
+    # Tolerant display columns
+    # ----------------------------------------------------------
+
     if "sample_display" not in df.columns:
         if "QR_qrCode" in df.columns:
             df["sample_display"] = df["QR_qrCode"]
@@ -1149,18 +1144,6 @@ def coordinate_issues():
             df["sample_display"] = df["sampleId"]
         else:
             df["sample_display"] = ""
-
-    df["approved_ok"] = (
-        df["sample_display"]
-        .fillna("")
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .isin(approved_ids)
-    )
-
-    if criteria["show_approved"] not in {"1", "true", "yes", "on"}:
-        df = df.loc[~df["approved_ok"]].copy()
 
     if "uid_display" not in df.columns:
         if "userId" in df.columns:
@@ -1173,61 +1156,126 @@ def coordinate_issues():
             df["uid_display"] = ""
 
     if "lat_display" not in df.columns:
-        df["lat_display"] = df["GPS_lat"] if "GPS_lat" in df.columns else ""
+        df["lat_display"] = (
+            df["GPS_lat"]
+            if "GPS_lat" in df.columns
+            else ""
+        )
 
     if "lon_display" not in df.columns:
-        df["lon_display"] = df["GPS_long"] if "GPS_long" in df.columns else ""
+        df["lon_display"] = (
+            df["GPS_long"]
+            if "GPS_long" in df.columns
+            else ""
+        )
 
     if "actual_country_display" not in df.columns:
-        df["actual_country_display"] = df["actual_cc"] if "actual_cc" in df.columns else ""
+        df["actual_country_display"] = (
+            df["actual_cc"]
+            if "actual_cc" in df.columns
+            else ""
+        )
 
     if "planned_country_display" not in df.columns:
-        df["planned_country_display"] = df["planned_iso2"] if "planned_iso2" in df.columns else ""
+        df["planned_country_display"] = (
+            df["planned_iso2"]
+            if "planned_iso2" in df.columns
+            else ""
+        )
 
     if "reason_display" not in df.columns:
         df["reason_display"] = (
-            df["coordinate_check_reason"] if "coordinate_check_reason" in df.columns else ""
+            df["coordinate_check_reason"]
+            if "coordinate_check_reason" in df.columns
+            else ""
         )
 
-    # Build reason list before filtering by reason, so the dropdown always
-    # contains all issue types in the file.
+    # Normalize display strings a little.
+    for col in (
+        "sample_display",
+        "uid_display",
+        "lat_display",
+        "lon_display",
+        "actual_country_display",
+        "planned_country_display",
+        "reason_display",
+    ):
+        df[col] = df[col].fillna("").astype(str).str.strip()
+
+    # ----------------------------------------------------------
+    # Issue types
+    #
+    # IMPORTANT:
+    # This is built from the complete coordinate_check_wrong.csv
+    # BEFORE applying the user's search filters.
+    # ----------------------------------------------------------
+
     reasons = sorted(
         x
-        for x in df["reason_display"].fillna("").astype(str).unique().tolist()
-        if x.strip()
+        for x in df["reason_display"].unique().tolist()
+        if x
     )
 
+    # ----------------------------------------------------------
     # Apply filters
+    # ----------------------------------------------------------
+
     if criteria["sample_id"]:
         q = criteria["sample_id"]
-        mask = _series_contains(df["sample_display"], q)
 
-        for extra_col in ("sampleId", "sample_id", "QR_qrCode"):
+        mask = _series_contains(
+            df["sample_display"],
+            q,
+        )
+
+        for extra_col in (
+            "sampleId",
+            "sample_id",
+            "QR_qrCode",
+        ):
             if extra_col in df.columns:
-                mask = mask | _series_contains(df[extra_col], q)
+                mask = mask | _series_contains(
+                    df[extra_col],
+                    q,
+                )
 
         df = df.loc[mask].copy()
 
     if criteria["user_id"]:
-        df = df.loc[_series_contains(df["uid_display"], criteria["user_id"])].copy()
+        df = df.loc[
+            _series_contains(
+                df["uid_display"],
+                criteria["user_id"],
+            )
+        ].copy()
 
     if criteria["reason"]:
-        df = df.loc[df["reason_display"].astype(str) == criteria["reason"]].copy()
+        df = df.loc[
+            df["reason_display"] == criteria["reason"]
+        ].copy()
 
     if criteria["actual_country"]:
         df = df.loc[
-            df["actual_country_display"].astype(str).str.upper() == criteria["actual_country"]
+            df["actual_country_display"]
+            .str.upper()
+            == criteria["actual_country"]
         ].copy()
 
     if criteria["planned_country"]:
         df = df.loc[
             df["planned_country_display"]
-            .astype(str)
             .str.upper()
-            .str.contains(criteria["planned_country"], na=False, regex=False)
+            .str.contains(
+                criteria["planned_country"],
+                na=False,
+                regex=False,
+            )
         ].copy()
 
-    # Export current filtered result
+    # ----------------------------------------------------------
+    # Export currently filtered result
+    # ----------------------------------------------------------
+
     if fmt == "csv":
         g._analytics_extra = {
             "dataset": "coordinate_issues",
@@ -1252,15 +1300,24 @@ def coordinate_issues():
             "planned_iso2",
             "wrong_coordinates",
             "coordinate_check_reason",
-            "approved_ok",
         ]
 
-        cols = [c for c in preferred_cols if c in df.columns]
+        cols = [
+            c
+            for c in preferred_cols
+            if c in df.columns
+        ]
+
         if not cols:
             cols = list(df.columns)
 
         buf = BytesIO()
-        df[cols].to_csv(buf, index=False)
+
+        df[cols].to_csv(
+            buf,
+            index=False,
+        )
+
         buf.seek(0)
 
         return send_file(
@@ -1270,8 +1327,16 @@ def coordinate_issues():
             mimetype="text/csv",
         )
 
+    # ----------------------------------------------------------
+    # Pagination
+    # ----------------------------------------------------------
+
     total_rows = len(df)
-    total_pages = max((total_rows + per_page - 1) // per_page, 1)
+
+    total_pages = max(
+        (total_rows + per_page - 1) // per_page,
+        1,
+    )
 
     if page > total_pages:
         page = total_pages
@@ -1279,7 +1344,9 @@ def coordinate_issues():
     start = (page - 1) * per_page
     end = start + per_page
 
-    rows = df.iloc[start:end].to_dict(orient="records")
+    rows = df.iloc[start:end].to_dict(
+        orient="records"
+    )
 
     return render_template(
         "coordinate_issues.html",
@@ -1293,6 +1360,7 @@ def coordinate_issues():
         csv_path=str(csv_path),
     )
 
+    
 @web_bp.post("/coordinate-issues/approve", endpoint="coordinate_issues_approve")
 @login_required
 def coordinate_issues_approve():
