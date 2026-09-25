@@ -190,56 +190,85 @@
 
     const selected = {{ (criteria.country_code or '') | tojson
   }};
-  const lang = document.documentElement.lang || "{{ current_locale|default('en') }}";
 
-  function makeRegionNames(lang) {
-    try {
-      return new Intl.DisplayNames([lang], { type: 'region' });
-    } catch (e) {
-      return null;
-    }
+  const allowedCodes = new Set(
+    {{ allowed_country_codes | tojson }}
+    );
+
+  const lang =
+    document.documentElement.lang ||
+    {{ current_locale | default ('en') | tojson }};
+
+  let regionNames = null;
+
+  try {
+    regionNames = new Intl.DisplayNames(
+      [lang],
+      { type: 'region' }
+    );
+  } catch (e) {
+    console.warn('Country translation unavailable:', e);
   }
 
-  const regionNames = makeRegionNames(lang);
-
   function countryLabel(code) {
-    if (!code) return '';
     try {
-      return (regionNames && regionNames.of(code)) || code;
+      return regionNames?.of(code) || code;
     } catch (e) {
       return code;
     }
   }
 
-  fetch('/public/others_geojson', { credentials: 'same-origin' })
-    .then(r => {
-      if (!r.ok) throw new Error('Failed to load country data');
-      return r.json();
+  // Get countries that actually occur in the dataset.
+  fetch('/public/others_geojson', {
+    credentials: 'same-origin'
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to load country data');
+      }
+      return response.json();
     })
     .then(geojson => {
       const countries = new Set();
 
-      for (const f of (geojson.features || [])) {
-        const p = f.properties || {};
-        if (p.country_code) {
-          countries.add(String(p.country_code).toUpperCase());
+      for (const feature of (geojson.features || [])) {
+        const code = String(
+          feature.properties?.country_code || ''
+        ).trim().toUpperCase();
+
+        // Must exist in the data AND be whitelisted.
+        if (code && allowedCodes.has(code)) {
+          countries.add(code);
         }
       }
 
-      const sortedCodes = Array.from(countries).sort((a, b) =>
-        countryLabel(a).localeCompare(countryLabel(b), lang)
+      // Sort translated names according to the UI language.
+      const sortedCodes = [...countries].sort(
+        (a, b) =>
+          countryLabel(a).localeCompare(
+            countryLabel(b),
+            lang
+          )
       );
 
       for (const code of sortedCodes) {
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = countryLabel(code);
-        if (code === selected) opt.selected = true;
-        sel.appendChild(opt);
+        const option = document.createElement('option');
+
+        option.value = code;
+        option.textContent = countryLabel(code);
+
+        if (code === selected) {
+          option.selected = true;
+        }
+
+        sel.appendChild(option);
       }
     })
-    .catch(err => {
-      console.warn('Could not populate search country list:', err);
+    .catch(error => {
+      console.warn(
+        'Could not populate search country list:',
+        error
+      );
     });
 }) ();
 </script>

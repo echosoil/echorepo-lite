@@ -104,9 +104,14 @@ def _current_ui_i18n() -> dict:
     }
 
 
+def get_map_allowed_countries():
+    raw = os.getenv("MAP_ALLOWED_COUNTRIES", "")
 
-
-
+    return sorted({
+        code.strip().upper()
+        for code in raw.split(",")
+        if code.strip()
+    })
 
 
 def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -1423,7 +1428,8 @@ def search_samples():
     q = request.args.get("q", "").strip()
 
     i18n = _current_ui_i18n()
-    
+    allowed_country_codes = get_map_allowed_countries()
+
     # ----- read filters from querystring -----
     criteria = {
         "sample_id": (
@@ -1582,6 +1588,7 @@ def search_samples():
         total_pages=total_pages,
         total_rows=total_rows,
         I18N=i18n,
+        allowed_country_codes=allowed_country_codes,
     )
 
 
