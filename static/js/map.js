@@ -560,7 +560,7 @@
       .echo-map-loader-overlay {
         position: absolute;
         inset: 0;
-        z-index: 1200;
+        z-index: 1020;
         display: none;
         align-items: center;
         justify-content: center;
