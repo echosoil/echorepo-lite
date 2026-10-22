@@ -15,6 +15,12 @@
       <label class="form-label" for="country_code">{{ _('Country') }}</label>
       <select id="country_code" name="country_code" class="form-select">
         <option value="">{{ _('Any country') }}</option>
+
+        {% for code in available_country_codes %}
+        <option value="{{ code }}" {% if criteria.country_code==code %}selected{% endif %}>
+          {{ code }}
+        </option>
+        {% endfor %}
       </select>
     </div>
 
@@ -184,92 +190,56 @@
 
 {% block extra_js %}
 <script>
-  (function populateSearchCountries() {
+  (function translateSearchCountries() {
     const sel = document.getElementById('country_code');
     if (!sel) return;
 
-    const selected = {{ (criteria.country_code or '') | tojson
-  }};
+    const lang = (
+      document.documentElement.lang || 'en'
+    ).replace('_', '-');
 
-  const allowedCodes = new Set(
-    {{ allowed_country_codes | tojson }}
-    );
+    let regionNames = null;
 
-  const lang =
-    document.documentElement.lang ||
-    {{ current_locale | default ('en') | tojson }};
-
-  let regionNames = null;
-
-  try {
-    regionNames = new Intl.DisplayNames(
-      [lang],
-      { type: 'region' }
-    );
-  } catch (e) {
-    console.warn('Country translation unavailable:', e);
-  }
-
-  function countryLabel(code) {
     try {
-      return regionNames?.of(code) || code;
+      regionNames = new Intl.DisplayNames(
+        [lang],
+        { type: 'region' }
+      );
     } catch (e) {
-      return code;
-    }
-  }
-
-  // Get countries that actually occur in the dataset.
-  fetch('/public/others_geojson', {
-    credentials: 'same-origin'
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to load country data');
-      }
-      return response.json();
-    })
-    .then(geojson => {
-      const countries = new Set();
-
-      for (const feature of (geojson.features || [])) {
-        const code = String(
-          feature.properties?.country_code || ''
-        ).trim().toUpperCase();
-
-        // Must exist in the data AND be whitelisted.
-        if (code && allowedCodes.has(code)) {
-          countries.add(code);
-        }
-      }
-
-      // Sort translated names according to the UI language.
-      const sortedCodes = [...countries].sort(
-        (a, b) =>
-          countryLabel(a).localeCompare(
-            countryLabel(b),
-            lang
-          )
-      );
-
-      for (const code of sortedCodes) {
-        const option = document.createElement('option');
-
-        option.value = code;
-        option.textContent = countryLabel(code);
-
-        if (code === selected) {
-          option.selected = true;
-        }
-
-        sel.appendChild(option);
-      }
-    })
-    .catch(error => {
       console.warn(
-        'Could not populate search country list:',
-        error
+        'Country translation unavailable:',
+        e
       );
-    });
-}) ();
+    }
+
+    function countryLabel(code) {
+      if (!code) return '';
+
+      try {
+        return regionNames?.of(code) || code;
+      } catch (e) {
+        return code;
+      }
+    }
+
+    // Preserve "Any country" as the first option.
+    const options = Array.from(sel.options).slice(1);
+
+    // Translate country names.
+    for (const option of options) {
+      option.textContent = countryLabel(option.value);
+    }
+
+    // Sort alphabetically in the current UI language.
+    options.sort((a, b) =>
+      a.textContent.localeCompare(b.textContent, lang)
+    );
+
+    // Reinsert sorted options.
+    // Existing selected option remains selected.
+    for (const option of options) {
+      sel.appendChild(option);
+    }
+  })();
 </script>
 {% endblock %}

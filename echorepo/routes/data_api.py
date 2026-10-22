@@ -1181,13 +1181,29 @@ def lab_enrichment_upload():
 def canonical_samples():
     _require_canonical_access(public_allowed=True)
     fmt = _parse_format("json", "csv", "geojson")
-    limit = (
-        None
-        if fmt == "csv"
-        else _parse_int_arg("limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE)
+    # CSV without pagination parameters downloads all records.
+    # CSV with limit/offset follows normal pagination.
+    paginate = (
+        fmt != "csv"
+        or "limit" in request.args
+        or "offset" in request.args
     )
-    offset = 0 if fmt == "csv" else _parse_int_arg("offset", 0, minimum=0)
 
+    limit = (
+        _parse_int_arg(
+            "limit",
+            DEFAULT_PAGE_SIZE,
+            minimum=1,
+            maximum=MAX_PAGE_SIZE,
+        )
+        if paginate else None
+    )
+
+    offset = (
+        _parse_int_arg("offset", 0, minimum=0)
+        if paginate else 0
+    )
+    
     fields = _parse_fields((request.args.get("fields") or "").strip(), CANONICAL_SAMPLE_COLS)
     if fmt == "geojson":
         for coordinate_field in ("lon", "lat"):

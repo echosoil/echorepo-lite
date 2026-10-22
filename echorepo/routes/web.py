@@ -1,13 +1,12 @@
 import csv
-import io
-import json
 import logging
 import os
-import pathlib
 import re
+import math
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import urlencode
 
 import pandas as pd
 from flask import (
@@ -151,34 +150,53 @@ def _env_true(name: str, default: bool = True) -> bool:
     return str(val).strip().lower() in {"1", "true", "yes", "on", "y", "t"}
 
 
+def _repo_user_id_from_df(df: pd.DataFrame, fallback: str | None) -> str | None:
+    """Return the first non-empty internal user ID, or the login identifier."""
+    if df is not None and not df.empty:
+        for col in ("userId", "user_id", "kc_user_id"):
+            if col not in df.columns:
+                continue
+            values = df[col].dropna().astype(str).str.strip()
+            values = values[values != ""]
+            if not values.empty:
+                return values.iloc[0]
+    return fallback
+
+
+def _current_authenticated_identifiers() -> set[str]:
+    """Identifiers for the current user, for ownership-only display fields."""
+    profile = ((session.get("kc") or {}).get("profile") or {})
+    possible = {
+        session.get("user"),
+        profile.get("email"),
+        profile.get("username"),
+        profile.get("preferred_username"),
+        profile.get("sub"),
+        profile.get("id"),
+    }
+    return {
+        str(value).strip().casefold()
+        for value in possible
+        if value is not None and str(value).strip()
+    }
+
+
 def _get_repo_user_id_from_db() -> str | None:
-    """
-    Return the userId we store in the samples table (the same we use for the
-    survey r= param). Falls back to the display user_key if nothing else is found.
-    """
-    # this is the same way you find the "logical" user
-    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
+    """Resolve the repository user ID for the current authenticated user."""
+    user_key = session.get("user") or (session.get("kc") or {}).get("profile", {}).get("email")
     if not user_key:
         return None
-
-    df = query_user_df(user_key)
-    if df is None or df.empty:
-        return user_key  # last resort
-
-    for col in ("userId", "user_id", "kc_user_id"):
-        if col in df.columns:
-            val = df[col].dropna().astype(str).iloc[0].strip()
-            if val:
-                return val
-
-    return user_key
+    return _repo_user_id_from_df(query_user_df(user_key), user_key)
 
 
 def _has_accepted_privacy(user_id: str) -> bool:
     if not user_id:
         return False
     # fast path: we can also store in session
-    if session.get("privacy_accepted_version") == PRIVACY_VERSION:
+    if (
+        session.get("privacy_accepted_version") == PRIVACY_VERSION
+        and session.get("privacy_accepted_user_id") == user_id
+    ):
         return True
 
     if not os.path.exists(PRIVACY_CSV_PATH):
@@ -191,6 +209,7 @@ def _has_accepted_privacy(user_id: str) -> bool:
                 if row.get("user_id") == user_id and row.get("version") == PRIVACY_VERSION:
                     # cache in session
                     session["privacy_accepted_version"] = PRIVACY_VERSION
+                    session["privacy_accepted_user_id"] = user_id
                     return True
     except Exception:
         return False
@@ -217,6 +236,7 @@ def _append_privacy_acceptance(user_id: str):
             }
         )
     session["privacy_accepted_version"] = PRIVACY_VERSION
+    session["privacy_accepted_user_id"] = user_id
 
 
 # --------------------------------------------------------------------------
@@ -354,9 +374,7 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     )
 
     sep = "&" if "?" in base else "?"
-    # uncomment to add sosci_lang option
-    # return f"{base}{sep}l={sosci_lang}&r={user_id}"
-    return f"{base}{sep}r={user_id}"
+    return f"{base}{sep}{urlencode({'r': user_id})}"
 
 
 
@@ -672,8 +690,11 @@ def home():
     # lab upload permission flag
     can_upload = can_upload_lab_data(user_key)
 
+    # Load once: used by the privacy gate, survey, and personal table.
+    df = query_user_df(user_key)
+
     # privacy gate
-    privacy_user_id = _get_repo_user_id_from_db()
+    privacy_user_id = _repo_user_id_from_df(df, user_key)
     # 1) default from env (now default is OFF)
     privacy_gate_default = _env_true("PRIVACY_GATE", False)
 
@@ -695,10 +716,7 @@ def home():
 
     needs_privacy = privacy_gate_on and not _has_accepted_privacy(privacy_user_id or "")
 
-    # user data (samples)
-    df = query_user_df(user_key)
-
-    # decide survey visibility from canonical lab rows, not from samples DF
+    # Decide survey visibility from canonical lab rows and sample age.
     has_lab_results = _user_has_lab_results(df) or _dataframe_has_metals(df)
 
     # only for display, now drop oxide-like columns (harmless on samples DF)
@@ -706,13 +724,8 @@ def home():
 
     i18n = _current_ui_i18n()
 
-    # try to get "real" internal user id from data
-    kc_user_id = None
-    if not df.empty:
-        for col in ("userId", "user_id", "kc_user_id"):
-            if col in df.columns:
-                kc_user_id = df[col].dropna().astype(str).iloc[0].strip()
-                break
+    # Resolve the stable internal identifier (also used in the SoSci URL).
+    kc_user_id = _repo_user_id_from_df(df, None)
 
     # survey url
     survey_user_id = kc_user_id or user_key
@@ -721,9 +734,14 @@ def home():
     # Final survey becomes available when either:
     #   1. laboratory / elemental concentration results are available, OR
     #   2. three months have passed since the user's first sample.
+    try:
+        survey_after_months = int(os.getenv("SURVEY_AFTER_MONTHS", "3"))
+    except ValueError:
+        survey_after_months = 3
+    survey_after_months = max(1, min(survey_after_months, 120))
     survey_due_by_age = _survey_timeout_reached(
         df,
-        months=3,
+        months=survey_after_months,
     )
 
     show_survey = bool(survey_url) and (
@@ -881,9 +899,11 @@ def download_csv():
         "file_name": "user_data.csv",
         "kind": "user_export",
     }
-    user_key = (request.form.get("user_key") or "").strip()
+    # Never trust a posted user_key for a personal export. Resolve it from
+    # the authenticated session, exactly as /my does.
+    user_key = session.get("user") or (session.get("kc") or {}).get("profile", {}).get("email")
     if not user_key:
-        abort(400)
+        abort(401, description="No authenticated user identifier.")
     df = query_user_df(user_key)
     if df.empty:
         abort(404)
@@ -909,9 +929,11 @@ def download_xlsx():
         "file_name": "user_data.xlsx",
         "kind": "user_export",
     }
-    user_key = (request.form.get("user_key") or "").strip()
+    # Never trust a posted user_key for a personal export. Resolve it from
+    # the authenticated session, exactly as /my does.
+    user_key = session.get("user") or (session.get("kc") or {}).get("profile", {}).get("email")
     if not user_key:
-        abort(400)
+        abort(401, description="No authenticated user identifier.")
     df = query_user_df(user_key)
     if df.empty:
         abort(404)
@@ -933,72 +955,57 @@ def download_xlsx():
 @web_bp.get("/download/all_csv")
 @login_required
 def download_all_csv():
+    """Export the canonical sample dataset, excluding direct user identifiers.
+
+    Do not use settings.INPUT_CSV here: it is the flattened raw intake file
+    and can contain exact GPS coordinates and other personal information.
+    Verify that the canonical lat/lon columns contain the public jittered
+    coordinates before enabling this export in production.
+    """
     g._analytics_extra = {
         "dataset": "all_data",
         "file_name": "all_data.csv",
         "kind": "user_export",
     }
-    p = pathlib.Path(settings.INPUT_CSV)
-    if not p.exists() or not p.is_file():
-        abort(404, description="Full CSV not found on server.")
 
-    pii_cols = {
-        "userId",
-        "user_id",
-        "email",
-        getattr(settings, "USER_KEY_COLUMN", None),
+    df_all, _csv_text = build_live_csv(
+        filename="samples.csv",
+        base_url=request.url_root.rstrip("/"),
+        snapshot_date=latest_canonical_snapshot_date(),
+    )
+    if df_all.empty:
+        abort(404, description="No canonical samples found in database.")
+
+    # A whitelist of the scientific canonical fields is preferable to
+    # exporting the raw Firestore rows. As an additional guard, remove
+    # commonly-identifying and original-coordinate columns if present.
+    excluded = {
+        "userid", "user_id", "uid", "email", "collected_by",
+        "first_name", "last_name", "name", "phone", "telephone",
+        "gps_lat", "gps_long", "gps_lon", "gps_lng",
+        "latitude_orig", "longitude_orig", "lat_orig", "lon_orig",
     }
-    pii_cols = {c.lower() for c in pii_cols if c}
+    user_key_column = getattr(settings, "USER_KEY_COLUMN", None)
+    if user_key_column:
+        excluded.add(user_key_column.lower())
 
-    try:
-        df_all = pd.read_csv(p, dtype=str, keep_default_na=False, low_memory=False)
-        df_all = strip_orig_cols(df_all)
-        df_all = _drop_oxide_columns_from_df(df_all)
+    to_drop = [
+        col for col in df_all.columns
+        if str(col).lower() in excluded
+        or str(col).lower().endswith("_orig")
+    ]
+    df_all = df_all.drop(columns=to_drop, errors="ignore")
+    df_all = _drop_oxide_columns_from_df(df_all)
 
-        drop_these = [col for col in df_all.columns if col.lower() in pii_cols]
-        if drop_these:
-            df_all = df_all.drop(columns=drop_these, errors="ignore")
-
-        buf = BytesIO()
-        df_all.to_csv(buf, index=False)
-        buf.seek(0)
-        return send_file(
-            buf,
-            as_attachment=True,
-            download_name="echorepo_all_samples.csv",
-            mimetype="text/csv",
-        )
-    except Exception:
-        import csv
-
-        buf = BytesIO()
-        with p.open("r", encoding="utf-8", newline="") as f_in:
-            reader = csv.reader(f_in)
-            rows = list(reader)
-            if not rows:
-                abort(404, description="CSV is empty")
-
-            header = rows[0]
-            keep_idx = []
-            for i, name in enumerate(header):
-                if name.lower() in pii_cols:
-                    continue
-                if _looks_like_oxide(name) or _looks_like_oxide(re.split(r"[_\s/\-]+", name)[-1]):
-                    continue
-                keep_idx.append(i)
-
-            writer = csv.writer(buf)
-            writer.writerow([header[i] for i in keep_idx])
-            for row in rows[1:]:
-                writer.writerow([row[i] for i in keep_idx])
-
-        buf.seek(0)
-        return send_file(
-            buf,
-            as_attachment=True,
-            download_name="echorepo_all_samples.csv",
-            mimetype="text/csv",
-        )
+    buf = BytesIO()
+    df_all.to_csv(buf, index=False)
+    buf.seek(0)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="echorepo_all_samples.csv",
+        mimetype="text/csv",
+    )
 
 
 @web_bp.get("/download/sample_csv")
@@ -1062,27 +1069,7 @@ def download_sample_csv():
     # ----------------------------------------------------------
     # Determine whether the logged-in user owns this sample.
     # ----------------------------------------------------------
-    profile = (
-        (session.get("kc") or {})
-        .get("profile")
-        or {}
-    )
-
-    possible_user_ids = {
-        session.get("user"),
-        profile.get("email"),
-        profile.get("username"),
-        profile.get("preferred_username"),
-        profile.get("sub"),
-        profile.get("id"),
-    }
-
-    possible_user_ids = {
-        str(value).strip().casefold()
-        for value in possible_user_ids
-        if value is not None
-        and str(value).strip()
-    }
+    possible_user_ids = _current_authenticated_identifiers()
 
     collected_by = str(
         row.get("collected_by") or ""
@@ -1501,51 +1488,152 @@ def search_samples():
     }
     fmt = (req.get("format") or "").lower()
 
-    page = max(int(req.get("page", 1)), 1)
+    try:
+        page = max(int(req.get("page", 1)), 1)
+    except (TypeError, ValueError):
+        abort(400, description="Invalid page number.")
+
     per_page = 50
-    offset = (page - 1) * per_page
 
     # helper to build WHERE + params
     def _build_where(criteria):
         where = ["1=1"]
         params = []
 
+        # --------------------------------------------------
+        # 1. Sample / QR filtering
+        # --------------------------------------------------
         if criteria["sample_id"]:
             tokens = _parse_sample_id_list(criteria["sample_id"])
 
+            if not tokens:
+                abort(400, description="No valid sample IDs provided.")
+
             if criteria.get("sample_ids_exact"):
-                # Map rectangle export: exact selected sample IDs only.
+                # Map rectangle export:
+                # match the selected sample IDs exactly.
                 where.append("sample_id = ANY(%s)")
                 params.append(tokens)
+
             else:
-                # Search page behaviour: keep substring matching for user-entered search.
+                # Normal search:
+                # allow partial matching of sample IDs.
                 if len(tokens) == 1:
                     where.append("sample_id ILIKE %s")
                     params.append(f"%{tokens[0]}%")
+
                 else:
                     ors = []
-                    for t in tokens:
+
+                    for token in tokens:
                         ors.append("sample_id ILIKE %s")
-                        params.append(f"%{t}%")
+                        params.append(f"%{token}%")
+
                     where.append("(" + " OR ".join(ors) + ")")
-                    
+
+        # --------------------------------------------------
+        # 2. Country filtering
+        # --------------------------------------------------
         if criteria["country_code"]:
             where.append("country_code = %s")
             params.append(criteria["country_code"])
-        if criteria["ph_min"]:
-            where.append("ph >= %s")
-            params.append(float(criteria["ph_min"]))
-        if criteria["ph_max"]:
-            where.append("ph <= %s")
-            params.append(float(criteria["ph_max"]))
-        if criteria["date_from"]:
-            where.append("timestamp_utc >= %s")
-            params.append(criteria["date_from"])
-        if criteria["date_to"]:
-            where.append("timestamp_utc <= %s")
-            params.append(criteria["date_to"])
-        return " AND ".join(where), params
 
+        # --------------------------------------------------
+        # 3. pH filtering
+        # --------------------------------------------------
+        try:
+            ph_min = (
+                float(criteria["ph_min"])
+                if criteria["ph_min"]
+                else None
+            )
+
+            ph_max = (
+                float(criteria["ph_max"])
+                if criteria["ph_max"]
+                else None
+            )
+
+        except (ValueError, TypeError):
+            abort(400, description="Invalid pH value.")
+
+        # Reject NaN and Infinity.
+        if ph_min is not None and not math.isfinite(ph_min):
+            abort(400, description="Invalid minimum pH.")
+
+        if ph_max is not None and not math.isfinite(ph_max):
+            abort(400, description="Invalid maximum pH.")
+
+        # Check that the range makes sense.
+        if (
+            ph_min is not None
+            and ph_max is not None
+            and ph_min > ph_max
+        ):
+            abort(
+                400,
+                description="Minimum pH cannot exceed maximum pH."
+            )
+
+        if ph_min is not None:
+            where.append("ph >= %s")
+            params.append(ph_min)
+
+        if ph_max is not None:
+            where.append("ph <= %s")
+            params.append(ph_max)
+
+        # --------------------------------------------------
+        # 4. Date filtering
+        # --------------------------------------------------
+        try:
+            date_from = (
+                date.fromisoformat(criteria["date_from"])
+                if criteria["date_from"]
+                else None
+            )
+
+            date_to = (
+                date.fromisoformat(criteria["date_to"])
+                if criteria["date_to"]
+                else None
+            )
+
+        except (ValueError, TypeError):
+            abort(400, description="Invalid date format.")
+
+        # Ensure the requested date range is valid.
+        if (
+            date_from is not None
+            and date_to is not None
+            and date_from > date_to
+        ):
+            abort(
+                400,
+                description="Start date cannot exceed end date."
+            )
+
+        if date_from is not None:
+            where.append("timestamp_utc >= %s")
+            params.append(date_from.isoformat())
+
+        if date_to is not None:
+            # Include the entire final day.
+            # Example: date_to=2026-10-22
+            # means timestamp_utc < 2026-10-23.
+            try:
+                end_exclusive = date_to + timedelta(days=1)
+            except OverflowError:
+                abort(400, description="End date is outside the supported range.")
+
+            where.append("timestamp_utc < %s")
+            params.append(end_exclusive.isoformat())
+
+        # --------------------------------------------------
+        # 5. Return SQL conditions and parameters
+        # --------------------------------------------------
+        return " AND ".join(where), params
+        
     where_sql, params = _build_where(criteria)
 
     def _is_logged_in() -> bool:
@@ -1579,7 +1667,7 @@ def search_samples():
             SELECT sample_id
             FROM samples
             WHERE {where_sql}
-            ORDER BY timestamp_utc DESC, sample_id
+            ORDER BY timestamp_utc DESC NULLS LAST, sample_id
         """
 
         with get_pg_conn() as conn, conn.cursor() as cur:
@@ -1608,9 +1696,32 @@ def search_samples():
     rows = []
 
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        # Countries actually represented in ECHOREPO,
+        # restricted to the configured whitelist.
+        cur.execute(
+            """
+            SELECT DISTINCT UPPER(TRIM(country_code)) AS code
+            FROM samples
+            WHERE country_code IS NOT NULL
+            AND UPPER(TRIM(country_code)) = ANY(%s)
+            ORDER BY code
+            """,
+            (list(allowed_country_codes),),
+        )
+
+        available_country_codes = [
+            row["code"]
+            for row in cur.fetchall()
+        ]
+
         # count
         cur.execute(f"SELECT COUNT(*) FROM samples WHERE {where_sql}", params)
         total_rows = cur.fetchone()["count"]
+
+        # Clamp out-of-range page numbers before applying LIMIT/OFFSET.
+        total_pages = max((total_rows + per_page - 1) // per_page, 1)
+        page = min(page, total_pages)
+        offset = (page - 1) * per_page
 
         # page
         cur.execute(
@@ -1618,12 +1729,20 @@ def search_samples():
             SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
             FROM samples
             WHERE {where_sql}
-            ORDER BY timestamp_utc DESC
+            ORDER BY timestamp_utc DESC NULLS LAST, sample_id
             LIMIT %s OFFSET %s
             """,
             params + [per_page, offset],
         )
         rows = cur.fetchall()
+
+    # /search is publicly accessible. Only an owner may see their
+    # own collected_by identifier; don't disclose other submitter IDs.
+    own_ids = _current_authenticated_identifiers()
+    for row in rows:
+        submitter = str(row.get("collected_by") or "").strip().casefold()
+        if submitter not in own_ids:
+            row["collected_by"] = None
 
     total_pages = max((total_rows + per_page - 1) // per_page, 1)
 
@@ -1643,7 +1762,7 @@ def search_samples():
         total_pages=total_pages,
         total_rows=total_rows,
         I18N=i18n,
-        allowed_country_codes=allowed_country_codes,
+        available_country_codes=available_country_codes,
     )
 
 
@@ -2134,14 +2253,20 @@ def _read_zenodo_publications(log_path: str) -> list[dict]:
         return []
 
     rows: list[dict] = []
-    with p.open("r", encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if (row.get("status") or "").strip().lower() != "ok":
-                continue
-            if not (row.get("version_doi") or row.get("zenodo_html")):
-                continue
-            rows.append(row)
+    try:
+        with p.open("r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if (row.get("status") or "").strip().lower() != "ok":
+                    continue
+                if not (row.get("version_doi") or row.get("zenodo_html")):
+                    continue
+                rows.append(row)
+    except (OSError, UnicodeError, csv.Error) as exc:
+        logging.getLogger(__name__).warning(
+            "Could not read Zenodo publication log %s: %s", p, exc
+        )
+        return []
 
     # newest first
     rows.sort(key=lambda r: r.get("run_at_utc", ""), reverse=True)
