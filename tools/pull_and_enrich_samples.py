@@ -37,6 +37,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 from firebase_admin import auth, credentials, firestore
+from google.api_core.retry import Retry
 
 # ---------------------------------------------------------------------------
 # 0. load env and basic paths
@@ -485,13 +486,15 @@ def _mark_mirror_done(object_name: str) -> None:
     Append an object_name to the progress file and in-memory set.
     Safe to call multiple times; duplicates in file are harmless.
     """
-    if object_name in _MIRROR_DONE_OBJECTS and not MIRROR_OVERWRITE_EXISTING:
+    # A progress log records each object exactly once, even when the object is
+    # overwritten (for example, during privacy reprocessing).
+    if object_name in _MIRROR_DONE_OBJECTS:
         return
-    _MIRROR_DONE_OBJECTS.add(object_name)
     path = Path(MIRROR_PROGRESS_FILE)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write(object_name + "\n")
+    _MIRROR_DONE_OBJECTS.add(object_name)
 
 def country_resolver_health_ok() -> bool:
     if not COUNTRY_RESOLVER_ENABLED:
@@ -1248,17 +1251,14 @@ def _upload_exif_sidecar_to_minio(mclient, image_object_name: str, sidecar: dict
 # ---------------------------------------------------------------------------
 def fetch_samples_flat(mclient, max_stream_retries: int = 5) -> pd.DataFrame:
     """
-    Fetch all 'samples' from Firestore, flatten, and mirror images to MinIO.
+    Read the Firestore collection-group stream FAST, then process images separately.
 
-    Robust against intermittent Firestore stream errors:
-      - Normal errors: retry up to max_stream_retries times.
-      - Specific Firestore bug: '_UnaryStreamMultiCallable' object has no attribute '_retry'
-        → retried indefinitely (does not count against max_stream_retries).
+    Keeping OCR/MinIO uploads inside the streaming iterator can cause a Firestore
+    RPC deadline to expire while processing a single sample. Collection fetches
+    have bounded retry attempts; image-processing failures remain visible.
     """
     db = firestore.client()
     rows = []
-    seen_doc_ids: set[str] = set()
-    attempt = 0
 
     def _process_doc(doc):
         data = doc.to_dict() or {}
@@ -1322,52 +1322,54 @@ def fetch_samples_flat(mclient, max_stream_retries: int = 5) -> pd.DataFrame:
 
         rows.append(row)
 
-    while True:
-        samples_ref = db.collection_group("samples")
+    # IMPORTANT: Do not download or redact images while the Firestore streaming
+    # RPC is open. A snapshot list of ~9,000 small sample docs is normally modest
+    # compared with the images (which are only referenced by URL at this point).
+    # If fetching times out, retry the snapshot read, not image processing.
+    documents = []
+    for attempt in range(1, max_stream_retries + 1):
         try:
-            for doc in samples_ref.stream():
-                # Skip docs already processed in this run
-                if doc.id in seen_doc_ids:
-                    continue
-                seen_doc_ids.add(doc.id)
-                _process_doc(doc)
-
-            # Stream finished successfully → done
+            log.info("[firestore] Reading sample documents (attempt %d/%d)",
+                     attempt, max_stream_retries)
+            collected = {}
+            retry_policy = Retry(initial=1.0, maximum=15.0, multiplier=2.0,
+                                 timeout=120.0)
+            for doc in db.collection_group("samples").stream(
+                retry=retry_policy, timeout=300.0
+            ):
+                # Full path, not just doc.id: different users can have the same id.
+                collected[doc.reference.path] = doc
+                if len(collected) % 500 == 0:
+                    log.info("[firestore] Collected %d documents...", len(collected))
+            documents = list(collected.values())
+            log.info("[firestore] Read complete: %d documents", len(documents))
             break
-
-        except Exception as e:
-            msg = str(e)
-
-            # --- Special handling for the weird Firestore bug you're seeing ---
-            if "_UnaryStreamMultiCallable" in msg and "has no attribute '_retry'" in msg:
-                # Don't count this towards max_stream_retries; just keep trying
-                sleep_s = 10
-                log.warning(
-                    "Firestore stream hit known bug "
-                    "('_UnaryStreamMultiCallable/_retry'); sleeping %ss and retrying...",
-                    sleep_s,
-                )
-                time.sleep(sleep_s)
-                db = firestore.client()
-                continue
-
-            # --- Normal retry path for network/transient errors ---
-            attempt += 1
-            if attempt > max_stream_retries:
-                log.error("Firestore stream failed after %s attempts: %s", attempt, e)
-                raise
-
-            sleep_s = min(60, 5 * attempt)
-            log.warning(
-                "Firestore stream failed (attempt %s/%s): %s – retrying in %ss",
-                attempt,
-                max_stream_retries,
-                e,
-                sleep_s,
-            )
-            time.sleep(sleep_s)
+        except Exception as exc:
+            # Do NOT endlessly restart a failing stream: the previous special
+            # '_UnaryStreamMultiCallable/_retry' handler had an infinite loop.
+            log.warning("[firestore] Read failed on attempt %d/%d: %s: %s",
+                        attempt, max_stream_retries,
+                        type(exc).__name__, exc, exc_info=True)
+            if attempt == max_stream_retries:
+                raise RuntimeError(
+                    f"Firestore read failed after {max_stream_retries} attempts"
+                ) from exc
+            time.sleep(min(30, 5 * attempt))
             db = firestore.client()
-            continue
+
+    log.info("[images] Processing %d samples; privacy_enabled=%s; "
+             "privacy_progress=%s", len(documents),
+             PRIVACY_REDACTION_ENABLED, PRIVACY_PROGRESS_FILE)
+    last_progress_log = time.monotonic()
+    for index, doc in enumerate(documents, 1):
+        _process_doc(doc)
+        now = time.monotonic()
+        if (now - last_progress_log >= 10 or index == len(documents)):
+            log.info("[images] Processed %d/%d samples; "
+                     "mirror markers=%d; privacy v%s markers=%d",
+                     index, len(documents), len(_MIRROR_DONE_OBJECTS),
+                     PRIVACY_PROCESSING_VERSION, len(_PRIVACY_DONE_OBJECTS))
+            last_progress_log = now
 
     df = pd.DataFrame(rows, dtype=object)
     if not df.empty:
@@ -2781,6 +2783,14 @@ def main():
 
     init_firebase()
     minio_client = init_minio()
+    log.info("[images] privacy_enabled=%s mode=%s version=%s; mirror_overwrite=%s",
+             PRIVACY_REDACTION_ENABLED, PRIVACY_REDACTION_MODE,
+             PRIVACY_PROCESSING_VERSION, MIRROR_OVERWRITE_EXISTING)
+    log.info("[images] mirror progress file: %s", MIRROR_PROGRESS_FILE)
+    log.info("[images] privacy progress file: %s", PRIVACY_PROGRESS_FILE)
+    log.info("[images] loaded progress markers: mirrored=%d, privacy-v%s=%d",
+             len(_MIRROR_DONE_OBJECTS), PRIVACY_PROCESSING_VERSION,
+             len(_PRIVACY_DONE_OBJECTS))
 
     # 1) fetch from Firestore
     df_raw = fetch_samples_flat(minio_client)
