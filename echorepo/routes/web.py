@@ -8,6 +8,7 @@ import re
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
+import math 
 
 import pandas as pd
 from flask import (
@@ -1501,7 +1502,11 @@ def search_samples():
     }
     fmt = (req.get("format") or "").lower()
 
-    page = max(int(req.get("page", 1)), 1)
+    try:
+        page = max(int(req.get("page", 1)), 1)
+    except (TypeError, ValueError):
+        abort(400, description="Invalid page number.")
+
     per_page = 50
     offset = (page - 1) * per_page
 
@@ -1510,42 +1515,137 @@ def search_samples():
         where = ["1=1"]
         params = []
 
+        # --------------------------------------------------
+        # 1. Sample / QR filtering
+        # --------------------------------------------------
         if criteria["sample_id"]:
             tokens = _parse_sample_id_list(criteria["sample_id"])
 
+            if not tokens:
+                abort(400, description="No valid sample IDs provided.")
+
             if criteria.get("sample_ids_exact"):
-                # Map rectangle export: exact selected sample IDs only.
+                # Map rectangle export:
+                # match the selected sample IDs exactly.
                 where.append("sample_id = ANY(%s)")
                 params.append(tokens)
+
             else:
-                # Search page behaviour: keep substring matching for user-entered search.
+                # Normal search:
+                # allow partial matching of sample IDs.
                 if len(tokens) == 1:
                     where.append("sample_id ILIKE %s")
                     params.append(f"%{tokens[0]}%")
+
                 else:
                     ors = []
-                    for t in tokens:
+
+                    for token in tokens:
                         ors.append("sample_id ILIKE %s")
-                        params.append(f"%{t}%")
+                        params.append(f"%{token}%")
+
                     where.append("(" + " OR ".join(ors) + ")")
-                    
+
+        # --------------------------------------------------
+        # 2. Country filtering
+        # --------------------------------------------------
         if criteria["country_code"]:
             where.append("country_code = %s")
             params.append(criteria["country_code"])
-        if criteria["ph_min"]:
-            where.append("ph >= %s")
-            params.append(float(criteria["ph_min"]))
-        if criteria["ph_max"]:
-            where.append("ph <= %s")
-            params.append(float(criteria["ph_max"]))
-        if criteria["date_from"]:
-            where.append("timestamp_utc >= %s")
-            params.append(criteria["date_from"])
-        if criteria["date_to"]:
-            where.append("timestamp_utc <= %s")
-            params.append(criteria["date_to"])
-        return " AND ".join(where), params
 
+        # --------------------------------------------------
+        # 3. pH filtering
+        # --------------------------------------------------
+        try:
+            ph_min = (
+                float(criteria["ph_min"])
+                if criteria["ph_min"]
+                else None
+            )
+
+            ph_max = (
+                float(criteria["ph_max"])
+                if criteria["ph_max"]
+                else None
+            )
+
+        except (ValueError, TypeError):
+            abort(400, description="Invalid pH value.")
+
+        # Reject NaN and Infinity.
+        if ph_min is not None and not math.isfinite(ph_min):
+            abort(400, description="Invalid minimum pH.")
+
+        if ph_max is not None and not math.isfinite(ph_max):
+            abort(400, description="Invalid maximum pH.")
+
+        # Check that the range makes sense.
+        if (
+            ph_min is not None
+            and ph_max is not None
+            and ph_min > ph_max
+        ):
+            abort(
+                400,
+                description="Minimum pH cannot exceed maximum pH."
+            )
+
+        if ph_min is not None:
+            where.append("ph >= %s")
+            params.append(ph_min)
+
+        if ph_max is not None:
+            where.append("ph <= %s")
+            params.append(ph_max)
+
+        # --------------------------------------------------
+        # 4. Date filtering
+        # --------------------------------------------------
+        try:
+            date_from = (
+                date.fromisoformat(criteria["date_from"])
+                if criteria["date_from"]
+                else None
+            )
+
+            date_to = (
+                date.fromisoformat(criteria["date_to"])
+                if criteria["date_to"]
+                else None
+            )
+
+        except (ValueError, TypeError):
+            abort(400, description="Invalid date format.")
+
+        # Ensure the requested date range is valid.
+        if (
+            date_from is not None
+            and date_to is not None
+            and date_from > date_to
+        ):
+            abort(
+                400,
+                description="Start date cannot exceed end date."
+            )
+
+        if date_from is not None:
+            where.append("timestamp_utc >= %s")
+            params.append(date_from.isoformat())
+
+        if date_to is not None:
+            # Include the entire final day.
+            # Example: date_to=2026-10-22
+            # means timestamp_utc < 2026-10-23.
+            end_exclusive = date_to + timedelta(days=1)
+
+            where.append("timestamp_utc < %s")
+            params.append(end_exclusive.isoformat())
+
+        # --------------------------------------------------
+        # 5. Return SQL conditions and parameters
+        # --------------------------------------------------
+        return " AND ".join(where), params
+        
     where_sql, params = _build_where(criteria)
 
     def _is_logged_in() -> bool:
@@ -1608,6 +1708,24 @@ def search_samples():
     rows = []
 
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        # Countries actually represented in ECHOREPO,
+        # restricted to the configured whitelist.
+        cur.execute(
+            """
+            SELECT DISTINCT UPPER(TRIM(country_code)) AS code
+            FROM samples
+            WHERE country_code IS NOT NULL
+            AND UPPER(TRIM(country_code)) = ANY(%s)
+            ORDER BY code
+            """,
+            (list(allowed_country_codes),),
+        )
+
+        available_country_codes = [
+            row["code"]
+            for row in cur.fetchall()
+        ]
+
         # count
         cur.execute(f"SELECT COUNT(*) FROM samples WHERE {where_sql}", params)
         total_rows = cur.fetchone()["count"]
@@ -1618,7 +1736,7 @@ def search_samples():
             SELECT sample_id, timestamp_utc, country_code, ph, lat, lon, collected_by
             FROM samples
             WHERE {where_sql}
-            ORDER BY timestamp_utc DESC
+            ORDER BY timestamp_utc DESC NULLS LAST, sample_id
             LIMIT %s OFFSET %s
             """,
             params + [per_page, offset],
@@ -1643,7 +1761,7 @@ def search_samples():
         total_pages=total_pages,
         total_rows=total_rows,
         I18N=i18n,
-        allowed_country_codes=allowed_country_codes,
+        available_country_codes=available_country_codes,
     )
 
 
