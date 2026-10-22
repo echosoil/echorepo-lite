@@ -2,7 +2,7 @@
 {% block title %}{{ _('Data quality issues — ECHOrepo') }}{% endblock %}
 
 {% block nav_right %}
-<a class="btn btn-outline-light btn-sm" href="{{ url_for('home') }}">
+<a class="btn btn-outline-light btn-sm" href="{{ url_for('web.home') }}">
   <i class="bi bi-arrow-left"></i> {{ _('Back to My Data') }}
 </a>
 {% endblock %}
@@ -10,7 +10,7 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h1 class="h4 mb-0">{{ _('Data quality issues') }}</h1>
-  <a class="btn btn-outline-secondary" href="{{ url_for('home') }}">
+  <a class="btn btn-outline-secondary" href="{{ url_for('web.home') }}">
     <i class="bi bi-arrow-left"></i> {{ _('Back to My Data') }}
   </a>
 </div>
