@@ -256,6 +256,52 @@ def _user_has_lab_results(df_samples: pd.DataFrame) -> bool:
         return False
 
 
+def _survey_timeout_reached(
+    df: pd.DataFrame,
+    months: int = 3,
+) -> bool:
+    """
+    Return True when at least `months` calendar months have passed
+    since the user's first sample.
+
+    Prefer fs_createdAt because it represents when the sample entered
+    ECHOREPO. Fall back to collectedAt / timestamp_utc for older data.
+    """
+    if df is None or df.empty:
+        return False
+
+    for col in (
+        "fs_createdAt",
+        "collectedAt",
+        "timestamp_utc",
+    ):
+        if col not in df.columns:
+            continue
+
+        dates = pd.to_datetime(
+            df[col],
+            errors="coerce",
+            utc=True,
+        ).dropna()
+
+        if dates.empty:
+            continue
+
+        first_sample_at = dates.min()
+
+        survey_available_at = (
+            first_sample_at
+            + pd.DateOffset(months=months)
+        )
+
+        now = pd.Timestamp.now(tz="UTC")
+
+        return now >= survey_available_at
+
+    # We could not establish when the user's first sample appeared.
+    return False
+
+
 def _dataframe_has_metals(df: pd.DataFrame) -> bool:
     if df is None or df.empty:
         return False
@@ -672,9 +718,18 @@ def home():
     survey_user_id = kc_user_id or user_key
     survey_url = _build_sosci_url(survey_user_id)
 
-    # only show survey if user actually has metals-like data
-    has_metals = has_lab_results
-    show_survey = bool(survey_url) and has_metals
+    # Final survey becomes available when either:
+    #   1. laboratory / elemental concentration results are available, OR
+    #   2. three months have passed since the user's first sample.
+    survey_due_by_age = _survey_timeout_reached(
+        df,
+        months=3,
+    )
+
+    show_survey = bool(survey_url) and (
+        has_lab_results
+        or survey_due_by_age
+    )
 
     # --- survey override via URL (?survey=on/off), for testing ---
     survey_override_enabled = _env_true("SURVEY_DEBUG_OVERRIDE", False)
