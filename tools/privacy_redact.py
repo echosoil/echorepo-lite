@@ -68,10 +68,13 @@ def _obscure_region(rgb, rect, mode: str):
         # A single opaque, locally matched color provides the strongest obscuring.
         roi[:] = np.median(roi.reshape(-1, 3), axis=0).astype(np.uint8)
     elif mode == "blur":
-        # Strong but visually natural blur.
-        kx = max(9, (w // 8) | 1)   # ensure odd
-        ky = max(9, (h // 8) | 1)   # ensure odd
-        roi[:] = cv2.GaussianBlur(roi, (kx, ky), sigmaX=0, sigmaY=0)
+        # Deliberately much stronger than a normal photographic Gaussian blur:
+        # discard ~95% of the original spatial resolution, then smooth.
+        tiny = cv2.resize(roi, (max(1, w // 20), max(1, h // 20)),
+                          interpolation=cv2.INTER_AREA)
+        pixelated = cv2.resize(tiny, (w, h), interpolation=cv2.INTER_LINEAR)
+        roi[:] = cv2.GaussianBlur(pixelated, (0, 0),
+                                  sigmaX=max(3, w / 15), sigmaY=max(3, h / 15))
     else:
         raise ValueError("mode must be 'blur' or 'solid'")
 
