@@ -7,7 +7,7 @@ services:
       APP_ENV: prod
 
       # The map endpoint checks specifically for the string "1".
-      CANONICAL_PUBLIC: "1"
+      CANONICAL_PUBLIC: ${CANONICAL_PUBLIC:-0}
 
       # Migration-script database variables
       POSTGRES_HOST: postgres
