@@ -59,17 +59,26 @@ def etag_of(value) -> str:
     return str(value or "").strip('"').strip().lower()
 
 
-def load_done(path: Path, version: str) -> set[tuple[str, str]]:
-    """Only trust ETag-qualified records; older two-column records are unsafe."""
+def load_done(path: Path, version: str) -> tuple[set[tuple[str, str]], set[str]]:
+    """Read modern ETag-qualified entries AND legacy two-field markers.
+
+    A legacy marker by itself cannot establish whether MinIO has been replaced
+    since processing. It is used only with explicit --trust-legacy-progress.
+    """
     done: set[tuple[str, str]] = set()
+    legacy: set[str] = set()
     if not path.exists():
-        return done
+        return done, legacy
     with path.open("r", encoding="utf-8") as fh:
         for line in fh:
-            parts = line.rstrip("\n").split("\t")
-            if len(parts) == 3 and parts[0] == version and parts[1] and parts[2]:
+            parts = line.rstrip("\r\n").split("\t")
+            if not parts or parts[0] != version:
+                continue
+            if len(parts) == 3 and parts[1] and parts[2]:
                 done.add((parts[1], etag_of(parts[2])))
-    return done
+            elif len(parts) == 2 and parts[1]:
+                legacy.add(parts[1])
+    return done, legacy
 
 
 def record_done(path: Path, version: str, name: str, etag: str,
@@ -178,7 +187,22 @@ def main(argv=None) -> int:
     parser.add_argument("--max-images", type=int, default=0, help="Process only N pending images (0=all)")
     parser.add_argument("--prefix", default="", help="Limit object prefix for testing")
     parser.add_argument("--force", action="store_true", help="Reprocess checked images (may double-blur)")
+    parser.add_argument(
+        "--trust-legacy-progress", action="store_true",
+        help=("One-time conversion: treat old v1<TAB>object_name entries as "
+              "already processed and bind them to current MinIO ETags. "
+              "ONLY use if the mirrored objects have not been replaced since "
+              "the older redactor processed them."),
+    )
+    parser.add_argument(
+        "--migrate-legacy-only", action="store_true",
+        help="Convert old progress markers but do not run OCR on other images",
+    )
     args = parser.parse_args(argv)
+    if args.force and args.trust_legacy_progress:
+        parser.error("--force and --trust-legacy-progress cannot be used together")
+    if args.migrate_legacy_only and not args.trust_legacy_progress:
+        parser.error("--migrate-legacy-only requires --trust-legacy-progress")
     if args.max_images < 0:
         parser.error("--max-images must be >= 0")
 
@@ -203,25 +227,48 @@ def main(argv=None) -> int:
         parser.error("At least one privacy detector must be enabled")
 
     progress_path = path_from_env("PRIVACY_PROGRESS_FILE", "data/privacy_processed_images.txt")
-    print("Privacy progress file:", progress_path.resolve(), file=sys.stderr)
     audit_path = path_from_env("PRIVACY_REDACTION_AUDIT_FILE", "data/privacy_redacted_images.csv")
     public_base = os.getenv("PUBLIC_STORAGE_BASE", "/storage")
     bucket = os.getenv("MINIO_BUCKET", "echorepo-uploads")
-    done = load_done(progress_path, version)
+    done, legacy = load_done(progress_path, version)
+    # A modern record for a given name takes precedence over an older marker.
+    # If its ETag no longer matches, reprocess; don't resurrect an old marker.
+    qualified_names = {name for name, _ in done}
+    unresolved_legacy = legacy - qualified_names
     seen = audit_seen(audit_path)
     client = minio_client()
     if not client.bucket_exists(bucket):
         raise RuntimeError(f"MinIO bucket not found: {bucket}")
-    log.info("MinIO %s; bucket=%s version=%s mode=%s existing_markers=%d dry_run=%s",
-             os.getenv("MINIO_ENDPOINT_OUTSIDE", "localhost:9000"), bucket,
-             version, mode, len(done), args.dry_run)
-    stats = {"scanned": 0, "already_done": 0, "pending": 0,
+    log.info(
+        "MinIO %s; bucket=%s version=%s mode=%s etag_markers=%d "
+        "legacy_unqualified=%d trust_legacy=%s dry_run=%s",
+        os.getenv("MINIO_ENDPOINT_OUTSIDE", "localhost:9000"), bucket,
+        version, mode, len(done), len(unresolved_legacy), args.trust_legacy_progress,
+        args.dry_run,
+    )
+    if unresolved_legacy and not args.trust_legacy_progress:
+        log.warning(
+            "%d old two-column privacy markers are present. They cannot "
+            "verify current MinIO content. If these images have NOT been "
+            "overwritten since old redaction, migrate once with "
+            "--trust-legacy-progress to prevent repeated blur.", len(unresolved_legacy),
+        )
+    if unresolved_legacy and args.trust_legacy_progress:
+        log.warning(
+            "TRUSTING legacy markers: this skips OCR for corresponding objects "
+            "and MUST NOT be used if they might have been replaced with "
+            "unredacted images since their old privacy processing."
+        )
+    stats = {"scanned": 0, "already_done": 0, "legacy_migrated": 0,
+             "legacy_would_migrate": 0, "pending": 0,
              "processed": 0, "affected": 0, "failed": 0}
     for item in client.list_objects(bucket, prefix=args.prefix, recursive=True):
         name = item.object_name
         if not is_photo_object(name):
             continue
         stats["scanned"] += 1
+        if args.migrate_legacy_only and name not in unresolved_legacy:
+            continue
         source_etag = etag_of(item.etag)
         if not args.force and (name, source_etag) in done:
             stats["already_done"] += 1
@@ -234,6 +281,21 @@ def main(argv=None) -> int:
                 log.warning("Skipping concurrent change to %s", name)
                 continue
             existing_version = metadata_value(meta, "privacy-version")
+            if (not args.force and args.trust_legacy_progress
+                    and name in legacy and name not in qualified_names
+                    and not existing_version):
+                # Legacy records have no ETag. This is a user-authorized
+                # migration: the *current* MinIO version is assumed to be
+                # the image redacted by the previous job, NOT re-processed.
+                # Never override an existing modern marker for this name.
+                if args.dry_run:
+                    stats["legacy_would_migrate"] += 1
+                else:
+                    record_done(progress_path, version, name, latest_etag, done)
+                    qualified_names.add(name)
+                    stats["legacy_migrated"] += 1
+                stats["already_done"] += 1
+                continue
             if not args.force and existing_version == version:
                 # Progress file was lost/never written, but MinIO has a durable marker.
                 counts = {
@@ -249,6 +311,10 @@ def main(argv=None) -> int:
                         seen.add((version, name))
                     record_done(progress_path, version, name, latest_etag, done)
                 stats["already_done"] += 1
+                continue
+            if args.migrate_legacy_only:
+                # A qualified record no longer matches: leave it for the next
+                # normal run rather than changing image bytes during migration.
                 continue
             stats["pending"] += 1
             if args.dry_run:
