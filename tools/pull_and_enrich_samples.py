@@ -64,7 +64,6 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 log.info("Using PROJECT_ROOT=%s", PROJECT_ROOT)
 
-from tools.privacy_redact import redact_pil_image
 
 # helper: QR to country code
 try:
@@ -267,20 +266,8 @@ MIRROR_VERBOSE = os.getenv("MIRROR_VERBOSE", "0") == "1"
 MAX_IMAGE_BYTES = int(os.getenv("MAX_IMAGE_BYTES", str(3 * 1024 * 1024)))  # 3 MB
 MIRROR_OVERWRITE_EXISTING = os.getenv("MIRROR_OVERWRITE_EXISTING", "0") == "1"
 
-# Privacy processing: enabled explicitly after dependencies are installed.
-# All objects not tagged as privacy-processed will be downloaded again even
-# when an older, unredacted copy already exists in MinIO.
-PRIVACY_REDACTION_ENABLED = env_bool("PRIVACY_REDACTION_ENABLED", False)
-PRIVACY_BLUR_TEXT = env_bool("PRIVACY_BLUR_TEXT", True)
-PRIVACY_BLUR_FACES = env_bool("PRIVACY_BLUR_FACES", True)
-PRIVACY_BLUR_QR = env_bool("PRIVACY_BLUR_QR", True)
-PRIVACY_REDACTION_MODE = os.getenv("PRIVACY_REDACTION_MODE", "blur").strip().lower()
-PRIVACY_DETECT_MAX_SIDE = int(os.getenv("PRIVACY_DETECT_MAX_SIDE", "2600"))
-PRIVACY_PROCESSING_VERSION = os.getenv("PRIVACY_PROCESSING_VERSION", "v1").strip()
-PRIVACY_PROGRESS_FILE = os.getenv(
-    "PRIVACY_PROGRESS_FILE",
-    str(PROJECT_ROOT / "data" / "privacy_processed_images.txt"),
-)
+# Privacy redaction runs separately in tools/redact_minio_images.py.
+# Fast sync must never replace an already mirrored (possibly blurred) image.
 
 # File where we log successfully processed MinIO object names (one per line)
 MIRROR_PROGRESS_FILE = os.getenv(
@@ -459,28 +446,6 @@ def _load_mirror_done() -> set[str]:
 _MIRROR_DONE_OBJECTS: set[str] = _load_mirror_done()
 
 
-def _load_privacy_done() -> set[str]:
-    path = Path(PRIVACY_PROGRESS_FILE)
-    if not path.exists():
-        return set()
-    prefix = PRIVACY_PROCESSING_VERSION + "\t"
-    with path.open("r", encoding="utf-8") as fh:
-        return {line[len(prefix):].strip() for line in fh if line.startswith(prefix)}
-
-
-_PRIVACY_DONE_OBJECTS: set[str] = _load_privacy_done()
-
-
-def _mark_privacy_done(object_name: str) -> None:
-    if object_name in _PRIVACY_DONE_OBJECTS:
-        return
-    path = Path(PRIVACY_PROGRESS_FILE)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(f"{PRIVACY_PROCESSING_VERSION}\t{object_name}\n")
-    _PRIVACY_DONE_OBJECTS.add(object_name)
-
-
 def _mark_mirror_done(object_name: str) -> None:
     """
     Append an object_name to the progress file and in-memory set.
@@ -554,12 +519,9 @@ else:
 
 # EXIF handling
 STRIP_IMAGE_EXIF = os.getenv("STRIP_IMAGE_EXIF", "1") == "1"
-# Default OFF when public privacy-redaction is enabled. EXIF sidecars can
-# contain exact GPS and other sensitive information: keep them only if there
-# is a separately secured internal recovery policy and storage path.
-SAVE_EXIF_SIDECAR = os.getenv(
-    "SAVE_EXIF_SIDECAR", "0" if PRIVACY_REDACTION_ENABLED else "1"
-) == "1"
+# Original EXIF/GPS can be sensitive. Sidecars are disabled by default.
+# Set SAVE_EXIF_SIDECAR=1 only with an access-controlled separate storage policy.
+SAVE_EXIF_SIDECAR = os.getenv("SAVE_EXIF_SIDECAR", "0") == "1"
 
 # Used only to make sidecar filenames hard to guess.
 # Prefer setting EXIF_SIDECAR_SALT explicitly in .env.
@@ -1020,17 +982,13 @@ def _compress_and_fix_orientation(
       (public_image_bytes_without_exif, exif_sidecar_dict_or_none)
     """
     if Image is None:
-        if PRIVACY_REDACTION_ENABLED:
-            raise RuntimeError("Pillow not installed; refusing unredacted image")
-        return raw_bytes, None
+        raise RuntimeError("Pillow is required for safe image mirroring")
 
     try:
         img = Image.open(io.BytesIO(raw_bytes))
         img.load()  # Decode here, so corrupt inputs cannot silently pass through
-    except Exception:
-        if PRIVACY_REDACTION_ENABLED:
-            raise  # Must never publish original bytes after a privacy failure
-        return raw_bytes, None
+    except Exception as exc:
+        raise RuntimeError("Cannot decode image safely") from exc
 
     # Extract metadata BEFORE modifying the image
     sidecar = None
@@ -1061,8 +1019,7 @@ def _compress_and_fix_orientation(
     # keep original bytes.
     #
     # But if EXIF exists and STRIP_IMAGE_EXIF=1, we must re-save it to strip EXIF.
-    if (not PRIVACY_REDACTION_ENABLED and not has_exif
-            and not needs_rotation and len(raw_bytes) <= max_bytes):
+    if not has_exif and not needs_rotation and len(raw_bytes) <= max_bytes:
         return raw_bytes, sidecar
 
     # Apply EXIF orientation to pixels
@@ -1071,21 +1028,6 @@ def _compress_and_fix_orientation(
             img = ImageOps.exif_transpose(img)
         except Exception:
             pass
-
-    # Always run privacy redaction BEFORE JPEG compression/downscaling.
-    # Deliberately let detector errors propagate to the fail-closed mirror path.
-    if PRIVACY_REDACTION_ENABLED:
-        img, counts = redact_pil_image(
-            img,
-            blur_text=PRIVACY_BLUR_TEXT,
-            blur_faces=PRIVACY_BLUR_FACES,
-            blur_qr=PRIVACY_BLUR_QR,
-            mode=PRIVACY_REDACTION_MODE,
-            detect_max_side=PRIVACY_DETECT_MAX_SIDE,
-        )
-        if MIRROR_VERBOSE:
-            log.info("[privacy] %s: obscured %d text regions, %d faces, %d QR codes",
-                     object_name, counts["text_regions"], counts["faces"], counts["qr_codes"])
 
     def _save_with_quality(im, quality: int) -> bytes:
         buf = io.BytesIO()
@@ -1135,86 +1077,75 @@ def _mirror_firebase_to_minio(url: str, user_id: str, sample_id: str, field: str
     if not url or not url.startswith(FBS_PREFIX):
         return url
     if mclient is None:
-        # Do not expose the Firebase source URL for an unprocessed photograph.
-        return "" if PRIVACY_REDACTION_ENABLED else url
+        log.warning("MinIO unavailable; image cannot be mirrored: %s/%s/%s",
+                    user_id, sample_id, field)
+        return ""
 
     user_id = _safe_part(user_id)
     sample_id = _safe_part(sample_id)
     field = _safe_part(field)
     ext = _guess_ext_from_firebase_url(url)
     object_name = f"{user_id}/{sample_id}/{field}{ext}"
+    public_path = f"{PUBLIC_STORAGE_BASE}/{object_name}"
 
-    # Two independent processing histories. Merely being mirrored DOES NOT
-    # imply an image has been privacy-processed. Existing MinIO objects that
-    # lack the privacy marker are automatically overwritten ONCE.
-    if not MIRROR_OVERWRITE_EXISTING:
-        if PRIVACY_REDACTION_ENABLED:
-            if object_name in _PRIVACY_DONE_OBJECTS:
-                if MIRROR_VERBOSE:
-                    log.info("[SKIP] privacy-processed %s", object_name)
-                return f"{PUBLIC_STORAGE_BASE}/{object_name}"
-        else:
-            if object_name in _MIRROR_DONE_OBJECTS:
-                if MIRROR_VERBOSE:
-                    log.info("[SKIP] already mirrored %s", object_name)
-                return f"{PUBLIC_STORAGE_BASE}/{object_name}"
-            try:
-                mclient.stat_object(MINIO_BUCKET, object_name)
-                _mark_mirror_done(object_name)
-                return f"{PUBLIC_STORAGE_BASE}/{object_name}"
-            except Exception:
-                pass
-
-    # Download original from Firebase
-    try:
-        resp = requests.get(url, timeout=15)
-        resp.raise_for_status()
-        data = resp.content
-    except Exception as e:
-        log.warning("[privacy] image download failed for %s: %s", object_name, e)
-        return "" if PRIVACY_REDACTION_ENABLED else url
-
-    # Fix orientation + compress + strip public EXIF
-    try:
-        data_fixed, exif_sidecar = _compress_and_fix_orientation(
-            data,
-            object_name=object_name,
-            max_bytes=MAX_IMAGE_BYTES,
-        )
-    except Exception as e:
-        if PRIVACY_REDACTION_ENABLED:
-            log.error("[privacy] skipped unsafe image %s: %s", object_name, e)
-            return ""  # never upload original bytes or expose Firebase token URL
+    # Daily redaction overwrites the object IN PLACE. Never upload an
+    # unredacted Firebase original over an existing (potentially blurred) one.
+    if object_name in _MIRROR_DONE_OBJECTS:
         if MIRROR_VERBOSE:
-            log.warning("Compression/orientation failed for %s: %s", object_name, e)
-        data_fixed = data
-        exif_sidecar = None
+            log.info("[SKIP] previously mirrored %s", object_name)
+        return public_path
 
-    # Upload to MinIO (overwrite if necessary)
+    # Progress markers can be lost: the MinIO object itself is authoritative.
+    # Only attempt mirroring when MinIO confirms that the key is missing.
     try:
-        bio = io.BytesIO(data_fixed)
-        mclient.put_object(
-            MINIO_BUCKET,
-            object_name,
-            data=bio,
-            length=len(data_fixed),
-            content_type="image/jpeg",
-        )
-
-        # Store original EXIF separately, not inside the public image.
-        _upload_exif_sidecar_to_minio(mclient, object_name, exif_sidecar)
-
+        mclient.stat_object(MINIO_BUCKET, object_name)
         _mark_mirror_done(object_name)
-        if PRIVACY_REDACTION_ENABLED:
-            _mark_privacy_done(object_name)
+        return public_path
+    except S3Error as exc:
+        if getattr(exc, "code", "") not in {"NoSuchKey", "NoSuchObject"}:
+            log.warning("MinIO stat failed for %s: %s", object_name, exc)
+            return ""
+    except Exception as exc:
+        log.warning("MinIO stat failed for %s: %s", object_name, exc)
+        return ""
 
+    try:
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        data_fixed, exif_sidecar = _compress_and_fix_orientation(
+            response.content, object_name=object_name, max_bytes=MAX_IMAGE_BYTES
+        )
+        mclient.put_object(
+            MINIO_BUCKET, object_name, data=io.BytesIO(data_fixed),
+            length=len(data_fixed), content_type="image/jpeg",
+        )
+        _upload_exif_sidecar_to_minio(mclient, object_name, exif_sidecar)
+        _mark_mirror_done(object_name)
         if MIRROR_VERBOSE:
-            action = "overwrote" if MIRROR_OVERWRITE_EXISTING else "uploaded"
-            log.info("%s %s (%.2f MB)", action, object_name, len(data_fixed) / 1024 / 1024)
-        return f"{PUBLIC_STORAGE_BASE}/{object_name}"
-    except Exception as e:
-        log.warning("Could not upload to MinIO %s: %s", object_name, e)
-        return "" if PRIVACY_REDACTION_ENABLED else url
+            log.info("Mirrored %s (%.2f MB)", object_name,
+                     len(data_fixed) / (1024 * 1024))
+        return public_path
+    except requests.HTTPError as exc:
+        status = (
+            exc.response.status_code
+            if exc.response is not None
+            else "unknown"
+        )
+        log.warning(
+            "Failed to mirror %s: Firebase HTTP %s",
+            object_name,
+            status,
+        )
+        return ""
+
+    except Exception as exc:
+        log.warning(
+            "Failed to mirror %s: %s",
+            object_name,
+            type(exc).__name__,
+        )
+        log.debug("Mirror failure details", exc_info=True)
+        return ""
 
 def _upload_exif_sidecar_to_minio(mclient, image_object_name: str, sidecar: dict | None) -> None:
     """
@@ -1357,18 +1288,15 @@ def fetch_samples_flat(mclient, max_stream_retries: int = 5) -> pd.DataFrame:
             time.sleep(min(30, 5 * attempt))
             db = firestore.client()
 
-    log.info("[images] Processing %d samples; privacy_enabled=%s; "
-             "privacy_progress=%s", len(documents),
-             PRIVACY_REDACTION_ENABLED, PRIVACY_PROGRESS_FILE)
+    log.info("[images] Processing %d samples (no OCR; daily privacy job is separate)",
+             len(documents))
     last_progress_log = time.monotonic()
     for index, doc in enumerate(documents, 1):
         _process_doc(doc)
         now = time.monotonic()
         if (now - last_progress_log >= 10 or index == len(documents)):
-            log.info("[images] Processed %d/%d samples; "
-                     "mirror markers=%d; privacy v%s markers=%d",
-                     index, len(documents), len(_MIRROR_DONE_OBJECTS),
-                     PRIVACY_PROCESSING_VERSION, len(_PRIVACY_DONE_OBJECTS))
+            log.info("[images] Processed %d/%d samples; mirror markers=%d",
+                     index, len(documents), len(_MIRROR_DONE_OBJECTS))
             last_progress_log = now
 
     df = pd.DataFrame(rows, dtype=object)
@@ -2783,14 +2711,14 @@ def main():
 
     init_firebase()
     minio_client = init_minio()
-    log.info("[images] privacy_enabled=%s mode=%s version=%s; mirror_overwrite=%s",
-             PRIVACY_REDACTION_ENABLED, PRIVACY_REDACTION_MODE,
-             PRIVACY_PROCESSING_VERSION, MIRROR_OVERWRITE_EXISTING)
+    if MIRROR_OVERWRITE_EXISTING:
+        raise RuntimeError(
+            "MIRROR_OVERWRITE_EXISTING=1 would overwrite blurred MinIO images; "
+            "set MIRROR_OVERWRITE_EXISTING=0."
+        )
+    log.info("[images] Fast mirror; daily privacy redaction is a separate task")
     log.info("[images] mirror progress file: %s", MIRROR_PROGRESS_FILE)
-    log.info("[images] privacy progress file: %s", PRIVACY_PROGRESS_FILE)
-    log.info("[images] loaded progress markers: mirrored=%d, privacy-v%s=%d",
-             len(_MIRROR_DONE_OBJECTS), PRIVACY_PROCESSING_VERSION,
-             len(_PRIVACY_DONE_OBJECTS))
+    log.info("[images] loaded mirror markers: %d", len(_MIRROR_DONE_OBJECTS))
 
     # 1) fetch from Firestore
     df_raw = fetch_samples_flat(minio_client)
