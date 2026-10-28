@@ -109,7 +109,7 @@
             <td>
               {% if r.lat is not none and r.lon is not none %}
               <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" href="{{ url_for(
-                    'web.explore',
+                    'web.search_samples',
                     sample_id=r.sample_id,
                     lat=r.lat,
                     lng=r.lon,
