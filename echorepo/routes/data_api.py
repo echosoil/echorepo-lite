@@ -628,6 +628,17 @@ def _require_canonical_access(*, public_allowed: bool = False) -> None:
 
 
 
+def _require_canonical_map_access() -> None:
+    """Map access is configured separately from tabular canonical exports.
+
+    CANONICAL_MAP_PUBLIC defaults to false. Public map responses may expose
+    substantial sample data: review the payload before enabling this flag.
+    """
+    if _env_bool("CANONICAL_MAP_PUBLIC", False):
+        return
+    require_api_auth()
+
+
 def _current_uploader_id() -> str:
     claims = getattr(g, "api_claims", None) or verify_bearer() or {}
     profile = (session.get("kc") or {}).get("profile") or {}
@@ -947,8 +958,7 @@ def samples():
     """Legacy SQLite samples API retained for backward compatibility."""
     require_api_auth()
     fmt = _parse_format("json", "csv", "geojson")
-    limit = _parse_int_arg("limit", DEFAULT_PAGE_SIZE, minimum=1, maximum=MAX_PAGE_SIZE)
-    offset = _parse_int_arg("offset", 0, minimum=0)
+    limit, offset = _canonical_pagination(fmt)
 
 
     from_value, to_value, to_operator = _time_window_from_request()
@@ -1037,18 +1047,17 @@ def samples():
 
     where_sql = "WHERE " + " AND ".join(where) if where else ""
     selected = ", ".join(_public_legacy_projection(field) for field in fields)
-    rows = list(
-        conn.execute(
-            f"""
-            SELECT {selected}
-            FROM {quote_ident(table)}
-            {where_sql}
-            ORDER BY {quote_ident(order)} {direction}
-            LIMIT ? OFFSET ?
-            """,
-            params + [limit, offset],
-        ).fetchall()
-    )
+    sql = f"""
+        SELECT {selected}
+        FROM {quote_ident(table)}
+        {where_sql}
+        ORDER BY {quote_ident(order)} {direction}
+    """
+    query_params = params[:]
+    if limit is not None:
+        sql += " LIMIT ? OFFSET ?"
+        query_params.extend([limit, offset])
+    rows = list(conn.execute(sql, query_params).fetchall())
     total = conn.execute(
         f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}",
         params,
@@ -1864,7 +1873,7 @@ def _usable_metals_value(value: Any) -> str:
 
 @data_api.get("/canonical/map.geojson")
 def canonical_map_geojson():
-    _require_canonical_access(public_allowed=True)
+    _require_canonical_map_access()
     limit = _parse_int_arg("limit", DEFAULT_MAP_PAGE_SIZE, minimum=1, maximum=MAX_MAP_PAGE_SIZE)
     offset = _parse_int_arg("offset", 0, minimum=0)
     where_sql, params, filter_meta = _canonical_map_filters()
@@ -1980,7 +1989,7 @@ def canonical_map_geojson():
 
 @data_api.get("/canonical/map.count")
 def canonical_map_count():
-    _require_canonical_access(public_allowed=True)
+    _require_canonical_map_access()
     where_sql, params, filter_meta = _canonical_map_filters()
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(f"SELECT COUNT(*) AS n FROM samples AS s {where_sql}", params)
