@@ -15,9 +15,13 @@ import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name == "tools" else Path.cwd()
-sys.path.insert(0, str(ROOT))
+SCRIPT_ROOT = Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name == "tools" else Path.cwd()
 from dotenv import load_dotenv
+# Normally run next to the pipeline, even if the pipeline's working data root
+# is a different (e.g. production) checkout. Respect that same PROJECT_ROOT.
+load_dotenv(Path.cwd() / ".env")
+ROOT = Path(os.getenv("PROJECT_ROOT") or SCRIPT_ROOT).resolve()
+sys.path.insert(0, str(ROOT))
 load_dotenv(ROOT / ".env")
 
 import geopandas as gpd
@@ -132,6 +136,12 @@ def write_postgres(rows, source_count, dry_run=False):
         for name, number in sorted(Counter(r[1] for r in rows).items()):
             LOG.info("DRY RUN: %-16s %d", name, number)
         return
+    if source_count <= 0 or not rows:
+        raise RuntimeError(
+            f"Refusing to replace existing index: source_count={source_count}, "
+            f"classified={len(rows)} (check CSV, GPS, CRS and polygon layer)"
+        )
+
     import psycopg2
     from psycopg2.extras import execute_values
     with psycopg2.connect(
@@ -155,8 +165,19 @@ def write_postgres(rows, source_count, dry_run=False):
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS ix_sample_biogeo_region ON sample_biogeo_regions (region_name, sample_id)")
             cur.execute("CREATE TEMP TABLE biogeo_stage (sample_id TEXT PRIMARY KEY, region_name TEXT, dataset_version TEXT) ON COMMIT DROP")
-            if rows:
-                execute_values(cur, "INSERT INTO biogeo_stage (sample_id, region_name, dataset_version) VALUES %s", rows, page_size=1000)
+            execute_values(cur, "INSERT INTO biogeo_stage (sample_id, region_name, dataset_version) VALUES %s", rows, page_size=1000)
+
+            # Guard against Firestore-document-ID / canonical-QR-ID mismatches.
+            # An empty JOIN must never clear an otherwise healthy region table.
+            cur.execute("""
+                SELECT COUNT(*) FROM biogeo_stage st
+                JOIN samples s ON s.sample_id = st.sample_id
+            """)
+            matched = cur.fetchone()[0]
+            LOG.info("PostgreSQL sample-ID matches: %d of %d classified", matched, len(rows))
+            if matched == 0:
+                raise RuntimeError("No classified sample IDs match PostgreSQL; refusing to replace existing index")
+
             # Single transaction: if anything fails, old index remains unchanged.
             cur.execute("DELETE FROM sample_biogeo_regions")
             cur.execute("""
