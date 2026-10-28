@@ -1,4 +1,7 @@
 {% extends 'base.html' %}
+
+{# Match /search ZIP authorization: Flask session, not public map mode. #}
+{% set can_export = (session.get('user') or (session.get('kc') or {}).get('profile')) %}
 {% block title %}{{ _('ECHOrepo — Explore') }}{% endblock %}
 
 {% set desktop_param = request.args.get('desktop', '') | trim | lower %}
@@ -56,7 +59,7 @@
 {% block content %}
 <div class="explore-header d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">{{ _('Explore the map') }}</h1>
-  {% if not g.user %}
+  {% if not can_export %}
   <div class="alert alert-info small">
     {{ _('Sign in to export data and access your personal samples.') }}
   </div>
@@ -127,7 +130,7 @@
     {{ _('Apply') }}
   </button>
 
-  {% if g.user %}
+  {% if can_export %}
   <button id="btnExportFiltered" class="btn btn-sm btn-outline-primary echo-desktop-only" type="button" disabled>
     {{ _('Export filtered (0)') }}
   </button>
@@ -152,6 +155,7 @@
   window.ECHOREPO_CFG = Object.assign({}, window.ECHOREPO_CFG || {}, {
     // /explore is ALWAYS the public map, including when a user happens to be signed in.
     public_mode: true,
+    export_authenticated: {{ (true if can_export else false) | tojson }},
     geojson_user_url: null,
     geojson_others_url: "/public/others_geojson",
     hide_wrong_coordinates: true,
@@ -205,7 +209,7 @@
   })();
 </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=27"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=29"></script>
 
 <script>
   (function setupLayoutSwitch() {

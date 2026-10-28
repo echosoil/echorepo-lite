@@ -3540,15 +3540,22 @@
   });
   btnExportFiltered?.addEventListener('click', () => {
     const cfg = window.ECHOREPO_CFG || {};
-    const PUBLIC_MODE = !!cfg.public_mode;
+    // Public map visibility and authentication are different concerns.
+    // On /explore the template supplies export_authenticated from the Flask
+    // session. On older private pages without the flag, retain the previous
+    // authenticated-only behavior (the server still enforces permissions).
+    const exportAuthenticated = Object.prototype.hasOwnProperty.call(
+      cfg, 'export_authenticated'
+    ) ? !!cfg.export_authenticated : !cfg.public_mode;
 
-    if (PUBLIC_MODE) {
+    if (!exportAuthenticated) {
       alert(T('signInToExport', {}, 'Please sign in to export data.'));
       return;
     }
 
-    if (!filteredRows.length) return;
-
+    // Do not gate server-side exports on filteredRows: that array only
+    // contains samples loaded for the current viewport. /search applies
+    // the filters across the full canonical dataset.
     const params = new URLSearchParams();
     params.set('format', 'zip');
 
