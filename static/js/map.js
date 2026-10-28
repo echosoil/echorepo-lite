@@ -920,6 +920,307 @@
   // Default base layer
   streetLayer.addTo(map);
 
+  // ---------------------------------------------------------------
+  // EEA 2016 biogeographical regions: VISUAL ONLY.
+  //
+  // The source file is generated once from the official EEA shapefile by
+  // tools/prepare_biogeo_overlay.py. This overlay is independent of the
+  // PostgreSQL region filter, sample markers, privacy rings and exports.
+  // It is lazy-loaded when the user enables its layer-control checkbox.
+  // ---------------------------------------------------------------
+  const BIOGEO_OVERLAY_AVAILABLE =
+    !!cfg.public_mode || !!cfg.biogeo_overlay_enabled;
+
+  const BIOGEO_OVERLAY_URL =
+    cfg.biogeo_overlay_url || '/static/geo/biogeo_regions_2016.geojson';
+
+  const BIOGEO_REGION_COLORS = Object.freeze({
+    'Alpine': '#709a8a',
+    'Anatolian': '#b38b6e',
+    'Arctic': '#7dacc4',
+    'Atlantic': '#6797bf',
+    'Black Sea': '#9b85bb',
+    'Boreal': '#8aa768',
+    'Continental': '#cea45e',
+    'Macaronesian': '#9980c3',
+    'Mediterranean': '#d78574',
+    'Pannonian': '#c38b9d',
+    'Steppic': '#c0aa69'
+  });
+
+  function biogeoRegionColor(regionName) {
+    const name = String(regionName || '').trim();
+    if (BIOGEO_REGION_COLORS[name]) return BIOGEO_REGION_COLORS[name];
+    // Deterministic color for any EEA region not in the predefined palette.
+    let hash = 0;
+    for (const char of name) {
+      hash = ((hash * 31) + char.charCodeAt(0)) >>> 0;
+    }
+    return `hsl(${hash % 360}, 38%, 56%)`;
+  }
+
+  // A good label anchor must fall inside a region. Multipolygon regions can
+  // contain remote islands, so we use the largest polygon and test candidates
+  // against its outer ring and any holes. The generated GeoJSON needs only
+  // the 'region_name' property; no extra preprocessing is required.
+  function biogeoRingArea(ring) {
+    let twiceArea = 0;
+    for (let i = 0, n = ring.length - 1; i < n; i++) {
+      twiceArea += ring[i][0] * ring[i + 1][1] -
+        ring[i + 1][0] * ring[i][1];
+    }
+    return twiceArea / 2;
+  }
+
+  function biogeoPointInsideRing(point, ring) {
+    const [x, y] = point;
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[i], b = ring[j];
+      if (((a[1] > y) !== (b[1] > y)) &&
+          x < (b[0] - a[0]) * (y - a[1]) /
+          (b[1] - a[1]) + a[0]) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  function biogeoLabelAnchor(geometry) {
+    if (!geometry || !geometry.coordinates) return null;
+    const polygons = geometry.type === 'Polygon'
+      ? [geometry.coordinates]
+      : geometry.type === 'MultiPolygon'
+        ? geometry.coordinates
+        : [];
+    if (!polygons.length) return null;
+
+    // Pick the largest contiguous piece (not the centre of all islands).
+    let polygon = null;
+    let largestArea = -1;
+    for (const candidate of polygons) {
+      const ring = candidate?.[0];
+      if (!Array.isArray(ring) || ring.length < 4) continue;
+      const area = Math.abs(biogeoRingArea(ring));
+      if (area > largestArea) {
+        largestArea = area;
+        polygon = candidate;
+      }
+    }
+    if (!polygon) return null;
+    const ring = polygon[0];
+    const isInside = point =>
+      biogeoPointInsideRing(point, ring) &&
+      !polygon.slice(1).some(hole => biogeoPointInsideRing(point, hole));
+
+    let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
+    let cx = 0, cy = 0, crossTotal = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      const [x1, y1] = ring[i];
+      const [x2, y2] = ring[i + 1];
+      west = Math.min(west, x1); east = Math.max(east, x1);
+      south = Math.min(south, y1); north = Math.max(north, y1);
+      const cross = x1 * y2 - x2 * y1;
+      crossTotal += cross;
+      cx += (x1 + x2) * cross;
+      cy += (y1 + y2) * cross;
+    }
+    if (!Number.isFinite(west) || !Number.isFinite(south)) return null;
+    const middle = [(west + east) / 2, (south + north) / 2];
+    const centroid = Math.abs(crossTotal) > 1e-12
+      ? [cx / (3 * crossTotal), cy / (3 * crossTotal)]
+      : middle;
+
+    // Prefer the shape centroid, then bounding-box centre, then sample a
+    // coarse interior grid. This avoids labels placed offshore/in holes.
+    if (isInside(centroid)) return [centroid[1], centroid[0]];
+    if (isInside(middle)) return [middle[1], middle[0]];
+    for (const fraction of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9]) {
+      for (const fractionX of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9]) {
+        const point = [west + (east - west) * fractionX,
+          south + (north - south) * fraction];
+        if (isInside(point)) return [point[1], point[0]];
+      }
+    }
+    // No reliable interior point: omit a label rather than mislabel another region.
+    return null;
+  }
+
+  let biogeoOverlay = null;
+  let biogeoOverlayLabels = null;
+  let biogeoOverlayLoaded = false;
+  let biogeoOverlayPromise = null;
+  let biogeoOverlayLegend = null;
+  let biogeoOverlayLegendElement = null;
+  let biogeoOverlayNames = [];
+
+  if (BIOGEO_OVERLAY_AVAILABLE) {
+    map.createPane('biogeoRegionPane');
+    const regionPane = map.getPane('biogeoRegionPane');
+    regionPane.style.zIndex = 340; // Above tiles, below sample polygons/markers.
+    regionPane.style.pointerEvents = 'none';
+
+    map.createPane('biogeoRegionLabelPane');
+    const labelPane = map.getPane('biogeoRegionLabelPane');
+    labelPane.style.zIndex = 345;
+    labelPane.style.pointerEvents = 'none';
+
+    const style = document.createElement('style');
+    style.id = 'echoBiogeoOverlayCSS';
+    style.textContent = `
+      .echo-biogeo-label-icon { background: transparent; border: 0; }
+      .echo-biogeo-label {
+        position: absolute; transform: translate(-50%, -50%);
+        color: #263c45; text-shadow: -1px -1px 2px #fff,
+        1px -1px 2px #fff, -1px 1px 2px #fff, 1px 1px 2px #fff;
+        font: 600 12px/1.2 system-ui, sans-serif;
+        text-align: center; white-space: nowrap; pointer-events: none;
+      }
+      .echo-biogeo-legend {
+        background: rgba(255, 255, 255, 0.94);
+        padding: 9px 11px; border-radius: 8px;
+        box-shadow: 0 1px 7px rgba(0,0,0,.20);
+        font: 12px/1.35 system-ui, sans-serif;
+        max-height: 32vh; overflow-y: auto; pointer-events: none;
+      }
+      .echo-biogeo-legend-title { font-weight: 700; margin-bottom: 6px; }
+      .echo-biogeo-legend-item { display: flex; gap: 7px; align-items: center; margin: 2px 0; }
+      .echo-biogeo-legend-color {
+        width: 12px; height: 12px; border: 1px solid rgba(0,0,0,.35);
+        border-radius: 2px; flex: none;
+      }
+    `;
+    document.head.appendChild(style);
+
+    biogeoOverlay = L.layerGroup();
+    biogeoOverlayLabels = L.layerGroup();
+
+    function refreshBiogeoLabels() {
+      if (!biogeoOverlayLoaded || !biogeoOverlay) return;
+      const showLabels = map.getZoom() <= 8;
+      if (showLabels && !biogeoOverlay.hasLayer(biogeoOverlayLabels)) {
+        biogeoOverlay.addLayer(biogeoOverlayLabels);
+      } else if (!showLabels && biogeoOverlay.hasLayer(biogeoOverlayLabels)) {
+        biogeoOverlay.removeLayer(biogeoOverlayLabels);
+      }
+    }
+
+    function updateBiogeoLegend() {
+      if (!biogeoOverlayLoaded || !map.hasLayer(biogeoOverlay)) {
+        if (biogeoOverlayLegend) {
+          map.removeControl(biogeoOverlayLegend);
+          biogeoOverlayLegend = null;
+          biogeoOverlayLegendElement = null;
+        }
+        return;
+      }
+      if (biogeoOverlayLegend) return;
+
+      biogeoOverlayLegend = L.control({ position: 'bottomright' });
+      biogeoOverlayLegend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'leaflet-control echo-biogeo-legend');
+        biogeoOverlayLegendElement = div;
+        const heading = document.createElement('div');
+        heading.className = 'echo-biogeo-legend-title';
+        heading.textContent = T('biogeographicalRegions', {}, 'Biogeographical regions') + ' · EEA 2016';
+        div.appendChild(heading);
+        for (const name of biogeoOverlayNames) {
+          const line = document.createElement('div');
+          line.className = 'echo-biogeo-legend-item';
+          const color = document.createElement('span');
+          color.className = 'echo-biogeo-legend-color';
+          color.style.backgroundColor = biogeoRegionColor(name);
+          const caption = document.createElement('span');
+          caption.textContent = name;
+          line.append(color, caption);
+          div.appendChild(line);
+        }
+        return div;
+      };
+      biogeoOverlayLegend.addTo(map);
+    }
+
+    async function loadBiogeoOverlayOnce() {
+      if (biogeoOverlayLoaded) return;
+      if (biogeoOverlayPromise) return biogeoOverlayPromise;
+
+      biogeoOverlayPromise = (async () => {
+        const response = await fetch(BIOGEO_OVERLAY_URL, {
+          credentials: 'same-origin', cache: 'force-cache'
+        });
+        if (!response.ok) {
+          throw new Error(`Region overlay HTTP ${response.status}: ${BIOGEO_OVERLAY_URL}`);
+        }
+        const collection = await response.json();
+        if (collection?.type !== 'FeatureCollection' ||
+            !Array.isArray(collection.features)) {
+          throw new Error('Invalid EEA biogeographical-region GeoJSON');
+        }
+
+        const names = new Set();
+        const polygonData = L.geoJSON(collection, {
+          pane: 'biogeoRegionPane',
+          interactive: false,
+          style: feature => {
+            const color = biogeoRegionColor(feature?.properties?.region_name);
+            return {
+              color, weight: 1.3, opacity: 0.72,
+              fillColor: color, fillOpacity: 0.14,
+              interactive: false
+            };
+          },
+          onEachFeature: feature => {
+            const name = String(feature?.properties?.region_name || '').trim();
+            if (!name) return;
+            if (names.has(name)) return; // One label per named region.
+            names.add(name);
+            const point = biogeoLabelAnchor(feature.geometry);
+            if (!point) return;
+            const color = biogeoRegionColor(name);
+            biogeoOverlayLabels.addLayer(L.marker(point, {
+              pane: 'biogeoRegionLabelPane',
+              interactive: false, keyboard: false,
+              icon: L.divIcon({
+                className: 'echo-biogeo-label-icon',
+                html: `<span class="echo-biogeo-label" style="border-bottom: 2px solid ${color}">${escapeHtml(name)}</span>`,
+                iconSize: [0, 0], iconAnchor: [0, 0]
+              })
+            }));
+          }
+        });
+        biogeoOverlayNames = Array.from(names).sort((a, b) => a.localeCompare(b));
+        biogeoOverlay.addLayer(polygonData);
+        biogeoOverlayLoaded = true;
+        refreshBiogeoLabels();
+        updateBiogeoLegend();
+      })();
+
+      try {
+        await biogeoOverlayPromise;
+      } catch (error) {
+        console.warn('Could not load EEA biogeographical overlay:', error);
+        if (map.hasLayer(biogeoOverlay)) {
+          map.removeLayer(biogeoOverlay);
+          alert(T('biogeoOverlayUnavailable', {},
+            'Could not load the biogeographical-region overlay. Check that /static/geo/biogeo_regions_2016.geojson exists.'));
+        }
+      } finally {
+        biogeoOverlayPromise = null;
+      }
+    }
+
+    map.on('overlayadd', event => {
+      if (event.layer === biogeoOverlay) {
+        void loadBiogeoOverlayOnce();
+        updateBiogeoLegend();
+      }
+    });
+    map.on('overlayremove', event => {
+      if (event.layer === biogeoOverlay) updateBiogeoLegend();
+    });
+    map.on('zoomend', refreshBiogeoLabels);
+  }
+
   // Created only after the current translations have been loaded.
   let baseLayerControl = null;
 
@@ -934,7 +1235,9 @@
         [T('streetMap', {}, 'Street map')]: streetLayer,
         [T('satellite', {}, 'Satellite')]: satelliteLayer
       },
-      null,
+      biogeoOverlay
+        ? { [T('biogeographicalRegions', {}, 'Biogeographical regions')]: biogeoOverlay }
+        : null,
       {
         position: 'topright',
         collapsed: false
