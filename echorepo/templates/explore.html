@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {# Match /search ZIP authorization: Flask session, not public map mode. #}
-{% set can_export = (session.get('user') or (session.get('kc') or {}).get('profile')) %}
+{% set can_export = (g.user or session.get('user') or (session.get('kc') or {}).get('profile')) %}
 {% block title %}{{ _('ECHOrepo — Explore') }}{% endblock %}
 
 {% set desktop_param = request.args.get('desktop', '') | trim | lower %}
@@ -27,46 +27,27 @@
     gap: 0.4rem;
   }
 
-    {
-    % if force_mobile_mode %
-  }
-
+  {% if force_mobile_mode %}
   .echo-desktop-only {
     display: none !important;
   }
-
   .echo-layout-switch {
     display: inline-flex !important;
   }
+  {% endif %}
 
-    {
-    % endif %
-  }
-
-    {
-    % if force_desktop_mode %
-  }
-
+  {% if force_desktop_mode %}
   .echo-layout-switch {
     display: inline-flex !important;
   }
-
-    {
-    % endif %
-  }
+  {% endif %}
 
   @media (max-width: 767.98px) {
-      {
-      % if not force_desktop_mode %
-    }
-
+    {% if not force_desktop_mode %}
     .echo-desktop-only {
       display: none !important;
     }
-
-      {
-      % endif %
-    }
+    {% endif %}
 
     .echo-layout-switch {
       display: inline-flex !important;
@@ -150,7 +131,7 @@
   </button>
 
   {% if can_export %}
-  <button id="btnExportFiltered" class="btn btn-sm btn-outline-primary echo-desktop-only" type="button" disabled>
+  <button id="btnExportFiltered" class="btn btn-sm btn-outline-primary" type="button" disabled>
     {{ _('Export filtered (0)') }}
   </button>
   {% endif %}
@@ -175,15 +156,15 @@
     // /explore is ALWAYS the public map, including when a user happens to be signed in.
     public_mode: true,
     export_authenticated: {{ (true if can_export else false) | tojson }},
-  geojson_user_url: null,
+    geojson_user_url: null,
     geojson_others_url: "/public/others_geojson",
-      hide_wrong_coordinates: true,
+    hide_wrong_coordinates: true,
 
-        // No private per-user data or map rectangle/polygon export on this page.
-        disable_selection_tools: true,
-          disable_sample_toggles: true,
-            biodiv_marker: { { config.get('BIODIV_MARKER', '16S,ITS') | tojson } },
-  biodiv_level: { { config.get('BIODIV_LEVEL', 'Phylum') | tojson } }
+    // No private per-user data or map rectangle/polygon export on this page.
+    disable_selection_tools: true,
+    disable_sample_toggles: true,
+    biodiv_marker: {{ config.get('BIODIV_MARKER', '16S,ITS') | tojson }},
+    biodiv_level: {{ config.get('BIODIV_LEVEL', 'Phylum') | tojson }}
   });
 </script>
 
@@ -228,7 +209,7 @@
   })();
 </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=30"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=31"></script>
 
 <script>
   (function setupLayoutSwitch() {

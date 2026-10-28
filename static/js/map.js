@@ -3478,10 +3478,7 @@
   }
 
   function updateFilteredCountsLabelOnly() {
-    if (
-      MOBILE_COMPACT_MODE ||
-      !btnExportFiltered
-    ) {
+    if (!btnExportFiltered) {
       return;
     }
 
@@ -3526,7 +3523,7 @@
 
     updateFilteredCountsLabelOnly();
     updateSelectionCount();
-    if (!MOBILE_COMPACT_MODE) {
+    if (btnExportFiltered) {
       scheduleGlobalFilteredCountRefresh();
     }
 
@@ -3766,7 +3763,7 @@
       updateFilteredCountsLabelOnly();
       updateSelectionCount();
       refreshI18NTexts();
-      if (!MOBILE_COMPACT_MODE) {
+      if (btnExportFiltered) {
         scheduleGlobalFilteredCountRefresh();
       }
       focusRequestedUrlSampleOnce();
