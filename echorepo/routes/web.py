@@ -1974,6 +1974,21 @@ def download_canonical_version(date, filename):
 def explore():
     i18n = _current_ui_i18n()
 
+    with get_pg_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT br.region_name
+            FROM sample_biogeo_regions AS br
+            JOIN samples AS s
+              ON s.sample_id = br.sample_id
+            WHERE br.region_name IS NOT NULL
+              AND TRIM(br.region_name) <> ''
+            ORDER BY br.region_name
+        """)
+
+        available_regions = [
+            row[0] for row in cur.fetchall()
+        ]
+
     return render_template(
         "explore.html",
         jitter_m=int(settings.MAX_JITTER_METERS),
@@ -1983,6 +1998,7 @@ def explore():
         current_locale=str(get_locale() or "en"),
         public_mode=True,
         zenodo_dataset_url=ZENODO_DATASET_URL,
+        available_regions=available_regions,
     )
 
 

@@ -1839,6 +1839,20 @@ def _canonical_map_filters() -> tuple[str, list[Any], dict[str, Any]]:
         where.append("s.ph <= %s")
         params.append(ph_max)
 
+    # Use the precomputed EEA biogeographical index, never the jittered
+    # public coordinates, for region membership. EXISTS avoids duplicate rows.
+    biogeo_region = (request.args.get("biogeo_region") or "").strip()
+    if biogeo_region:
+        where.append("""
+            EXISTS (
+                SELECT 1
+                FROM sample_biogeo_regions AS br
+                WHERE br.sample_id = s.sample_id
+                  AND br.region_name = %s
+            )
+        """)
+        params.append(biogeo_region)
+
     include_wrong = (request.args.get("include_wrong") or "").strip().lower() in {
         "1", "true", "yes", "on",
     }
@@ -1852,6 +1866,7 @@ def _canonical_map_filters() -> tuple[str, list[Any], dict[str, Any]]:
         "to": time_to or None,
         "ph_min": ph_min,
         "ph_max": ph_max,
+        "biogeo_region": biogeo_region or None,
         "sample_id": sample_id or None,
         "bbox": request.args.get("bbox") or None,
         "within": request.args.get("within") or None,

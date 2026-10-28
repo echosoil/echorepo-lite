@@ -192,6 +192,11 @@
   })();
 
   let activeCountry = null;
+  // Region membership comes from PostgreSQL's sample_biogeo_regions index.
+  // The map GeoJSON deliberately does not expose the region as a sample property;
+  // this is a SERVER-SIDE filter, independent of the client-side marker styling.
+  let activeBiogeoRegion = null;
+  const biogeoRegionEl = document.getElementById('biogeoRegionFilter');
   let activeDateFrom = null; // YYYY-MM-DD
   let activeDateTo = null; // YYYY-MM-DD
 
@@ -258,6 +263,13 @@
     // country
     if (activeCountry) params.set('country', activeCountry);
     else params.delete('country');
+
+    // Biogeographical region (the same parameter used by /search).
+    if (biogeoRegionEl && activeBiogeoRegion) {
+      params.set('biogeo_region', activeBiogeoRegion);
+    } else {
+      params.delete('biogeo_region');
+    }
 
     // pH range
     if (activePhMin != null) params.set('ph_min', activePhMin);
@@ -344,6 +356,12 @@
     // ---- country ----
     activeCountry = params.get('country') || null;
 
+    // Enable the region filter only on pages that provide its selector.
+    // This avoids changing the private /my map or other map pages.
+    activeBiogeoRegion = biogeoRegionEl
+      ? (params.get('biogeo_region') || null)
+      : null;
+
     // ---- date range ----
     activeDateFrom = params.get('date_from') || null;
     activeDateTo = params.get('date_to') || null;
@@ -358,6 +376,7 @@
 
     const sel = document.getElementById('countryFilter');
     if (sel) sel.value = activeCountry ?? '';
+    if (biogeoRegionEl) biogeoRegionEl.value = activeBiogeoRegion ?? '';
   }
 
   // 👇 Expose map + global index + "show" helper
@@ -2307,6 +2326,10 @@
       params.set('country_code', activeCountry);
     }
 
+    if (activeBiogeoRegion) {
+      params.set('biogeo_region', activeBiogeoRegion);
+    }
+
     if (activeDateFrom) {
       params.set('from', activeDateFrom);
     }
@@ -3071,6 +3094,10 @@
       params.set('country_code', activeCountry);
     }
 
+    if (activeBiogeoRegion) {
+      params.set('biogeo_region', activeBiogeoRegion);
+    }
+
     if (activeDateFrom) {
       params.set('from', activeDateFrom);
     }
@@ -3126,6 +3153,7 @@
 
     return JSON.stringify({
       country: activeCountry || '',
+      biogeoRegion: activeBiogeoRegion || '',
       dateFrom: activeDateFrom || '',
       dateTo: activeDateTo || '',
       phMin: activePhMin,
@@ -3152,6 +3180,11 @@
   }
 
   function updateFiltered() {
+    const previousBiogeoRegion = activeBiogeoRegion;
+    if (biogeoRegionEl) {
+      activeBiogeoRegion = biogeoRegionEl.value || null;
+    }
+
     const minV = phMinEl ? parseFloat(phMinEl.value) : NaN;
     const maxV = phMaxEl ? parseFloat(phMaxEl.value) : NaN;
 
@@ -3183,7 +3216,20 @@
     if (!MOBILE_COMPACT_MODE) {
       scheduleGlobalFilteredCountRefresh();
     }
+
+    // Region is not included in sample GeoJSON properties, so it MUST be
+    // filtered on the server; hiding/showing existing markers isn't enough.
+    if (previousBiogeoRegion !== activeBiogeoRegion) {
+      void loadSamplesForCurrentView();
+    }
   }
+
+  // Same immediate-update interaction as the existing Country selector.
+  // The Apply button also continues to work for all filters.
+  biogeoRegionEl?.addEventListener('change', () => {
+    updateFiltered();
+    updateURLFromFilters();
+  });
 
   btnApplyFilter?.addEventListener('click', () => {
     updateFiltered();
@@ -3206,6 +3252,7 @@
     if (activePhMin != null) params.set('ph_min', activePhMin);
     if (activePhMax != null) params.set('ph_max', activePhMax);
     if (activeCountry) params.set('country', activeCountry);
+    if (activeBiogeoRegion) params.set('biogeo_region', activeBiogeoRegion);
     if (activeDateFrom) params.set('date_from', activeDateFrom);
     if (activeDateTo) params.set('date_to', activeDateTo);
 
@@ -3390,6 +3437,14 @@
       syncFiltersToUI();
 
       rebuildPointLayersForFilter();
+      // Refresh local filtered rows after a new region or viewport is fetched.
+      // Otherwise export/selection can keep samples from the previous region.
+      filteredRows = collectRowsFiltered(
+        activePhMin, activePhMax, activeDateFrom, activeDateTo
+      );
+      lastFilterSignature = getFilterSignature();
+      updateFilteredCountsLabelOnly();
+      updateSelectionCount();
       refreshI18NTexts();
       if (!MOBILE_COMPACT_MODE) {
         scheduleGlobalFilteredCountRefresh();
