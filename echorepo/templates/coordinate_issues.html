@@ -5,6 +5,13 @@
 
 <h2 class="h4 mb-3">{{ _('Coordinate issues') }}</h2>
 
+{% if not can_edit_coordinate_issues %}
+<div class="alert alert-info small py-2 mb-3" role="status">
+  {{ _('You can view coordinate issues, but only authorized editors can save corrections.') }}
+</div>
+{% endif %}
+
+
 {% if file_missing %}
 <div class="alert alert-warning">
   {{ _('The coordinate issues file was not found:') }}
@@ -135,20 +142,29 @@
             </td>
 
             <td class="fix-coords-cell">
-              <form method="POST" action="{{ url_for('errors.fix_coords') }}" class="fix-coords-form">
-                <input type="hidden" name="sampleId" value="{{ r.sample_display }}">
-                <input type="hidden" name="userId" value="{{ r.uid_display }}">
-
-                <input name="lat_input" class="form-control form-control-sm coord-input" placeholder="{{ _('Lat') }}"
-                  value="{{ r.lat_display }}">
-
-                <input name="lon_input" class="form-control form-control-sm coord-input" placeholder="{{ _('Lon') }}"
-                  value="{{ r.lon_display }}">
-
-                <button class="btn btn-sm btn-primary coord-save-btn" type="submit">
-                  {{ _('Save') }}
-                </button>
+              {% if can_edit_coordinate_issues %}
+              <form method="POST" action="{{ url_for('web.coordinate_issues_fix_coords') }}" class="fix-coords-form">
+                {% set firestore_sample_id = (r.get('sampleId') or '') | trim %}
+                {% set firestore_user_id = (r.get('userId') or '') | trim %}
+                <input type="hidden" name="csrf_token" value="{{ session.get('_coordinate_fix_csrf', '') }}">
+                <input type="hidden" name="return_url" value="{{ request.full_path }}">
+                <input type="hidden" name="sampleId" value="{{ firestore_sample_id }}">
+                <input type="hidden" name="userId" value="{{ firestore_user_id }}">
+                <input name="lat_input" class="form-control form-control-sm coord-input"
+                       placeholder="{{ _('Lat') }}" value="{{ r.lat_display }}">
+                <input name="lon_input" class="form-control form-control-sm coord-input"
+                       placeholder="{{ _('Lon') }}" value="{{ r.lon_display }}">
+                {% if firestore_sample_id and firestore_user_id %}
+                <button class="btn btn-sm btn-primary coord-save-btn" type="submit">{{ _('Save') }}</button>
+                {% else %}
+                <span class="text-muted small" title="Firestore sampleId/userId missing from QA CSV">
+                  {{ _('Sample ID unavailable') }}
+                </span>
+                {% endif %}
               </form>
+              {% else %}
+                <span class="text-muted small">{{ _('Read-only') }}</span>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
