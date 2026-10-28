@@ -27,27 +27,46 @@
     gap: 0.4rem;
   }
 
-  {% if force_mobile_mode %}
+    {
+    % if force_mobile_mode %
+  }
+
   .echo-desktop-only {
     display: none !important;
   }
-  .echo-layout-switch {
-    display: inline-flex !important;
-  }
-  {% endif %}
 
-  {% if force_desktop_mode %}
   .echo-layout-switch {
     display: inline-flex !important;
   }
-  {% endif %}
+
+    {
+    % endif %
+  }
+
+    {
+    % if force_desktop_mode %
+  }
+
+  .echo-layout-switch {
+    display: inline-flex !important;
+  }
+
+    {
+    % endif %
+  }
 
   @media (max-width: 767.98px) {
-    {% if not force_desktop_mode %}
+      {
+      % if not force_desktop_mode %
+    }
+
     .echo-desktop-only {
       display: none !important;
     }
-    {% endif %}
+
+      {
+      % endif %
+    }
 
     .echo-layout-switch {
       display: inline-flex !important;
@@ -156,15 +175,15 @@
     // /explore is ALWAYS the public map, including when a user happens to be signed in.
     public_mode: true,
     export_authenticated: {{ (true if can_export else false) | tojson }},
-    geojson_user_url: null,
+  geojson_user_url: null,
     geojson_others_url: "/public/others_geojson",
-    hide_wrong_coordinates: true,
+      hide_wrong_coordinates: true,
 
-    // No private per-user data or map rectangle/polygon export on this page.
-    disable_selection_tools: true,
-    disable_sample_toggles: true,
-    biodiv_marker: {{ config.get('BIODIV_MARKER', '16S,ITS') | tojson }},
-    biodiv_level: {{ config.get('BIODIV_LEVEL', 'Phylum') | tojson }}
+        // No private per-user data or map rectangle/polygon export on this page.
+        disable_selection_tools: true,
+          disable_sample_toggles: true,
+            biodiv_marker: { { config.get('BIODIV_MARKER', '16S,ITS') | tojson } },
+  biodiv_level: { { config.get('BIODIV_LEVEL', 'Phylum') | tojson } }
   });
 </script>
 
@@ -209,7 +228,7 @@
   })();
 </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=29"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=30"></script>
 
 <script>
   (function setupLayoutSwitch() {

@@ -1078,15 +1078,21 @@
       }
       .echo-biogeo-legend {
         background: rgba(255, 255, 255, 0.94);
-        padding: 9px 11px; border-radius: 8px;
+        padding: 7px 9px; border-radius: 8px;
         box-shadow: 0 1px 7px rgba(0,0,0,.20);
-        font: 12px/1.35 system-ui, sans-serif;
-        max-height: 32vh; overflow-y: auto; pointer-events: none;
+        font: 11.5px/1.2 system-ui, sans-serif;
+        max-height: min(36vh, 245px);
+        max-width: min(250px, calc(100vw - 24px));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+        pointer-events: auto; /* This is a scrollable control, not a map overlay. */
       }
-      .echo-biogeo-legend-title { font-weight: 700; margin-bottom: 6px; }
-      .echo-biogeo-legend-item { display: flex; gap: 7px; align-items: center; margin: 2px 0; }
+      .echo-biogeo-legend-title { font-weight: 700; margin-bottom: 4px; }
+      .echo-biogeo-legend-item { display: flex; gap: 5px; align-items: center; margin: 1px 0; }
       .echo-biogeo-legend-color {
-        width: 12px; height: 12px; border: 1px solid rgba(0,0,0,.35);
+        width: 10px; height: 10px; border: 1px solid rgba(0,0,0,.35);
         border-radius: 2px; flex: none;
       }
     `;
@@ -1120,6 +1126,10 @@
       biogeoOverlayLegend.onAdd = function () {
         const div = L.DomUtil.create('div', 'leaflet-control echo-biogeo-legend');
         biogeoOverlayLegendElement = div;
+        // Let wheel/touch scrolling move the legend instead of zooming or
+        // dragging the Leaflet map underneath it.
+        L.DomEvent.disableScrollPropagation(div);
+        L.DomEvent.disableClickPropagation(div);
         const heading = document.createElement('div');
         heading.className = 'echo-biogeo-legend-title';
         heading.textContent = T('biogeographicalRegions', {}, 'Biogeographical regions') + ' · EEA 2016';

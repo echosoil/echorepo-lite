@@ -39,7 +39,6 @@
 <!-- Leaflet + MarkerCluster CSS -->
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
@@ -51,7 +50,6 @@
 
 
 <style>
-
   /* load your mono font */
 
   @font-face {
@@ -167,11 +165,9 @@
     font-size: 1rem;
 
   }
-
 </style>
 
 <style>
-
   /* Scrollable Leaflet popup content */
 
   .leaflet-popup-content-wrapper {
@@ -245,11 +241,9 @@
     padding: 0;
 
   }
-
 </style>
 
 <style>
-
   /* Thumbnail figure inside table cells */
 
   #tableWrap td figure.thumb {
@@ -291,11 +285,9 @@
     /* allow wrapping */
 
   }
-
 </style>
 
 <style>
-
   .metals-block {
 
     white-space: pre;
@@ -311,11 +303,9 @@
     margin: 0;
 
   }
-
 </style>
 
 <style>
-
   .hdr-help-btn {
 
     border: 0;
@@ -341,7 +331,6 @@
     color: #0d6efd;
 
   }
-
 </style>
 
 <script>
@@ -401,7 +390,6 @@
 </script>
 
 <style>
-
   .echo-layout-switch {
 
     display: none;
@@ -497,7 +485,6 @@
     display: list-item !important;
 
   }
-
 </style>
 
 {% endblock %}
@@ -617,7 +604,6 @@
 
 
       <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#finalSurveyDataUse"
-
         aria-expanded="false" aria-controls="finalSurveyDataUse">
 
         {{ _('Data use information') }}
@@ -717,7 +703,6 @@
         {# Tiny dismiss icon #}
 
         <button type="button" class="btn btn-link btn-sm p-0 text-muted" id="finalSurveyDismissBtn"
-
           title="{{ _('Dismiss') }}">
 
           <i class="bi bi-x-lg"></i>
@@ -899,21 +884,17 @@
     <span class="text-muted small">{{ _('pH') }}</span>
 
     <input type="number" step="0.1" min="0" max="14" id="phMin" class="form-control form-control-sm"
-
       placeholder="{{ _('min') }}" style="width:6rem">
 
     <span class="text-muted">–</span>
 
     <input type="number" step="0.1" min="0" max="14" id="phMax" class="form-control form-control-sm"
-
       placeholder="{{ _('max') }}" style="width:6rem">
 
     <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button"
-
       title="{{ _('Apply pH filter') }}">{{ _('Apply') }}</button>
 
     <button class="btn btn-sm btn-primary echo-desktop-only" id="btnExportFiltered" type="button" disabled
-
       title="{{ _('Export rows matching current pH filter') }}">
 
       {{ _('Export filtered (0)') }}
@@ -947,7 +928,6 @@
     <div class="modal-content d-flex flex-column" style="height:100%; max-height:calc(100vh - 5rem);">
 
       <form method="post" action="{{ url_for('web.privacy_accept') }}" id="privacyForm" class="d-flex flex-column"
-
         style="height:100%;">
 
         <input type="hidden" name="version" value="{{ privacy_version }}">
@@ -1076,7 +1056,7 @@
 
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=28"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=30"></script>
 
 
 
