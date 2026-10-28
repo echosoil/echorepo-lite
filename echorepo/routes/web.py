@@ -1131,6 +1131,137 @@ def lab_upload():
     return render_template("lab_upload.html")
 
 
+
+
+# Global QA edits are separate from /issues/fix-coords (owner-only).
+def _coordinate_qa_can_edit() -> bool:
+    """Whether this signed-in user may edit any record in global coordinate QA.
+
+    COORDINATE_QA_EDIT_RESTRICTED=1 (default): only listed editors may edit.
+    COORDINATE_QA_EDIT_RESTRICTED=0: any signed-in user may edit.
+    Unknown/missing values fail closed to restricted mode.
+    """
+    profile = (session.get("kc") or {}).get("profile") or {}
+    identities = {
+        str(value).strip().casefold()
+        for value in (
+            session.get("user"),
+            profile.get("email"),
+            profile.get("preferred_username"),
+        )
+        if value and str(value).strip()
+    }
+    if not identities:
+        return False
+
+    restriction = os.getenv("COORDINATE_QA_EDIT_RESTRICTED", "1").strip().casefold()
+    if restriction in {"0", "false", "no", "off"}:
+        return True
+
+    editors = {
+        item.strip().casefold()
+        for item in re.split(r"[,;\s]+", os.getenv("COORDINATE_QA_EDITORS", ""))
+        if item.strip()
+    }
+    return bool(identities & editors)
+
+
+@web_bp.post("/coordinate-issues/fix-coords", endpoint="coordinate_issues_fix_coords")
+@login_required
+def coordinate_issues_fix_coords():
+    """Persist one authorized QA correction in Firestore and the local SQLite cache."""
+    import hmac
+    from flask import current_app, flash
+    from ..services.db import query_sample, update_coords_sqlite
+    from ..services.firebase import update_coords_by_user_sample
+    from ..utils.coords import parse_coord
+
+    profile = (session.get("kc") or {}).get("profile") or {}
+    actor = str(session.get("user") or profile.get("email") or "").strip().casefold()
+
+    # Enforce the same rule on POST as is displayed on the GET page.
+    # HTML controls are cosmetic; this server-side check is authoritative.
+    if not _coordinate_qa_can_edit():
+        abort(403, description="Not authorized to edit global coordinate issues")
+
+    csrf_expected = str(session.get("_coordinate_fix_csrf") or "")
+    csrf_supplied = str(request.form.get("csrf_token") or "")
+    if not csrf_expected or not hmac.compare_digest(csrf_expected, csrf_supplied):
+        abort(400, description="Invalid or missing coordinate edit CSRF token")
+
+    raw_back = str(request.form.get("return_url") or "")
+    back_url = url_for("web.coordinate_issues")
+    # Retain the QA filters/page, but never permit arbitrary redirect destinations.
+    if (raw_back == "/coordinate-issues" or raw_back.startswith("/coordinate-issues?")) and not any(
+        char in raw_back for char in "\r\n\x00"
+    ) and len(raw_back) <= 2048:
+        back_url = raw_back
+
+    sample_id = str(request.form.get("sampleId") or "").strip()
+    form_uid = str(request.form.get("userId") or "").strip()
+    if not sample_id or not form_uid or "/" in sample_id or "/" in form_uid:
+        flash("Missing or invalid Firestore sample ID / user ID.", "danger")
+        return redirect(back_url)
+
+    lat = parse_coord(str(request.form.get("lat_input") or "").strip(), is_lon=False)
+    lon = parse_coord(str(request.form.get("lon_input") or "").strip(), is_lon=True)
+    if (lat is None or lon is None or not (math.isfinite(lat) and math.isfinite(lon))
+            or not (-90 <= lat <= 90 and -180 <= lon <= 180)):
+        flash("Invalid latitude/longitude; use decimal or DMS coordinates.", "danger")
+        return redirect(back_url)
+
+    # Resolve and verify identity against local data, not just a hidden form field
+    # or a stale QA CSV. sampleId is a Firestore document ID, NOT the QR code.
+    try:
+        found = query_sample(sample_id)
+    except Exception:
+        current_app.logger.exception("QA coordinate save: local sample lookup failed")
+        flash("Could not verify the sample in the local database.", "danger")
+        return redirect(back_url)
+    if found is None or found.empty or "sampleId" not in found.columns or "userId" not in found.columns:
+        flash("Sample ID not found in the local database; nothing was changed.", "danger")
+        return redirect(back_url)
+    matches = found.loc[
+        (found["sampleId"].astype(str).str.strip() == sample_id)
+        & (found["userId"].astype(str).str.strip() == form_uid)
+    ]
+    if len(matches) != 1:
+        flash("Sample ID and Firestore owner do not match uniquely; nothing was changed.", "danger")
+        return redirect(back_url)
+
+    try:
+        ok, info = update_coords_by_user_sample(form_uid, sample_id, lat, lon)
+    except Exception:
+        current_app.logger.exception("QA coordinate save: Firebase exception for sample %s", sample_id)
+        flash("Firebase update failed; nothing was saved in the local cache.", "danger")
+        return redirect(back_url)
+    if not ok:
+        current_app.logger.error("QA coordinate save: Firebase rejected %s: %s", sample_id, info)
+        flash("Firebase update failed; nothing was saved in the local cache.", "danger")
+        return redirect(back_url)
+
+    # The pipeline rebuilds Postgres with the correct jitter/privacy and QA flags.
+    # Never insert exact original coordinates directly into public PG lat/lon.
+    try:
+        local_ok, local_info = update_coords_sqlite(sample_id, lat, lon)
+    except Exception:
+        current_app.logger.exception("QA coordinate save: SQLite exception for %s", sample_id)
+        local_ok, local_info = False, "SQLite exception"
+    if not local_ok:
+        current_app.logger.error(
+            "QA coordinate save: Firebase updated, SQLite failed %s: %s", sample_id, local_info
+        )
+        flash("Saved in Firebase, but SQLite was not updated. Check server logs.", "warning")
+        return redirect(back_url)
+
+    current_app.logger.info("QA coordinate save succeeded: sample=%s editor=%s", sample_id, actor)
+    flash(
+        "Coordinates saved in Firebase and SQLite. PostgreSQL and the QA CSV "
+        "will refresh during the next enrichment run.",
+        "success",
+    )
+    return redirect(back_url)
+
 @web_bp.route("/coordinate-issues", endpoint="coordinate_issues", methods=["GET"])
 @login_required
 def coordinate_issues():
@@ -1140,6 +1271,11 @@ def coordinate_issues():
     This is an internal/login-only QA page because it can expose exact coordinates,
     QR codes and user IDs.
     """
+    import secrets
+    if not session.get("_coordinate_fix_csrf"):
+        session["_coordinate_fix_csrf"] = secrets.token_urlsafe(32)
+
+    can_edit_coordinate_issues = _coordinate_qa_can_edit()
     csv_path = _coordinate_wrong_csv_path()
 
     criteria = {
@@ -1162,6 +1298,7 @@ def coordinate_issues():
     if not csv_path.exists():
         return render_template(
             "coordinate_issues.html",
+            can_edit_coordinate_issues=can_edit_coordinate_issues,
             rows=[],
             criteria=criteria,
             reasons=[],
@@ -1397,6 +1534,7 @@ def coordinate_issues():
 
     return render_template(
         "coordinate_issues.html",
+        can_edit_coordinate_issues=can_edit_coordinate_issues,
         rows=rows,
         criteria=criteria,
         reasons=reasons,
