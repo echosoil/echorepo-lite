@@ -2713,7 +2713,7 @@ def rebuild_biogeographical_index(samples_csv: str) -> None:
     Never feed it canonical samples.csv (whose lat/lon have been jittered).
     """
     # Resolve next to this script; it may be run from a dev checkout with prod PROJECT_ROOT.
-    script_path = THIS_DIR / "index_biogeographical_index.py"
+    script_path = THIS_DIR / "index_biogeographical_regions.py"
     if not script_path.is_file():
         raise FileNotFoundError(f"Biogeographical indexing script missing: {script_path}")
 
