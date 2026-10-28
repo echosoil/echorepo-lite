@@ -21,6 +21,7 @@ import json
 import io
 import math
 import os
+import subprocess
 import re
 import sqlite3
 import sys
@@ -2336,8 +2337,8 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
     then normalize+cast into real tables.
     """
     if psycopg2 is None:
-        log.info("[PG] psycopg2 not installed, skipping PG load.")
-        return
+        log.warning("[PG] psycopg2 not installed; PostgreSQL sync did not run.")
+        return False
 
     # Ensure schema matches the new CSV columns
     try:
@@ -2608,9 +2609,11 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
 
         conn.commit()
         log.info("[PG] staging swap completed.")
+        return True
     except Exception as e:
         conn.rollback()
-        log.error("[PG] staging load failed: %s", e)
+        log.exception("[PG] staging load failed: %s", e)
+        return False
     finally:
         try:
             cur.execute("DROP TABLE IF EXISTS samples_stage_raw;")
@@ -2698,6 +2701,50 @@ def apply_coordinate_approvals(df_annotated: pd.DataFrame) -> pd.DataFrame:
     )
 
     return out
+
+# ---------------------------------------------------------------------------
+# Rebuild EEA biogeographical index after successful PostgreSQL sync
+# ---------------------------------------------------------------------------
+def rebuild_biogeographical_index(samples_csv: str) -> None:
+    """Refresh all sample -> EEA 2016 region assignments from original GPS.
+
+    The standalone index script validates its inputs and performs an atomic
+    PostgreSQL replacement; on failure the previous index remains intact.
+    Never feed it canonical samples.csv (whose lat/lon have been jittered).
+    """
+    # Resolve next to this script; it may be run from a dev checkout with prod PROJECT_ROOT.
+    script_path = THIS_DIR / "index_biogeographical_index.py"
+    if not script_path.is_file():
+        raise FileNotFoundError(f"Biogeographical indexing script missing: {script_path}")
+
+    raw_regions_path = (os.getenv("BIOGEO_REGIONS_FILE") or "").strip()
+    if not raw_regions_path:
+        raise ValueError(
+            "BIOGEO_INDEX_ENABLED=1 requires BIOGEO_REGIONS_FILE in .env "
+            "(path to the EEA 2016 .shp or .gpkg file)."
+        )
+
+    regions_path = Path(_container_data_path_to_host_path(raw_regions_path))
+    samples_path = Path(samples_csv)
+    if not regions_path.is_file():
+        raise FileNotFoundError(f"EEA biogeographical regions file not found: {regions_path}")
+    if not samples_path.is_file():
+        raise FileNotFoundError(f"Enriched samples CSV not found: {samples_path}")
+
+    command = [
+        sys.executable,
+        str(script_path),
+        "--regions", str(regions_path),
+        "--samples", str(samples_path),
+    ]
+    log.info("[biogeo] Rebuilding ALL region assignments from original GPS coordinates")
+    log.info("[biogeo] Polygons: %s", regions_path)
+    log.info("[biogeo] Source CSV: %s", samples_path)
+    # Same Python environment as the main pipeline. Its geopandas/shapely
+    # dependencies must be installed on the host, not only in the Docker app.
+    subprocess.run(command, cwd=str(PROJECT_ROOT), check=True)
+    log.info("[biogeo] Full region index rebuild completed")
+
 
 # ---------------------------------------------------------------------------
 # main
@@ -2882,15 +2929,32 @@ def main():
         except Exception as e:
             log.warning("ensure_pg_tables() failed (will try to continue): %s", e)
 
-        # 6) optional: load into Postgres staging + swap
+        # 6) Load canonical tables into PostgreSQL before assigning regions.
+        pg_sync_ok = False
         try:
-            load_canonical_into_pg_staging(
+            pg_sync_ok = load_canonical_into_pg_staging(
                 str(samples_path),
                 str(images_path),
                 str(params_path),
             )
         except Exception as e:
-            log.warning("PG staging load skipped/failed: %s", e)
+            log.exception("[PG] staging load raised an error: %s", e)
+
+        # 7) Recalculate the FULL EEA region index on every successful sync.
+        # Run on the host, using original coordinates from OUTPUT_CSV.
+        if env_bool("BIOGEO_INDEX_ENABLED", False):
+            if not pg_sync_ok:
+                log.error("[biogeo] Skipped: PostgreSQL sync was not successful")
+                # Fail visibly rather than claim a fully refreshed pipeline.
+                raise RuntimeError("Biogeographical index not refreshed: PostgreSQL sync failed")
+            try:
+                rebuild_biogeographical_index(OUTPUT_CSV)
+            except Exception as e:
+                if env_bool("BIOGEO_INDEX_STRICT", True):
+                    raise RuntimeError(f"Biogeographical index rebuild failed: {e}") from e
+                log.exception("[biogeo] Rebuild failed; previous assignments retained: %s", e)
+        else:
+            log.info("[biogeo] Index rebuild disabled (BIOGEO_INDEX_ENABLED=0)")
     log.info(
         "Pipeline complete: raw=%s, enriched=%s, users=%s, canonical_samples=%s, images=%s, parameters=%s",
         len(df_raw),
