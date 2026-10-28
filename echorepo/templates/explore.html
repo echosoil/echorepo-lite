@@ -1,19 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('ECHOrepo — Explore') }}{% endblock %}
 
-{% set desktop_param =
-request.args.get('desktop', '')
-|trim
-|lower
-%}
-
-{% set force_desktop_mode =
-desktop_param in ['1', 'true']
-%}
-
-{% set force_mobile_mode =
-desktop_param in ['0', 'false']
-%}
+{% set desktop_param = request.args.get('desktop', '') | trim | lower %}
+{% set force_desktop_mode = desktop_param in ['1', 'true'] %}
+{% set force_mobile_mode = desktop_param in ['0', 'false'] %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -96,7 +86,6 @@ desktop_param in ['0', 'false']
   <div class="explore-actions d-flex gap-2">
     {% if zenodo_dataset_url %}
     <a class="btn btn-outline-success" href="{{ zenodo_dataset_url }}" target="_blank" rel="noopener">
-
       <i class="bi bi-cloud-download"></i>
       {{ _('Download dataset from Zenodo') }}
     </a>
@@ -108,7 +97,6 @@ desktop_param in ['0', 'false']
     </a>
 
     <a id="echoLayoutSwitch" class="btn btn-outline-secondary echo-layout-switch" href="#">
-
       {% if force_desktop_mode %}
       <i class="bi bi-phone"></i>
       {{ _('Mobile version') }}
@@ -131,22 +119,19 @@ desktop_param in ['0', 'false']
   <input type="number" step="0.1" min="0" max="14" id="phMax" class="form-control form-control-sm"
     placeholder="{{ _('max') }}" style="width:5.5rem">
 
-
-
   <span class="text-muted small">{{ _('Country') }}</span>
 
-  <select id="countryFilter" class="form-select form-select-sm" style="width: 14rem">
+  <select id="countryFilter" class="form-select form-select-sm" style="width:14rem">
     <option value="">{{ _('All countries') }}</option>
   </select>
 
   <span class="text-muted small">{{ _('Date') }}</span>
 
-  <input type="date" id="dateFrom" class="form-control form-control-sm" style="width: 9.5rem">
+  <input type="date" id="dateFrom" class="form-control form-control-sm" style="width:9.5rem">
 
   <span class="text-muted">–</span>
 
-  <input type="date" id="dateTo" class="form-control form-control-sm" style="width: 9.5rem">
-
+  <input type="date" id="dateTo" class="form-control form-control-sm" style="width:9.5rem">
 
   <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button">
     {{ _('Apply') }}
@@ -157,9 +142,9 @@ desktop_param in ['0', 'false']
     {{ _('Export filtered (0)') }}
   </button>
   {% endif %}
-
 </div>
-<button id="btnCopyView" class="btn btn-sm btn-outline-secondary">
+
+<button id="btnCopyView" class="btn btn-sm btn-outline-secondary" type="button">
   🔗 {{ _('Copy view link') }}
 </button>
 
@@ -175,39 +160,71 @@ desktop_param in ['0', 'false']
 </script>
 <script>
   window.ECHOREPO_CFG = Object.assign({}, window.ECHOREPO_CFG || {}, {
-    public_mode: {{ 'false' if g.user else 'true' }},
+    // /explore is ALWAYS the public map, including when a user happens to be signed in.
+    public_mode: true,
     geojson_user_url: null,
     geojson_others_url: "/public/others_geojson",
     hide_wrong_coordinates: true,
 
-    // /explore is public browsing only: no rectangle/polygon selection tools.
+    // No private per-user data or map rectangle/polygon export on this page.
     disable_selection_tools: true,
     disable_sample_toggles: true,
-    biodiv_marker: {{ config.get("BIODIV_MARKER", "16S,ITS") | tojson }},
-    biodiv_level: {{ config.get("BIODIV_LEVEL", "Phylum") | tojson }}
+    biodiv_marker: {{ config.get('BIODIV_MARKER', '16S,ITS') | tojson }},
+    biodiv_level: {{ config.get('BIODIV_LEVEL', 'Phylum') | tojson }}
   });
 </script>
-<script src="{{ url_for('static', filename='js/map.js') }}?v=23"></script>
+
+<!-- Register before map.js creates the Leaflet map. This makes /explore?lat=...&lng=...&z=...
+     work even if map.js does not explicitly read those parameters. -->
+<script>
+  (function installExploreDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('lat') || !params.has('lng')) return;
+
+    const lat = Number(params.get('lat'));
+    const lng = Number(params.get('lng'));
+    const requestedZoom = Number(params.get('z') || '15');
+    const sampleId = (params.get('sample_id') || '').trim();
+
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90 ||
+      !Number.isFinite(lng) || lng < -180 || lng > 180 ||
+      !Number.isFinite(requestedZoom)) {
+      return;
+    }
+
+    const zoom = Math.max(1, Math.min(18, Math.round(requestedZoom)));
+
+    L.Map.addInitHook(function () {
+      if (this.getContainer().id !== 'map') return;
+      const map = this;
+
+      // Run after map.js establishes its normal initial view. Do not interfere
+      // with later user movement or with the map's normal filters and controls.
+      window.addEventListener('load', function () {
+        map.whenReady(function () {
+          map.setView([lat, lng], zoom, { animate: false });
+
+          // Optional: use map.js's existing single-sample helper when available.
+          // If the marker is not loaded yet, the map still centers on the coordinates.
+          if (sampleId && typeof window.__echomapShow === 'function') {
+            window.__echomapShow(sampleId, { zoom: zoom });
+          }
+        });
+      }, { once: true });
+    });
+  })();
+</script>
+
+<script src="{{ url_for('static', filename='js/map.js') }}?v=24"></script>
+
 <script>
   (function setupLayoutSwitch() {
-    const link = document.getElementById(
-      'echoLayoutSwitch'
-    );
-
+    const link = document.getElementById('echoLayoutSwitch');
     if (!link) return;
 
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    const desktopEnabled = [
-      '1',
-      'true'
-    ].includes(
-      String(
-        params.get('desktop') || ''
-      ).toLowerCase()
+    const params = new URLSearchParams(window.location.search);
+    const desktopEnabled = ['1', 'true'].includes(
+      String(params.get('desktop') || '').toLowerCase()
     );
 
     if (desktopEnabled) {
@@ -217,11 +234,8 @@ desktop_param in ['0', 'false']
     }
 
     const query = params.toString();
-
-    link.href =
-      window.location.pathname +
-      (query ? `?${query}` : '') +
-      window.location.hash;
+    link.href = window.location.pathname +
+      (query ? `?${query}` : '') + window.location.hash;
   })();
 </script>
 {% endblock %}

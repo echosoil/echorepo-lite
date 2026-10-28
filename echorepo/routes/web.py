@@ -1485,6 +1485,7 @@ def search_samples():
         "ph_max": (req.get("ph_max") or "").strip(),
         "date_from": (req.get("date_from") or req.get("from") or "").strip(),
         "date_to": (req.get("date_to") or req.get("to") or "").strip(),
+        "biogeo_region": (req.get("biogeo_region") or "").strip(),
     }
     fmt = (req.get("format") or "").lower()
 
@@ -1630,11 +1631,74 @@ def search_samples():
             params.append(end_exclusive.isoformat())
 
         # --------------------------------------------------
-        # 5. Return SQL conditions and parameters
+        # 5. Return criteria based on Biogeo Region  
+        # --------------------------------------------------
+
+        if criteria["biogeo_region"]:
+            where.append("""
+                EXISTS (
+                    SELECT 1
+                    FROM sample_biogeo_regions AS br
+                    WHERE br.sample_id = samples.sample_id
+                    AND br.region_name = %s
+                )
+            """)
+            params.append(criteria["biogeo_region"])
+
+        # --------------------------------------------------
+        # 6. Return SQL conditions and parameters
         # --------------------------------------------------
         return " AND ".join(where), params
-        
+
+    # Load available regions from existing canonical samples.
+    # Used both for dropdown population and request validation.
+    with get_pg_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT br.region_name
+            FROM sample_biogeo_regions AS br
+            JOIN samples AS s
+            ON s.sample_id = br.sample_id
+            WHERE br.region_name IS NOT NULL
+            AND TRIM(br.region_name) <> ''
+            ORDER BY br.region_name
+        """)
+
+        available_regions = [
+            row[0]
+            for row in cur.fetchall()
+        ]
+
+    # Reject unknown biogeographical regions.
+    if (
+        criteria["biogeo_region"]
+        and criteria["biogeo_region"] not in available_regions
+    ):
+        abort(
+            400,
+            description="Invalid biogeographical region."
+        )
+
     where_sql, params = _build_where(criteria)
+
+    # Parameters shared by pagination and export links.
+    link_filters = {
+        "country_code": criteria["country_code"],
+        "ph_min": criteria["ph_min"],
+        "ph_max": criteria["ph_max"],
+        "date_from": criteria["date_from"],
+        "date_to": criteria["date_to"],
+        "biogeo_region": criteria["biogeo_region"],
+    }
+
+    # Preserve the distinction between exact map selection
+    # and normal partial sample-ID search.
+    if criteria["sample_id"]:
+        key = (
+            "sample_ids"
+            if criteria["sample_ids_exact"]
+            else "sample_id"
+        )
+        link_filters[key] = criteria["sample_id"]
 
     def _is_logged_in() -> bool:
         return bool(session.get("user") or (session.get("kc") or {}).get("profile"))
@@ -1763,7 +1827,10 @@ def search_samples():
         total_rows=total_rows,
         I18N=i18n,
         available_country_codes=available_country_codes,
+        available_regions=available_regions,
+        link_filters=link_filters,
     )
+    
 
 
 @web_bp.route("/admin/usage")
