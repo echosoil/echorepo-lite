@@ -15,6 +15,7 @@
 - `/i18n/probe-json`  _(in echorepo/__init__.py)_
 - `/i18n/probe-tpl`  _(in echorepo/__init__.py)_
 - `/diag/oidc`  _(in echorepo/auth/routes.py)_
+- `/internal/jupyter-auth`  _(in echorepo/auth/routes.py)_
 - `/login`  _(in echorepo/auth/routes.py)_
 - `/login`  _(in echorepo/auth/routes.py)_
 - `/logout`  _(in echorepo/auth/routes.py)_
@@ -26,6 +27,7 @@
 - `/others_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson`  _(in echorepo/routes/api.py)_
 - `/user_geojson_debug`  _(in echorepo/routes/api.py)_
+- `/biodiversity/raw/all.zip`  _(in echorepo/routes/data_api.py)_
 - `/canonical/all.zip`  _(in echorepo/routes/data_api.py)_
 - `/canonical/map.count`  _(in echorepo/routes/data_api.py)_
 - `/canonical/map.geojson`  _(in echorepo/routes/data_api.py)_
@@ -67,10 +69,7 @@
 - `/download/xlsx`  _(in echorepo/routes/web.py)_
 - `/explore`  _(in echorepo/routes/web.py)_
 - `/i18n/labels`  _(in echorepo/routes/web.py)_
-- `/lab-import`  _(in echorepo/routes/web.py)_
 - `/lab-import-auto`  _(in echorepo/routes/web.py)_
-- `/lab-import-biodiversity`  _(in echorepo/routes/web.py)_
-- `/lab-upload`  _(in echorepo/routes/web.py)_
 - `/lab-upload`  _(in echorepo/routes/web.py)_
 - `/labels`  _(in echorepo/routes/web.py)_
 - `/my`  _(in echorepo/routes/web.py)_
@@ -94,10 +93,13 @@
 ├── data
 │   └── .gitkeep
 ├── docs
+│   ├── ECHOREPO_API_Data_Guide_v4.html
+│   ├── ECHOREPO_API_Data_Guide_v4.md
 │   ├── ECHOREPO_Architecture.md
 │   ├── ECHOREPO_Data_API_Guide_v3.html
 │   ├── ECHOREPO_Data_API_Guide_v3.md
 │   ├── ECHOREPO_Zenodo_Sync_API_Guide_v1.md
+│   ├── biodiversity_zenodo_publication.md
 │   ├── translate_all.html
 │   └── translate_all.md
 ├── echorepo
@@ -113,19 +115,38 @@
 │   ├── extensions.py
 │   ├── i18n.py
 │   └── wsgi.py
+├── jupyter
+│   └── jupyter/custom
 ├── keys
 │   └── .gitkeep
+├── metadata
+│   ├── metadata/biodiversity
+│   └── metadata/canonical
 ├── migrations
 │   └── migrations/postgres
+├── notebooks
+│   ├── notebooks/lib
+│   ├── notebooks/templates
+│   └── README.md
 ├── scripts
 │   ├── .gitkeep
+│   ├── cleanup_biodiversity_global_1pct.sql
+│   ├── cleanup_biodiversity_unassigned.sql
 │   ├── compile_translations.sh
 │   ├── feature.sh
 │   ├── make_release.sh
+│   ├── prune_stale_biodiversity_raw.sh
+│   ├── publish_biodiversity_staged.sh
+│   ├── publish_biodiversity_zenodo.sh
 │   ├── publish_zenodo_bundle.sh
+│   ├── reset_biodiversity_postgres.sql
 │   ├── run_pg_migrations.py
+│   ├── start_translate_containers.sh
+│   ├── stop_translate_containers.sh
 │   ├── translate_all.sh
+│   ├── update_biodiversity_zenodo.sh
 │   ├── update_zenodo_bundle.sh
+│   ├── verify_biodiversity_after_reimport.sql
 │   └── wait_for_postgres.py
 ├── static
 │   ├── static/css
@@ -135,27 +156,43 @@
 │   └── static/privacy
 ├── storage
 │   └── .gitkeep
+├── streamlit
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── streamlit_app.py
 ├── tools
-│   ├── tools/biodiversity
 │   ├── tools/sql
 │   ├── auto_translate.py
+│   ├── backfill_biodiversity_raw.py
+│   ├── backfill_soil_categories.py
 │   ├── check_lab_enrichment_qrs.py
 │   ├── create_funguild_db_once.sh
 │   ├── create_indexes.py
+│   ├── export_firebase_qr_duplicates.py
+│   ├── faprotax_16S_functional_profile.R
 │   ├── find_default_coords.py
 │   ├── firebase_kc_sync.py
 │   ├── generate_biodiversity_piecharts.py
+│   ├── generate_biodiversity_piecharts_detached.sh
 │   ├── i18n_override.py
+│   ├── index_biogeographical_regions.py
 │   ├── make_repo_overview.py
+│   ├── prepare_split_biodiversity_for_echorepo_premin10.py
+│   ├── privacy_redact.py
 │   ├── publish_api_file_to_zenodo.py
+│   ├── publish_biodiversity_to_zenodo.py
 │   ├── pull_and_enrich_samples.py
+│   ├── pull_and_enrich_samples_noblur.py
+│   ├── redact_minio_images.py
 │   ├── refresh_sqlite.py
 │   ├── run_sql.py
 │   ├── run_sql_pg.py
-│   └── translate_pg_en.py
+│   ├── translate_pg_en.py
+│   └── validate_echorepo_bundle.py
 ├── .dockerignore
 ├── .env.example
 ├── .env_zenodo.example
+├── .env_zenodo_biodiversity.example
 ├── .gitignore
 ├── .pre-commit-config.yaml
 ├── Dockerfile
@@ -164,21 +201,21 @@
 ├── Makefile
 ├── README.md
 ├── REPO_OVERVIEW.md
-├── REPO_OVERVIEW_tmp.html
 ├── babel.cfg
 ├── docker-compose.dev.yml
+├── docker-compose.jupyter.yml
 ├── docker-compose.prod.yml
 ├── docker-compose.storage.yml
+├── docker-compose.streamlit.yml
 ├── docker-compose.yml
 ├── project_paths.py
 ├── pyproject.toml
 ├── requirements-dev.txt
 ├── requirements.txt
+├── restart_only_backend_prod.sh
 ├── run.py
 ├── start_dev.sh
 ├── start_prod.sh
-├── start_translate_containers.sh
 ├── stop_dev.sh
-├── stop_prod.sh
-└── stop_translate_containers.sh
+└── stop_prod.sh
 ```

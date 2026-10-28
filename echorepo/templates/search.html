@@ -4,82 +4,75 @@
 {% block content %}
 <h2 class="h4 mb-3">{{ _('Search samples') }}</h2>
 
-<form method="get" class="card card-body mb-3">
-  <div class="row g-3 align-items-end">
-    <div class="col-md-3">
-      <label class="form-label" for="sample_id">{{ _('Sample / QR') }}</label>
-      <input type="text" id="sample_id" name="{{ 'sample_ids' if criteria.sample_ids_exact else 'sample_id' }}"
-        value="{{ criteria.sample_id }}" class="form-control">
-    </div>
-
-    <div class="col-md-3">
-      <label class="form-label" for="country_code">{{ _('Country') }}</label>
-      <select id="country_code" name="country_code" class="form-select">
-        <option value="">{{ _('Any country') }}</option>
-
-        {% for code in available_country_codes %}
-        <option value="{{ code }}" {% if criteria.country_code==code %}selected{% endif %}>
-          {{ code }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col-md-3">
-      <label class="form-label" for="biogeo_region">
-        {{ _('Biogeographical region') }}
-      </label>
-
-      <select id="biogeo_region" name="biogeo_region" class="form-select">
-
-        <option value="">
-          {{ _('Any region') }}
-        </option>
-
-        {% for region in available_regions %}
-        <option value="{{ region }}" {% if criteria.biogeo_region==region %}selected{% endif %}>
-          {{ region }}
-        </option>
-        {% endfor %}
-
-      </select>
-    </div>
-
-    <div class="col-md-2">
-      <label class="form-label" for="ph_min">{{ _('pH min') }}</label>
-      <input type="number" step="0.1" id="ph_min" name="ph_min" value="{{ criteria.ph_min }}" class="form-control">
-    </div>
-    <div class="col-md-2">
-      <label class="form-label" for="ph_max">{{ _('pH max') }}</label>
-      <input type="number" step="0.1" id="ph_max" name="ph_max" value="{{ criteria.ph_max }}" class="form-control">
-    </div>
-    <div class="col-md-2 text-md-end">
-      <button type="submit" class="btn btn-primary mt-3 mt-md-0">
-        <i class="bi bi-search"></i> {{ _('Search') }}
-      </button>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-2">
-    <div class="col-md-3">
-      <label class="form-label" for="date_from">{{ _('Date from') }}</label>
-      <input type="date" id="date_from" name="date_from" value="{{ criteria.date_from }}" class="form-control">
-    </div>
-    <div class="col-md-3">
-      <label class="form-label" for="date_to">{{ _('Date to') }}</label>
-      <input type="date" id="date_to" name="date_to" value="{{ criteria.date_to }}" class="form-control">
-    </div>
-    <div class="col-md-6 d-flex align-items-end justify-content-md-end">
-      {% if session.get("user") or (session.get("kc") or {}).get("profile") %}
-      <a class="btn btn-outline-primary" href="{{ url_for('web.search_samples', format='zip', **link_filters) }}">
-        <i class="bi bi-download"></i>
-        {{ _('Export current search') }}
-      </a>
-      {% else %}
-      <div class="alert alert-info">
-        {{ _('Sign in to export results as ZIP.') }}
+<form method="get" class="card shadow-sm mb-3 search-form">
+  <div class="card-body">
+    <div class="search-filter-grid">
+      <div class="search-field">
+        <label class="form-label" for="sample_id">{{ _('Sample / QR') }}</label>
+        <input type="text" id="sample_id"
+               name="{{ 'sample_ids' if criteria.sample_ids_exact else 'sample_id' }}"
+               value="{{ criteria.sample_id or '' }}"
+               class="form-control">
       </div>
-      {% endif %}
+
+      <div class="search-field">
+        <label class="form-label" for="country_code">{{ _('Country') }}</label>
+        <select id="country_code" name="country_code" class="form-select">
+          <option value="">{{ _('Any country') }}</option>
+          {% for code in available_country_codes %}
+          <option value="{{ code }}" {% if criteria.country_code == code %}selected{% endif %}>{{ code }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="search-field">
+        <label class="form-label" for="biogeo_region">{{ _('Biogeographical region') }}</label>
+        <select id="biogeo_region" name="biogeo_region" class="form-select">
+          <option value="">{{ _('Any region') }}</option>
+          {% for region in available_regions %}
+          <option value="{{ region }}" {% if criteria.biogeo_region == region %}selected{% endif %}>{{ region }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="search-ph-group">
+        <div class="search-field">
+          <label class="form-label" for="ph_min">{{ _('pH min') }}</label>
+          <input type="number" min="0" max="14" step="0.1" id="ph_min"
+                 name="ph_min" value="{{ criteria.ph_min if criteria.ph_min is not none else '' }}" class="form-control">
+        </div>
+        <div class="search-field">
+          <label class="form-label" for="ph_max">{{ _('pH max') }}</label>
+          <input type="number" min="0" max="14" step="0.1" id="ph_max"
+                 name="ph_max" value="{{ criteria.ph_max if criteria.ph_max is not none else '' }}" class="form-control">
+        </div>
+      </div>
+    </div>
+
+    <div class="search-bottom-grid">
+      <div class="search-field">
+        <label class="form-label" for="date_from">{{ _('Date from') }}</label>
+        <input type="date" id="date_from" name="date_from"
+               value="{{ criteria.date_from or '' }}" class="form-control">
+      </div>
+      <div class="search-field">
+        <label class="form-label" for="date_to">{{ _('Date to') }}</label>
+        <input type="date" id="date_to" name="date_to"
+               value="{{ criteria.date_to or '' }}" class="form-control">
+      </div>
+      <div class="search-form-actions">
+        {% if session.get('user') or (session.get('kc') or {}).get('profile') %}
+        <a class="btn btn-outline-primary"
+           href="{{ url_for('web.search_samples', format='zip', **link_filters) }}">
+          <i class="bi bi-download"></i> {{ _('Export current search') }}
+        </a>
+        {% else %}
+        <span class="small text-muted search-export-hint">{{ _('Sign in to export results as ZIP.') }}</span>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> {{ _('Search') }}
+        </button>
+      </div>
     </div>
   </div>
 </form>
@@ -90,9 +83,7 @@
       <table class="table table-sm table-hover mb-0 sample-table">
         <thead class="table-light">
           <tr>
-            <th class="text-center" title="Map">
-              <i class="bi bi-geo-alt-fill"></i>
-            </th>
+            <th class="text-center" title="{{ _('Map') }}"><i class="bi bi-geo-alt-fill"></i></th>
             <th>{{ _('Sample / QR') }}</th>
             <th>{{ _('Timestamp') }}</th>
             <th>{{ _('Country') }}</th>
@@ -106,15 +97,13 @@
           {% if rows %}
           {% for r in rows %}
           <tr>
-            <td>
+            <td class="text-center">
               {% if r.lat is not none and r.lon is not none %}
-              <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" href="{{ url_for(
-                    'web.search_samples',
-                    sample_id=r.sample_id,
-                    lat=r.lat,
-                    lng=r.lon,
-                    z=15
-                ) }}" title="{{ _('Show this sample on map') }}">
+              <a target="_blank" rel="noopener"
+                 class="btn btn-sm btn-outline-secondary"
+                 href="{{ url_for('web.home', sample_id=r.sample_id, lat=r.lat, lng=r.lon, z=15) }}"
+                 title="{{ _('Show this sample on map') }}"
+                 aria-label="{{ _('Show this sample on map') }}">
                 <i class="bi bi-geo-alt"></i>
               </a>
               {% endif %}
@@ -141,42 +130,89 @@
   </div>
 
   {% if total_pages > 1 %}
-  <div class="card-footer d-flex justify-content-between align-items-center">
+  <div class="card-footer d-flex flex-wrap gap-2 justify-content-between align-items-center">
     <span class="text-muted small">
-      {{ _('Showing page') }} {{ page }} {{ _('of') }} {{ total_pages }} ({{ total_rows }} {{ _('results') }})
+      {{ _('Showing page') }} {{ page }} {{ _('of') }} {{ total_pages }}
+      ({{ total_rows }} {{ _('results') }})
     </span>
-    <nav>
+    <nav aria-label="{{ _('Search results pages') }}">
       <ul class="pagination pagination-sm mb-0">
         <li class="page-item {% if page <= 1 %}disabled{% endif %}">
           <a class="page-link" href="{{ url_for('web.search_samples', page=page-1, **link_filters) }}">&laquo;</a>
         </li>
-
         {% set start = page-2 if page-2 > 1 else 1 %}
-        {% set end = page+2 if page+2 < total_pages else total_pages %} {% for p in range(start, end+1) %} <li
-          class="page-item {% if p == page %}active{% endif %}">
+        {% set end = page+2 if page+2 < total_pages else total_pages %}
+        {% for p in range(start, end+1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
           <a class="page-link" href="{{ url_for('web.search_samples', page=p, **link_filters) }}">{{ p }}</a>
-          </li>
-          {% endfor %}
-
-          <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('web.search_samples', page=page+1, **link_filters) }}">&raquo;</a>
-          </li>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('web.search_samples', page=page+1, **link_filters) }}">&raquo;</a>
+        </li>
       </ul>
     </nav>
   </div>
   {% endif %}
 </div>
-
 {% endblock %}
 
 {% block extra_css %}
 <style>
-  /* keep the earlier monospaced style if you want aligned columns */
+  .search-form .card-body { padding: 1.15rem 1.25rem; }
+  .search-form .search-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 0.85rem;
+    align-items: end;
+  }
+  .search-form .search-bottom-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.25fr);
+    gap: 0.85rem;
+    align-items: end;
+    margin-top: 0.95rem;
+  }
+  .search-form .search-field { min-width: 0; }
+  .search-form .form-label {
+    font-size: 0.88rem;
+    margin-bottom: 0.35rem;
+    font-weight: 500;
+  }
+  .search-form .form-control,
+  .search-form .form-select { min-width: 0; width: 100%; }
+  .search-form .search-ph-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .search-form .search-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+  .search-form .search-export-hint { max-width: 15rem; }
+  @media (max-width: 850px) {
+    .search-form .search-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .search-form .search-bottom-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .search-form .search-form-actions { grid-column: 1 / -1; }
+  }
+  @media (max-width: 520px) {
+    .search-form .search-filter-grid,
+    .search-form .search-bottom-grid { grid-template-columns: minmax(0, 1fr); }
+    .search-form .search-form-actions { grid-column: 1; justify-content: stretch; }
+    .search-form .search-form-actions .btn { flex: 1 1 auto; }
+  }
   .sample-table td,
   .sample-table th {
     font-family: "Inconsolata", ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.85rem;
     white-space: nowrap;
+    vertical-align: middle;
   }
 </style>
 {% endblock %}
@@ -187,27 +223,17 @@
     const sel = document.getElementById('country_code');
     if (!sel) return;
 
-    const lang = (
-      document.documentElement.lang || 'en'
-    ).replace('_', '-');
-
+    const lang = (document.documentElement.lang || 'en').replace('_', '-');
     let regionNames = null;
 
     try {
-      regionNames = new Intl.DisplayNames(
-        [lang],
-        { type: 'region' }
-      );
+      regionNames = new Intl.DisplayNames([lang], { type: 'region' });
     } catch (e) {
-      console.warn(
-        'Country translation unavailable:',
-        e
-      );
+      console.warn('Country translation unavailable:', e);
     }
 
     function countryLabel(code) {
       if (!code) return '';
-
       try {
         return regionNames?.of(code) || code;
       } catch (e) {
@@ -215,21 +241,11 @@
       }
     }
 
-    // Preserve "Any country" as the first option.
     const options = Array.from(sel.options).slice(1);
-
-    // Translate country names.
     for (const option of options) {
       option.textContent = countryLabel(option.value);
     }
-
-    // Sort alphabetically in the current UI language.
-    options.sort((a, b) =>
-      a.textContent.localeCompare(b.textContent, lang)
-    );
-
-    // Reinsert sorted options.
-    // Existing selected option remains selected.
+    options.sort((a, b) => a.textContent.localeCompare(b.textContent, lang));
     for (const option of options) {
       sel.appendChild(option);
     }
