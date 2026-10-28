@@ -101,6 +101,9 @@ storage/*
 pgdata/*
 !pgdata/.gitkeep
 
+patches/*
+!patches/.gitkeep
+
 # ── Misc temp files ───────────────────────────────────────────────────────────
 *.swp
 *.swo
