@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 10:48+0000\n"
+"POT-Creation-Date: 2026-10-29 11:08+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: et\n"
@@ -68,17 +68,17 @@ msgstr "Selge"
 msgid "Export filtered ({n})"
 msgstr "Ekspordi filtreeritud ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1915
 msgid "Date"
 msgstr "Kuupäev"
 
-#: echorepo/i18n.py:121 static/js/map.js:1917
+#: echorepo/i18n.py:121 static/js/map.js:1920
 msgid "QR code"
 msgstr "QR-kood"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1922
+#: static/js/map.js:1925
 msgid "pH"
 msgstr "pH"
 
@@ -86,27 +86,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Värv"
 
-#: echorepo/i18n.py:124 static/js/map.js:1927
+#: echorepo/i18n.py:124 static/js/map.js:1930
 msgid "Soil organic matter"
 msgstr "Mulla orgaaniline aine"
 
-#: echorepo/i18n.py:125 static/js/map.js:1941
+#: echorepo/i18n.py:125 static/js/map.js:1944
 msgid "Structure"
 msgstr "Struktuur"
 
-#: echorepo/i18n.py:126 static/js/map.js:1946
+#: echorepo/i18n.py:126 static/js/map.js:1949
 msgid "Earthworms"
 msgstr "Vihmaussid"
 
-#: echorepo/i18n.py:127 static/js/map.js:1951
+#: echorepo/i18n.py:127 static/js/map.js:1954
 msgid "Plastic"
 msgstr "Plastik"
 
-#: echorepo/i18n.py:128 static/js/map.js:1956
+#: echorepo/i18n.py:128 static/js/map.js:1959
 msgid "Debris"
 msgstr "Debris"
 
-#: echorepo/i18n.py:129 static/js/map.js:1961
+#: echorepo/i18n.py:129 static/js/map.js:1964
 msgid "Contamination"
 msgstr "Saastumine"
 
@@ -126,35 +126,35 @@ msgstr "Ristküliku joonistamine"
 msgid "Click and drag to draw a rectangle."
 msgstr "Klõpsa ja lohista ristküliku joonistamiseks."
 
-#: echorepo/i18n.py:134 static/js/map.js:3266
+#: echorepo/i18n.py:134 static/js/map.js:3269
 msgid "Cancel drawing"
 msgstr "Loobu joonistusest"
 
-#: echorepo/i18n.py:135 static/js/map.js:3267
+#: echorepo/i18n.py:135 static/js/map.js:3270
 msgid "Cancel"
 msgstr "Tühistage"
 
-#: echorepo/i18n.py:136 static/js/map.js:3271
+#: echorepo/i18n.py:136 static/js/map.js:3274
 msgid "Delete last point"
 msgstr "Viimase punkti kustutamine"
 
-#: echorepo/i18n.py:137 static/js/map.js:1347
+#: echorepo/i18n.py:137 static/js/map.js:1350
 msgid "Street map"
 msgstr "Tänavakaart"
 
-#: echorepo/i18n.py:138 static/js/map.js:1348
+#: echorepo/i18n.py:138 static/js/map.js:1351
 msgid "Satellite"
 msgstr "Satelliit"
 
-#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
 msgid "Biogeographical regions"
 msgstr "Biogeograafilised piirkonnad"
 
-#: echorepo/i18n.py:140 static/js/map.js:3861
+#: echorepo/i18n.py:140 static/js/map.js:3864
 msgid "Loading samples..."
 msgstr "Proovide laadimine..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3862
+#: echorepo/i18n.py:141 static/js/map.js:3865
 msgid "Fetching visible map area"
 msgstr "Kaardi nähtava ala tõmbamine"
 
@@ -182,7 +182,11 @@ msgstr "Ekspordi valik"
 msgid "Clear selection"
 msgstr "Puhas valik"
 
-#: echorepo/i18n.py:148 static/js/map.js:1566
+#: echorepo/i18n.py:148
+msgid "Loading sample details..."
+msgstr "Prooviandmete laadimine..."
+
+#: echorepo/i18n.py:149 static/js/map.js:1569
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Protsentide väärtused (%) saab teisendada mg/kg-ks, korrutades need 10000-ga."
 
@@ -467,8 +471,9 @@ msgid "Country"
 msgstr "Riik"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-msgid "All countries"
-msgstr "Kõik riigid"
+#: echorepo/templates/search.html:21 static/js/map.js:326
+msgid "Any country"
+msgstr "Iga riik"
 
 #: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
 #: echorepo/templates/search.html:29
@@ -858,10 +863,6 @@ msgstr "Näita kaardil"
 msgid "Could not locate this sample on the map."
 msgstr "Selle näidise leidmine kaardil nurjus."
 
-#: echorepo/templates/search.html:21 static/js/map.js:324
-msgid "Any country"
-msgstr "Iga riik"
-
 #: echorepo/templates/search.html:40
 msgid "pH min"
 msgstr "pH min"
@@ -995,20 +996,20 @@ msgstr "Ling kopeeritakse lõikepuhvrisse"
 msgid "Copy this link:"
 msgstr "Kopeeri see link:"
 
-#: static/js/map.js:890 static/js/map.js:3637
+#: static/js/map.js:893 static/js/map.js:3640
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Ekspordi filtreeritud (${n})"
 
-#: static/js/map.js:900 static/js/map.js:3429
+#: static/js/map.js:903 static/js/map.js:3432
 msgid "Release mouse to finish drawing."
 msgstr "Vabasta hiir joonistamise lõpetamiseks."
 
-#: static/js/map.js:974
+#: static/js/map.js:977
 msgid "Not available"
 msgstr "Ei ole saadaval"
 
-#: static/js/map.js:1316
+#: static/js/map.js:1319
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1016,69 +1017,69 @@ msgstr ""
 "Biogeograafilise piirkonna katte laadimine nurjus. Kontrollige, kas "
 "/static/geo/biogeo regions 2016.geojson on olemas."
 
-#: static/js/map.js:1572
+#: static/js/map.js:1575
 msgid "Unit conversion help"
 msgstr "Ühiku teisendamise abi"
 
-#: static/js/map.js:1936
+#: static/js/map.js:1939
 msgid "Texture"
 msgstr "Tekstuur"
 
-#: static/js/map.js:1971
+#: static/js/map.js:1974
 msgid "Observations"
 msgstr "Tähelepanekud"
 
-#: static/js/map.js:2609 static/js/map.js:3961
+#: static/js/map.js:2612 static/js/map.js:3964
 msgid "Loading map data..."
 msgstr "Kaardi andmete laadimine..."
 
-#: static/js/map.js:2613
+#: static/js/map.js:2616
 msgid "Please wait"
 msgstr "Palun oota"
 
-#: static/js/map.js:2892
+#: static/js/map.js:2895
 msgid "Loading..."
 msgstr "Laadimine..."
 
-#: static/js/map.js:3259
+#: static/js/map.js:3262
 msgid "Draw selection rectangle"
 msgstr "Valiku ristküliku näitamine"
 
-#: static/js/map.js:3270
+#: static/js/map.js:3273
 msgid "Delete last point drawn"
 msgstr "Viidatud punkt välja jätta"
 
-#: static/js/map.js:3278
+#: static/js/map.js:3281
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Klõpsa ja lohista valiku ristküliku joonistamiseks. Võite joonistada rohkem "
 "kui ühe."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3287
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Vabasta hiir selle ristküliku lisamiseks valikusse."
 
-#: static/js/map.js:3365
+#: static/js/map.js:3368
 msgid "No selected samples to export."
 msgstr "Valitud proove ei ekspordita."
 
-#: static/js/map.js:3707
+#: static/js/map.js:3710
 msgid "Please sign in to export data."
 msgstr "Palun logi sisse ekspordiandmetesse."
 
-#: static/js/map.js:3777
+#: static/js/map.js:3780
 msgid "Loading sample..."
 msgstr "Proovi laadimine..."
 
-#: static/js/map.js:3893
+#: static/js/map.js:3896
 msgid "Rendering markers..."
 msgstr "Renderdavad markerid..."
 
-#: static/js/map.js:3894
+#: static/js/map.js:3897
 msgid "Building clusters and popups"
 msgstr "Ehitusklastrid ja hüpikaknad"
 
-#: static/js/map.js:3962
+#: static/js/map.js:3965
 msgid "Preparing map"
 msgstr "Kaardi ettevalmistamine"
 
@@ -1108,4 +1109,7 @@ msgstr "Kaardi ettevalmistamine"
 
 #~ msgid "sample_biodiversity.csv"
 #~ msgstr "sample bioloogiline mitmekesisus.csv"
+
+#~ msgid "All countries"
+#~ msgstr "Kõik riigid"
 

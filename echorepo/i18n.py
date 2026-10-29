@@ -145,6 +145,7 @@ BASE_LABEL_MSGIDS = {
     "selectionExportHintAfter": N_("to draw one or more areas"),
     "exportSelection": N_("Export selection"),
     "clearSelection": N_("Clear selection"),
+    "loadingSampleDetails": N_("Loading sample details..."),
     "elementalConcentrationsHelp": N_("Percentage values (%) can be converted to mg/kg by multiplying by 10000."),
 }
 

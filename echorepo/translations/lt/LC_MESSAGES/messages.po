@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 10:48+0000\n"
+"POT-Creation-Date: 2026-10-29 11:08+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lt\n"
@@ -69,17 +69,17 @@ msgstr "Išvalyti"
 msgid "Export filtered ({n})"
 msgstr "Eksportuoti filtruotą ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1915
 msgid "Date"
 msgstr "Data"
 
-#: echorepo/i18n.py:121 static/js/map.js:1917
+#: echorepo/i18n.py:121 static/js/map.js:1920
 msgid "QR code"
 msgstr "QR kodas"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1922
+#: static/js/map.js:1925
 msgid "pH"
 msgstr "pH"
 
@@ -87,27 +87,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Spalva"
 
-#: echorepo/i18n.py:124 static/js/map.js:1927
+#: echorepo/i18n.py:124 static/js/map.js:1930
 msgid "Soil organic matter"
 msgstr "Dirvožemio organinės medžiagos"
 
-#: echorepo/i18n.py:125 static/js/map.js:1941
+#: echorepo/i18n.py:125 static/js/map.js:1944
 msgid "Structure"
 msgstr "Struktūra"
 
-#: echorepo/i18n.py:126 static/js/map.js:1946
+#: echorepo/i18n.py:126 static/js/map.js:1949
 msgid "Earthworms"
 msgstr "Sliekai"
 
-#: echorepo/i18n.py:127 static/js/map.js:1951
+#: echorepo/i18n.py:127 static/js/map.js:1954
 msgid "Plastic"
 msgstr "Plastikiniai"
 
-#: echorepo/i18n.py:128 static/js/map.js:1956
+#: echorepo/i18n.py:128 static/js/map.js:1959
 msgid "Debris"
 msgstr "Nuolaužos"
 
-#: echorepo/i18n.py:129 static/js/map.js:1961
+#: echorepo/i18n.py:129 static/js/map.js:1964
 msgid "Contamination"
 msgstr "Teršalai"
 
@@ -127,35 +127,35 @@ msgstr "Piešti stačiakampį"
 msgid "Click and drag to draw a rectangle."
 msgstr "Spauskite ir vilkite, kad pieštumėte stačiakampį."
 
-#: echorepo/i18n.py:134 static/js/map.js:3266
+#: echorepo/i18n.py:134 static/js/map.js:3269
 msgid "Cancel drawing"
 msgstr "NAME OF TRANSLATORS"
 
-#: echorepo/i18n.py:135 static/js/map.js:3267
+#: echorepo/i18n.py:135 static/js/map.js:3270
 msgid "Cancel"
 msgstr "Atsisakyti"
 
-#: echorepo/i18n.py:136 static/js/map.js:3271
+#: echorepo/i18n.py:136 static/js/map.js:3274
 msgid "Delete last point"
 msgstr "Išbraukti paskutinį punktą:"
 
-#: echorepo/i18n.py:137 static/js/map.js:1347
+#: echorepo/i18n.py:137 static/js/map.js:1350
 msgid "Street map"
 msgstr "Gatvės žemėlapis"
 
-#: echorepo/i18n.py:138 static/js/map.js:1348
+#: echorepo/i18n.py:138 static/js/map.js:1351
 msgid "Satellite"
 msgstr "Palydovas"
 
-#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
 msgid "Biogeographical regions"
 msgstr "Biogeografijos regionai"
 
-#: echorepo/i18n.py:140 static/js/map.js:3861
+#: echorepo/i18n.py:140 static/js/map.js:3864
 msgid "Loading samples..."
 msgstr "Pakrovimo pavyzdžiai..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3862
+#: echorepo/i18n.py:141 static/js/map.js:3865
 msgid "Fetching visible map area"
 msgstr "Rodyti žemėlapio plotą"
 
@@ -183,7 +183,11 @@ msgstr "Eksportas"
 msgid "Clear selection"
 msgstr "Išvalyti žymėjimą"
 
-#: echorepo/i18n.py:148 static/js/map.js:1566
+#: echorepo/i18n.py:148
+msgid "Loading sample details..."
+msgstr "Sumontuotas pavyzdys..."
+
+#: echorepo/i18n.py:149 static/js/map.js:1569
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Procentines vertes (%) galima paversti mg / kg dauginant iš 10000."
 
@@ -470,8 +474,9 @@ msgid "Country"
 msgstr "Šalis"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-msgid "All countries"
-msgstr "Visos šalys"
+#: echorepo/templates/search.html:21 static/js/map.js:326
+msgid "Any country"
+msgstr "Šalis"
 
 #: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
 #: echorepo/templates/search.html:29
@@ -863,10 +868,6 @@ msgstr "Rodyti žemėlapyje"
 msgid "Could not locate this sample on the map."
 msgstr "@ info: whatsthis."
 
-#: echorepo/templates/search.html:21 static/js/map.js:324
-msgid "Any country"
-msgstr "Šalis"
-
 #: echorepo/templates/search.html:40
 msgid "pH min"
 msgstr "pH min"
@@ -998,88 +999,88 @@ msgstr "Nuoroda nukopijuota į iškarpinę"
 msgid "Copy this link:"
 msgstr "Kopijuoti šią nuorodą:"
 
-#: static/js/map.js:890 static/js/map.js:3637
+#: static/js/map.js:893 static/js/map.js:3640
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Eksportuoti filtruotą (${n})"
 
-#: static/js/map.js:900 static/js/map.js:3429
+#: static/js/map.js:903 static/js/map.js:3432
 msgid "Release mouse to finish drawing."
 msgstr "Paleisti pelę baigti piešimo."
 
-#: static/js/map.js:974
+#: static/js/map.js:977
 msgid "Not available"
 msgstr "Netaikoma"
 
-#: static/js/map.js:1316
+#: static/js/map.js:1319
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
 msgstr "Nepavyko įkelti regiono gyventojų. III PRIEDAS."
 
-#: static/js/map.js:1572
+#: static/js/map.js:1575
 msgid "Unit conversion help"
 msgstr "Vieneto konvertavimo pagalba"
 
-#: static/js/map.js:1936
+#: static/js/map.js:1939
 msgid "Texture"
 msgstr "Kėbulas"
 
-#: static/js/map.js:1971
+#: static/js/map.js:1974
 msgid "Observations"
 msgstr "Pastabos"
 
-#: static/js/map.js:2609 static/js/map.js:3961
+#: static/js/map.js:2612 static/js/map.js:3964
 msgid "Loading map data..."
 msgstr "Įkeliami žemėlapio duomenys..."
 
-#: static/js/map.js:2613
+#: static/js/map.js:2616
 msgid "Please wait"
 msgstr "Prašau palaukti"
 
-#: static/js/map.js:2892
+#: static/js/map.js:2895
 msgid "Loading..."
 msgstr "Įkeliama..."
 
-#: static/js/map.js:3259
+#: static/js/map.js:3262
 msgid "Draw selection rectangle"
 msgstr "Piešti pasirinkimo stačiakampį"
 
-#: static/js/map.js:3270
+#: static/js/map.js:3273
 msgid "Delete last point drawn"
 msgstr "Išbraukti paskutinį punktą"
 
-#: static/js/map.js:3278
+#: static/js/map.js:3281
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Spauskite ir vilkite norėdami piešti pažymėtą stačiakampį. Jūs galite piešti "
 "daugiau nei vieną."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3287
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "@ info: whatsthis."
 
-#: static/js/map.js:3365
+#: static/js/map.js:3368
 msgid "No selected samples to export."
 msgstr "Eksportuoti atrinktų mėginių nėra."
 
-#: static/js/map.js:3707
+#: static/js/map.js:3710
 msgid "Please sign in to export data."
 msgstr "Prašome prisijungti prie eksporto duomenų."
 
-#: static/js/map.js:3777
+#: static/js/map.js:3780
 msgid "Loading sample..."
 msgstr "Pakrovimo pavyzdys..."
 
-#: static/js/map.js:3893
+#: static/js/map.js:3896
 msgid "Rendering markers..."
 msgstr "Žymekliai..."
 
-#: static/js/map.js:3894
+#: static/js/map.js:3897
 msgid "Building clusters and popups"
 msgstr "Kliūčių ir langų statyba"
 
-#: static/js/map.js:3962
+#: static/js/map.js:3965
 msgid "Preparing map"
 msgstr "Ruošiamas žemėlapis"
 
@@ -1109,4 +1110,7 @@ msgstr "Ruošiamas žemėlapis"
 
 #~ msgid "sample_biodiversity.csv"
 #~ msgstr "bandinys _ biodiversity.csv"
+
+#~ msgid "All countries"
+#~ msgstr "Visos šalys"
 

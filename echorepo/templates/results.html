@@ -835,7 +835,7 @@
       {{ _('Country') }}
     </label>
     <select id="countryFilter" class="form-select form-select-sm" style="width:13rem">
-      <option value="">{{ _('All countries') }}</option>
+      <option value="">{{ _('Any country') }}</option>
     </select>
 
     <span class="text-muted small">{{ _('pH') }}</span>
@@ -1013,7 +1013,7 @@
 
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=35"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=40"></script>
 
 
 

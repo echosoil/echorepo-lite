@@ -111,7 +111,7 @@
   <span class="text-muted small">{{ _('Country') }}</span>
 
   <select id="countryFilter" class="form-select form-select-sm" style="width:14rem">
-    <option value="">{{ _('All countries') }}</option>
+    <option value="">{{ _('Any country') }}</option>
   </select>
 
   <label class="text-muted small mb-0" for="biogeoRegionFilter">
@@ -219,7 +219,7 @@
   })();
 </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=35"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=40"></script>
 
 <script>
   (function setupLayoutSwitch() {
