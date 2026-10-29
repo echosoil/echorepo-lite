@@ -1808,6 +1808,19 @@
       return null;
     };
 
+    // These three free-text fields can contain the literal string "nan" from
+    // imported data. Treat it as missing, and try the next source field if any.
+    // Keep all other popup values and meaningful text unchanged.
+    const pickNonNaN = (...values) => {
+      for (const value of values) {
+        if (typeof value === 'number' && Number.isNaN(value)) continue;
+        if (typeof value === 'string' && value.trim().toLowerCase() === 'nan') continue;
+        const result = pick(value);
+        if (result != null) return result;
+      }
+      return null;
+    };
+
     // ---- normalize common fields (old UI schema OR canonical schema) ----
     const sampleId = pick(p.sampleId, p.sample_id, p.Sample, p.QR_qrCode);
     const dateIso = pick(p.collectedAt, p.timestamp_utc, p.date, p.collected_at);
@@ -1824,7 +1837,7 @@
       p.locationAccuracyM
     );
 
-    const observations = pick(
+    const observations = pickNonNaN(
       p.observations_en,
       p.observations_orig,
       p.observations
@@ -1846,14 +1859,14 @@
     const plastic = pick(p.SOIL_CONTAMINATION_plastic, p.contamination_plastic, p.plastic);
     const debris = pick(p.SOIL_CONTAMINATION_debris, p.contamination_debris, p.debris);
 
-    const contaminationNotes = pick(
+    const contaminationNotes = pickNonNaN(
       p.SOIL_CONTAMINATION_comments,
       p.contamination_other_en, p.contamination_other_orig,
       p.notes
     );
 
     // metals: old blob OR canonical fields
-    const metalsRaw = pick(
+    const metalsRaw = pickNonNaN(
       p.METALS_info,
       p.metals_info_en, p.metals_info_orig,
       p.elemental_concentrations_en, p.elemental_concentrations_orig
