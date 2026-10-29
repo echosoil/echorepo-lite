@@ -76,7 +76,7 @@
     if (value == null || value === '') return value;
     const text = String(value).trim();
     if (!text || text !== text.toLocaleUpperCase() ||
-        text === text.toLocaleLowerCase()) return value;
+      text === text.toLocaleLowerCase()) return value;
     return text.toLocaleLowerCase()
       .replace(/(^|[\s-])(\p{L})/gu, (_, separator, letter) =>
         separator + letter.toLocaleUpperCase());
@@ -1071,8 +1071,8 @@
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
       const a = ring[i], b = ring[j];
       if (((a[1] > y) !== (b[1] > y)) &&
-          x < (b[0] - a[0]) * (y - a[1]) /
-          (b[1] - a[1]) + a[0]) {
+        x < (b[0] - a[0]) * (y - a[1]) /
+        (b[1] - a[1]) + a[0]) {
         inside = !inside;
       }
     }
@@ -1131,7 +1131,7 @@
     for (const fraction of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9]) {
       for (const fractionX of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9]) {
         const point = [west + (east - west) * fractionX,
-          south + (north - south) * fraction];
+        south + (north - south) * fraction];
         if (isInside(point)) return [point[1], point[0]];
       }
     }
@@ -1256,7 +1256,7 @@
         }
         const collection = await response.json();
         if (collection?.type !== 'FeatureCollection' ||
-            !Array.isArray(collection.features)) {
+          !Array.isArray(collection.features)) {
           throw new Error('Invalid EEA biogeographical-region GeoJSON');
         }
 
