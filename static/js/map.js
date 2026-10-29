@@ -2099,6 +2099,8 @@
 
   // ---- State ----
   let ALL_HEADERS = null, userGJ, othersGJ;
+  // Keep recently opened popups in memory across bbox reloads.
+  const sampleDetailsCache = new Map();
 
   // Ticks are shown outside the middle zoom range.
   // Privacy-radius rings are shown only from zoom 9 through 12.
@@ -2725,6 +2727,7 @@
     const params = new URLSearchParams();
 
     params.set('limit', '10000');
+    params.set('compact', '1');
 
     if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
       params.set('sample_id', SINGLE_SAMPLE_ID);
@@ -2900,6 +2903,51 @@
 
           ring.on("popupopen", async (e) => {
             const p = f.properties || {};
+            const detailId = p.sample_id || p.sampleId || p.QR_qrCode;
+
+            // Only request detailed canonical fields after opening a popup.
+            // A successful fetch is cached on this feature, so reopening the
+            // same marker does not query PostgreSQL again.
+            if (p.__compact && detailId) {
+              try {
+                let detailProps = sampleDetailsCache.get(detailId);
+                if (!detailProps) {
+                  e.popup.setContent(
+                    `<div class="popup-scroll">${escapeHtml(T(
+                      'loadingSampleDetails', {}, 'Loading sample details...'
+                    ))}</div>`
+                  );
+                  const detailUrl =
+                    `/api/v1/canonical/map.geojson?sample_id=${encodeURIComponent(detailId)}&limit=1`;
+                  const detailResponse = await fetch(detailUrl, {
+                    credentials: 'same-origin'
+                  });
+                  if (!detailResponse.ok) {
+                    throw new Error(`Sample detail HTTP ${detailResponse.status}`);
+                  }
+                  const detailJson = await detailResponse.json();
+                  detailProps = detailJson?.features?.[0]?.properties;
+                  if (!detailProps) throw new Error('Sample not found');
+                  sampleDetailsCache.set(detailId, detailProps);
+                  if (sampleDetailsCache.size > 100) {
+                    sampleDetailsCache.delete(sampleDetailsCache.keys().next().value);
+                  }
+                }
+                Object.assign(p, detailProps);
+                delete p.__compact;
+              } catch (error) {
+                console.warn('Unable to load sample details:', detailId, error);
+                if (e.popup.isOpen()) {
+                  e.popup.setContent(`<div class="popup-scroll">${escapeHtml(T(
+                    'sampleDetailsUnavailable', {}, 'Could not load sample details. Reopen to retry.'
+                  ))}</div>`);
+                }
+                return;
+              }
+            }
+
+            // A user may have closed this popup while the fetch was running.
+            if (!e.popup.isOpen()) return;
             const photoId = p.sampleId || p.sample_id || p.QR_qrCode;
             const chartId = p.QR_qrCode || p.qr_code || p.qr || p.sampleId || p.sample_id;
 
@@ -3719,6 +3767,7 @@
 
     params.set('limit', '1');
     params.set('sample_id', id);
+    params.set('compact', '1');
 
     if (opts.includeWrong || SHOW_WRONG_IN_SINGLE) {
       params.set('include_wrong', '1');

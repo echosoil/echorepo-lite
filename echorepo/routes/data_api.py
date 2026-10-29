@@ -1893,9 +1893,74 @@ def canonical_map_geojson():
     offset = _parse_int_arg("offset", 0, minimum=0)
     where_sql, params, filter_meta = _canonical_map_filters()
 
+    # Map markers only need a small subset of the canonical record.  This
+    # opt-in response avoids fetching wide text columns and aggregating all
+    # sample_parameters for every pan/zoom request.  Existing clients that
+    # omit compact=1 keep the original complete GeoJSON response.
+    compact = (request.args.get("compact") or "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+    if compact:
+        with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                SELECT s.sample_id, s.lat, s.lon, s.ph,
+                       s.country_code, s.timestamp_utc, s.qa_status
+                FROM samples AS s
+                {where_sql}
+                ORDER BY s.timestamp_utc DESC NULLS LAST, s.sample_id
+                LIMIT %s OFFSET %s
+                """,
+                params + [limit, offset],
+            )
+            rows = cur.fetchall()
+
+        features = []
+        for row in rows:
+            try:
+                lon, lat = float(row["lon"]), float(row["lat"])
+            except (ValueError, TypeError, KeyError):
+                continue
+            if not math.isfinite(lon) or not math.isfinite(lat):
+                continue
+            sample_id = row["sample_id"]
+            features.append({
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "properties": {
+                    "sample_id": sample_id,
+                    "sampleId": sample_id,
+                    "QR_qrCode": sample_id,
+                    "ph": row.get("ph"),
+                    "country_code": row.get("country_code"),
+                    "timestamp_utc": row.get("timestamp_utc"),
+                    "qa_status": row.get("qa_status"),
+                    "__compact": True,
+                },
+            })
+
+        # The map uses /canonical/map.count separately for global counts.
+        # Do not run another COUNT(*) on every bbox/zoom request.
+        _add_analytics("canonical_map_geojson", compact=True, **filter_meta)
+        return jsonify({
+            "type": "FeatureCollection",
+            "features": features,
+            "meta": {
+                "count": None,
+                "returned": len(features),
+                "limit": limit,
+                "offset": offset,
+                "compact": True,
+            },
+        })
+
     fields = [field for field in CANONICAL_SAMPLE_COLS if field != "collected_by"]
     columns_sql = ", ".join(f"s.{field}" for field in fields)
 
+    # For a popup detail request, aggregate only the selected sample's
+    # metals instead of scanning the entire sample_parameters table.
+    metals_sample_filter = "AND UPPER(sample_id) = UPPER(%s)" if filter_meta["sample_id"] else ""
+    metals_params = [filter_meta["sample_id"]] if filter_meta["sample_id"] else []
 
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
@@ -1916,6 +1981,7 @@ def canonical_map_geojson():
                       OR value::text !~ '^[+-]?[0-9]+([.][0-9]+)?$'
                       OR value::text::double precision >= 0.01
                   )
+                  {metals_sample_filter}
                 GROUP BY sample_id
             )
             SELECT {columns_sql}, pm.metals_info_params
@@ -1925,7 +1991,7 @@ def canonical_map_geojson():
             ORDER BY s.timestamp_utc DESC NULLS LAST, s.sample_id
             LIMIT %s OFFSET %s
             """,
-            params + [limit, offset],
+            metals_params + params + [limit, offset],
         )
         rows = cur.fetchall()
         cur.execute(f"SELECT COUNT(*) AS c FROM samples AS s {where_sql}", params)
