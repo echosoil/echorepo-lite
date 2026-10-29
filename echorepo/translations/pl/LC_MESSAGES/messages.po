@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 10:48+0000\n"
+"POT-Creation-Date: 2026-10-29 11:08+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -69,17 +69,17 @@ msgstr "Czysto"
 msgid "Export filtered ({n})"
 msgstr "Eksport filtrowany ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1915
 msgid "Date"
 msgstr "Data"
 
-#: echorepo/i18n.py:121 static/js/map.js:1917
+#: echorepo/i18n.py:121 static/js/map.js:1920
 msgid "QR code"
 msgstr "Kod QR"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1922
+#: static/js/map.js:1925
 msgid "pH"
 msgstr "p H"
 
@@ -87,27 +87,27 @@ msgstr "p H"
 msgid "Colour"
 msgstr "Kolor"
 
-#: echorepo/i18n.py:124 static/js/map.js:1927
+#: echorepo/i18n.py:124 static/js/map.js:1930
 msgid "Soil organic matter"
 msgstr "Substancja organiczna gleby"
 
-#: echorepo/i18n.py:125 static/js/map.js:1941
+#: echorepo/i18n.py:125 static/js/map.js:1944
 msgid "Structure"
 msgstr "Struktura"
 
-#: echorepo/i18n.py:126 static/js/map.js:1946
+#: echorepo/i18n.py:126 static/js/map.js:1949
 msgid "Earthworms"
 msgstr "Robaki ziemne"
 
-#: echorepo/i18n.py:127 static/js/map.js:1951
+#: echorepo/i18n.py:127 static/js/map.js:1954
 msgid "Plastic"
 msgstr "Plastikowe"
 
-#: echorepo/i18n.py:128 static/js/map.js:1956
+#: echorepo/i18n.py:128 static/js/map.js:1959
 msgid "Debris"
 msgstr "Odpady"
 
-#: echorepo/i18n.py:129 static/js/map.js:1961
+#: echorepo/i18n.py:129 static/js/map.js:1964
 msgid "Contamination"
 msgstr "Zanieczyszczenie"
 
@@ -127,35 +127,35 @@ msgstr "Narysuj prostokąt"
 msgid "Click and drag to draw a rectangle."
 msgstr "Kliknij i przeciągnij, aby narysować prostokąt."
 
-#: echorepo/i18n.py:134 static/js/map.js:3266
+#: echorepo/i18n.py:134 static/js/map.js:3269
 msgid "Cancel drawing"
 msgstr "Anuluj rysowanie"
 
-#: echorepo/i18n.py:135 static/js/map.js:3267
+#: echorepo/i18n.py:135 static/js/map.js:3270
 msgid "Cancel"
 msgstr "Anuluj"
 
-#: echorepo/i18n.py:136 static/js/map.js:3271
+#: echorepo/i18n.py:136 static/js/map.js:3274
 msgid "Delete last point"
 msgstr "Usuń ostatni punkt"
 
-#: echorepo/i18n.py:137 static/js/map.js:1347
+#: echorepo/i18n.py:137 static/js/map.js:1350
 msgid "Street map"
 msgstr "Mapa ulic"
 
-#: echorepo/i18n.py:138 static/js/map.js:1348
+#: echorepo/i18n.py:138 static/js/map.js:1351
 msgid "Satellite"
 msgstr "Satelitarne"
 
-#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
 msgid "Biogeographical regions"
 msgstr "Regiony biogeograficzne"
 
-#: echorepo/i18n.py:140 static/js/map.js:3861
+#: echorepo/i18n.py:140 static/js/map.js:3864
 msgid "Loading samples..."
 msgstr "Ładowanie próbek..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3862
+#: echorepo/i18n.py:141 static/js/map.js:3865
 msgid "Fetching visible map area"
 msgstr "Położenie widocznej powierzchni mapy"
 
@@ -183,7 +183,11 @@ msgstr "Wybór eksportu"
 msgid "Clear selection"
 msgstr "Wyczyść zaznaczenie"
 
-#: echorepo/i18n.py:148 static/js/map.js:1566
+#: echorepo/i18n.py:148
+msgid "Loading sample details..."
+msgstr "Wczytywanie szczegółów próbki..."
+
+#: echorepo/i18n.py:149 static/js/map.js:1569
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
 "Wartości procentowe (%) można przeliczyć na mg / kg przez pomnożenie przez "
@@ -466,8 +470,9 @@ msgid "Country"
 msgstr "Kraj"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-msgid "All countries"
-msgstr "Wszystkie kraje"
+#: echorepo/templates/search.html:21 static/js/map.js:326
+msgid "Any country"
+msgstr "Każdy kraj"
 
 #: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
 #: echorepo/templates/search.html:29
@@ -865,10 +870,6 @@ msgstr "Pokaż na mapie"
 msgid "Could not locate this sample on the map."
 msgstr "Nie można znaleźć tej próbki na mapie."
 
-#: echorepo/templates/search.html:21 static/js/map.js:324
-msgid "Any country"
-msgstr "Każdy kraj"
-
 #: echorepo/templates/search.html:40
 msgid "pH min"
 msgstr "p H min"
@@ -1002,20 +1003,20 @@ msgstr "Link skopiowany do schowka"
 msgid "Copy this link:"
 msgstr "Kopiuj ten link:"
 
-#: static/js/map.js:890 static/js/map.js:3637
+#: static/js/map.js:893 static/js/map.js:3640
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Eksportuj filtrowane (${n})"
 
-#: static/js/map.js:900 static/js/map.js:3429
+#: static/js/map.js:903 static/js/map.js:3432
 msgid "Release mouse to finish drawing."
 msgstr "Zwolnij mysz, aby zakończyć rysunek."
 
-#: static/js/map.js:974
+#: static/js/map.js:977
 msgid "Not available"
 msgstr "Niedostępne"
 
-#: static/js/map.js:1316
+#: static/js/map.js:1319
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1023,69 +1024,69 @@ msgstr ""
 "Nie można wczytać nakładki na region biogeograficzny. Sprawdź, czy / static /"
 " geo / biogeo _ regions _ 2016.geojson istnieje."
 
-#: static/js/map.js:1572
+#: static/js/map.js:1575
 msgid "Unit conversion help"
 msgstr "Pomoc w konwersji jednostek"
 
-#: static/js/map.js:1936
+#: static/js/map.js:1939
 msgid "Texture"
 msgstr "Tekst"
 
-#: static/js/map.js:1971
+#: static/js/map.js:1974
 msgid "Observations"
 msgstr "Uwagi"
 
-#: static/js/map.js:2609 static/js/map.js:3961
+#: static/js/map.js:2612 static/js/map.js:3964
 msgid "Loading map data..."
 msgstr "Wczytywanie danych map..."
 
-#: static/js/map.js:2613
+#: static/js/map.js:2616
 msgid "Please wait"
 msgstr "Proszę poczekać"
 
-#: static/js/map.js:2892
+#: static/js/map.js:2895
 msgid "Loading..."
 msgstr "Ładowanie..."
 
-#: static/js/map.js:3259
+#: static/js/map.js:3262
 msgid "Draw selection rectangle"
 msgstr "Rysuj prostokąt wyboru"
 
-#: static/js/map.js:3270
+#: static/js/map.js:3273
 msgid "Delete last point drawn"
 msgstr "Usuń ostatni punkt"
 
-#: static/js/map.js:3278
+#: static/js/map.js:3281
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Kliknij i przeciągnij, aby narysować prostokąt wyboru. Możesz narysować "
 "więcej niż jedną."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3287
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Zwolnij mysz, aby dodać ten prostokąt do wyboru."
 
-#: static/js/map.js:3365
+#: static/js/map.js:3368
 msgid "No selected samples to export."
 msgstr "Brak wybranych próbek do wywozu."
 
-#: static/js/map.js:3707
+#: static/js/map.js:3710
 msgid "Please sign in to export data."
 msgstr "Proszę zalogować się do eksportu danych."
 
-#: static/js/map.js:3777
+#: static/js/map.js:3780
 msgid "Loading sample..."
 msgstr "Ładowanie próbki..."
 
-#: static/js/map.js:3893
+#: static/js/map.js:3896
 msgid "Rendering markers..."
 msgstr "Markery renderujące..."
 
-#: static/js/map.js:3894
+#: static/js/map.js:3897
 msgid "Building clusters and popups"
 msgstr "Klastry i populacje"
 
-#: static/js/map.js:3962
+#: static/js/map.js:3965
 msgid "Preparing map"
 msgstr "Przygotowanie mapy"
 
@@ -1274,4 +1275,7 @@ msgstr "Przygotowanie mapy"
 
 #~ msgid "sample_biodiversity.csv"
 #~ msgstr "sample _ biodiversity.csv"
+
+#~ msgid "All countries"
+#~ msgstr "Wszystkie kraje"
 

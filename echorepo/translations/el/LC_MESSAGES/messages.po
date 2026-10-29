@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 10:48+0000\n"
+"POT-Creation-Date: 2026-10-29 11:08+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -68,17 +68,17 @@ msgstr "Καθαρισμός"
 msgid "Export filtered ({n})"
 msgstr "Φίλτρο εξαγωγής ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1915
 msgid "Date"
 msgstr "Ημερομηνία"
 
-#: echorepo/i18n.py:121 static/js/map.js:1917
+#: echorepo/i18n.py:121 static/js/map.js:1920
 msgid "QR code"
 msgstr "Κωδικός QR"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1922
+#: static/js/map.js:1925
 msgid "pH"
 msgstr "p Η"
 
@@ -86,27 +86,27 @@ msgstr "p Η"
 msgid "Colour"
 msgstr "Χρώμα"
 
-#: echorepo/i18n.py:124 static/js/map.js:1927
+#: echorepo/i18n.py:124 static/js/map.js:1930
 msgid "Soil organic matter"
 msgstr "Οργανική ύλη εδάφους"
 
-#: echorepo/i18n.py:125 static/js/map.js:1941
+#: echorepo/i18n.py:125 static/js/map.js:1944
 msgid "Structure"
 msgstr "Δομή"
 
-#: echorepo/i18n.py:126 static/js/map.js:1946
+#: echorepo/i18n.py:126 static/js/map.js:1949
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: echorepo/i18n.py:127 static/js/map.js:1951
+#: echorepo/i18n.py:127 static/js/map.js:1954
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: echorepo/i18n.py:128 static/js/map.js:1956
+#: echorepo/i18n.py:128 static/js/map.js:1959
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: echorepo/i18n.py:129 static/js/map.js:1961
+#: echorepo/i18n.py:129 static/js/map.js:1964
 msgid "Contamination"
 msgstr "Μόλυνση"
 
@@ -126,35 +126,35 @@ msgstr "Σχεδίαση ορθογωνίου"
 msgid "Click and drag to draw a rectangle."
 msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο."
 
-#: echorepo/i18n.py:134 static/js/map.js:3266
+#: echorepo/i18n.py:134 static/js/map.js:3269
 msgid "Cancel drawing"
 msgstr "Ακύρωση σχεδίου"
 
-#: echorepo/i18n.py:135 static/js/map.js:3267
+#: echorepo/i18n.py:135 static/js/map.js:3270
 msgid "Cancel"
 msgstr "Ακύρωση"
 
-#: echorepo/i18n.py:136 static/js/map.js:3271
+#: echorepo/i18n.py:136 static/js/map.js:3274
 msgid "Delete last point"
 msgstr "Διαγραφή τελευταίου σημείου"
 
-#: echorepo/i18n.py:137 static/js/map.js:1347
+#: echorepo/i18n.py:137 static/js/map.js:1350
 msgid "Street map"
 msgstr "Χάρτης οδών"
 
-#: echorepo/i18n.py:138 static/js/map.js:1348
+#: echorepo/i18n.py:138 static/js/map.js:1351
 msgid "Satellite"
 msgstr "Δορυφόρος"
 
-#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
 msgid "Biogeographical regions"
 msgstr "Βιογεωγραφικές περιοχές"
 
-#: echorepo/i18n.py:140 static/js/map.js:3861
+#: echorepo/i18n.py:140 static/js/map.js:3864
 msgid "Loading samples..."
 msgstr "Φόρτωση δειγμάτων..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3862
+#: echorepo/i18n.py:141 static/js/map.js:3865
 msgid "Fetching visible map area"
 msgstr "Ανάκτηση ορατής περιοχής χάρτη"
 
@@ -182,7 +182,11 @@ msgstr "Επιλογή εξαγωγής"
 msgid "Clear selection"
 msgstr "Καθαρισμός επιλογής"
 
-#: echorepo/i18n.py:148 static/js/map.js:1566
+#: echorepo/i18n.py:148
+msgid "Loading sample details..."
+msgstr "Φόρτωση λεπτομερειών δείγματος..."
+
+#: echorepo/i18n.py:149 static/js/map.js:1569
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Οι τιμές (%) μπορούν να μετατραπούν σε mg/kg πολλαπλασιάζοντας με 10000."
 
@@ -473,8 +477,9 @@ msgid "Country"
 msgstr "Χώρες"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-msgid "All countries"
-msgstr "Όλες οι χώρες"
+#: echorepo/templates/search.html:21 static/js/map.js:326
+msgid "Any country"
+msgstr "Οποιαδήποτε χώρα"
 
 #: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
 #: echorepo/templates/search.html:29
@@ -873,10 +878,6 @@ msgstr "Εμφάνιση στο χάρτη"
 msgid "Could not locate this sample on the map."
 msgstr "Αδυναμία εντοπισμού του δείγματος στο χάρτη."
 
-#: echorepo/templates/search.html:21 static/js/map.js:324
-msgid "Any country"
-msgstr "Οποιαδήποτε χώρα"
-
 #: echorepo/templates/search.html:40
 msgid "pH min"
 msgstr "π H min"
@@ -1010,20 +1011,20 @@ msgstr "Δεσμός αντιγραφόμενο στο πρόχειρο"
 msgid "Copy this link:"
 msgstr "Αντιγραφή αυτού του συνδέσμου:"
 
-#: static/js/map.js:890 static/js/map.js:3637
+#: static/js/map.js:893 static/js/map.js:3640
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Φίλτρα εξαγωγής (${n})"
 
-#: static/js/map.js:900 static/js/map.js:3429
+#: static/js/map.js:903 static/js/map.js:3432
 msgid "Release mouse to finish drawing."
 msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
 
-#: static/js/map.js:974
+#: static/js/map.js:977
 msgid "Not available"
 msgstr "Υποθ"
 
-#: static/js/map.js:1316
+#: static/js/map.js:1319
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1031,69 +1032,69 @@ msgstr ""
 "Αδυναμία φόρτωσης της επικάλυψης της βιογεωγραφικής περιοχής. Ελέγξτε ότι "
 "/static/geo/biogeo regions 2016.geojson υπάρχει."
 
-#: static/js/map.js:1572
+#: static/js/map.js:1575
 msgid "Unit conversion help"
 msgstr "Βοήθεια μετατροπής μονάδας"
 
-#: static/js/map.js:1936
+#: static/js/map.js:1939
 msgid "Texture"
 msgstr "Υφή"
 
-#: static/js/map.js:1971
+#: static/js/map.js:1974
 msgid "Observations"
 msgstr "Παρατηρήσεις"
 
-#: static/js/map.js:2609 static/js/map.js:3961
+#: static/js/map.js:2612 static/js/map.js:3964
 msgid "Loading map data..."
 msgstr "Φόρτωση δεδομένων χάρτη..."
 
-#: static/js/map.js:2613
+#: static/js/map.js:2616
 msgid "Please wait"
 msgstr "Παρακαλώ περιμένετε"
 
-#: static/js/map.js:2892
+#: static/js/map.js:2895
 msgid "Loading..."
 msgstr "Φόρτωση..."
 
-#: static/js/map.js:3259
+#: static/js/map.js:3262
 msgid "Draw selection rectangle"
 msgstr "Σχεδίαση ορθογωνίου επιλογής"
 
-#: static/js/map.js:3270
+#: static/js/map.js:3273
 msgid "Delete last point drawn"
 msgstr "Διαγραφή του τελευταίου σημείου που έχει σχεδιαστεί"
 
-#: static/js/map.js:3278
+#: static/js/map.js:3281
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο επιλογής. Μπορείς να "
 "ζωγραφίσεις περισσότερους από έναν."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3287
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Αφήστε το ποντίκι για να προσθέσετε αυτό το ορθογώνιο στην επιλογή."
 
-#: static/js/map.js:3365
+#: static/js/map.js:3368
 msgid "No selected samples to export."
 msgstr "Δεν υπάρχουν επιλεγμένα δείγματα προς εξαγωγή."
 
-#: static/js/map.js:3707
+#: static/js/map.js:3710
 msgid "Please sign in to export data."
 msgstr "Παρακαλώ υπογράψτε για εξαγωγή δεδομένων."
 
-#: static/js/map.js:3777
+#: static/js/map.js:3780
 msgid "Loading sample..."
 msgstr "Φόρτωση δείγματος..."
 
-#: static/js/map.js:3893
+#: static/js/map.js:3896
 msgid "Rendering markers..."
 msgstr "Αποτύπωση δεικτών..."
 
-#: static/js/map.js:3894
+#: static/js/map.js:3897
 msgid "Building clusters and popups"
 msgstr "Συγκροτήματα και αναδυόμενα"
 
-#: static/js/map.js:3962
+#: static/js/map.js:3965
 msgid "Preparing map"
 msgstr "Προετοιμασία χάρτη"
 
@@ -1284,4 +1285,7 @@ msgstr "Προετοιμασία χάρτη"
 
 #~ msgid "sample_biodiversity.csv"
 #~ msgstr "δείγμα βιοποικιλότητα.csv"
+
+#~ msgid "All countries"
+#~ msgstr "Όλες οι χώρες"
 

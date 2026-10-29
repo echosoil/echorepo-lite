@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 10:48+0000\n"
+"POT-Creation-Date: 2026-10-29 11:08+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: da\n"
@@ -68,17 +68,17 @@ msgstr "Ryd"
 msgid "Export filtered ({n})"
 msgstr "Eksport filtreret ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1915
 msgid "Date"
 msgstr "Dato"
 
-#: echorepo/i18n.py:121 static/js/map.js:1917
+#: echorepo/i18n.py:121 static/js/map.js:1920
 msgid "QR code"
 msgstr "QR-kode"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1922
+#: static/js/map.js:1925
 msgid "pH"
 msgstr "pH"
 
@@ -86,27 +86,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Farve"
 
-#: echorepo/i18n.py:124 static/js/map.js:1927
+#: echorepo/i18n.py:124 static/js/map.js:1930
 msgid "Soil organic matter"
 msgstr "Jordorganisk materiale"
 
-#: echorepo/i18n.py:125 static/js/map.js:1941
+#: echorepo/i18n.py:125 static/js/map.js:1944
 msgid "Structure"
 msgstr "Struktur"
 
-#: echorepo/i18n.py:126 static/js/map.js:1946
+#: echorepo/i18n.py:126 static/js/map.js:1949
 msgid "Earthworms"
 msgstr "Jordorm"
 
-#: echorepo/i18n.py:127 static/js/map.js:1951
+#: echorepo/i18n.py:127 static/js/map.js:1954
 msgid "Plastic"
 msgstr "Plastic"
 
-#: echorepo/i18n.py:128 static/js/map.js:1956
+#: echorepo/i18n.py:128 static/js/map.js:1959
 msgid "Debris"
 msgstr "Affald"
 
-#: echorepo/i18n.py:129 static/js/map.js:1961
+#: echorepo/i18n.py:129 static/js/map.js:1964
 msgid "Contamination"
 msgstr "Forurening"
 
@@ -126,35 +126,35 @@ msgstr "Tegn et rektangel"
 msgid "Click and drag to draw a rectangle."
 msgstr "Klik og træk for at tegne et rektangel."
 
-#: echorepo/i18n.py:134 static/js/map.js:3266
+#: echorepo/i18n.py:134 static/js/map.js:3269
 msgid "Cancel drawing"
 msgstr "Annullér tegning"
 
-#: echorepo/i18n.py:135 static/js/map.js:3267
+#: echorepo/i18n.py:135 static/js/map.js:3270
 msgid "Cancel"
 msgstr "Annullér"
 
-#: echorepo/i18n.py:136 static/js/map.js:3271
+#: echorepo/i18n.py:136 static/js/map.js:3274
 msgid "Delete last point"
 msgstr "Slet sidste punkt"
 
-#: echorepo/i18n.py:137 static/js/map.js:1347
+#: echorepo/i18n.py:137 static/js/map.js:1350
 msgid "Street map"
 msgstr "Gadekort"
 
-#: echorepo/i18n.py:138 static/js/map.js:1348
+#: echorepo/i18n.py:138 static/js/map.js:1351
 msgid "Satellite"
 msgstr "Satellit"
 
-#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
 msgid "Biogeographical regions"
 msgstr "Biogeografiske områder"
 
-#: echorepo/i18n.py:140 static/js/map.js:3861
+#: echorepo/i18n.py:140 static/js/map.js:3864
 msgid "Loading samples..."
 msgstr "Indlæser prøver..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3862
+#: echorepo/i18n.py:141 static/js/map.js:3865
 msgid "Fetching visible map area"
 msgstr "Hent synligt kortområde"
 
@@ -182,7 +182,11 @@ msgstr "Eksportmarkering"
 msgid "Clear selection"
 msgstr "Ryd markering"
 
-#: echorepo/i18n.py:148 static/js/map.js:1566
+#: echorepo/i18n.py:148
+msgid "Loading sample details..."
+msgstr "Indlæser stikprøveoplysninger..."
+
+#: echorepo/i18n.py:149 static/js/map.js:1569
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Procentværdier (%) kan konverteres til mg / kg ved at gange med 10000."
 
@@ -465,7 +469,8 @@ msgid "Country"
 msgstr "Land"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-msgid "All countries"
+#: echorepo/templates/search.html:21 static/js/map.js:326
+msgid "Any country"
 msgstr "Alle lande"
 
 #: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
@@ -862,10 +867,6 @@ msgstr "Vis på kortet"
 msgid "Could not locate this sample on the map."
 msgstr "Kunne ikke finde denne prøve på kortet."
 
-#: echorepo/templates/search.html:21 static/js/map.js:324
-msgid "Any country"
-msgstr "Alle lande"
-
 #: echorepo/templates/search.html:40
 msgid "pH min"
 msgstr "pH-min"
@@ -999,20 +1000,20 @@ msgstr "Link til udklipsholder"
 msgid "Copy this link:"
 msgstr "Kopiér dette link:"
 
-#: static/js/map.js:890 static/js/map.js:3637
+#: static/js/map.js:893 static/js/map.js:3640
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Eksport filtreret (${n})"
 
-#: static/js/map.js:900 static/js/map.js:3429
+#: static/js/map.js:903 static/js/map.js:3432
 msgid "Release mouse to finish drawing."
 msgstr "Slip musen for at afslutte tegning."
 
-#: static/js/map.js:974
+#: static/js/map.js:977
 msgid "Not available"
 msgstr "Foreligger ikke"
 
-#: static/js/map.js:1316
+#: static/js/map.js:1319
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1020,67 +1021,67 @@ msgstr ""
 "Kunne ikke indlæse overlejret biogeographical- region. Kontroller, at / "
 "static / geo / biogeo _ regions _ 2016.geojson eksisterer."
 
-#: static/js/map.js:1572
+#: static/js/map.js:1575
 msgid "Unit conversion help"
 msgstr "Enhedsomstillingshjælp"
 
-#: static/js/map.js:1936
+#: static/js/map.js:1939
 msgid "Texture"
 msgstr "Tekstur"
 
-#: static/js/map.js:1971
+#: static/js/map.js:1974
 msgid "Observations"
 msgstr "Bemærkninger"
 
-#: static/js/map.js:2609 static/js/map.js:3961
+#: static/js/map.js:2612 static/js/map.js:3964
 msgid "Loading map data..."
 msgstr "Indlæser kortdata..."
 
-#: static/js/map.js:2613
+#: static/js/map.js:2616
 msgid "Please wait"
 msgstr "Vent venligst"
 
-#: static/js/map.js:2892
+#: static/js/map.js:2895
 msgid "Loading..."
 msgstr "Indlæser..."
 
-#: static/js/map.js:3259
+#: static/js/map.js:3262
 msgid "Draw selection rectangle"
 msgstr "Tegn markeringsrektangel"
 
-#: static/js/map.js:3270
+#: static/js/map.js:3273
 msgid "Delete last point drawn"
 msgstr "Slet sidste punkt trukket"
 
-#: static/js/map.js:3278
+#: static/js/map.js:3281
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr "Klik og træk for at tegne et markeringsrektangel. Du kan tegne mere end en."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3287
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Slip musen for at tilføje dette rektangel til markeringen."
 
-#: static/js/map.js:3365
+#: static/js/map.js:3368
 msgid "No selected samples to export."
 msgstr "Ingen udvalgte prøver til eksport."
 
-#: static/js/map.js:3707
+#: static/js/map.js:3710
 msgid "Please sign in to export data."
 msgstr "Log ind for at eksportere data."
 
-#: static/js/map.js:3777
+#: static/js/map.js:3780
 msgid "Loading sample..."
 msgstr "Indlæser prøve..."
 
-#: static/js/map.js:3893
+#: static/js/map.js:3896
 msgid "Rendering markers..."
 msgstr "Udlejning markører..."
 
-#: static/js/map.js:3894
+#: static/js/map.js:3897
 msgid "Building clusters and popups"
 msgstr "Opbygning af klynger og popup"
 
-#: static/js/map.js:3962
+#: static/js/map.js:3965
 msgid "Preparing map"
 msgstr "Forberedelse af kort"
 
@@ -1110,4 +1111,7 @@ msgstr "Forberedelse af kort"
 
 #~ msgid "sample_biodiversity.csv"
 #~ msgstr "prøve _ biodiversity.csv"
+
+#~ msgid "All countries"
+#~ msgstr "Alle lande"
 
