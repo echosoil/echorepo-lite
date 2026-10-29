@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite this version of ECHOREPO Lite."
+type: software
+title: "ECHOREPO Lite: research-data infrastructure for ECHO soil citizen science"
+authors:
+  - name: "Quanta Systems, S.L."
+abstract: "Open-source research-data infrastructure for ECHO citizen-science soil observations, including a web interface, data APIs, canonical exports, QA utilities, and FAIR-oriented Zenodo publication workflows."
+repository-code: "https://github.com/echosoil/echorepo-lite"
+url: "https://echosoil.eu"
+license: MIT
+version: "0.3.0"
+identifiers:
+  - type: other
+    value: "Horizon Europe grant 101112869"
+    description: "ECHO project grant agreement"

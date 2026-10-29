@@ -1,561 +1,182 @@
 # ECHOREPO Lite
 
-Lightweight web interface and data access layer for the ECHOREPO soil citizen science data infrastructure.
+**ECHOREPO Lite** is the web application, data-access API, and publication tooling for the [ECHO soil citizen-science project](https://echosoil.eu). It brings together field observations, sampling locations, images, laboratory measurements, and microbial biodiversity data under stable sample identifiers.
 
-ECHOREPO Lite provides a Dockerized Flask application for browsing, visualising, exporting and managing soil observation data. It supports map-based exploration of citizen science soil samples, canonical CSV/ZIP exports, laboratory data enrichment, biodiversity data outputs, multilingual user interfaces and integration with authentication and object-storage services.
+The repository contains the Flask application, PostgreSQL-backed data services, quality-control utilities, privacy safeguards, machine-readable canonical exports, and tools for versioned FAIR-oriented publication.
 
-The application is part of the ECHO/ECHOREPO digital infrastructure for open soil monitoring, FAIR data publication and long-term findability of citizen science soil observations.
+**Project:** ECHO — Engaging Citizens in soil science: the road to Healthier sOils · Horizon Europe grant 101112869  
+**Software licence:** [MIT](LICENSE) · **Maintainer:** Quanta Systems, S.L.
 
----
+## Highlights
 
-## Main features
+- **Explore and search:** interactive sampling map, country and biogeographical-region filters, sample details, laboratory results, images, and biodiversity summaries.
+- **Structured access:** authenticated /api/v1 endpoints for JSON, CSV, GeoJSON, counts, and downloadable canonical machine bundles.
+- **Linked research data:** a common sample ID links citizen observations to imagery, laboratory parameters, and biodiversity results.
+- **Quality and privacy:** coordinate issue detection and review; access controls; public-coordinate obfuscation; optional image/EXIF privacy processing. These safeguards require deployment-specific configuration and verification.
+- **Reproducible publication:** generate canonical CSV resources plus CSVW metadata and create new versions of the ECHO dataset on Zenodo.
+- **Research interfaces:** optional ECHOREPO-specific JupyterLab and Streamlit components, configured separately from the main web application.
+- **Open implementation:** Docker Compose deployment, migrations, localisation and data-processing utilities.
 
-* Public and authenticated web interface for ECHOREPO soil observations.
-* Interactive map-oriented access to soil sampling locations.
-* API endpoints for sample data access in JSON, CSV and GeoJSON formats.
-* Canonical data exports:
+The code does **not** imply that ECHOREPO is formally registered as an EOSC service or that every optional component is production-qualified.
 
-  * `samples.csv`
-  * `sample_images.csv`
-  * `sample_parameters.csv`
-  * `sample_biodiversity.csv`
-  * `all.zip`
-* PostgreSQL-backed canonical data storage.
-* Legacy SQLite compatibility for selected data access paths.
-* Laboratory data enrichment workflows for sample parameters.
-* Biodiversity OTU abundance export support.
-* MinIO-compatible object storage for canonical snapshots and storage assets.
-* Keycloak/OIDC and API-key based access modes.
-* Multilingual interface support with Flask-Babel and translation overrides.
-* Docker Compose deployment profiles for development and production.
-* Basic analytics and usage logging for page views, API calls, uploads and downloads.
+## Where to find things
 
----
+| Directory / file | Purpose |
+| --- | --- |
+| echorepo/ | Flask application, authentication, routes, templates, and services |
+| echorepo/routes/data_api.py | Authenticated machine-facing endpoints |
+| echorepo/services/canonical_exports.py | Canonical CSV and ZIP data contracts |
+| tools/ | Import, QA, privacy, enrichment, validation, and Zenodo tools |
+| scripts/ | Operational and publication wrappers |
+| metadata/canonical/ | Parameter and method definitions and curated metadata |
+| notebooks/ and jupyter/ | ECHOREPO Jupyter environment and examples |
+| streamlit/ | ECHOREPO research explorer |
+| docs/ | API guide, biodiversity publication guide, release guidance |
+| docker-compose*.yml | Base, development, production, Jupyter and Streamlit configuration |
+| .env.example | Illustrative configuration only; not safe for production unchanged |
 
-## Repository structure
+For the detailed API contract, see [ECHOREPO Data API Guide](docs/ECHOREPO_API_Data_Guide_v4.md). Some older documentation and scripts retain historical field names; prefer the actual canonical export schema for your release.
 
-```text
-echorepo-lite/
-├── echorepo/                 # Flask application package
-│   ├── auth/                 # Authentication routes and helpers
-│   ├── routes/               # Web, API, data, storage and admin routes
-│   ├── services/             # Database, i18n, validation and permission services
-│   ├── templates/            # Jinja templates
-│   ├── translations/         # Flask-Babel translations
-│   └── wsgi.py               # WSGI entry point
-├── migrations/               # PostgreSQL migration files
-├── scripts/                  # Startup, migration and utility scripts
-├── static/                   # Frontend static assets
-├── tools/                    # Auxiliary tools
-├── data/                     # Runtime data mount, not intended for source data commits
-├── storage/                  # Local storage mount
-├── keys/                     # Runtime credentials mount, not committed
-├── docker-compose.yml        # Base Compose configuration
-├── docker-compose.dev.yml    # Development override
-├── docker-compose.prod.yml   # Production override
-├── Dockerfile                # Application image build
-├── Dockerfile.i18n           # Optional i18n tooling image
-├── requirements.txt          # Python dependencies
-├── start_dev.sh              # Development startup helper
-├── start_prod.sh             # Production startup helper
-└── .env.example              # Example environment configuration
-```
+## Quick start (development)
 
----
+Requirements: Docker with Compose, Git, and your own authorised access to the relevant ECHO data and external services.
 
-## Technology stack
-
-ECHOREPO Lite is built with:
-
-* Python 3.11
-* Flask
-* Gunicorn
-* PostgreSQL
-* Docker and Docker Compose
-* Flask-Babel for internationalisation
-* Authlib / OIDC integration
-* MinIO-compatible object storage
-* pandas and openpyxl for tabular data handling
-* psycopg2 for PostgreSQL access
-* geospatial and geometry utilities such as Shapely
-* Matplotlib for selected visualisation or reporting tasks
-
----
-
-## Quick start
-
-### 1. Clone the repository
-
-```bash
+~~~bash
 git clone https://github.com/echosoil/echorepo-lite.git
 cd echorepo-lite
-```
-
-### 2. Prepare the environment file
-
-Copy the example configuration:
-
-```bash
 cp .env.example .env
-```
+~~~
 
-Then edit `.env` and set the values required for your deployment.
+Edit .env and replace the example credentials, hostnames and local paths. In particular review SECRET_KEY, API_KEY, PostgreSQL credentials, Keycloak/OIDC, MinIO, privacy configuration and any Firebase access. **Do not use the example secrets or debug settings in production.**
 
-At minimum, review:
+The Compose setup expects a pre-existing external Docker network:
 
-```text
-SECRET_KEY
-POSTGRES_PASSWORD
-DB_NAME
-DB_USER
-DB_PASSWORD
-API_KEY
-KEYCLOAK_BASE_URL
-KEYCLOAK_REALM
-KEYCLOAK_CLIENT_ID
-KEYCLOAK_CLIENT_SECRET
-MINIO_ENDPOINT
-MINIO_ACCESS_KEY
-MINIO_SECRET_KEY
-MINIO_BUCKET
-```
-
-Do not commit your real `.env` file.
-
-### 3. Create the shared Docker network
-
-The Compose setup expects an external network called `echorepo-shared`.
-
-Create it once if it does not already exist:
-
-```bash
-docker network create echorepo-shared
-```
-
-### 4. Start the development deployment
-
-```bash
-chmod +x start_dev.sh
+~~~bash
+docker network inspect echorepo-shared >/dev/null 2>&1 || docker network create echorepo-shared
 ./start_dev.sh
-```
+~~~
 
-The development service exposes:
+The development deployment is configured to expose the application at http://localhost:18080. Database access and other dependencies depend on your local Compose overrides.
 
-```text
-Application: http://localhost:18080
-PostgreSQL:  localhost:5433
-debugpy:     127.0.0.1:5678
-```
+Production deployments use a separate override and environment configuration:
 
-The development container runs PostgreSQL readiness checks, applies migrations and starts Gunicorn with reload enabled.
-
-### 5. Start the production deployment
-
-```bash
-chmod +x start_prod.sh
+~~~bash
 ./start_prod.sh
-```
+~~~
 
-The production service exposes:
+The production override exposes the application on host port 8001. Configure HTTPS, access control, persistent volumes and backups for your environment. Review the Compose files before deployment; **running these commands does not provision a database or the ECHO data itself**.
 
-```text
-Application: http://localhost:8001
-PostgreSQL:  localhost:5432
-```
+For isolated Jupyter and Streamlit components, see docker-compose.jupyter.yml, docker-compose.streamlit.yml and [notebooks/README.md](notebooks/README.md). They rely on an accessible ECHOREPO backend and the shared Docker network.
 
-The production container runs PostgreSQL readiness checks, applies migrations and starts Gunicorn with two workers.
+## API access
 
----
+The API prefix is /api/v1. The /api/v1/ping health check requires no API credentials. Canonical bundle downloads require authentication, even when some other public access flags are enabled.
 
-## Manual Docker Compose commands
+An authorised API key is accepted in the X-API-Key header; deployment configuration can also support an OIDC bearer token or an authenticated web session.
 
-Development:
+~~~bash
+export ECHOREPO_API="https://echorepo.quanta-labs.com/api/v1"
+# Provide ECHOREPO_API_KEY securely in your shell environment.
 
-```bash
-COMPOSE_PROJECT_NAME=echorepo_dev \
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
-```
+curl -fsS "$ECHOREPO_API/ping"
 
-Production:
+curl -fL -H "X-API-Key: $ECHOREPO_API_KEY" \
+  "$ECHOREPO_API/canonical/all.zip" -o canonical_all.zip
+~~~
 
-```bash
-COMPOSE_PROJECT_NAME=echorepo_prod \
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-```
+Avoid passing API keys in URL query parameters, where they can be recorded in logs or browser history.
 
-View logs:
+Selected routes:
 
-```bash
-docker compose logs -f echorepo-lite
-```
+| Endpoint | Use |
+| --- | --- |
+| GET /api/v1/canonical/samples | Canonical observations (JSON, CSV and supported geospatial output) |
+| GET /api/v1/canonical/samples/count | Filtered sample count |
+| GET /api/v1/canonical/sample_images | Sample-linked image metadata |
+| GET /api/v1/canonical/sample_parameters | Laboratory measurements |
+| GET /api/v1/canonical/sample_biodiversity | Sample-linked microbial taxonomy statistics |
+| GET /api/v1/canonical/all.zip | Authenticated six-resource canonical ZIP |
+| GET /api/v1/canonical/snapshot/all.zip | Create and store a machine snapshot |
+| GET /api/v1/biodiversity/raw/all.zip | Raw biodiversity export |
+| POST /api/v1/lab-enrichment | Authorised laboratory enrichment |
 
-Stop services:
+Filters and response formats depend on the route. See the API guide and current route implementation for supported parameters.
 
-```bash
-docker compose down
-```
+### Canonical machine bundle
 
----
+The authenticated /api/v1/canonical/all.zip bundle contains six CSV files:
 
-## Configuration
+~~~text
+samples.csv
+sample_images.csv
+sample_parameters.csv
+sample_biodiversity.csv
+parameter_definitions.csv
+analysis_methods.csv
+~~~
 
-The application is configured primarily through environment variables. See `.env.example` for the full list.
+The public schema intentionally differs in places from the internal PostgreSQL column names:
 
-Important configuration groups include:
+- samples.csv uses sampling_datetime_utc, soil_ph_field, soil_organic_matter_estimate_pct and coordinate_obfuscation_radius_m.
+- sample_images.csv uses image_datetime_utc.
+- sample_parameters.csv uses result_value, unit, method_code and analysis_datetime_utc, linked to parameter_definitions.csv and analysis_methods.csv.
+- sample_biodiversity.csv uses taxon_rank, scientific_name, read_count, relative_abundance_pct and ingested_datetime_utc.
 
-| Area                 | Example variables                                                        |
-| -------------------- | ------------------------------------------------------------------------ |
-| Flask/core           | `APP_ENV`, `SECRET_KEY`, `FLASK_DEBUG`, `PREFERRED_URL_SCHEME`           |
-| Data paths           | `SQLITE_PATH`, `CSV_PATH`, `LOCAL_STORAGE_DIR`, `COUNTRY_SHP_PATH`       |
-| PostgreSQL           | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`                |
-| API access           | `API_KEY`, `OIDC_ISSUER_URL`, `OIDC_AUDIENCE`                            |
-| Keycloak             | `KEYCLOAK_BASE_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`              |
-| MinIO/storage        | `MINIO_ENDPOINT`, `MINIO_BUCKET`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` |
-| Privacy and QA       | `PRIVACY_GATE`, `HIDE_WRONG_COORDINATES`, `FILTER_WRONG_COORDINATES`     |
-| Internationalisation | `LT_ENDPOINT`, `LT_ENDPOINT_INSIDE`                                      |
-| Images               | `MAX_IMAGE_BYTES`, `STRIP_IMAGE_EXIF`, `SAVE_EXIF_SIDECAR`               |
+A publisher-generated file.json adds CSVW-style metadata, table descriptions, relationships and provenance for a Zenodo deposition. **The API's all.zip does not itself include file.json.** The authoritative export logic lives in echorepo/services/canonical_exports.py and is checked by tools/validate_echorepo_bundle.py.
 
----
+The main canonical bundle contains summarised biodiversity data; separate scripts publish raw biodiversity matrices when appropriate.
 
-## Web interface
+## FAIR and Zenodo publication
 
-The application provides a browser interface for exploring ECHOREPO soil observations.
+The Zenodo tooling downloads an authenticated ECHOREPO bundle, validates and normalises the resources, generates machine-readable CSVW metadata, and publishes them as a new dataset version when requested. The publishing step is a controlled operation; the automated workflow should not be interpreted as an automatic approval of data quality or publication rights.
 
-Typical user-facing functions include:
+Configuration is kept in a private .env_zenodo file. Start from [.env_zenodo.example](.env_zenodo.example). ECHOREPO_API_KEY in that file must be accepted by the application’s API_KEY setting.
 
-* viewing the home/explore interface,
-* logging in through the configured authentication provider,
-* browsing sample records,
-* viewing map-based sample locations,
-* downloading canonical data exports,
-* accessing personal or authorised sample data,
-* uploading or managing laboratory enrichment data where permissions allow,
-* switching between supported interface languages.
+~~~bash
+# Validation/preparation, without a new Zenodo version:
+./scripts/update_zenodo_bundle.sh --dry-run
 
-The application supports multilingual labels and translation overrides through the i18n subsystem.
+# Actual new Zenodo dataset version, after validation and review:
+./scripts/update_zenodo_bundle.sh
+~~~
 
----
+For the first deposit, use the corresponding scripts/publish_zenodo_bundle.sh workflow instead. The update wrapper maintains the latest successful deposition ID in a local state file; check that ID before publishing.
 
-## API overview
+Keep separate the **dataset record** (whose collective creator is ECHO Consortium) and the **software release** (this GitHub repository, independently archived through the GitHub–Zenodo connection).
 
-ECHOREPO Lite exposes API routes under:
+- [ECHOREPO dataset](https://doi.org/10.5281/zenodo.19722513) — published data and metadata.
+- [GitHub software releases](https://github.com/echosoil/echorepo-lite/releases) — versioned source code.
+- [Biodiversity publication guide](docs/biodiversity_zenodo_publication.md) — staged workflow for large raw biodiversity resources.
 
-```text
-/api/v1
-```
+Dataset creators, contributors and their roles are configured separately from software citation metadata. Production credentials and publication state files must never be committed.
 
-### Health check
+## Data stewardship and limitations
 
-```http
-GET /api/v1/ping
-```
+Citizen-collected coordinates, sample identities and images may contain errors or sensitive content. Apply the project’s QA, consent, access-control and privacy procedures before releasing any data; do not assume that every record is fit for public use.
 
-Returns:
+Canonical exports may exclude, transform or standardise selected fields. In particular, image records expose metadata and image URLs rather than automatically packaging every image byte into the main ZIP. Some measurements and biodiversity data are released in separate products.
 
-```json
-{
-  "ok": true
-}
-```
-
-### Sample query endpoint
-
-```http
-GET /api/v1/samples
-```
-
-Supported query parameters include:
-
-| Parameter | Description                             |
-| --------- | --------------------------------------- |
-| `from`    | Start date/time filter                  |
-| `to`      | End date/time filter                    |
-| `bbox`    | Bounding box as `west,south,east,north` |
-| `within`  | Radius filter as `lat,lon,r_km`         |
-| `fields`  | Comma-separated field list, or `*`      |
-| `limit`   | Page size, maximum 1000                 |
-| `offset`  | Pagination offset                       |
-| `order`   | Sort column                             |
-| `dir`     | `asc` or `desc`                         |
-| `format`  | `json`, `csv` or `geojson`              |
-| `api_key` | API key, if not passed as a header      |
-
-Example:
-
-```bash
-curl "http://localhost:18080/api/v1/samples?limit=100&format=json&api_key=YOUR_API_KEY"
-```
-
-GeoJSON example:
-
-```bash
-curl "http://localhost:18080/api/v1/samples?bbox=-10,35,30,60&format=geojson&api_key=YOUR_API_KEY"
-```
-
-API authentication can use one of the following, depending on deployment configuration:
-
-* `X-API-Key` header,
-* `Authorization: ApiKey <key>`,
-* `api_key` query parameter,
-* `Authorization: Bearer <JWT>` using OIDC/Keycloak,
-* authenticated Flask session.
-
----
-
-## Canonical data exports
-
-ECHOREPO Lite provides canonical exports from PostgreSQL.
-
-Main export routes include:
-
-```text
-/download/canonical/samples.csv
-/download/canonical/sample_images.csv
-/download/canonical/sample_parameters.csv
-/download/canonical/sample_biodiversity.csv
-/download/canonical/all.zip
-```
-
-The canonical data model includes:
-
-### `samples.csv`
-
-Core sample-level observations, including:
-
-```text
-sample_id
-timestamp_utc
-lat
-lon
-country_code
-coordinate_obfuscation_radius_m
-ph
-soil_organic_matter_estimate_pct
-earthworms_count
-contamination_debris
-contamination_plastic
-soil_structure_orig
-soil_structure_en
-soil_texture_orig
-soil_texture_en
-observations_orig
-observations_en
-metals_info_orig
-metals_info_en
-collected_by
-data_source
-qa_status
-licence
-```
-
-### `sample_images.csv`
-
-Image metadata associated with samples, including:
-
-```text
-sample_id
-country_code
-image_id
-image_url
-image_description_orig
-image_description_en
-collected_by
-timestamp_utc
-licence
-```
-
-### `sample_parameters.csv`
+Publication through Zenodo, discoverability through SoilWise and formal EOSC service onboarding are **different** interoperability milestones.
 
-Laboratory and derived parameter records, including:
+## Development
 
-```text
-sample_id
-country_code
-parameter_code
-parameter_name
-value
-uom
-analysis_method
-analysis_date
-lab_id
-created_by
-licence
-parameter_uri
-```
+The application primarily targets Python 3.11 in Docker. Dependencies are listed in requirements.txt.
 
-### `sample_biodiversity.csv`
-
-Biodiversity OTU abundance records, including:
-
-```text
-sample_id
-marker
-otu_id
-count
-taxa
-uploaded_at
-uploaded_by
-source_file
-```
-
----
-
-## Data and storage
-
-Runtime data are expected to be mounted into the container rather than committed to the repository.
-
-Common runtime mounts include:
-
-```text
-./data:/data
-./storage:/data/storage
-./keys:/keys:ro
-```
-
-The application can use MinIO-compatible object storage for:
-
-* canonical snapshots,
-* `canonical/latest/` exports,
-* dated canonical bundles,
-* storage-backed image or asset access.
-
-Example canonical object paths:
-
-```text
-canonical/latest/all.zip
-canonical/latest/samples.csv
-canonical/latest/sample_images.csv
-canonical/latest/sample_parameters.csv
-canonical/<YYYY-MM-DD>/all.zip
-```
-
----
-
-## Database and migrations
-
-The application uses PostgreSQL for canonical sample, image, parameter and biodiversity data.
-
-On container startup, the configured command runs:
-
-```bash
-python scripts/wait_for_postgres.py
-python scripts/run_pg_migrations.py
-```
-
-before starting Gunicorn.
-
-This ensures that the PostgreSQL service is reachable and that migrations are applied before the web application starts.
-
----
-
-## Internationalisation
-
-ECHOREPO Lite uses Flask-Babel and translation resources under the application package. It supports multilingual templates and frontend labels.
-
-The default locale list includes languages such as:
-
-```text
-en, cs, de, el, es, fi, fr, it, nl, pl, pt, ro, sk
-```
-
-Optional development tooling for translations is available through the `devtools` Compose profile, which includes LibreTranslate and an i18n helper container.
-
----
-
-## Privacy, access control and data protection
-
-ECHOREPO Lite includes several safeguards intended for citizen science data handling:
-
-* configurable privacy gate,
-* privacy acceptance tracking,
-* API key and OIDC-based access modes,
-* Keycloak-compatible login flow,
-* suppression of selected personal fields in API outputs,
-* optional hiding or filtering of wrong-coordinate samples,
-* image EXIF stripping configuration,
-* local and object-storage separation for runtime data.
-
-Real secrets, service-account files and production `.env` files must not be committed to this repository.
-
----
-
-## Development notes
-
-Install Python dependencies locally:
-
-```bash
+~~~bash
 python3 -m venv venv
 source venv/bin/activate
-python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
-```
+python3 -m compileall -q echorepo tools scripts
+~~~
 
-Run the application through Docker Compose for the most reproducible development environment.
+The repository currently does not define a GitHub Actions test workflow. A release requires manual checks of the API, data contracts, publication dry-run, database migrations and the intended deployment.
 
-Useful development commands:
+For how to publish source-code versions, see [Releasing ECHOREPO Lite](docs/RELEASING.md).
 
-```bash
-./start_dev.sh
-docker compose logs -f echorepo-lite
-docker compose exec echorepo-lite sh
-docker compose exec postgres psql -U echorepo -d echorepo
-```
+## Citation, licence and funding
 
----
+Cite **software** using the version-specific archive DOI associated with the relevant GitHub release. Cite **research datasets** using the DOI of the specific Zenodo dataset version you analysed. These are distinct products and should not be cited interchangeably.
 
-## Deployment notes
+See [CITATION.cff](CITATION.cff) for the software citation metadata. The implementation is licensed under the [MIT License](LICENSE), copyright © 2026 Quanta Systems, S.L.
 
-For production-like deployment:
-
-1. Set `APP_ENV=prod`.
-2. Use a strong `SECRET_KEY`.
-3. Set real PostgreSQL credentials.
-4. Configure Keycloak/OIDC values.
-5. Configure MinIO or compatible object storage.
-6. Mount credentials read-only under `keys/`.
-7. Use HTTPS at the reverse-proxy level.
-8. Keep `.env` outside version control.
-9. Run the production Compose override:
-
-```bash
-./start_prod.sh
-```
-
----
-
-## Citation
-
-If you use this software in research, project reporting or derived infrastructure, please cite the archived software release.
-
-When using Zenodo, cite the version-specific DOI for reproducibility. The Concept DOI can be used to refer to the software project across all versions.
-
-Recommended citation format:
-
-```text
-Osychenko, O., Quanta Systems, S.L., and contributors. ECHOREPO Lite: lightweight web interface and data access layer for citizen science soil observations. Version <version>. Zenodo. <DOI>
-```
-
----
-
-## Related work
-
-ECHOREPO Lite is part of the broader ECHOREPO and ECHO digital infrastructure for citizen science soil monitoring, open data publication and FAIR-oriented environmental data access.
-
-Related components may include:
-
-* ECHOREPO repository services,
-* ECHO soil citizen science workflows,
-* mobile and web-based soil sampling tools,
-* Zenodo synchronisation workflows,
-* SoilWise/EUSO-oriented findability workflows,
-* laboratory enrichment pipelines,
-* biodiversity data ingestion workflows.
-
----
-
-
-## Maintainer
-
-Quanta Systems, S.L.
-
-Repository: `echosoil/echorepo-lite`
+ECHOREPO is developed within ECHO, funded by the European Union under Horizon Europe grant agreement **101112869**. See [echosoil.eu](https://echosoil.eu).
