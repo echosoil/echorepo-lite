@@ -136,6 +136,9 @@ BASE_LABEL_MSGIDS = {
     "deleteLastPoint": N_("Delete last point"),
     "streetMap": N_("Street map"),
     "satellite": N_("Satellite"),
+    "biogeographicalRegions": N_("Biogeographical regions"),´
+    "loadingSamples": N_("Loading samples..."),
+    "fetchingMapPoints": N_("Fetching visible map area"),
     "selectionExport": N_("Selection export to a file"),
     "selectionExport2": N_("Selection export"),
     "selectionExportHintBefore": N_("Use selection tool"),
