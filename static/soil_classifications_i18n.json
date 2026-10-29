@@ -1,0 +1,794 @@
+{
+  "english": {
+    "structure": {
+      "COMPACT": "Compact",
+      "FIRM": "Firm",
+      "FRIABLE": "Friable",
+      "HIGH COMPACT": "High Compact",
+      "INTACT": "Intact"
+    },
+    "texture": {
+      "Clay Loam": "Clay Loam",
+      "Clayey": "Clayey",
+      "Other *": "Other",
+      "Sandy": "Sandy",
+      "Sandy Clay": "Sandy Clay",
+      "Sandy Loam": "Sandy Loam",
+      "Silty": "Silty",
+      "Silty Clay": "Silty Clay"
+    }
+  },
+  "locales": {
+    "bg_BG": {
+      "structure": {
+        "COMPACT": "КОМПАКТНА",
+        "FIRM": "ЗДРАВА",
+        "FRIABLE": "ТРОШЛИВА",
+        "HIGH COMPACT": "МНОГО КОМПАКТНА",
+        "INTACT": "НЕПОВРЕДЕНА"
+      },
+      "texture": {
+        "Clay Loam": "Глинесто-глинеста",
+        "Clayey": "Глинеста",
+        "Other *": "Друго *",
+        "Sandy": "Пясъчна",
+        "Sandy Clay": "Пясъчно-глинеста",
+        "Sandy Loam": "Песъчливо-глинеста почва",
+        "Silty": "Тинеста",
+        "Silty Clay": "Тинесто-глинеста"
+      }
+    },
+    "cs_CZ": {
+      "structure": {
+        "COMPACT": "KOMPAKTNÍ",
+        "FIRM": "PEVNÁ",
+        "FRIABLE": "KYSLÁ",
+        "HIGH COMPACT": "VELMI KOMPAKTNÍ",
+        "INTACT": "NEPORUŠENÁ"
+      },
+      "texture": {
+        "Clay Loam": "Jílovito-hlinitá",
+        "Clayey": "Jílovitá",
+        "Other *": "Jiné *",
+        "Sandy": "Písčitá",
+        "Sandy Clay": "Písčito-jílovitá",
+        "Sandy Loam": "Písčitohlinitá půda",
+        "Silty": "Prachovitá",
+        "Silty Clay": "Prachovito-jílovitá"
+      }
+    },
+    "da_DK": {
+      "structure": {
+        "COMPACT": "KOMPAKT",
+        "FIRM": "FAST",
+        "FRIABLE": "BRYDELIG",
+        "HIGH COMPACT": "HØJT KOMPAKT",
+        "INTACT": "USKADT"
+      },
+      "texture": {
+        "Clay Loam": "Leret lerjord",
+        "Clayey": "Leret",
+        "Other *": "Andet *",
+        "Sandy": "Sandet",
+        "Sandy Clay": "Sandet ler",
+        "Sandy Loam": "Sandblandet lerjord",
+        "Silty": "Siltet",
+        "Silty Clay": "Siltet ler"
+      }
+    },
+    "de_DE": {
+      "structure": {
+        "COMPACT": "VERDICHTET",
+        "FIRM": "FEST",
+        "FRIABLE": "KRÜMELIG",
+        "HIGH COMPACT": "STARK VERDICHTET",
+        "INTACT": "INTAKT"
+      },
+      "texture": {
+        "Clay Loam": "Toniger Lehm",
+        "Clayey": "Tonig",
+        "Other *": "Andere/s *",
+        "Sandy": "Sandig",
+        "Sandy Clay": "Sandiger Ton",
+        "Sandy Loam": "Sandiger Lehm",
+        "Silty": "Schluffig",
+        "Silty Clay": "Schluffiger Ton"
+      }
+    },
+    "el_CY": {
+      "structure": {
+        "COMPACT": "ΣΥΜΠΑΓΕΣ",
+        "FIRM": "ΣΤΑΘΕΡΟ",
+        "FRIABLE": "ΕΥΘΡΥΠΤΟ",
+        "HIGH COMPACT": "ΕΝΤΟΝΑ ΣΥΜΠΑΓΕΣ",
+        "INTACT": "ΑΚΕΡΑΙΟ"
+      },
+      "texture": {
+        "Clay Loam": "Αργιλοπηλώδες",
+        "Clayey": "Αργιλώδες",
+        "Other *": "Άλλο *",
+        "Sandy": "Αμμώδες",
+        "Sandy Clay": "Αμμοαργιλοπηλώδες",
+        "Sandy Loam": "Αμμοαργιλώδες",
+        "Silty": "Ιλυώδες",
+        "Silty Clay": "Ιλυαργιλώδες"
+      }
+    },
+    "el_GR": {
+      "structure": {
+        "COMPACT": "ΣΥΜΠΑΓΕΣ",
+        "FIRM": "ΣΤΑΘΕΡΟ",
+        "FRIABLE": "Εύθρυπτο",
+        "HIGH COMPACT": "Έντονα Συμπαγές",
+        "INTACT": "Ακέραιο"
+      },
+      "texture": {
+        "Clay Loam": "Αργιλοπηλώδες",
+        "Clayey": "Αργιλώδες",
+        "Other *": "Άλλο *",
+        "Sandy": "Αμμώδες",
+        "Sandy Clay": "Αμμοαργιλοπηλώδες",
+        "Sandy Loam": "Αμμοαργιλώδες",
+        "Silty": "Ιλυώδες",
+        "Silty Clay": "Ιλυοαργιλώδες"
+      }
+    },
+    "en_US": {
+      "structure": {
+        "COMPACT": "COMPACT",
+        "FIRM": "FIRM",
+        "FRIABLE": "FRIABLE",
+        "HIGH COMPACT": "HIGH COMPACT",
+        "INTACT": "INTACT"
+      },
+      "texture": {
+        "Clay Loam": "Clay Loam",
+        "Clayey": "Clayey",
+        "Other *": "Other *",
+        "Sandy": "Sandy",
+        "Sandy Clay": "Sandy Clay",
+        "Sandy Loam": "Sandy Loam",
+        "Silty": "Silty",
+        "Silty Clay": "Silty Clay"
+      }
+    },
+    "es_ES": {
+      "structure": {
+        "COMPACT": "COMPACTO",
+        "FIRM": "FIRME",
+        "FRIABLE": "FRIABLE",
+        "HIGH COMPACT": "MUY COMPACTO",
+        "INTACT": "INTACTO"
+      },
+      "texture": {
+        "Clay Loam": "Franco arcilloso",
+        "Clayey": "Arcilloso",
+        "Other *": "Otro *",
+        "Sandy": "Arenoso",
+        "Sandy Clay": "Arcilloso arenoso",
+        "Sandy Loam": "Franco arenoso",
+        "Silty": "Limoso",
+        "Silty Clay": "Arcilloso limoso"
+      }
+    },
+    "et_EE": {
+      "structure": {
+        "COMPACT": "PAAKUNUD",
+        "FIRM": "MÕÕDUKALT PAAKUNUD",
+        "FRIABLE": "MURENEV",
+        "HIGH COMPACT": "TUGEVASTI PAAKUNUD",
+        "INTACT": "NÕRGALT PAAKUNUD"
+      },
+      "texture": {
+        "Clay Loam": "Raske savi",
+        "Clayey": "Savi",
+        "Other *": "Muu *",
+        "Sandy": "Liiv",
+        "Sandy Clay": "Liivakas savi",
+        "Sandy Loam": "Saviliiv",
+        "Silty": "Liivsavi",
+        "Silty Clay": "Keskmine savi"
+      }
+    },
+    "fi_FI": {
+      "structure": {
+        "COMPACT": "TIIVISTYNYT",
+        "FIRM": "KIINTEÄ",
+        "FRIABLE": "IRTONAINEN",
+        "HIGH COMPACT": "ERITTÄIN TIIVISTYNYT",
+        "INTACT": "MURENEVA"
+      },
+      "texture": {
+        "Clay Loam": "Savinen maalajisekoite (clay loam)",
+        "Clayey": "Savi",
+        "Other *": "Muu *",
+        "Sandy": "Hiekka",
+        "Sandy Clay": "Hiekkainen savi (sandy clay)",
+        "Sandy Loam": "Savinen hieta",
+        "Silty": "Siltti",
+        "Silty Clay": "Silttinen savi (silty clay)"
+      }
+    },
+    "fr_FR": {
+      "structure": {
+        "COMPACT": "COMPACT",
+        "FIRM": "FERME",
+        "FRIABLE": "FRIABLE",
+        "HIGH COMPACT": "TRÈS COMPACT",
+        "INTACT": "INTACT"
+      },
+      "texture": {
+        "Clay Loam": "Limoneux argileux",
+        "Clayey": "Argileux",
+        "Other *": "Autre *",
+        "Sandy": "Sableux",
+        "Sandy Clay": "Argile sableuse",
+        "Sandy Loam": "Limon sableux",
+        "Silty": "Limoneux",
+        "Silty Clay": "Argileux limoneux"
+      }
+    },
+    "hr_HR": {
+      "structure": {
+        "COMPACT": "KOMPAKTNO",
+        "FIRM": "ČVRSTO",
+        "FRIABLE": "MRVAVO",
+        "HIGH COMPACT": "VISOKO KOMPAKTNO",
+        "INTACT": "NETAKNUTO"
+      },
+      "texture": {
+        "Clay Loam": "Glinovito-ilovača",
+        "Clayey": "Glinovito",
+        "Other *": "Ostalo *",
+        "Sandy": "Pjeskovito",
+        "Sandy Clay": "Pjeskovito-glinovito",
+        "Sandy Loam": "Pjeskovita ilovača",
+        "Silty": "Prašnasto",
+        "Silty Clay": "Prašnasto-glinovito"
+      }
+    },
+    "hu_HU": {
+      "structure": {
+        "COMPACT": "Tömör",
+        "FIRM": "Kemény",
+        "FRIABLE": "Morzsalékos",
+        "HIGH COMPACT": "Erősen tömör",
+        "INTACT": "Ép"
+      },
+      "texture": {
+        "Clay Loam": "Agyagos vályog",
+        "Clayey": "Agyagos",
+        "Other *": "Egyéb *",
+        "Sandy": "Homokos",
+        "Sandy Clay": "Homokos agyag",
+        "Sandy Loam": "Homokos vályog",
+        "Silty": "Iszapos",
+        "Silty Clay": "Iszapos agyag"
+      }
+    },
+    "it_IT": {
+      "structure": {
+        "COMPACT": "COMPATTATO",
+        "FIRM": "COMPATTO",
+        "FRIABLE": "FRIABILE",
+        "HIGH COMPACT": "ALTAMENTE COMPATTATO",
+        "INTACT": "INTEGRO"
+      },
+      "texture": {
+        "Clay Loam": "Franco Argilloso",
+        "Clayey": "Argilloso",
+        "Other *": "Altro *",
+        "Sandy": "Sabbioso",
+        "Sandy Clay": "Argilloso Sabbioso",
+        "Sandy Loam": "Franco-sabbioso",
+        "Silty": "Limoso",
+        "Silty Clay": "Argilloso Limoso"
+      }
+    },
+    "lb_LU": {
+      "structure": {
+        "COMPACT": "KOMPAKT",
+        "FIRM": "FEST",
+        "FRIABLE": "KROCHT",
+        "HIGH COMPACT": "HOCHKOMPAKT",
+        "INTACT": "ONVERÄNNERT"
+      },
+      "texture": {
+        "Clay Loam": "Leem-Läim",
+        "Clayey": "Leemeeg",
+        "Other *": "Aner *",
+        "Sandy": "Sandeg",
+        "Sandy Clay": "Sandeg-Läim-Leem",
+        "Sandy Loam": "Sandeg Leem",
+        "Silty": "Sëllegeg",
+        "Silty Clay": "Sëllegeg-Leem"
+      }
+    },
+    "lt_LT": {
+      "structure": {
+        "COMPACT": "KOMPAKTUS",
+        "FIRM": "TVIRTAS",
+        "FRIABLE": "TRUPI",
+        "HIGH COMPACT": "LABAI KOMPAKTUS",
+        "INTACT": "NESUŽALOTAS"
+      },
+      "texture": {
+        "Clay Loam": "Molingas priemolis",
+        "Clayey": "Molingas",
+        "Other *": "Kitas *",
+        "Sandy": "Smėlingas",
+        "Sandy Clay": "Smėlingas molis",
+        "Sandy Loam": "Priesmėlis",
+        "Silty": "Pulvingas",
+        "Silty Clay": "Pulvingas molis"
+      }
+    },
+    "lv_LV": {
+      "structure": {
+        "COMPACT": "KOMPAKTAS",
+        "FIRM": "CIETAS",
+        "FRIABLE": "DRUPAINAS",
+        "HIGH COMPACT": "ĻOTI KOMPAKTAS",
+        "INTACT": "NESABOJUŠAS"
+      },
+      "texture": {
+        "Clay Loam": "Mālsmilts",
+        "Clayey": "Mālaina",
+        "Other *": "Cits *",
+        "Sandy": "Smilšaina",
+        "Sandy Clay": "Smilšaina mālsmiltājs",
+        "Sandy Loam": "Smilšmāls",
+        "Silty": "Dīgušmālsmilts",
+        "Silty Clay": "Dīgušmālsmiltājs"
+      }
+    },
+    "nb_NO": {
+      "structure": {
+        "COMPACT": "Kompakt",
+        "FIRM": "Fast",
+        "FRIABLE": "Smuldrende",
+        "HIGH COMPACT": "Svært kompakt",
+        "INTACT": "Intakt"
+      },
+      "texture": {
+        "Clay Loam": "Leirholdig moldjord",
+        "Clayey": "Leirholdig",
+        "Other *": "Annet *",
+        "Sandy": "Sandig",
+        "Sandy Clay": "Sandholdig leire",
+        "Sandy Loam": "Sandholdig leirjord",
+        "Silty": "Siltig",
+        "Silty Clay": "Siltig leire"
+      }
+    },
+    "nl_NL": {
+      "structure": {
+        "COMPACT": "COMPACT",
+        "FIRM": "STEVIG",
+        "FRIABLE": "BROKKELIG",
+        "HIGH COMPACT": "ZEER COMPACT",
+        "INTACT": "INTACT"
+      },
+      "texture": {
+        "Clay Loam": "Kleileem",
+        "Clayey": "Kleiig",
+        "Other *": "Overig *",
+        "Sandy": "Zandig",
+        "Sandy Clay": "Zandige klei",
+        "Sandy Loam": "Zandleem",
+        "Silty": "Slibachtig",
+        "Silty Clay": "Slibachtige klei"
+      }
+    },
+    "pl_PL": {
+      "structure": {
+        "COMPACT": "ZWARTY",
+        "FIRM": "ZBITY",
+        "FRIABLE": "LUŹNY",
+        "HIGH COMPACT": "WYJĄTKOWO ZWARTY",
+        "INTACT": "NIENARUSZONY"
+      },
+      "texture": {
+        "Clay Loam": "Glina ilasta",
+        "Clayey": "Gliniasty",
+        "Other *": "Inny *",
+        "Sandy": "Piaszczysty",
+        "Sandy Clay": "Glina piaszczysta",
+        "Sandy Loam": "Piasek gliniasty",
+        "Silty": "Pyłowy",
+        "Silty Clay": "Glina pyłowa"
+      }
+    },
+    "pt_PT": {
+      "structure": {
+        "COMPACT": "COMPACTO",
+        "FIRM": "FIRME",
+        "FRIABLE": "Frágil",
+        "HIGH COMPACT": "MUITO COMPACTADO",
+        "INTACT": "INTACTO"
+      },
+      "texture": {
+        "Clay Loam": "Franco-Argiloso",
+        "Clayey": "Argiloso",
+        "Other *": "Outro *",
+        "Sandy": "Arenoso",
+        "Sandy Clay": "Argilo Arenoso",
+        "Sandy Loam": "Franco-arenoso",
+        "Silty": "Sedimentoso",
+        "Silty Clay": "Argila Sedimentosa"
+      }
+    },
+    "ro_RO": {
+      "structure": {
+        "COMPACT": "COMPACT",
+        "FIRM": "FERM",
+        "FRIABLE": "FRIABIL",
+        "HIGH COMPACT": "FOARTE COMPACT",
+        "INTACT": "INTACT"
+      },
+      "texture": {
+        "Clay Loam": "Lut argilos",
+        "Clayey": "Argiloasă",
+        "Other *": "Altele*",
+        "Sandy": "Nisipos",
+        "Sandy Clay": "Argilă Nisipoasă",
+        "Sandy Loam": "Luto-nisipos",
+        "Silty": "Prăfos",
+        "Silty Clay": "Argilă prăfoasă"
+      }
+    },
+    "sk_SK": {
+      "structure": {
+        "COMPACT": "KOMPAKTNÉ",
+        "FIRM": "PEVNÉ",
+        "FRIABLE": "KYSLÉ",
+        "HIGH COMPACT": "VEĽMI KOMPAKTNÉ",
+        "INTACT": "NEPOŠKODENÉ"
+      },
+      "texture": {
+        "Clay Loam": "Ilovito-hlinité",
+        "Clayey": "Ilovité",
+        "Other *": "Iné *",
+        "Sandy": "Piesčité",
+        "Sandy Clay": "Piesčito-ilovité",
+        "Sandy Loam": "Piesočnato-hlinitá pôda",
+        "Silty": "Prachovité",
+        "Silty Clay": "Prachovito-ilovité"
+      }
+    },
+    "sl_SI": {
+      "structure": {
+        "COMPACT": "ZBITA",
+        "FIRM": "ČVRSTA",
+        "FRIABLE": "DROBLJIVA",
+        "HIGH COMPACT": "ZELO ZBITA",
+        "INTACT": "NESPREMENJENA"
+      },
+      "texture": {
+        "Clay Loam": "Glinena ilovica",
+        "Clayey": "Glinena",
+        "Other *": "Drugo *",
+        "Sandy": "Peščena",
+        "Sandy Clay": "Peščena glina",
+        "Sandy Loam": "Peščena ilovnata tla",
+        "Silty": "Ilovnata",
+        "Silty Clay": "Ilovnata glina"
+      }
+    },
+    "sv_SE": {
+      "structure": {
+        "COMPACT": "KOMPAKT",
+        "FIRM": "FAST",
+        "FRIABLE": "LÖS",
+        "HIGH COMPACT": "MYCKET KOMPAKT",
+        "INTACT": "INTACT"
+      },
+      "texture": {
+        "Clay Loam": "Lersand",
+        "Clayey": "Lerig",
+        "Other *": "Annat *",
+        "Sandy": "Sandig",
+        "Sandy Clay": "Sandig lera (sandlerjord)",
+        "Sandy Loam": "Sandig lerjord",
+        "Silty": "Siltig",
+        "Silty Clay": "Siltlera"
+      }
+    }
+  },
+  "reverse": {
+    "structure": {
+      "altamente compattato": "HIGH COMPACT",
+      "brokkelig": "FRIABLE",
+      "brydelig": "FRIABLE",
+      "cietas": "FIRM",
+      "compact": "COMPACT",
+      "compacto": "COMPACT",
+      "compattato": "COMPACT",
+      "compatto": "FIRM",
+      "drobljiva": "FRIABLE",
+      "drupainas": "FRIABLE",
+      "erittäin tiivistynyt": "HIGH COMPACT",
+      "erősen tömör": "HIGH COMPACT",
+      "fast": "FIRM",
+      "ferm": "FIRM",
+      "ferme": "FIRM",
+      "fest": "FIRM",
+      "firm": "FIRM",
+      "firme": "FIRM",
+      "foarte compact": "HIGH COMPACT",
+      "friabil": "FRIABLE",
+      "friabile": "FRIABLE",
+      "friable": "FRIABLE",
+      "frágil": "FRIABLE",
+      "high compact": "HIGH COMPACT",
+      "hochkompakt": "HIGH COMPACT",
+      "højt kompakt": "HIGH COMPACT",
+      "intact": "INTACT",
+      "intacto": "INTACT",
+      "intakt": "INTACT",
+      "integro": "INTACT",
+      "irtonainen": "FRIABLE",
+      "kemény": "FIRM",
+      "kiinteä": "FIRM",
+      "kompakt": "COMPACT",
+      "kompaktas": "COMPACT",
+      "kompaktno": "COMPACT",
+      "kompaktné": "COMPACT",
+      "kompaktní": "COMPACT",
+      "kompaktus": "COMPACT",
+      "krocht": "FRIABLE",
+      "krümelig": "FRIABLE",
+      "kyslá": "FRIABLE",
+      "kyslé": "FRIABLE",
+      "labai kompaktus": "HIGH COMPACT",
+      "luźny": "FRIABLE",
+      "lös": "FRIABLE",
+      "morzsalékos": "FRIABLE",
+      "mrvavo": "FRIABLE",
+      "muito compactado": "HIGH COMPACT",
+      "murenev": "FRIABLE",
+      "mureneva": "INTACT",
+      "muy compacto": "HIGH COMPACT",
+      "mycket kompakt": "HIGH COMPACT",
+      "mõõdukalt paakunud": "FIRM",
+      "neporušená": "INTACT",
+      "nepoškodené": "INTACT",
+      "nesabojušas": "INTACT",
+      "nespremenjena": "INTACT",
+      "nesužalotas": "INTACT",
+      "netaknuto": "INTACT",
+      "nienaruszony": "INTACT",
+      "nõrgalt paakunud": "INTACT",
+      "onverännert": "INTACT",
+      "paakunud": "COMPACT",
+      "pevná": "FIRM",
+      "pevné": "FIRM",
+      "smuldrende": "FRIABLE",
+      "stark verdichtet": "HIGH COMPACT",
+      "stevig": "FIRM",
+      "svært kompakt": "HIGH COMPACT",
+      "tiivistynyt": "COMPACT",
+      "trupi": "FRIABLE",
+      "très compact": "HIGH COMPACT",
+      "tugevasti paakunud": "HIGH COMPACT",
+      "tvirtas": "FIRM",
+      "tömör": "COMPACT",
+      "uskadt": "INTACT",
+      "velmi kompaktní": "HIGH COMPACT",
+      "verdichtet": "COMPACT",
+      "veľmi kompaktné": "HIGH COMPACT",
+      "visoko kompaktno": "HIGH COMPACT",
+      "wyjątkowo zwarty": "HIGH COMPACT",
+      "zbita": "COMPACT",
+      "zbity": "FIRM",
+      "zeer compact": "HIGH COMPACT",
+      "zelo zbita": "HIGH COMPACT",
+      "zwarty": "COMPACT",
+      "ép": "INTACT",
+      "čvrsta": "FIRM",
+      "čvrsto": "FIRM",
+      "ļoti kompaktas": "HIGH COMPACT",
+      "έντονα συμπαγέσ": "HIGH COMPACT",
+      "ακέραιο": "INTACT",
+      "ακεραιο": "INTACT",
+      "εντονα συμπαγεσ": "HIGH COMPACT",
+      "ευθρυπτο": "FRIABLE",
+      "εύθρυπτο": "FRIABLE",
+      "σταθερο": "FIRM",
+      "συμπαγεσ": "COMPACT",
+      "здрава": "FIRM",
+      "компактна": "COMPACT",
+      "много компактна": "HIGH COMPACT",
+      "неповредена": "INTACT",
+      "трошлива": "FRIABLE"
+    },
+    "texture": {
+      "agyagos": "Clayey",
+      "agyagos vályog": "Clay Loam",
+      "altele*": "Other *",
+      "altro *": "Other *",
+      "andere/s *": "Other *",
+      "andet *": "Other *",
+      "aner *": "Other *",
+      "annat *": "Other *",
+      "annet *": "Other *",
+      "arcilloso": "Clayey",
+      "arcilloso arenoso": "Sandy Clay",
+      "arcilloso limoso": "Silty Clay",
+      "arenoso": "Sandy",
+      "argila sedimentosa": "Silty Clay",
+      "argile sableuse": "Sandy Clay",
+      "argileux": "Clayey",
+      "argileux limoneux": "Silty Clay",
+      "argilloso": "Clayey",
+      "argilloso limoso": "Silty Clay",
+      "argilloso sabbioso": "Sandy Clay",
+      "argilo arenoso": "Sandy Clay",
+      "argiloasă": "Clayey",
+      "argiloso": "Clayey",
+      "argilă nisipoasă": "Sandy Clay",
+      "argilă prăfoasă": "Silty Clay",
+      "autre *": "Other *",
+      "cits *": "Other *",
+      "clay loam": "Clay Loam",
+      "clayey": "Clayey",
+      "drugo *": "Other *",
+      "dīgušmālsmilts": "Silty",
+      "dīgušmālsmiltājs": "Silty Clay",
+      "egyéb *": "Other *",
+      "franco arcilloso": "Clay Loam",
+      "franco arenoso": "Sandy Loam",
+      "franco argilloso": "Clay Loam",
+      "franco-arenoso": "Sandy Loam",
+      "franco-argiloso": "Clay Loam",
+      "franco-sabbioso": "Sandy Loam",
+      "glina ilasta": "Clay Loam",
+      "glina piaszczysta": "Sandy Clay",
+      "glina pyłowa": "Silty Clay",
+      "glinena": "Clayey",
+      "glinena ilovica": "Clay Loam",
+      "gliniasty": "Clayey",
+      "glinovito": "Clayey",
+      "glinovito-ilovača": "Clay Loam",
+      "hiekka": "Sandy",
+      "hiekkainen savi (sandy clay)": "Sandy Clay",
+      "homokos": "Sandy",
+      "homokos agyag": "Sandy Clay",
+      "homokos vályog": "Sandy Loam",
+      "ilovito-hlinité": "Clay Loam",
+      "ilovité": "Clayey",
+      "ilovnata": "Silty",
+      "ilovnata glina": "Silty Clay",
+      "inny *": "Other *",
+      "iné *": "Other *",
+      "iszapos": "Silty",
+      "iszapos agyag": "Silty Clay",
+      "jiné *": "Other *",
+      "jílovito-hlinitá": "Clay Loam",
+      "jílovitá": "Clayey",
+      "keskmine savi": "Silty Clay",
+      "kitas *": "Other *",
+      "kleiig": "Clayey",
+      "kleileem": "Clay Loam",
+      "leem-läim": "Clay Loam",
+      "leemeeg": "Clayey",
+      "leirholdig": "Clayey",
+      "leirholdig moldjord": "Clay Loam",
+      "leret": "Clayey",
+      "leret lerjord": "Clay Loam",
+      "lerig": "Clayey",
+      "lersand": "Clay Loam",
+      "liiv": "Sandy",
+      "liivakas savi": "Sandy Clay",
+      "liivsavi": "Silty",
+      "limon sableux": "Sandy Loam",
+      "limoneux": "Silty",
+      "limoneux argileux": "Clay Loam",
+      "limoso": "Silty",
+      "lut argilos": "Clay Loam",
+      "luto-nisipos": "Sandy Loam",
+      "molingas": "Clayey",
+      "molingas priemolis": "Clay Loam",
+      "muu *": "Other *",
+      "mālaina": "Clayey",
+      "mālsmilts": "Clay Loam",
+      "nisipos": "Sandy",
+      "ostalo *": "Other *",
+      "other": "Other *",
+      "other *": "Other *",
+      "otro *": "Other *",
+      "outro *": "Other *",
+      "overig *": "Other *",
+      "peščena": "Sandy",
+      "peščena glina": "Sandy Clay",
+      "peščena ilovnata tla": "Sandy Loam",
+      "piasek gliniasty": "Sandy Loam",
+      "piaszczysty": "Sandy",
+      "piesočnato-hlinitá pôda": "Sandy Loam",
+      "piesčito-ilovité": "Sandy Clay",
+      "piesčité": "Sandy",
+      "pjeskovita ilovača": "Sandy Loam",
+      "pjeskovito": "Sandy",
+      "pjeskovito-glinovito": "Sandy Clay",
+      "prachovito-ilovité": "Silty Clay",
+      "prachovito-jílovitá": "Silty Clay",
+      "prachovitá": "Silty",
+      "prachovité": "Silty",
+      "prašnasto": "Silty",
+      "prašnasto-glinovito": "Silty Clay",
+      "priesmėlis": "Sandy Loam",
+      "prăfos": "Silty",
+      "pulvingas": "Silty",
+      "pulvingas molis": "Silty Clay",
+      "pyłowy": "Silty",
+      "písčito-jílovitá": "Sandy Clay",
+      "písčitohlinitá půda": "Sandy Loam",
+      "písčitá": "Sandy",
+      "raske savi": "Clay Loam",
+      "sabbioso": "Sandy",
+      "sableux": "Sandy",
+      "sandblandet lerjord": "Sandy Loam",
+      "sandeg": "Sandy",
+      "sandeg leem": "Sandy Loam",
+      "sandeg-läim-leem": "Sandy Clay",
+      "sandet": "Sandy",
+      "sandet ler": "Sandy Clay",
+      "sandholdig leire": "Sandy Clay",
+      "sandholdig leirjord": "Sandy Loam",
+      "sandig": "Sandy",
+      "sandig lera (sandlerjord)": "Sandy Clay",
+      "sandig lerjord": "Sandy Loam",
+      "sandiger lehm": "Sandy Loam",
+      "sandiger ton": "Sandy Clay",
+      "sandy": "Sandy",
+      "sandy clay": "Sandy Clay",
+      "sandy loam": "Sandy Loam",
+      "savi": "Clayey",
+      "saviliiv": "Sandy Loam",
+      "savinen hieta": "Sandy Loam",
+      "savinen maalajisekoite (clay loam)": "Clay Loam",
+      "schluffig": "Silty",
+      "schluffiger ton": "Silty Clay",
+      "sedimentoso": "Silty",
+      "siltet": "Silty",
+      "siltet ler": "Silty Clay",
+      "siltig": "Silty",
+      "siltig leire": "Silty Clay",
+      "siltlera": "Silty Clay",
+      "siltti": "Silty",
+      "silttinen savi (silty clay)": "Silty Clay",
+      "silty": "Silty",
+      "silty clay": "Silty Clay",
+      "slibachtig": "Silty",
+      "slibachtige klei": "Silty Clay",
+      "smilšaina": "Sandy",
+      "smilšaina mālsmiltājs": "Sandy Clay",
+      "smilšmāls": "Sandy Loam",
+      "smėlingas": "Sandy",
+      "smėlingas molis": "Sandy Clay",
+      "sëllegeg": "Silty",
+      "sëllegeg-leem": "Silty Clay",
+      "tonig": "Clayey",
+      "toniger lehm": "Clay Loam",
+      "zandig": "Sandy",
+      "zandige klei": "Sandy Clay",
+      "zandleem": "Sandy Loam",
+      "άλλο *": "Other *",
+      "αμμώδεσ": "Sandy",
+      "αργιλοπηλώδεσ": "Clay Loam",
+      "αργιλώδεσ": "Clayey",
+      "ιλυαργιλώδεσ": "Silty Clay",
+      "ιλυοαργιλώδεσ": "Silty Clay",
+      "ιλυώδεσ": "Silty",
+      "глинеста": "Clayey",
+      "глинесто-глинеста": "Clay Loam",
+      "друго *": "Other *",
+      "песъчливо-глинеста почва": "Sandy Loam",
+      "пясъчна": "Sandy",
+      "пясъчно-глинеста": "Sandy Clay",
+      "тинеста": "Silty",
+      "тинесто-глинеста": "Silty Clay"
+    }
+  },
+  "schema_version": 1
+}
