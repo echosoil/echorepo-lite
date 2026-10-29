@@ -757,77 +757,13 @@
 
     <ul class="dropdown-menu">
 
-      <li>
-
-        <form method="POST" action="{{ url_for('download_csv') }}" class="px-3 py-1">
-
-          <input type="hidden" name="user_key" value="{{ user_key }}">
-
-          <button class="btn btn-link p-0" type="submit">
-
-            <i class="bi bi-filetype-csv me-1"></i> {{ _('CSV (per-user)') }}
-
-          </button>
-
-        </form>
-
-      </li>
-
-      <li>
-
-        <form method="POST" action="{{ url_for('download_xlsx') }}" class="px-3 py-1">
-
-          <input type="hidden" name="user_key" value="{{ user_key }}">
-
-          <button class="btn btn-link p-0" type="submit">
-
-            <i class="bi bi-filetype-xls me-1"></i> {{ _('XLSX (per-user)') }}
-
-          </button>
-
-        </form>
-
-      </li>
-
-      <li>
-
-        <hr class="dropdown-divider">
-
-      </li>
-
-      <li>
-
-        <a class="dropdown-item" href="{{ url_for('download_all_csv') }}">
-
-          <i class="bi bi-archive me-1"></i> {{ _('All samples (CSV, anonymised)') }}
-
-        </a>
-
-      </li>
-
-      <li>
-
-        <a class="dropdown-item" href="/api/user_geojson" target="_blank" rel="noopener">
-
-          <i class="bi bi-braces-asterisk me-1"></i> {{ _('GeoJSON (per-user)') }}
-
-        </a>
-
-      </li>
-
-      <li>
-
-        <hr class="dropdown-divider">
-
-      </li>
-
       <li class="dropdown-header">{{ _('Canonical exports') }}</li>
 
       <li>
 
         <a class="dropdown-item" href="{{ url_for('web.download_canonical_samples') }}">
 
-          <i class="bi bi-filetype-csv me-1"></i> {{ _('samples.csv') }}
+          <i class="bi bi-filetype-csv me-1"></i> <span translate="no">samples.csv</span>
 
         </a>
 
@@ -837,7 +773,7 @@
 
         <a class="dropdown-item" href="{{ url_for('web.download_canonical_sample_images') }}">
 
-          <i class="bi bi-filetype-csv me-1"></i> {{ _('sample_images.csv') }}
+          <i class="bi bi-filetype-csv me-1"></i> <span translate="no">sample_images.csv</span>
 
         </a>
 
@@ -847,7 +783,7 @@
 
         <a class="dropdown-item" href="{{ url_for('web.download_canonical_sample_parameters') }}">
 
-          <i class="bi bi-filetype-csv me-1"></i> {{ _('sample_parameters.csv') }}
+          <i class="bi bi-filetype-csv me-1"></i> <span translate="no">sample_parameters.csv</span>
 
         </a>
 
@@ -857,7 +793,7 @@
 
         <a class="dropdown-item" href="{{ url_for('web.download_canonical_sample_biodiversity') }}">
 
-          <i class="bi bi-filetype-csv me-1"></i> {{ _('sample_biodiversity.csv') }}
+          <i class="bi bi-filetype-csv me-1"></i> <span translate="no">sample_biodiversity.csv</span>
 
         </a>
 

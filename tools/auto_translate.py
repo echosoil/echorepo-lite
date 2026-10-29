@@ -22,6 +22,18 @@ from babel.messages.pofile import read_po, write_po
 PY_TOKEN = re.compile(r"%\(([A-Za-z0-9_]+)\)s")
 BRACE_TOKEN = re.compile(r"\{([A-Za-z0-9_]+)\}")
 
+# Standalone filenames are identifiers, not translatable UI messages.
+# This guards against accidental _('samples.csv') in other templates, too.
+MACHINE_FILENAME_MSGID = re.compile(
+    r"^[A-Za-z0-9][A-Za-z0-9._-]*\.(?:csv|tsv|xls|xlsx|json|geojson|zip|parquet)$",
+    re.IGNORECASE,
+)
+
+
+def is_machine_filename_msgid(msgid: object) -> bool:
+    return isinstance(msgid, str) and bool(MACHINE_FILENAME_MSGID.fullmatch(msgid))
+
+
 # LibreTranslate occasionally mutates protected tokens, e.g.
 # __PH_0__ -> _PH_0 / PH_0 or spaced variants.
 PH_SENTINEL_ANY = re.compile(r"(?:__|_)?PH(?:_[A-Z]+)?_(\d+)(?:__|_)?")
@@ -150,6 +162,16 @@ def repair_existing_catalog(catalog) -> int:
 
     for msg in list(catalog):
         if not msg.id:
+            continue
+
+        if is_machine_filename_msgid(msg.id):
+            # Restore any filename translated by an earlier LibreTranslate run.
+            if msg.string != msg.id:
+                msg.string = msg.id
+                repaired += 1
+            if "fuzzy" in getattr(msg, "flags", set()):
+                msg.flags.remove("fuzzy")
+                repaired += 1
             continue
 
         if msg.pluralizable:
@@ -366,6 +388,10 @@ def translate_catalog(
 
     for msg in list(catalog):
         if not msg.id:
+            continue
+
+        # Never send a standalone machine filename to LibreTranslate.
+        if is_machine_filename_msgid(msg.id):
             continue
 
         is_fuzzy = "fuzzy" in getattr(msg, "flags", set())
