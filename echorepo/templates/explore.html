@@ -27,9 +27,7 @@
     gap: 0.4rem;
   }
 
-    {
-    % if force_mobile_mode %
-  }
+    {% if force_mobile_mode %}
 
   .echo-desktop-only {
     display: none !important;
@@ -39,34 +37,24 @@
     display: inline-flex !important;
   }
 
-    {
-    % endif %
-  }
+    {% endif %}
 
-    {
-    % if force_desktop_mode %
-  }
+    {% if force_desktop_mode %}
 
   .echo-layout-switch {
     display: inline-flex !important;
   }
 
-    {
-    % endif %
-  }
+    {% endif %}
 
   @media (max-width: 767.98px) {
-      {
-      % if not force_desktop_mode %
-    }
+      {% if not force_desktop_mode %}
 
     .echo-desktop-only {
       display: none !important;
     }
 
-      {
-      % endif %
-    }
+      {% endif %}
 
     .echo-layout-switch {
       display: inline-flex !important;
@@ -174,6 +162,9 @@
   window.ECHOREPO_CFG = Object.assign({}, window.ECHOREPO_CFG || {}, {
     // /explore is ALWAYS the public map, including when a user happens to be signed in.
     public_mode: true,
+    // The EEA overlay is available even when the map is public.
+    biogeo_overlay_enabled: true,
+    biogeo_overlay_url: {{ url_for('static', filename='geo/biogeo_regions_2016.geojson') | tojson }},
     export_authenticated: {{ (true if can_export else false) | tojson }},
   geojson_user_url: null,
     geojson_others_url: "/public/others_geojson",
@@ -182,8 +173,8 @@
         // No private per-user data or map rectangle/polygon export on this page.
         disable_selection_tools: true,
           disable_sample_toggles: true,
-            biodiv_marker: { { config.get('BIODIV_MARKER', '16S,ITS') | tojson } },
-  biodiv_level: { { config.get('BIODIV_LEVEL', 'Phylum') | tojson } }
+            biodiv_marker: {{ config.get('BIODIV_MARKER', '16S,ITS') | tojson }},
+  biodiv_level: {{ config.get('BIODIV_LEVEL', 'Phylum') | tojson }}
   });
 </script>
 
@@ -228,7 +219,7 @@
   })();
 </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=32"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=35"></script>
 
 <script>
   (function setupLayoutSwitch() {

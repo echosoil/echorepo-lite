@@ -69,24 +69,39 @@
     return fallback ? locales[fallback][field] || {} : {};
   }
 
+  // Flutter's soil-structure translations are often stored in ALL CAPS.
+  // Present them as normal title-cased popup values without modifying the
+  // dictionary, original observation, or already mixed-case translations.
+  function formatSoilStructure(value) {
+    if (value == null || value === '') return value;
+    const text = String(value).trim();
+    if (!text || text !== text.toLocaleUpperCase() ||
+        text === text.toLocaleLowerCase()) return value;
+    return text.toLocaleLowerCase()
+      .replace(/(^|[\s-])(\p{L})/gu, (_, separator, letter) =>
+        separator + letter.toLocaleUpperCase());
+  }
+
   function localizeSoilChoice(field, englishValue, originalValue) {
+    const format = value => field === 'structure'
+      ? formatSoilStructure(value) : value;
     const fallback = englishValue || originalValue;
-    if (!fallback || !soilClassifications) return fallback;
+    if (!fallback || !soilClassifications) return format(fallback);
 
     const reverse = soilClassifications.reverse?.[field] || {};
     // Prefer a canonical English value if present; legacy /my records may
     // supply only the original Flutter value. Never guess unknown text.
     const key = reverse[normalizeSoilChoice(englishValue)] ||
       reverse[normalizeSoilChoice(originalValue)];
-    if (!key) return fallback;
+    if (!key) return format(fallback);
 
     const english = soilClassifications.english?.[field]?.[key] || key;
     const translated = getSoilLocaleDict(field)[key] || english;
     // The app's Other * option includes an input-field marker; hide that
     // marker in map popup values in every language.
-    return key === 'Other *'
+    return format(key === 'Other *'
       ? translated.replace(/\s*\*\s*$/, '').trim()
-      : translated;
+      : translated);
   }
 
   // Loading this resource must never prevent the map from showing samples.
@@ -1914,7 +1929,7 @@
       ],
       [
         '<i class="bi bi-diagram-3"></i> ' +
-        T('structure', {}, 'Structure'),
+        formatSoilStructure(T('structure', {}, 'Structure')),
         structure
       ],
       [
@@ -3881,6 +3896,9 @@
         .catch(() => null);
 
     addMapLoaderControl();
+    // Show map layer selectors immediately, independently of the i18n request.
+    // Rebuilt with translated labels after /i18n/labels finishes loading.
+    rebuildBaseLayerControl();
     showMapLoader(
       T('loadingMapData', {}, 'Loading map data...'),
       T('preparingMap', {}, 'Preparing map')
