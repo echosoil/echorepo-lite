@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 00:34+0000\n"
+"POT-Creation-Date: 2026-10-29 10:48+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -68,17 +68,17 @@ msgstr "Καθαρισμός"
 msgid "Export filtered ({n})"
 msgstr "Φίλτρο εξαγωγής ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:121 static/js/map.js:1812
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
 msgid "Date"
 msgstr "Ημερομηνία"
 
-#: echorepo/i18n.py:121 static/js/map.js:1817
+#: echorepo/i18n.py:121 static/js/map.js:1917
 msgid "QR code"
 msgstr "Κωδικός QR"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:94
-#: echorepo/templates/results.html:884 echorepo/templates/search.html:90
-#: static/js/map.js:1822
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:101
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:90
+#: static/js/map.js:1922
 msgid "pH"
 msgstr "p Η"
 
@@ -86,27 +86,27 @@ msgstr "p Η"
 msgid "Colour"
 msgstr "Χρώμα"
 
-#: echorepo/i18n.py:124 static/js/map.js:1827
+#: echorepo/i18n.py:124 static/js/map.js:1927
 msgid "Soil organic matter"
 msgstr "Οργανική ύλη εδάφους"
 
-#: echorepo/i18n.py:125 static/js/map.js:1841
+#: echorepo/i18n.py:125 static/js/map.js:1941
 msgid "Structure"
 msgstr "Δομή"
 
-#: echorepo/i18n.py:126 static/js/map.js:1846
+#: echorepo/i18n.py:126 static/js/map.js:1946
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: echorepo/i18n.py:127 static/js/map.js:1851
+#: echorepo/i18n.py:127 static/js/map.js:1951
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: echorepo/i18n.py:128 static/js/map.js:1856
+#: echorepo/i18n.py:128 static/js/map.js:1956
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: echorepo/i18n.py:129 static/js/map.js:1861
+#: echorepo/i18n.py:129 static/js/map.js:1961
 msgid "Contamination"
 msgstr "Μόλυνση"
 
@@ -126,51 +126,63 @@ msgstr "Σχεδίαση ορθογωνίου"
 msgid "Click and drag to draw a rectangle."
 msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο."
 
-#: echorepo/i18n.py:134 static/js/map.js:3118
+#: echorepo/i18n.py:134 static/js/map.js:3266
 msgid "Cancel drawing"
 msgstr "Ακύρωση σχεδίου"
 
-#: echorepo/i18n.py:135 static/js/map.js:3119
+#: echorepo/i18n.py:135 static/js/map.js:3267
 msgid "Cancel"
 msgstr "Ακύρωση"
 
-#: echorepo/i18n.py:136 static/js/map.js:3123
+#: echorepo/i18n.py:136 static/js/map.js:3271
 msgid "Delete last point"
 msgstr "Διαγραφή τελευταίου σημείου"
 
-#: echorepo/i18n.py:137 static/js/map.js:1245
+#: echorepo/i18n.py:137 static/js/map.js:1347
 msgid "Street map"
 msgstr "Χάρτης οδών"
 
-#: echorepo/i18n.py:138 static/js/map.js:1246
+#: echorepo/i18n.py:138 static/js/map.js:1348
 msgid "Satellite"
 msgstr "Δορυφόρος"
 
-#: echorepo/i18n.py:139
+#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+msgid "Biogeographical regions"
+msgstr "Βιογεωγραφικές περιοχές"
+
+#: echorepo/i18n.py:140 static/js/map.js:3861
+msgid "Loading samples..."
+msgstr "Φόρτωση δειγμάτων..."
+
+#: echorepo/i18n.py:141 static/js/map.js:3862
+msgid "Fetching visible map area"
+msgstr "Ανάκτηση ορατής περιοχής χάρτη"
+
+#: echorepo/i18n.py:142
 msgid "Selection export to a file"
 msgstr "Επιλογή εξαγωγής σε ένα αρχείο"
 
-#: echorepo/i18n.py:140
+#: echorepo/i18n.py:143
 msgid "Selection export"
 msgstr "Εξαγωγή επιλογής"
 
-#: echorepo/i18n.py:141
+#: echorepo/i18n.py:144
 msgid "Use selection tool"
 msgstr "Χρήση εργαλείου επιλογής"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:145
 msgid "to draw one or more areas"
 msgstr "να σχεδιάσουν έναν ή περισσότερους τομείς"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:146
 msgid "Export selection"
 msgstr "Επιλογή εξαγωγής"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:147
 msgid "Clear selection"
 msgstr "Καθαρισμός επιλογής"
 
-#: echorepo/i18n.py:145 static/js/map.js:1464
+#: echorepo/i18n.py:148 static/js/map.js:1566
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Οι τιμές (%) μπορούν να μετατραπούν σε mg/kg πολλαπλασιάζοντας με 10000."
 
@@ -347,7 +359,7 @@ msgstr "Τύπος έκδοσης"
 msgid "Any issue"
 msgstr "Κάθε θέμα"
 
-#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:78
+#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:85
 #: echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Αναζήτηση"
@@ -427,60 +439,62 @@ msgstr "αποτελέσματα"
 msgid "ECHOrepo — Explore"
 msgstr "ECHOREPO — Εξερευνήστε"
 
-#: echorepo/templates/explore.html:61
+#: echorepo/templates/explore.html:68
 msgid "Explore the map"
 msgstr "Εξερευνήστε το χάρτη"
 
-#: echorepo/templates/explore.html:64
+#: echorepo/templates/explore.html:71
 msgid "Sign in to export data and access your personal samples."
 msgstr "Συνδεθείτε στην εξαγωγή δεδομένων και πρόσβαση στα προσωπικά σας δείγματα."
 
-#: echorepo/templates/explore.html:72
+#: echorepo/templates/explore.html:79
 msgid "Download dataset from Zenodo"
 msgstr "Λήψη συνόλου δεδομένων από το Zenodo"
 
-#: echorepo/templates/explore.html:84 echorepo/templates/results.html:544
+#: echorepo/templates/explore.html:91 echorepo/templates/results.html:544
 msgid "Mobile version"
 msgstr "Κινητή έκδοση"
 
-#: echorepo/templates/explore.html:87 echorepo/templates/results.html:550
+#: echorepo/templates/explore.html:94 echorepo/templates/results.html:550
 msgid "Desktop version"
 msgstr "Έκδοση επιφάνειας εργασίας"
 
-#: echorepo/templates/explore.html:97 echorepo/templates/results.html:887
+#: echorepo/templates/explore.html:104 echorepo/templates/results.html:844
 msgid "min"
 msgstr "λεπτά"
 
-#: echorepo/templates/explore.html:102 echorepo/templates/results.html:892
+#: echorepo/templates/explore.html:109 echorepo/templates/results.html:849
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/explore.html:104 echorepo/templates/search.html:19
-#: echorepo/templates/search.html:89
+#: echorepo/templates/explore.html:111 echorepo/templates/results.html:835
+#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Χώρες"
 
-#: echorepo/templates/explore.html:107
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
 msgid "All countries"
 msgstr "Όλες οι χώρες"
 
-#: echorepo/templates/explore.html:111 echorepo/templates/search.html:29
+#: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
+#: echorepo/templates/search.html:29
 msgid "Biogeographical region"
 msgstr "Βιογεωγραφική περιοχή"
 
-#: echorepo/templates/explore.html:115 echorepo/templates/search.html:31
+#: echorepo/templates/explore.html:122 echorepo/templates/results.html:824
+#: echorepo/templates/search.html:31
 msgid "Any region"
 msgstr "Οποιαδήποτε περιφέρεια"
 
-#: echorepo/templates/explore.html:130 echorepo/templates/results.html:895
+#: echorepo/templates/explore.html:137 echorepo/templates/results.html:852
 msgid "Apply"
 msgstr "Εφαρμογή"
 
-#: echorepo/templates/explore.html:135 echorepo/templates/results.html:900
+#: echorepo/templates/explore.html:142 echorepo/templates/results.html:857
 msgid "Export filtered (0)"
 msgstr "Φίλτρο εξαγωγής (0)"
 
-#: echorepo/templates/explore.html:141
+#: echorepo/templates/explore.html:148
 msgid "Copy view link"
 msgstr "Αντιγραφή δεσμού προβολής"
 
@@ -814,59 +828,27 @@ msgstr ""
 msgid "Download"
 msgstr "Λήψη"
 
-#: echorepo/templates/results.html:768
-msgid "CSV (per-user)"
-msgstr "CSV (ανά χρήστη)"
-
-#: echorepo/templates/results.html:784
-msgid "XLSX (per-user)"
-msgstr "XLSX (ανά χρήστη)"
-
-#: echorepo/templates/results.html:802
-msgid "All samples (CSV, anonymised)"
-msgstr "Όλα τα δείγματα (CSV, ανώνυμα)"
-
-#: echorepo/templates/results.html:812
-msgid "GeoJSON (per-user)"
-msgstr "GeoJSON (ανά χρήστη)"
-
-#: echorepo/templates/results.html:824
+#: echorepo/templates/results.html:760
 msgid "Canonical exports"
 msgstr "Κανονική εξαγωγή"
 
-#: echorepo/templates/results.html:830
-msgid "samples.csv"
-msgstr "δείγματα.csv"
-
-#: echorepo/templates/results.html:840
-msgid "sample_images.csv"
-msgstr "δείγμα_εικόνες.csv"
-
-#: echorepo/templates/results.html:850
-msgid "sample_parameters.csv"
-msgstr "δείγμα_παράμετροι.csv"
-
-#: echorepo/templates/results.html:860
-msgid "sample_biodiversity.csv"
-msgstr "δείγμα βιοποικιλότητα.csv"
-
-#: echorepo/templates/results.html:870
+#: echorepo/templates/results.html:806
 msgid "All canonical (zip)"
 msgstr "Όλα τα κανονικά (zip)"
 
-#: echorepo/templates/results.html:895
-msgid "Apply pH filter"
-msgstr "Εφαρμογή φίλτρου pH"
+#: echorepo/templates/results.html:852
+msgid "Apply map filters"
+msgstr "Εφαρμογή φίλτρων χάρτη"
 
-#: echorepo/templates/results.html:898
-msgid "Export rows matching current pH filter"
-msgstr "Εξαγωγή γραμμών που ταιριάζουν με το τρέχον φίλτρο pH"
+#: echorepo/templates/results.html:855
+msgid "Export rows matching current map filters"
+msgstr "Εξαγωγή γραμμών που ταιριάζουν με τα τρέχοντα φίλτρα χάρτη"
 
-#: echorepo/templates/results.html:939
+#: echorepo/templates/results.html:896
 msgid "Privacy information"
 msgstr "Πληροφορίες απορρήτου"
 
-#: echorepo/templates/results.html:993
+#: echorepo/templates/results.html:950
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
@@ -878,20 +860,20 @@ msgstr ""
 "\n"
 "Αυτό το έργο."
 
-#: echorepo/templates/results.html:1009
+#: echorepo/templates/results.html:966
 msgid "Accept and continue"
 msgstr "Αποδοχή και συνέχιση"
 
-#: echorepo/templates/results.html:1759
+#: echorepo/templates/results.html:1716
 msgid "Show on map"
 msgstr "Εμφάνιση στο χάρτη"
 
-#: echorepo/templates/results.html:1785 echorepo/templates/results.html:1833
-#: echorepo/templates/results.html:1851
+#: echorepo/templates/results.html:1742 echorepo/templates/results.html:1790
+#: echorepo/templates/results.html:1808
 msgid "Could not locate this sample on the map."
 msgstr "Αδυναμία εντοπισμού του δείγματος στο χάρτη."
 
-#: echorepo/templates/search.html:21 static/js/map.js:231
+#: echorepo/templates/search.html:21 static/js/map.js:324
 msgid "Any country"
 msgstr "Οποιαδήποτε χώρα"
 
@@ -1020,32 +1002,28 @@ msgstr "Προτεινόμενη αναφορά"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Δεν έχουν καταγραφεί ακόμα εκδόσεις του Zenodo."
 
-#: static/js/map.js:172
+#: static/js/map.js:265
 msgid "Link copied to clipboard"
 msgstr "Δεσμός αντιγραφόμενο στο πρόχειρο"
 
-#: static/js/map.js:175
+#: static/js/map.js:268
 msgid "Copy this link:"
 msgstr "Αντιγραφή αυτού του συνδέσμου:"
 
-#: static/js/map.js:797 static/js/map.js:3489
+#: static/js/map.js:890 static/js/map.js:3637
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Φίλτρα εξαγωγής (${n})"
 
-#: static/js/map.js:807 static/js/map.js:3281
+#: static/js/map.js:900 static/js/map.js:3429
 msgid "Release mouse to finish drawing."
 msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
 
-#: static/js/map.js:881
+#: static/js/map.js:974
 msgid "Not available"
 msgstr "Υποθ"
 
-#: static/js/map.js:1135 static/js/map.js:1249
-msgid "Biogeographical regions"
-msgstr "Βιογεωγραφικές περιοχές"
-
-#: static/js/map.js:1214
+#: static/js/map.js:1316
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1053,77 +1031,69 @@ msgstr ""
 "Αδυναμία φόρτωσης της επικάλυψης της βιογεωγραφικής περιοχής. Ελέγξτε ότι "
 "/static/geo/biogeo regions 2016.geojson υπάρχει."
 
-#: static/js/map.js:1470
+#: static/js/map.js:1572
 msgid "Unit conversion help"
 msgstr "Βοήθεια μετατροπής μονάδας"
 
-#: static/js/map.js:1836
+#: static/js/map.js:1936
 msgid "Texture"
 msgstr "Υφή"
 
-#: static/js/map.js:1871
+#: static/js/map.js:1971
 msgid "Observations"
 msgstr "Παρατηρήσεις"
 
-#: static/js/map.js:2507 static/js/map.js:3809
+#: static/js/map.js:2609 static/js/map.js:3961
 msgid "Loading map data..."
 msgstr "Φόρτωση δεδομένων χάρτη..."
 
-#: static/js/map.js:2511
+#: static/js/map.js:2613
 msgid "Please wait"
 msgstr "Παρακαλώ περιμένετε"
 
-#: static/js/map.js:2789
+#: static/js/map.js:2892
 msgid "Loading..."
 msgstr "Φόρτωση..."
 
-#: static/js/map.js:3111
+#: static/js/map.js:3259
 msgid "Draw selection rectangle"
 msgstr "Σχεδίαση ορθογωνίου επιλογής"
 
-#: static/js/map.js:3122
+#: static/js/map.js:3270
 msgid "Delete last point drawn"
 msgstr "Διαγραφή του τελευταίου σημείου που έχει σχεδιαστεί"
 
-#: static/js/map.js:3130
+#: static/js/map.js:3278
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο επιλογής. Μπορείς να "
 "ζωγραφίσεις περισσότερους από έναν."
 
-#: static/js/map.js:3136
+#: static/js/map.js:3284
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Αφήστε το ποντίκι για να προσθέσετε αυτό το ορθογώνιο στην επιλογή."
 
-#: static/js/map.js:3217
+#: static/js/map.js:3365
 msgid "No selected samples to export."
 msgstr "Δεν υπάρχουν επιλεγμένα δείγματα προς εξαγωγή."
 
-#: static/js/map.js:3559
+#: static/js/map.js:3707
 msgid "Please sign in to export data."
 msgstr "Παρακαλώ υπογράψτε για εξαγωγή δεδομένων."
 
-#: static/js/map.js:3628
+#: static/js/map.js:3777
 msgid "Loading sample..."
 msgstr "Φόρτωση δείγματος..."
 
-#: static/js/map.js:3712
-msgid "Loading samples..."
-msgstr "Φόρτωση δειγμάτων..."
-
-#: static/js/map.js:3713
-msgid "Fetching visible map area"
-msgstr "Ανάκτηση ορατής περιοχής χάρτη"
-
-#: static/js/map.js:3744
+#: static/js/map.js:3893
 msgid "Rendering markers..."
 msgstr "Αποτύπωση δεικτών..."
 
-#: static/js/map.js:3745
+#: static/js/map.js:3894
 msgid "Building clusters and popups"
 msgstr "Συγκροτήματα και αναδυόμενα"
 
-#: static/js/map.js:3810
+#: static/js/map.js:3962
 msgid "Preparing map"
 msgstr "Προετοιμασία χάρτη"
 
@@ -1290,4 +1260,28 @@ msgstr "Προετοιμασία χάρτη"
 
 #~ msgid "Show approved"
 #~ msgstr "Εμφάνιση εγκεκριμένων"
+
+#~ msgid "CSV (per-user)"
+#~ msgstr "CSV (ανά χρήστη)"
+
+#~ msgid "XLSX (per-user)"
+#~ msgstr "XLSX (ανά χρήστη)"
+
+#~ msgid "All samples (CSV, anonymised)"
+#~ msgstr "Όλα τα δείγματα (CSV, ανώνυμα)"
+
+#~ msgid "GeoJSON (per-user)"
+#~ msgstr "GeoJSON (ανά χρήστη)"
+
+#~ msgid "samples.csv"
+#~ msgstr "δείγματα.csv"
+
+#~ msgid "sample_images.csv"
+#~ msgstr "δείγμα_εικόνες.csv"
+
+#~ msgid "sample_parameters.csv"
+#~ msgstr "δείγμα_παράμετροι.csv"
+
+#~ msgid "sample_biodiversity.csv"
+#~ msgstr "δείγμα βιοποικιλότητα.csv"
 

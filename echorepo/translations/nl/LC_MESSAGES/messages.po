@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 00:34+0000\n"
+"POT-Creation-Date: 2026-10-29 10:48+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -68,17 +68,17 @@ msgstr "Wissen"
 msgid "Export filtered ({n})"
 msgstr "Gefilterd exporteren ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:121 static/js/map.js:1812
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
 msgid "Date"
 msgstr "Datum"
 
-#: echorepo/i18n.py:121 static/js/map.js:1817
+#: echorepo/i18n.py:121 static/js/map.js:1917
 msgid "QR code"
 msgstr "QR-code"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:94
-#: echorepo/templates/results.html:884 echorepo/templates/search.html:90
-#: static/js/map.js:1822
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:101
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:90
+#: static/js/map.js:1922
 msgid "pH"
 msgstr "p H"
 
@@ -86,27 +86,27 @@ msgstr "p H"
 msgid "Colour"
 msgstr "Kleur"
 
-#: echorepo/i18n.py:124 static/js/map.js:1827
+#: echorepo/i18n.py:124 static/js/map.js:1927
 msgid "Soil organic matter"
 msgstr "Bodemorganisch materiaal"
 
-#: echorepo/i18n.py:125 static/js/map.js:1841
+#: echorepo/i18n.py:125 static/js/map.js:1941
 msgid "Structure"
 msgstr "Structuur"
 
-#: echorepo/i18n.py:126 static/js/map.js:1846
+#: echorepo/i18n.py:126 static/js/map.js:1946
 msgid "Earthworms"
 msgstr "Aardwormen"
 
-#: echorepo/i18n.py:127 static/js/map.js:1851
+#: echorepo/i18n.py:127 static/js/map.js:1951
 msgid "Plastic"
 msgstr "Kunststof"
 
-#: echorepo/i18n.py:128 static/js/map.js:1856
+#: echorepo/i18n.py:128 static/js/map.js:1956
 msgid "Debris"
 msgstr "Afval"
 
-#: echorepo/i18n.py:129 static/js/map.js:1861
+#: echorepo/i18n.py:129 static/js/map.js:1961
 msgid "Contamination"
 msgstr "Besmetting"
 
@@ -126,51 +126,63 @@ msgstr "Teken een rechthoek"
 msgid "Click and drag to draw a rectangle."
 msgstr "Klik en sleep om een rechthoek te tekenen."
 
-#: echorepo/i18n.py:134 static/js/map.js:3118
+#: echorepo/i18n.py:134 static/js/map.js:3266
 msgid "Cancel drawing"
 msgstr "Tekening annuleren"
 
-#: echorepo/i18n.py:135 static/js/map.js:3119
+#: echorepo/i18n.py:135 static/js/map.js:3267
 msgid "Cancel"
 msgstr "Annuleren"
 
-#: echorepo/i18n.py:136 static/js/map.js:3123
+#: echorepo/i18n.py:136 static/js/map.js:3271
 msgid "Delete last point"
 msgstr "Laatste paragraaf schrappen"
 
-#: echorepo/i18n.py:137 static/js/map.js:1245
+#: echorepo/i18n.py:137 static/js/map.js:1347
 msgid "Street map"
 msgstr "Straatkaart"
 
-#: echorepo/i18n.py:138 static/js/map.js:1246
+#: echorepo/i18n.py:138 static/js/map.js:1348
 msgid "Satellite"
 msgstr "Satelliet"
 
-#: echorepo/i18n.py:139
+#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+msgid "Biogeographical regions"
+msgstr "Biogeografische regio's"
+
+#: echorepo/i18n.py:140 static/js/map.js:3861
+msgid "Loading samples..."
+msgstr "Laden van monsters..."
+
+#: echorepo/i18n.py:141 static/js/map.js:3862
+msgid "Fetching visible map area"
+msgstr "Zichtbaar kaartgebied ophalen"
+
+#: echorepo/i18n.py:142
 msgid "Selection export to a file"
 msgstr "Selectie exporteren naar een bestand"
 
-#: echorepo/i18n.py:140
+#: echorepo/i18n.py:143
 msgid "Selection export"
 msgstr "Selectie exporteren"
 
-#: echorepo/i18n.py:141
+#: echorepo/i18n.py:144
 msgid "Use selection tool"
 msgstr "Selectiehulpmiddel gebruiken"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:145
 msgid "to draw one or more areas"
 msgstr "om één of meer gebieden te tekenen"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:146
 msgid "Export selection"
 msgstr "Selectie exporteren"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:147
 msgid "Clear selection"
 msgstr "Selectie wissen"
 
-#: echorepo/i18n.py:145 static/js/map.js:1464
+#: echorepo/i18n.py:148 static/js/map.js:1566
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
 "Percentagewaarden (%) kunnen worden omgezet in mg/kg door vermenigvuldiging "
@@ -343,7 +355,7 @@ msgstr "Onderwerp"
 msgid "Any issue"
 msgstr "Elke kwestie"
 
-#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:78
+#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:85
 #: echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Zoeken"
@@ -423,62 +435,64 @@ msgstr "resultaten"
 msgid "ECHOrepo — Explore"
 msgstr "ECHOrepo Verkennen"
 
-#: echorepo/templates/explore.html:61
+#: echorepo/templates/explore.html:68
 msgid "Explore the map"
 msgstr "Verken de kaart"
 
-#: echorepo/templates/explore.html:64
+#: echorepo/templates/explore.html:71
 msgid "Sign in to export data and access your personal samples."
 msgstr ""
 "Meld u aan om gegevens te exporteren en toegang te krijgen tot uw "
 "persoonlijke monsters."
 
-#: echorepo/templates/explore.html:72
+#: echorepo/templates/explore.html:79
 msgid "Download dataset from Zenodo"
 msgstr "Download dataset van Zenodo"
 
-#: echorepo/templates/explore.html:84 echorepo/templates/results.html:544
+#: echorepo/templates/explore.html:91 echorepo/templates/results.html:544
 msgid "Mobile version"
 msgstr "Mobiele versie"
 
-#: echorepo/templates/explore.html:87 echorepo/templates/results.html:550
+#: echorepo/templates/explore.html:94 echorepo/templates/results.html:550
 msgid "Desktop version"
 msgstr "Bureaubladversie"
 
-#: echorepo/templates/explore.html:97 echorepo/templates/results.html:887
+#: echorepo/templates/explore.html:104 echorepo/templates/results.html:844
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/explore.html:102 echorepo/templates/results.html:892
+#: echorepo/templates/explore.html:109 echorepo/templates/results.html:849
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/explore.html:104 echorepo/templates/search.html:19
-#: echorepo/templates/search.html:89
+#: echorepo/templates/explore.html:111 echorepo/templates/results.html:835
+#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Land"
 
-#: echorepo/templates/explore.html:107
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
 msgid "All countries"
 msgstr "Alle landen"
 
-#: echorepo/templates/explore.html:111 echorepo/templates/search.html:29
+#: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
+#: echorepo/templates/search.html:29
 msgid "Biogeographical region"
 msgstr "Biogeografische regio"
 
-#: echorepo/templates/explore.html:115 echorepo/templates/search.html:31
+#: echorepo/templates/explore.html:122 echorepo/templates/results.html:824
+#: echorepo/templates/search.html:31
 msgid "Any region"
 msgstr "Alle regio's"
 
-#: echorepo/templates/explore.html:130 echorepo/templates/results.html:895
+#: echorepo/templates/explore.html:137 echorepo/templates/results.html:852
 msgid "Apply"
 msgstr "Toepassen"
 
-#: echorepo/templates/explore.html:135 echorepo/templates/results.html:900
+#: echorepo/templates/explore.html:142 echorepo/templates/results.html:857
 msgid "Export filtered (0)"
 msgstr "Gefilterd exporteren (0)"
 
-#: echorepo/templates/explore.html:141
+#: echorepo/templates/explore.html:148
 msgid "Copy view link"
 msgstr "Verwijzing kopiëren"
 
@@ -810,59 +824,27 @@ msgstr ""
 msgid "Download"
 msgstr "Downloaden"
 
-#: echorepo/templates/results.html:768
-msgid "CSV (per-user)"
-msgstr "CSV (per gebruiker)"
-
-#: echorepo/templates/results.html:784
-msgid "XLSX (per-user)"
-msgstr "XLSX (per gebruiker)"
-
-#: echorepo/templates/results.html:802
-msgid "All samples (CSV, anonymised)"
-msgstr "Alle monsters (CSV, geanonimiseerd)"
-
-#: echorepo/templates/results.html:812
-msgid "GeoJSON (per-user)"
-msgstr "GeoJSON (per gebruiker)"
-
-#: echorepo/templates/results.html:824
+#: echorepo/templates/results.html:760
 msgid "Canonical exports"
 msgstr "Canonische uitvoer"
 
-#: echorepo/templates/results.html:830
-msgid "samples.csv"
-msgstr "samples.csv"
-
-#: echorepo/templates/results.html:840
-msgid "sample_images.csv"
-msgstr "sample_images.csv"
-
-#: echorepo/templates/results.html:850
-msgid "sample_parameters.csv"
-msgstr "sample_parameters.csv"
-
-#: echorepo/templates/results.html:860
-msgid "sample_biodiversity.csv"
-msgstr "sample biodiversity.csv"
-
-#: echorepo/templates/results.html:870
+#: echorepo/templates/results.html:806
 msgid "All canonical (zip)"
 msgstr "Alle canoniek (zip)"
 
-#: echorepo/templates/results.html:895
-msgid "Apply pH filter"
-msgstr "PH-filter toepassen"
+#: echorepo/templates/results.html:852
+msgid "Apply map filters"
+msgstr "Kaartfilters toepassen"
 
-#: echorepo/templates/results.html:898
-msgid "Export rows matching current pH filter"
-msgstr "Rijen exporteren die overeenkomen met het huidige pH-filter"
+#: echorepo/templates/results.html:855
+msgid "Export rows matching current map filters"
+msgstr "Rijen exporteren die overeenkomen met de huidige kaartfilters"
 
-#: echorepo/templates/results.html:939
+#: echorepo/templates/results.html:896
 msgid "Privacy information"
 msgstr "Privacy-informatie"
 
-#: echorepo/templates/results.html:993
+#: echorepo/templates/results.html:950
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
@@ -874,20 +856,20 @@ msgstr ""
 "\n"
 "Dit project."
 
-#: echorepo/templates/results.html:1009
+#: echorepo/templates/results.html:966
 msgid "Accept and continue"
 msgstr "Accepteren en voortzetten"
 
-#: echorepo/templates/results.html:1759
+#: echorepo/templates/results.html:1716
 msgid "Show on map"
 msgstr "Op kaart tonen"
 
-#: echorepo/templates/results.html:1785 echorepo/templates/results.html:1833
-#: echorepo/templates/results.html:1851
+#: echorepo/templates/results.html:1742 echorepo/templates/results.html:1790
+#: echorepo/templates/results.html:1808
 msgid "Could not locate this sample on the map."
 msgstr "Kon dit monster niet vinden op de kaart."
 
-#: echorepo/templates/search.html:21 static/js/map.js:231
+#: echorepo/templates/search.html:21 static/js/map.js:324
 msgid "Any country"
 msgstr "Elk land"
 
@@ -1016,32 +998,28 @@ msgstr "Voorgestelde referentie"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Er zijn nog geen publicaties van Zenodo geregistreerd."
 
-#: static/js/map.js:172
+#: static/js/map.js:265
 msgid "Link copied to clipboard"
 msgstr "Koppeling naar klembord gekopieerd"
 
-#: static/js/map.js:175
+#: static/js/map.js:268
 msgid "Copy this link:"
 msgstr "Kopieer deze verwijzing:"
 
-#: static/js/map.js:797 static/js/map.js:3489
+#: static/js/map.js:890 static/js/map.js:3637
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Gefilterd exporteren (${n})"
 
-#: static/js/map.js:807 static/js/map.js:3281
+#: static/js/map.js:900 static/js/map.js:3429
 msgid "Release mouse to finish drawing."
 msgstr "Laat de muis vrij om de tekening af te maken."
 
-#: static/js/map.js:881
+#: static/js/map.js:974
 msgid "Not available"
 msgstr "Niet beschikbaar"
 
-#: static/js/map.js:1135 static/js/map.js:1249
-msgid "Biogeographical regions"
-msgstr "Biogeografische regio's"
-
-#: static/js/map.js:1214
+#: static/js/map.js:1316
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1049,77 +1027,69 @@ msgstr ""
 "Kon de biogeografische regio-overlay niet laden. Controleer of "
 "/statisch/geo/biogeo regions 2016.geojson bestaat."
 
-#: static/js/map.js:1470
+#: static/js/map.js:1572
 msgid "Unit conversion help"
 msgstr "Hulp bij het omzetten van eenheden"
 
-#: static/js/map.js:1836
+#: static/js/map.js:1936
 msgid "Texture"
 msgstr "Textuur"
 
-#: static/js/map.js:1871
+#: static/js/map.js:1971
 msgid "Observations"
 msgstr "Opmerkingen"
 
-#: static/js/map.js:2507 static/js/map.js:3809
+#: static/js/map.js:2609 static/js/map.js:3961
 msgid "Loading map data..."
 msgstr "Kaartgegevens worden geladen..."
 
-#: static/js/map.js:2511
+#: static/js/map.js:2613
 msgid "Please wait"
 msgstr "Even geduld"
 
-#: static/js/map.js:2789
+#: static/js/map.js:2892
 msgid "Loading..."
 msgstr "Laden..."
 
-#: static/js/map.js:3111
+#: static/js/map.js:3259
 msgid "Draw selection rectangle"
 msgstr "Selectie rechthoek tekenen"
 
-#: static/js/map.js:3122
+#: static/js/map.js:3270
 msgid "Delete last point drawn"
 msgstr "Laatste getrokken paragraaf schrappen"
 
-#: static/js/map.js:3130
+#: static/js/map.js:3278
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Klik en sleep om een selectie rechthoek te tekenen. Je kunt er meerdere "
 "tekenen."
 
-#: static/js/map.js:3136
+#: static/js/map.js:3284
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Laat de muis vrij om deze rechthoek aan de selectie toe te voegen."
 
-#: static/js/map.js:3217
+#: static/js/map.js:3365
 msgid "No selected samples to export."
 msgstr "Geen geselecteerde monsters te exporteren."
 
-#: static/js/map.js:3559
+#: static/js/map.js:3707
 msgid "Please sign in to export data."
 msgstr "Meld u aan om gegevens te exporteren."
 
-#: static/js/map.js:3628
+#: static/js/map.js:3777
 msgid "Loading sample..."
 msgstr "Laden van monster..."
 
-#: static/js/map.js:3712
-msgid "Loading samples..."
-msgstr "Laden van monsters..."
-
-#: static/js/map.js:3713
-msgid "Fetching visible map area"
-msgstr "Zichtbaar kaartgebied ophalen"
-
-#: static/js/map.js:3744
+#: static/js/map.js:3893
 msgid "Rendering markers..."
 msgstr "Markeerders renderen..."
 
-#: static/js/map.js:3745
+#: static/js/map.js:3894
 msgid "Building clusters and popups"
 msgstr "Clusters en popups bouwen"
 
-#: static/js/map.js:3810
+#: static/js/map.js:3962
 msgid "Preparing map"
 msgstr "Kaart voorbereiden"
 
@@ -1287,4 +1257,28 @@ msgstr "Kaart voorbereiden"
 
 #~ msgid "Show approved"
 #~ msgstr "Toon goedgekeurd"
+
+#~ msgid "CSV (per-user)"
+#~ msgstr "CSV (per gebruiker)"
+
+#~ msgid "XLSX (per-user)"
+#~ msgstr "XLSX (per gebruiker)"
+
+#~ msgid "All samples (CSV, anonymised)"
+#~ msgstr "Alle monsters (CSV, geanonimiseerd)"
+
+#~ msgid "GeoJSON (per-user)"
+#~ msgstr "GeoJSON (per gebruiker)"
+
+#~ msgid "samples.csv"
+#~ msgstr "samples.csv"
+
+#~ msgid "sample_images.csv"
+#~ msgstr "sample_images.csv"
+
+#~ msgid "sample_parameters.csv"
+#~ msgstr "sample_parameters.csv"
+
+#~ msgid "sample_biodiversity.csv"
+#~ msgstr "sample biodiversity.csv"
 

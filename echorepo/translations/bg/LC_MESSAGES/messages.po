@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 00:34+0000\n"
+"POT-Creation-Date: 2026-10-29 10:48+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: bg\n"
@@ -68,17 +68,17 @@ msgstr "Изчистване"
 msgid "Export filtered ({n})"
 msgstr "Изнасяне на филтъра ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:121 static/js/map.js:1812
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
 msgid "Date"
 msgstr "Дата"
 
-#: echorepo/i18n.py:121 static/js/map.js:1817
+#: echorepo/i18n.py:121 static/js/map.js:1917
 msgid "QR code"
 msgstr "QR код"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:94
-#: echorepo/templates/results.html:884 echorepo/templates/search.html:90
-#: static/js/map.js:1822
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:101
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:90
+#: static/js/map.js:1922
 msgid "pH"
 msgstr "pH"
 
@@ -86,27 +86,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Цвят"
 
-#: echorepo/i18n.py:124 static/js/map.js:1827
+#: echorepo/i18n.py:124 static/js/map.js:1927
 msgid "Soil organic matter"
 msgstr "Почвена органична материя"
 
-#: echorepo/i18n.py:125 static/js/map.js:1841
+#: echorepo/i18n.py:125 static/js/map.js:1941
 msgid "Structure"
 msgstr "Структура"
 
-#: echorepo/i18n.py:126 static/js/map.js:1846
+#: echorepo/i18n.py:126 static/js/map.js:1946
 msgid "Earthworms"
 msgstr "Земни червеи"
 
-#: echorepo/i18n.py:127 static/js/map.js:1851
+#: echorepo/i18n.py:127 static/js/map.js:1951
 msgid "Plastic"
 msgstr "Пластмасови"
 
-#: echorepo/i18n.py:128 static/js/map.js:1856
+#: echorepo/i18n.py:128 static/js/map.js:1956
 msgid "Debris"
 msgstr "Дебри"
 
-#: echorepo/i18n.py:129 static/js/map.js:1861
+#: echorepo/i18n.py:129 static/js/map.js:1961
 msgid "Contamination"
 msgstr "Замърсяване"
 
@@ -126,51 +126,63 @@ msgstr "Показване на правоъгълник"
 msgid "Click and drag to draw a rectangle."
 msgstr "Щракнете и плъзнете, за да нарисувате правоъгълник."
 
-#: echorepo/i18n.py:134 static/js/map.js:3118
+#: echorepo/i18n.py:134 static/js/map.js:3266
 msgid "Cancel drawing"
 msgstr "Отмяна на чертежа"
 
-#: echorepo/i18n.py:135 static/js/map.js:3119
+#: echorepo/i18n.py:135 static/js/map.js:3267
 msgid "Cancel"
 msgstr "Отмяна"
 
-#: echorepo/i18n.py:136 static/js/map.js:3123
+#: echorepo/i18n.py:136 static/js/map.js:3271
 msgid "Delete last point"
 msgstr "Изтриване на последната точка"
 
-#: echorepo/i18n.py:137 static/js/map.js:1245
+#: echorepo/i18n.py:137 static/js/map.js:1347
 msgid "Street map"
 msgstr "Улична карта"
 
-#: echorepo/i18n.py:138 static/js/map.js:1246
+#: echorepo/i18n.py:138 static/js/map.js:1348
 msgid "Satellite"
 msgstr "Сателит"
 
-#: echorepo/i18n.py:139
+#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+msgid "Biogeographical regions"
+msgstr "Биогеографски райони"
+
+#: echorepo/i18n.py:140 static/js/map.js:3861
+msgid "Loading samples..."
+msgstr "Зареждане на проби..."
+
+#: echorepo/i18n.py:141 static/js/map.js:3862
+msgid "Fetching visible map area"
+msgstr "Търсене на видима зона на картата"
+
+#: echorepo/i18n.py:142
 msgid "Selection export to a file"
 msgstr "Експортиране в файл"
 
-#: echorepo/i18n.py:140
+#: echorepo/i18n.py:143
 msgid "Selection export"
 msgstr "Избор на износ"
 
-#: echorepo/i18n.py:141
+#: echorepo/i18n.py:144
 msgid "Use selection tool"
 msgstr "Използване на инструмент за избор"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:145
 msgid "to draw one or more areas"
 msgstr "да се изготвят една или повече области"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:146
 msgid "Export selection"
 msgstr "Избор на експорт"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:147
 msgid "Clear selection"
 msgstr "Изчистване на избора"
 
-#: echorepo/i18n.py:145 static/js/map.js:1464
+#: echorepo/i18n.py:148 static/js/map.js:1566
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
 "Процентните стойности (%) могат да бъдат преобразувани в mg/kg чрез "
@@ -341,7 +353,7 @@ msgstr "Вид емисия"
 msgid "Any issue"
 msgstr "Всеки проблем"
 
-#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:78
+#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:85
 #: echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Търсене"
@@ -421,60 +433,62 @@ msgstr "резултати"
 msgid "ECHOrepo — Explore"
 msgstr "ECHOrepo  го изследвайте"
 
-#: echorepo/templates/explore.html:61
+#: echorepo/templates/explore.html:68
 msgid "Explore the map"
 msgstr "Преглед на картата"
 
-#: echorepo/templates/explore.html:64
+#: echorepo/templates/explore.html:71
 msgid "Sign in to export data and access your personal samples."
 msgstr "Впишете се за експортиране на данни и достъп до личните си проби."
 
-#: echorepo/templates/explore.html:72
+#: echorepo/templates/explore.html:79
 msgid "Download dataset from Zenodo"
 msgstr "Изтегляне на набор от данни от Zenodo"
 
-#: echorepo/templates/explore.html:84 echorepo/templates/results.html:544
+#: echorepo/templates/explore.html:91 echorepo/templates/results.html:544
 msgid "Mobile version"
 msgstr "Мобилна версия"
 
-#: echorepo/templates/explore.html:87 echorepo/templates/results.html:550
+#: echorepo/templates/explore.html:94 echorepo/templates/results.html:550
 msgid "Desktop version"
 msgstr "Версия на работния плот"
 
-#: echorepo/templates/explore.html:97 echorepo/templates/results.html:887
+#: echorepo/templates/explore.html:104 echorepo/templates/results.html:844
 msgid "min"
 msgstr "мин"
 
-#: echorepo/templates/explore.html:102 echorepo/templates/results.html:892
+#: echorepo/templates/explore.html:109 echorepo/templates/results.html:849
 msgid "max"
 msgstr "максимум"
 
-#: echorepo/templates/explore.html:104 echorepo/templates/search.html:19
-#: echorepo/templates/search.html:89
+#: echorepo/templates/explore.html:111 echorepo/templates/results.html:835
+#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Държава"
 
-#: echorepo/templates/explore.html:107
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
 msgid "All countries"
 msgstr "Всички държави"
 
-#: echorepo/templates/explore.html:111 echorepo/templates/search.html:29
+#: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
+#: echorepo/templates/search.html:29
 msgid "Biogeographical region"
 msgstr "Биогеографска област"
 
-#: echorepo/templates/explore.html:115 echorepo/templates/search.html:31
+#: echorepo/templates/explore.html:122 echorepo/templates/results.html:824
+#: echorepo/templates/search.html:31
 msgid "Any region"
 msgstr "Всеки регион"
 
-#: echorepo/templates/explore.html:130 echorepo/templates/results.html:895
+#: echorepo/templates/explore.html:137 echorepo/templates/results.html:852
 msgid "Apply"
 msgstr "Прилагане"
 
-#: echorepo/templates/explore.html:135 echorepo/templates/results.html:900
+#: echorepo/templates/explore.html:142 echorepo/templates/results.html:857
 msgid "Export filtered (0)"
 msgstr "Експортиране филтрирано (0)"
 
-#: echorepo/templates/explore.html:141
+#: echorepo/templates/explore.html:148
 msgid "Copy view link"
 msgstr "Копиране на линк за преглед"
 
@@ -806,59 +820,27 @@ msgstr ""
 msgid "Download"
 msgstr "Изтегляне"
 
-#: echorepo/templates/results.html:768
-msgid "CSV (per-user)"
-msgstr "CSV (на потребител)"
-
-#: echorepo/templates/results.html:784
-msgid "XLSX (per-user)"
-msgstr "XLSX (на потребител)"
-
-#: echorepo/templates/results.html:802
-msgid "All samples (CSV, anonymised)"
-msgstr "Всички проби (CSV, анонимни)"
-
-#: echorepo/templates/results.html:812
-msgid "GeoJSON (per-user)"
-msgstr "GeoJSON (на потребител)"
-
-#: echorepo/templates/results.html:824
+#: echorepo/templates/results.html:760
 msgid "Canonical exports"
 msgstr "Каноничен износ"
 
-#: echorepo/templates/results.html:830
-msgid "samples.csv"
-msgstr "проби.csv"
-
-#: echorepo/templates/results.html:840
-msgid "sample_images.csv"
-msgstr "примерни images.csv"
-
-#: echorepo/templates/results.html:850
-msgid "sample_parameters.csv"
-msgstr "пример параметри.csv"
-
-#: echorepo/templates/results.html:860
-msgid "sample_biodiversity.csv"
-msgstr "проба biodiversity.scv"
-
-#: echorepo/templates/results.html:870
+#: echorepo/templates/results.html:806
 msgid "All canonical (zip)"
 msgstr "Всички канонични (zip)"
 
-#: echorepo/templates/results.html:895
-msgid "Apply pH filter"
-msgstr "Нанесете pH филтър"
+#: echorepo/templates/results.html:852
+msgid "Apply map filters"
+msgstr "Прилагане на филтри за карта"
 
-#: echorepo/templates/results.html:898
-msgid "Export rows matching current pH filter"
-msgstr "Експортиране на редове, отговарящи на текущия филтър за рН"
+#: echorepo/templates/results.html:855
+msgid "Export rows matching current map filters"
+msgstr "Експортиране на редове, отговарящи на текущите филтри на картата"
 
-#: echorepo/templates/results.html:939
+#: echorepo/templates/results.html:896
 msgid "Privacy information"
 msgstr "Информация за поверителност"
 
-#: echorepo/templates/results.html:993
+#: echorepo/templates/results.html:950
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
@@ -870,20 +852,20 @@ msgstr ""
 "\n"
 "Този проект."
 
-#: echorepo/templates/results.html:1009
+#: echorepo/templates/results.html:966
 msgid "Accept and continue"
 msgstr "Приемане и продължаване"
 
-#: echorepo/templates/results.html:1759
+#: echorepo/templates/results.html:1716
 msgid "Show on map"
 msgstr "Показване на картата"
 
-#: echorepo/templates/results.html:1785 echorepo/templates/results.html:1833
-#: echorepo/templates/results.html:1851
+#: echorepo/templates/results.html:1742 echorepo/templates/results.html:1790
+#: echorepo/templates/results.html:1808
 msgid "Could not locate this sample on the map."
 msgstr "Тази проба не може да бъде намерена на картата."
 
-#: echorepo/templates/search.html:21 static/js/map.js:231
+#: echorepo/templates/search.html:21 static/js/map.js:324
 msgid "Any country"
 msgstr "Всяка държава"
 
@@ -1012,32 +994,28 @@ msgstr "Предложение за позоваване"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Все още няма записани публикации на Зенодо."
 
-#: static/js/map.js:172
+#: static/js/map.js:265
 msgid "Link copied to clipboard"
 msgstr "Копиране на линк в системния буфер"
 
-#: static/js/map.js:175
+#: static/js/map.js:268
 msgid "Copy this link:"
 msgstr "Копиране на тази връзка:"
 
-#: static/js/map.js:797 static/js/map.js:3489
+#: static/js/map.js:890 static/js/map.js:3637
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Експортиране на филтър (${n})"
 
-#: static/js/map.js:807 static/js/map.js:3281
+#: static/js/map.js:900 static/js/map.js:3429
 msgid "Release mouse to finish drawing."
 msgstr "Освободете мишката, за да завършите чертеж."
 
-#: static/js/map.js:881
+#: static/js/map.js:974
 msgid "Not available"
 msgstr "Няма"
 
-#: static/js/map.js:1135 static/js/map.js:1249
-msgid "Biogeographical regions"
-msgstr "Биогеографски райони"
-
-#: static/js/map.js:1214
+#: static/js/map.js:1316
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1045,80 +1023,96 @@ msgstr ""
 "Не може да се зареди биогеографското покритие. Проверете дали "
 "/static/geo/biogeo regions 2016.geojson съществува."
 
-#: static/js/map.js:1470
+#: static/js/map.js:1572
 msgid "Unit conversion help"
 msgstr "Помощ за преобразуване на единица"
 
-#: static/js/map.js:1836
+#: static/js/map.js:1936
 msgid "Texture"
 msgstr "Текстура"
 
-#: static/js/map.js:1871
+#: static/js/map.js:1971
 msgid "Observations"
 msgstr "Становища"
 
-#: static/js/map.js:2507 static/js/map.js:3809
+#: static/js/map.js:2609 static/js/map.js:3961
 msgid "Loading map data..."
 msgstr "Зареждане на данните от картата..."
 
-#: static/js/map.js:2511
+#: static/js/map.js:2613
 msgid "Please wait"
 msgstr "Моля те, почакай"
 
-#: static/js/map.js:2789
+#: static/js/map.js:2892
 msgid "Loading..."
 msgstr "Зареждане..."
 
-#: static/js/map.js:3111
+#: static/js/map.js:3259
 msgid "Draw selection rectangle"
 msgstr "Показване на правоъгълник за избор"
 
-#: static/js/map.js:3122
+#: static/js/map.js:3270
 msgid "Delete last point drawn"
 msgstr "Изтриване на последната изтеглена точка"
 
-#: static/js/map.js:3130
+#: static/js/map.js:3278
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Щракнете и плъзнете, за да нарисувате правоъгълник за избор. Можеш да "
 "нарисуваш повече от един."
 
-#: static/js/map.js:3136
+#: static/js/map.js:3284
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Освободете мишката, за да добавите този правоъгълник към избора."
 
-#: static/js/map.js:3217
+#: static/js/map.js:3365
 msgid "No selected samples to export."
 msgstr "Няма избрани проби за износ."
 
-#: static/js/map.js:3559
+#: static/js/map.js:3707
 msgid "Please sign in to export data."
 msgstr "Моля, въведете данните за износ."
 
-#: static/js/map.js:3628
+#: static/js/map.js:3777
 msgid "Loading sample..."
 msgstr "Зареждане на проба..."
 
-#: static/js/map.js:3712
-msgid "Loading samples..."
-msgstr "Зареждане на проби..."
-
-#: static/js/map.js:3713
-msgid "Fetching visible map area"
-msgstr "Търсене на видима зона на картата"
-
-#: static/js/map.js:3744
+#: static/js/map.js:3893
 msgid "Rendering markers..."
 msgstr "Пренасям маркери..."
 
-#: static/js/map.js:3745
+#: static/js/map.js:3894
 msgid "Building clusters and popups"
 msgstr "Строителни клъстери и изскачащи прозорци"
 
-#: static/js/map.js:3810
+#: static/js/map.js:3962
 msgid "Preparing map"
 msgstr "Подготовка на картата"
 
 #~ msgid "Show approved"
 #~ msgstr "Показване на одобрените"
+
+#~ msgid "CSV (per-user)"
+#~ msgstr "CSV (на потребител)"
+
+#~ msgid "XLSX (per-user)"
+#~ msgstr "XLSX (на потребител)"
+
+#~ msgid "All samples (CSV, anonymised)"
+#~ msgstr "Всички проби (CSV, анонимни)"
+
+#~ msgid "GeoJSON (per-user)"
+#~ msgstr "GeoJSON (на потребител)"
+
+#~ msgid "samples.csv"
+#~ msgstr "проби.csv"
+
+#~ msgid "sample_images.csv"
+#~ msgstr "примерни images.csv"
+
+#~ msgid "sample_parameters.csv"
+#~ msgstr "пример параметри.csv"
+
+#~ msgid "sample_biodiversity.csv"
+#~ msgstr "проба biodiversity.scv"
 

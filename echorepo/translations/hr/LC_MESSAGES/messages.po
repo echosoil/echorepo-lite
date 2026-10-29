@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 00:34+0000\n"
+"POT-Creation-Date: 2026-10-29 10:48+0000\n"
 "PO-Revision-Date: 2026-08-24 14:10+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: hr\n"
@@ -69,18 +69,18 @@ msgstr "Očisti"
 msgid "Export filtered ({n})"
 msgstr "Izvezi filtrirano ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:121
-#: static/js/map.js:1812
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128
+#: static/js/map.js:1912
 msgid "Date"
 msgstr "Datum"
 
-#: echorepo/i18n.py:121 static/js/map.js:1817
+#: echorepo/i18n.py:121 static/js/map.js:1917
 msgid "QR code"
 msgstr "QR kod"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:94
-#: echorepo/templates/results.html:884 echorepo/templates/search.html:90
-#: static/js/map.js:1822
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:101
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:90
+#: static/js/map.js:1922
 msgid "pH"
 msgstr "pH"
 
@@ -88,27 +88,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Boja"
 
-#: echorepo/i18n.py:124 static/js/map.js:1827
+#: echorepo/i18n.py:124 static/js/map.js:1927
 msgid "Soil organic matter"
 msgstr "Organska tvar u tlu"
 
-#: echorepo/i18n.py:125 static/js/map.js:1841
+#: echorepo/i18n.py:125 static/js/map.js:1941
 msgid "Structure"
 msgstr "Struktura"
 
-#: echorepo/i18n.py:126 static/js/map.js:1846
+#: echorepo/i18n.py:126 static/js/map.js:1946
 msgid "Earthworms"
 msgstr "Gujavice"
 
-#: echorepo/i18n.py:127 static/js/map.js:1851
+#: echorepo/i18n.py:127 static/js/map.js:1951
 msgid "Plastic"
 msgstr "Plastika"
 
-#: echorepo/i18n.py:128 static/js/map.js:1856
+#: echorepo/i18n.py:128 static/js/map.js:1956
 msgid "Debris"
 msgstr "Ostaci"
 
-#: echorepo/i18n.py:129 static/js/map.js:1861
+#: echorepo/i18n.py:129 static/js/map.js:1961
 msgid "Contamination"
 msgstr "Onečišćenje"
 
@@ -128,51 +128,63 @@ msgstr "Nacrtaj pravokutnik"
 msgid "Click and drag to draw a rectangle."
 msgstr "Kliknite i povucite kako biste nacrtali pravokutnik."
 
-#: echorepo/i18n.py:134 static/js/map.js:3118
+#: echorepo/i18n.py:134 static/js/map.js:3266
 msgid "Cancel drawing"
 msgstr "Odustani od crtanja"
 
-#: echorepo/i18n.py:135 static/js/map.js:3119
+#: echorepo/i18n.py:135 static/js/map.js:3267
 msgid "Cancel"
 msgstr "Odustani"
 
-#: echorepo/i18n.py:136 static/js/map.js:3123
+#: echorepo/i18n.py:136 static/js/map.js:3271
 msgid "Delete last point"
 msgstr "Izbriši posljednju točku"
 
-#: echorepo/i18n.py:137 static/js/map.js:1245
+#: echorepo/i18n.py:137 static/js/map.js:1347
 msgid "Street map"
 msgstr "Karta ulica"
 
-#: echorepo/i18n.py:138 static/js/map.js:1246
+#: echorepo/i18n.py:138 static/js/map.js:1348
 msgid "Satellite"
 msgstr "Satelitski prikaz"
 
-#: echorepo/i18n.py:139
+#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+msgid "Biogeographical regions"
+msgstr ""
+
+#: echorepo/i18n.py:140 static/js/map.js:3861
+msgid "Loading samples..."
+msgstr "Učitavanje uzoraka..."
+
+#: echorepo/i18n.py:141 static/js/map.js:3862
+msgid "Fetching visible map area"
+msgstr "Dohvaćanje vidljivog područja karte"
+
+#: echorepo/i18n.py:142
 msgid "Selection export to a file"
 msgstr "Izvoz odabira u datoteku"
 
-#: echorepo/i18n.py:140
+#: echorepo/i18n.py:143
 msgid "Selection export"
 msgstr "Izvoz odabira"
 
-#: echorepo/i18n.py:141
+#: echorepo/i18n.py:144
 msgid "Use selection tool"
 msgstr "Upotrijebite alat za odabir"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:145
 msgid "to draw one or more areas"
 msgstr "za crtanje jednog ili više područja"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:146
 msgid "Export selection"
 msgstr "Izvezi odabir"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:147
 msgid "Clear selection"
 msgstr "Očisti odabir"
 
-#: echorepo/i18n.py:145 static/js/map.js:1464
+#: echorepo/i18n.py:148 static/js/map.js:1566
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Postotne vrijednosti (%) mogu se pretvoriti u mg/kg množenjem s 10000."
 
@@ -344,7 +356,7 @@ msgid "Any issue"
 msgstr "Bilo koji problem"
 
 #: echorepo/templates/coordinate_issues.html:48
-#: echorepo/templates/explore.html:78 echorepo/templates/search.html:73
+#: echorepo/templates/explore.html:85 echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Pretraži"
 
@@ -428,60 +440,62 @@ msgstr "rezultata"
 msgid "ECHOrepo — Explore"
 msgstr "ECHOrepo — Istraži"
 
-#: echorepo/templates/explore.html:61
+#: echorepo/templates/explore.html:68
 msgid "Explore the map"
 msgstr "Istražite kartu"
 
-#: echorepo/templates/explore.html:64
+#: echorepo/templates/explore.html:71
 msgid "Sign in to export data and access your personal samples."
 msgstr "Prijavite se kako biste izvezli podatke i pristupili svojim uzorcima."
 
-#: echorepo/templates/explore.html:72
+#: echorepo/templates/explore.html:79
 msgid "Download dataset from Zenodo"
 msgstr "Preuzmi skup podataka sa Zenoda"
 
-#: echorepo/templates/explore.html:84 echorepo/templates/results.html:544
+#: echorepo/templates/explore.html:91 echorepo/templates/results.html:544
 msgid "Mobile version"
 msgstr "Mobilna verzija"
 
-#: echorepo/templates/explore.html:87 echorepo/templates/results.html:550
+#: echorepo/templates/explore.html:94 echorepo/templates/results.html:550
 msgid "Desktop version"
 msgstr "Verzija za računalo"
 
-#: echorepo/templates/explore.html:97 echorepo/templates/results.html:887
+#: echorepo/templates/explore.html:104 echorepo/templates/results.html:844
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/explore.html:102 echorepo/templates/results.html:892
+#: echorepo/templates/explore.html:109 echorepo/templates/results.html:849
 msgid "max"
 msgstr "maks"
 
-#: echorepo/templates/explore.html:104 echorepo/templates/search.html:19
-#: echorepo/templates/search.html:89
+#: echorepo/templates/explore.html:111 echorepo/templates/results.html:835
+#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Država"
 
-#: echorepo/templates/explore.html:107
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
 msgid "All countries"
 msgstr "Sve države"
 
-#: echorepo/templates/explore.html:111 echorepo/templates/search.html:29
+#: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
+#: echorepo/templates/search.html:29
 msgid "Biogeographical region"
 msgstr ""
 
-#: echorepo/templates/explore.html:115 echorepo/templates/search.html:31
+#: echorepo/templates/explore.html:122 echorepo/templates/results.html:824
+#: echorepo/templates/search.html:31
 msgid "Any region"
 msgstr ""
 
-#: echorepo/templates/explore.html:130 echorepo/templates/results.html:895
+#: echorepo/templates/explore.html:137 echorepo/templates/results.html:852
 msgid "Apply"
 msgstr "Primijeni"
 
-#: echorepo/templates/explore.html:135 echorepo/templates/results.html:900
+#: echorepo/templates/explore.html:142 echorepo/templates/results.html:857
 msgid "Export filtered (0)"
 msgstr "Izvezi filtrirano (0)"
 
-#: echorepo/templates/explore.html:141
+#: echorepo/templates/explore.html:148
 msgid "Copy view link"
 msgstr "Kopiraj poveznicu na prikaz"
 
@@ -812,59 +826,29 @@ msgstr ""
 msgid "Download"
 msgstr "Preuzmi"
 
-#: echorepo/templates/results.html:768
-msgid "CSV (per-user)"
-msgstr "CSV (po korisniku)"
-
-#: echorepo/templates/results.html:784
-msgid "XLSX (per-user)"
-msgstr "XLSX (po korisniku)"
-
-#: echorepo/templates/results.html:802
-msgid "All samples (CSV, anonymised)"
-msgstr "Svi uzorci (CSV, anonimizirano)"
-
-#: echorepo/templates/results.html:812
-msgid "GeoJSON (per-user)"
-msgstr "GeoJSON (po korisniku)"
-
-#: echorepo/templates/results.html:824
+#: echorepo/templates/results.html:760
 msgid "Canonical exports"
 msgstr "Kanonski izvozi"
 
-#: echorepo/templates/results.html:830
-msgid "samples.csv"
-msgstr "samples.csv"
-
-#: echorepo/templates/results.html:840
-msgid "sample_images.csv"
-msgstr "sample_images.csv"
-
-#: echorepo/templates/results.html:850
-msgid "sample_parameters.csv"
-msgstr "sample_parameters.csv"
-
-#: echorepo/templates/results.html:860
-msgid "sample_biodiversity.csv"
-msgstr "sample_biodiversity.csv"
-
-#: echorepo/templates/results.html:870
+#: echorepo/templates/results.html:806
 msgid "All canonical (zip)"
 msgstr "Svi kanonski podaci (zip)"
 
-#: echorepo/templates/results.html:895
-msgid "Apply pH filter"
+#: echorepo/templates/results.html:852
+#, fuzzy
+msgid "Apply map filters"
 msgstr "Primijeni pH filtar"
 
-#: echorepo/templates/results.html:898
-msgid "Export rows matching current pH filter"
+#: echorepo/templates/results.html:855
+#, fuzzy
+msgid "Export rows matching current map filters"
 msgstr "Izvezi retke koji odgovaraju trenutačnom pH filtru"
 
-#: echorepo/templates/results.html:939
+#: echorepo/templates/results.html:896
 msgid "Privacy information"
 msgstr "Informacije o privatnosti"
 
-#: echorepo/templates/results.html:993
+#: echorepo/templates/results.html:950
 #, fuzzy
 msgid ""
 "I have read the privacy information above and I consent to the processing"
@@ -876,20 +860,20 @@ msgstr ""
 "obradu svojih osobnih podataka za\n"
 "              ovaj projekt."
 
-#: echorepo/templates/results.html:1009
+#: echorepo/templates/results.html:966
 msgid "Accept and continue"
 msgstr "Prihvati i nastavi"
 
-#: echorepo/templates/results.html:1759
+#: echorepo/templates/results.html:1716
 msgid "Show on map"
 msgstr "Prikaži na karti"
 
-#: echorepo/templates/results.html:1785 echorepo/templates/results.html:1833
-#: echorepo/templates/results.html:1851
+#: echorepo/templates/results.html:1742 echorepo/templates/results.html:1790
+#: echorepo/templates/results.html:1808
 msgid "Could not locate this sample on the map."
 msgstr "Nije moguće pronaći ovaj uzorak na karti."
 
-#: echorepo/templates/search.html:21 static/js/map.js:231
+#: echorepo/templates/search.html:21 static/js/map.js:324
 msgid "Any country"
 msgstr "Bilo koja država"
 
@@ -1019,108 +1003,96 @@ msgstr "Predloženi način citiranja"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Još nije zabilježena nijedna publikacija na Zenodu."
 
-#: static/js/map.js:172
+#: static/js/map.js:265
 msgid "Link copied to clipboard"
 msgstr "Poveznica je kopirana u međuspremnik"
 
-#: static/js/map.js:175
+#: static/js/map.js:268
 msgid "Copy this link:"
 msgstr "Kopirajte ovu poveznicu:"
 
-#: static/js/map.js:797 static/js/map.js:3489
+#: static/js/map.js:890 static/js/map.js:3637
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Izvezi filtrirano (${n})"
 
-#: static/js/map.js:807 static/js/map.js:3281
+#: static/js/map.js:900 static/js/map.js:3429
 msgid "Release mouse to finish drawing."
 msgstr "Otpustite tipku miša kako biste završili crtanje."
 
-#: static/js/map.js:881
+#: static/js/map.js:974
 msgid "Not available"
 msgstr "Nije dostupno"
 
-#: static/js/map.js:1135 static/js/map.js:1249
-msgid "Biogeographical regions"
-msgstr ""
-
-#: static/js/map.js:1214
+#: static/js/map.js:1316
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
 msgstr ""
 
-#: static/js/map.js:1470
+#: static/js/map.js:1572
 msgid "Unit conversion help"
 msgstr "Pomoć za pretvorbu jedinica"
 
-#: static/js/map.js:1836
+#: static/js/map.js:1936
 msgid "Texture"
 msgstr "Tekstura"
 
-#: static/js/map.js:1871
+#: static/js/map.js:1971
 msgid "Observations"
 msgstr "Opažanja"
 
-#: static/js/map.js:2507 static/js/map.js:3809
+#: static/js/map.js:2609 static/js/map.js:3961
 msgid "Loading map data..."
 msgstr "Učitavanje podataka karte..."
 
-#: static/js/map.js:2511
+#: static/js/map.js:2613
 msgid "Please wait"
 msgstr "Pričekajte"
 
-#: static/js/map.js:2789
+#: static/js/map.js:2892
 msgid "Loading..."
 msgstr "Učitavanje..."
 
-#: static/js/map.js:3111
+#: static/js/map.js:3259
 msgid "Draw selection rectangle"
 msgstr "Nacrtaj pravokutnik za odabir"
 
-#: static/js/map.js:3122
+#: static/js/map.js:3270
 msgid "Delete last point drawn"
 msgstr "Izbriši posljednju nacrtanu točku"
 
-#: static/js/map.js:3130
+#: static/js/map.js:3278
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Kliknite i povucite kako biste nacrtali pravokutnik za odabir. Možete "
 "nacrtati više njih."
 
-#: static/js/map.js:3136
+#: static/js/map.js:3284
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Otpustite tipku miša kako biste dodali ovaj pravokutnik odabiru."
 
-#: static/js/map.js:3217
+#: static/js/map.js:3365
 msgid "No selected samples to export."
 msgstr "Nema odabranih uzoraka za izvoz."
 
-#: static/js/map.js:3559
+#: static/js/map.js:3707
 msgid "Please sign in to export data."
 msgstr "Prijavite se kako biste izvezli podatke."
 
-#: static/js/map.js:3628
+#: static/js/map.js:3777
 msgid "Loading sample..."
 msgstr "Učitavanje uzorka..."
 
-#: static/js/map.js:3712
-msgid "Loading samples..."
-msgstr "Učitavanje uzoraka..."
-
-#: static/js/map.js:3713
-msgid "Fetching visible map area"
-msgstr "Dohvaćanje vidljivog područja karte"
-
-#: static/js/map.js:3744
+#: static/js/map.js:3893
 msgid "Rendering markers..."
 msgstr "Iscrtavanje oznaka..."
 
-#: static/js/map.js:3745
+#: static/js/map.js:3894
 msgid "Building clusters and popups"
 msgstr "Izrada grupa i skočnih prozora"
 
-#: static/js/map.js:3810
+#: static/js/map.js:3962
 msgid "Preparing map"
 msgstr "Priprema karte"
 
@@ -1287,4 +1259,28 @@ msgstr "Priprema karte"
 
 #~ msgid "Show approved"
 #~ msgstr "Prikaži odobrene"
+
+#~ msgid "CSV (per-user)"
+#~ msgstr "CSV (po korisniku)"
+
+#~ msgid "XLSX (per-user)"
+#~ msgstr "XLSX (po korisniku)"
+
+#~ msgid "All samples (CSV, anonymised)"
+#~ msgstr "Svi uzorci (CSV, anonimizirano)"
+
+#~ msgid "GeoJSON (per-user)"
+#~ msgstr "GeoJSON (po korisniku)"
+
+#~ msgid "samples.csv"
+#~ msgstr "samples.csv"
+
+#~ msgid "sample_images.csv"
+#~ msgstr "sample_images.csv"
+
+#~ msgid "sample_parameters.csv"
+#~ msgstr "sample_parameters.csv"
+
+#~ msgid "sample_biodiversity.csv"
+#~ msgstr "sample_biodiversity.csv"
 
