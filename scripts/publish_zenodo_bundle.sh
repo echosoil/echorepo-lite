@@ -44,7 +44,8 @@ python3 tools/publish_api_file_to_zenodo.py \
     --log-file "${ZENODO_LOG_FILE:-data/zenodo_sync_log.csv}" \
     --title "${ZENODO_TITLE:-ECHOREPO Soil Dataset}" \
     --description "${ZENODO_DESCRIPTION:-Canonical ECHOREPO soil data resources, controlled reference tables, and machine-readable CSVW metadata.}" \
-    --creator "${ZENODO_CREATOR:-Osychenko, Oleg|Quanta Systems, S.L.}" \
+    --creator "${ZENODO_CREATOR:-ECHO Consortium}" \
+    --data-curator "${ZENODO_DATA_CURATOR:-Osychenko, Oleg|Quanta Systems, S.L.|0000-0003-3468-6824}" \
     --grant "${ZENODO_GRANT:-101112869}" \
     --copyright "${ZENODO_COPYRIGHT:-© 2026 ECHO Horizon Project}" \
     --keyword "${ZENODO_KEYWORD:-soil,biodiversity,citizen-science}" \
