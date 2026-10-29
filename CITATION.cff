@@ -9,7 +9,6 @@ repository-code: "https://github.com/echosoil/echorepo-lite"
 url: "https://echosoil.eu"
 license: MIT
 version: "0.3.0"
-date-released: "2026-10-30"
 identifiers:
   - type: other
     value: "Horizon Europe grant 101112869"
