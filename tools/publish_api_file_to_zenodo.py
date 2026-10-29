@@ -361,6 +361,11 @@ def build_zenodo_metadata(args: argparse.Namespace) -> dict[str, Any]:
         "prereserve_doi": True,
     }
 
+    if args.data_curator:
+        curator = parse_creator(args.data_curator)
+        curator["type"] = "DataCurator"
+        metadata["contributors"] = [curator]
+        
     keywords = parse_keywords(args.keyword)
     if keywords:
         metadata["keywords"] = keywords
@@ -1821,6 +1826,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--title", required=True)
     parser.add_argument("--description", required=True)
     parser.add_argument("--creator", action="append", required=True)
+    parser.add_argument("--data-curator", default="",
+        help="Data curator as 'Name|Affiliation|ORCID'",)
     parser.add_argument("--keyword", action="append")
     parser.add_argument("--communities", nargs="*")
     parser.add_argument("--license", default="CC-BY-4.0")
