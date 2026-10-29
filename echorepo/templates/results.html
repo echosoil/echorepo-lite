@@ -879,7 +879,28 @@
 
 
 
-  <div class="ms-auto d-flex align-items-center gap-2">
+  <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
+
+    <label class="text-muted small mb-0" for="biogeoRegionFilter">
+      {{ _('Biogeographical region') }}
+    </label>
+    <select id="biogeoRegionFilter" class="form-select form-select-sm" style="width:14rem">
+      <option value="">{{ _('Any region') }}</option>
+      {# /my may not receive available_regions from its Flask route; use EEA 2016 names. #}
+      {% for region in available_regions|default([
+        'Alpine', 'Anatolian', 'Arctic', 'Atlantic', 'Black Sea', 'Boreal',
+        'Continental', 'Macaronesian', 'Mediterranean', 'Pannonian', 'Steppic'
+      ], true) %}
+      <option value="{{ region }}">{{ region }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="text-muted small mb-0" for="countryFilter">
+      {{ _('Country') }}
+    </label>
+    <select id="countryFilter" class="form-select form-select-sm" style="width:13rem">
+      <option value="">{{ _('All countries') }}</option>
+    </select>
 
     <span class="text-muted small">{{ _('pH') }}</span>
 
@@ -892,10 +913,10 @@
       placeholder="{{ _('max') }}" style="width:6rem">
 
     <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button"
-      title="{{ _('Apply pH filter') }}">{{ _('Apply') }}</button>
+      title="{{ _('Apply map filters') }}">{{ _('Apply') }}</button>
 
     <button class="btn btn-sm btn-primary echo-desktop-only" id="btnExportFiltered" type="button" disabled
-      title="{{ _('Export rows matching current pH filter') }}">
+      title="{{ _('Export rows matching current map filters') }}">
 
       {{ _('Export filtered (0)') }}
 

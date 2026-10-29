@@ -1027,29 +1027,36 @@
   const BIOGEO_OVERLAY_URL =
     cfg.biogeo_overlay_url || '/static/geo/biogeo_regions_2016.geojson';
 
+  // Semantic, high-contrast EEA palette. Keep fills distinct from neighboring
+  // regions and outlines visible on both street and satellite base layers.
+  // Only the appearance changes; biogeographical shapes remain non-interactive.
   const BIOGEO_REGION_COLORS = Object.freeze({
-    'Alpine': '#709a8a',
-    'Anatolian': '#b38b6e',
-    'Arctic': '#7dacc4',
-    'Atlantic': '#6797bf',
-    'Black Sea': '#9b85bb',
-    'Boreal': '#8aa768',
-    'Continental': '#cea45e',
-    'Macaronesian': '#9980c3',
-    'Mediterranean': '#d78574',
-    'Pannonian': '#c38b9d',
-    'Steppic': '#c0aa69'
+    'Alpine':        { fill: '#DEEAF1', stroke: '#587487' }, // snow and high mountains
+    'Anatolian':     { fill: '#BF684A', stroke: '#803D2B' }, // warm, dry plateau
+    'Arctic':        { fill: '#B7E6F2', stroke: '#5A9AAA' }, // polar ice
+    'Atlantic':      { fill: '#397FC2', stroke: '#205483' }, // ocean blue
+    'Black Sea':     { fill: '#7168B9', stroke: '#413A83' }, // deep coastal violet
+    'Boreal':        { fill: '#286C49', stroke: '#16452F' }, // northern evergreen forest
+    'Continental':   { fill: '#B78A67', stroke: '#765136' }, // temperate earth
+    'Macaronesian':  { fill: '#38ABA7', stroke: '#186D70' }, // oceanic islands
+    'Mediterranean': { fill: '#8EA342', stroke: '#566627' }, // olive and scrubland
+    'Pannonian':     { fill: '#D1784C', stroke: '#8A482B' }, // warm basin
+    'Steppic':       { fill: '#E7C64D', stroke: '#957B1E' }  // dry grassland
   });
 
-  function biogeoRegionColor(regionName) {
+  function biogeoRegionColors(regionName) {
     const name = String(regionName || '').trim();
     if (BIOGEO_REGION_COLORS[name]) return BIOGEO_REGION_COLORS[name];
-    // Deterministic color for any EEA region not in the predefined palette.
+    // Stable fallback for any newly added EEA region; never randomize colors.
     let hash = 0;
     for (const char of name) {
       hash = ((hash * 31) + char.charCodeAt(0)) >>> 0;
     }
-    return `hsl(${hash % 360}, 38%, 56%)`;
+    const hue = hash % 360;
+    return {
+      fill: `hsl(${hue}, 42%, 62%)`,
+      stroke: `hsl(${hue}, 40%, 32%)`
+    };
   }
 
   // A good label anchor must fall inside a region. Multipolygon regions can
@@ -1232,7 +1239,9 @@
           line.className = 'echo-biogeo-legend-item';
           const color = document.createElement('span');
           color.className = 'echo-biogeo-legend-color';
-          color.style.backgroundColor = biogeoRegionColor(name);
+          const colors = biogeoRegionColors(name);
+          color.style.backgroundColor = colors.fill;
+          color.style.borderColor = colors.stroke;
           const caption = document.createElement('span');
           caption.textContent = name;
           line.append(color, caption);
@@ -1265,10 +1274,10 @@
           pane: 'biogeoRegionPane',
           interactive: false,
           style: feature => {
-            const color = biogeoRegionColor(feature?.properties?.region_name);
+            const colors = biogeoRegionColors(feature?.properties?.region_name);
             return {
-              color, weight: 1.3, opacity: 0.72,
-              fillColor: color, fillOpacity: 0.14,
+              color: colors.stroke, weight: 1.6, opacity: 0.95,
+              fillColor: colors.fill, fillOpacity: 0.38,
               interactive: false
             };
           },
@@ -1279,13 +1288,13 @@
             names.add(name);
             const point = biogeoLabelAnchor(feature.geometry);
             if (!point) return;
-            const color = biogeoRegionColor(name);
+            const colors = biogeoRegionColors(name);
             biogeoOverlayLabels.addLayer(L.marker(point, {
               pane: 'biogeoRegionLabelPane',
               interactive: false, keyboard: false,
               icon: L.divIcon({
                 className: 'echo-biogeo-label-icon',
-                html: `<span class="echo-biogeo-label" style="border-bottom: 2px solid ${color}">${escapeHtml(name)}</span>`,
+                html: `<span class="echo-biogeo-label" style="border-bottom: 2px solid ${colors.stroke}">${escapeHtml(name)}</span>`,
                 iconSize: [0, 0], iconAnchor: [0, 0]
               })
             }));
