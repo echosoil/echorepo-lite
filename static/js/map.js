@@ -1909,6 +1909,15 @@
         ? `${numeric}%`
         : raw;
     })();
+    // Display a missing-data marker as no row, but only for the three
+    // free-text popup fields where literal "nan" is a known import artifact.
+    // Do not suppress meaningful text that merely contains those letters.
+    const omitNaN = value => {
+      if (typeof value === 'number' && Number.isNaN(value)) return null;
+      if (typeof value === 'string' && value.trim().toLowerCase() === 'nan') return null;
+      return value;
+    };
+
     const rows = [
       [
         '<i class="bi bi-calendar"></i> ' +
@@ -1962,17 +1971,17 @@
       [
         '<i class="bi bi-exclamation-triangle"></i> ' +
         T('contamination', {}, 'Contamination'),
-        contaminationNotes
+        omitNaN(contaminationNotes)
       ],
       [
         elementalConcentrationsHeaderHtml(),
-        metals,
+        omitNaN(metals),
         true
       ],
       [
         '<i class="bi bi-chat-left-text"></i> ' +
         T('observations', {}, 'Observations'),
-        observations
+        omitNaN(observations)
       ]
     ].filter(([_, value]) => !(
       value == null ||
