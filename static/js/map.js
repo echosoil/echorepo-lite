@@ -3896,6 +3896,9 @@
         .catch(() => null);
 
     addMapLoaderControl();
+    // Show map layer selectors immediately, independently of the i18n request.
+    // Rebuilt with translated labels after /i18n/labels finishes loading.
+    rebuildBaseLayerControl();
     showMapLoader(
       T('loadingMapData', {}, 'Loading map data...'),
       T('preparingMap', {}, 'Preparing map')

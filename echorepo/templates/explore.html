@@ -162,6 +162,9 @@
   window.ECHOREPO_CFG = Object.assign({}, window.ECHOREPO_CFG || {}, {
     // /explore is ALWAYS the public map, including when a user happens to be signed in.
     public_mode: true,
+    // The EEA overlay is available even when the map is public.
+    biogeo_overlay_enabled: true,
+    biogeo_overlay_url: {{ url_for('static', filename='geo/biogeo_regions_2016.geojson') | tojson }},
     export_authenticated: {{ (true if can_export else false) | tojson }},
   geojson_user_url: null,
     geojson_others_url: "/public/others_geojson",
@@ -216,7 +219,7 @@
   })();
 </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=34"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=35"></script>
 
 <script>
   (function setupLayoutSwitch() {
