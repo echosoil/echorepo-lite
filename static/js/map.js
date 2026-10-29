@@ -317,12 +317,15 @@
 
     const current = sel.value || activeCountry || '';
 
-    sel.innerHTML = '';
-
-    const allOpt = document.createElement('option');
+    // Keep the server-rendered gettext option. Recreating it from T('anyCountry')
+    // can replace its translation with the English fallback after map loading.
+    const existingDefault = sel.querySelector('option[value=""]');
+    const allOpt = existingDefault || document.createElement('option');
     allOpt.value = '';
-    allOpt.textContent = T('anyCountry', {}, 'Any country');
-    sel.appendChild(allOpt);
+    if (!existingDefault) {
+      allOpt.textContent = T('anyCountry', {}, 'Any country');
+    }
+    sel.replaceChildren(allOpt);
 
     const counts = {};
 
