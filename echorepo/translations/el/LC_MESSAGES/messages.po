@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-24 13:38+0000\n"
+"POT-Creation-Date: 2026-10-29 00:34+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -68,17 +68,17 @@ msgstr "Καθαρισμός"
 msgid "Export filtered ({n})"
 msgstr "Φίλτρο εξαγωγής ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:142 static/js/map.js:1480
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:121 static/js/map.js:1812
 msgid "Date"
 msgstr "Ημερομηνία"
 
-#: echorepo/i18n.py:121 static/js/map.js:1485
+#: echorepo/i18n.py:121 static/js/map.js:1817
 msgid "QR code"
 msgstr "Κωδικός QR"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:124
-#: echorepo/templates/results.html:450 echorepo/templates/search.html:79
-#: static/js/map.js:1490
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:94
+#: echorepo/templates/results.html:884 echorepo/templates/search.html:90
+#: static/js/map.js:1822
 msgid "pH"
 msgstr "p Η"
 
@@ -86,27 +86,27 @@ msgstr "p Η"
 msgid "Colour"
 msgstr "Χρώμα"
 
-#: echorepo/i18n.py:124 static/js/map.js:1495
+#: echorepo/i18n.py:124 static/js/map.js:1827
 msgid "Soil organic matter"
 msgstr "Οργανική ύλη εδάφους"
 
-#: echorepo/i18n.py:125 static/js/map.js:1509
+#: echorepo/i18n.py:125 static/js/map.js:1841
 msgid "Structure"
 msgstr "Δομή"
 
-#: echorepo/i18n.py:126 static/js/map.js:1514
+#: echorepo/i18n.py:126 static/js/map.js:1846
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: echorepo/i18n.py:127 static/js/map.js:1519
+#: echorepo/i18n.py:127 static/js/map.js:1851
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: echorepo/i18n.py:128 static/js/map.js:1524
+#: echorepo/i18n.py:128 static/js/map.js:1856
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: echorepo/i18n.py:129 static/js/map.js:1529
+#: echorepo/i18n.py:129 static/js/map.js:1861
 msgid "Contamination"
 msgstr "Μόλυνση"
 
@@ -126,23 +126,23 @@ msgstr "Σχεδίαση ορθογωνίου"
 msgid "Click and drag to draw a rectangle."
 msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο."
 
-#: echorepo/i18n.py:134 static/js/map.js:2782
+#: echorepo/i18n.py:134 static/js/map.js:3118
 msgid "Cancel drawing"
 msgstr "Ακύρωση σχεδίου"
 
-#: echorepo/i18n.py:135 static/js/map.js:2783
+#: echorepo/i18n.py:135 static/js/map.js:3119
 msgid "Cancel"
 msgstr "Ακύρωση"
 
-#: echorepo/i18n.py:136 static/js/map.js:2787
+#: echorepo/i18n.py:136 static/js/map.js:3123
 msgid "Delete last point"
 msgstr "Διαγραφή τελευταίου σημείου"
 
-#: echorepo/i18n.py:137 static/js/map.js:915
+#: echorepo/i18n.py:137 static/js/map.js:1245
 msgid "Street map"
 msgstr "Χάρτης οδών"
 
-#: echorepo/i18n.py:138 static/js/map.js:916
+#: echorepo/i18n.py:138 static/js/map.js:1246
 msgid "Satellite"
 msgstr "Δορυφόρος"
 
@@ -170,7 +170,7 @@ msgstr "Επιλογή εξαγωγής"
 msgid "Clear selection"
 msgstr "Καθαρισμός επιλογής"
 
-#: echorepo/i18n.py:145 static/js/map.js:1132
+#: echorepo/i18n.py:145 static/js/map.js:1464
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Οι τιμές (%) μπορούν να μετατραπούν σε mg/kg πολλαπλασιάζοντας με 10000."
 
@@ -316,151 +316,171 @@ msgid "Coordinate issues"
 msgstr "Θέματα συντονισμού"
 
 #: echorepo/templates/coordinate_issues.html:10
+msgid ""
+"You can view coordinate issues, but only authorized editors can save "
+"corrections."
+msgstr ""
+"Μπορείτε να δείτε θέματα συντεταγμένων, αλλά μόνο εξουσιοδοτημένοι συντάκτες "
+"μπορούν να αποθηκεύσουν διορθώσεις."
+
+#: echorepo/templates/coordinate_issues.html:17
 msgid "The coordinate issues file was not found:"
 msgstr "Το αρχείο θεμάτων συντεταγμένων δε βρέθηκε:"
 
-#: echorepo/templates/coordinate_issues.html:18
-#: echorepo/templates/coordinate_issues.html:102 echorepo/templates/search.html:10
-#: echorepo/templates/search.html:76
+#: echorepo/templates/coordinate_issues.html:25
+#: echorepo/templates/coordinate_issues.html:98 echorepo/templates/search.html:11
+#: echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Δείγμα / QR"
 
-#: echorepo/templates/coordinate_issues.html:23
-#: echorepo/templates/coordinate_issues.html:103
+#: echorepo/templates/coordinate_issues.html:30
+#: echorepo/templates/coordinate_issues.html:99
 msgid "User ID"
 msgstr "ID χρήστη"
 
-#: echorepo/templates/coordinate_issues.html:28
-#: echorepo/templates/coordinate_issues.html:108
+#: echorepo/templates/coordinate_issues.html:35
+#: echorepo/templates/coordinate_issues.html:104
 msgid "Issue type"
 msgstr "Τύπος έκδοσης"
 
-#: echorepo/templates/coordinate_issues.html:30
+#: echorepo/templates/coordinate_issues.html:37
 msgid "Any issue"
 msgstr "Κάθε θέμα"
 
-#: echorepo/templates/coordinate_issues.html:41 echorepo/templates/explore.html:107
-#: echorepo/templates/search.html:31
+#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:78
+#: echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Αναζήτηση"
 
-#: echorepo/templates/coordinate_issues.html:48
-#: echorepo/templates/coordinate_issues.html:106
+#: echorepo/templates/coordinate_issues.html:55
+#: echorepo/templates/coordinate_issues.html:102
 msgid "Actual country"
 msgstr "Πραγματική χώρα"
 
-#: echorepo/templates/coordinate_issues.html:54
-#: echorepo/templates/coordinate_issues.html:107
+#: echorepo/templates/coordinate_issues.html:61
+#: echorepo/templates/coordinate_issues.html:103
 msgid "Planned country"
 msgstr "Προγραμματισμένη χώρα"
 
-#: echorepo/templates/coordinate_issues.html:64
-msgid "Show approved"
-msgstr "Εμφάνιση εγκεκριμένων"
-
-#: echorepo/templates/coordinate_issues.html:78
+#: echorepo/templates/coordinate_issues.html:74
 msgid "Export current results"
 msgstr "Εξαγωγή των τρεχόντων αποτελεσμάτων"
 
-#: echorepo/templates/coordinate_issues.html:87
+#: echorepo/templates/coordinate_issues.html:83
 msgid "coordinate issue(s)"
 msgstr "θέματα συντονισμού"
 
-#: echorepo/templates/coordinate_issues.html:90
+#: echorepo/templates/coordinate_issues.html:86
 msgid "Source:"
 msgstr "Πηγή:"
 
-#: echorepo/templates/coordinate_issues.html:104
-#: echorepo/templates/coordinate_issues.html:153 echorepo/templates/issues.html:31
-#: echorepo/templates/issues.html:77 echorepo/templates/search.html:80
+#: echorepo/templates/coordinate_issues.html:100
+#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/issues.html:31
+#: echorepo/templates/issues.html:77 echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Λατ"
 
-#: echorepo/templates/coordinate_issues.html:105
+#: echorepo/templates/coordinate_issues.html:101
 #: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
-#: echorepo/templates/issues.html:78 echorepo/templates/search.html:81
+#: echorepo/templates/issues.html:78 echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Λον"
 
-#: echorepo/templates/coordinate_issues.html:109
+#: echorepo/templates/coordinate_issues.html:105
 msgid "Fix coordinates"
 msgstr "Καθορισμός συντεταγμένων"
 
-#: echorepo/templates/coordinate_issues.html:121
+#: echorepo/templates/coordinate_issues.html:117
 msgid "Show only this sample on map"
 msgstr "Εμφάνιση μόνο αυτού του δείγματος στο χάρτη"
 
-#: echorepo/templates/coordinate_issues.html:160 echorepo/templates/issues.html:53
+#: echorepo/templates/coordinate_issues.html:158 echorepo/templates/issues.html:53
 #: echorepo/templates/issues.html:96
 msgid "Save"
 msgstr "Αποθήκευση"
 
-#: echorepo/templates/coordinate_issues.html:169
+#: echorepo/templates/coordinate_issues.html:161
+msgid "Sample ID unavailable"
+msgstr "Δείγμα ID μη διαθέσιμο"
+
+#: echorepo/templates/coordinate_issues.html:166
+msgid "Read-only"
+msgstr "Μόνο για ανάγνωση"
+
+#: echorepo/templates/coordinate_issues.html:174
 msgid "No coordinate issues for these filters."
 msgstr "Δεν υπάρχουν θέματα συντεταγμένων για αυτά τα φίλτρα."
 
-#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
 msgid "Showing page"
 msgstr "Εμφάνιση σελίδας"
 
-#: echorepo/templates/coordinate_issues.html:181 echorepo/templates/search.html:126
+#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
 msgid "of"
 msgstr "του"
 
-#: echorepo/templates/coordinate_issues.html:182 echorepo/templates/search.html:126
+#: echorepo/templates/coordinate_issues.html:187 echorepo/templates/search.html:136
 msgid "results"
 msgstr "αποτελέσματα"
 
-#: echorepo/templates/explore.html:2
+#: echorepo/templates/explore.html:5
 msgid "ECHOrepo — Explore"
 msgstr "ECHOREPO — Εξερευνήστε"
 
-#: echorepo/templates/explore.html:89
+#: echorepo/templates/explore.html:61
 msgid "Explore the map"
 msgstr "Εξερευνήστε το χάρτη"
 
-#: echorepo/templates/explore.html:92
+#: echorepo/templates/explore.html:64
 msgid "Sign in to export data and access your personal samples."
 msgstr "Συνδεθείτε στην εξαγωγή δεδομένων και πρόσβαση στα προσωπικά σας δείγματα."
 
-#: echorepo/templates/explore.html:101
+#: echorepo/templates/explore.html:72
 msgid "Download dataset from Zenodo"
 msgstr "Λήψη συνόλου δεδομένων από το Zenodo"
 
-#: echorepo/templates/explore.html:114 echorepo/templates/results.html:279
+#: echorepo/templates/explore.html:84 echorepo/templates/results.html:544
 msgid "Mobile version"
 msgstr "Κινητή έκδοση"
 
-#: echorepo/templates/explore.html:117 echorepo/templates/results.html:282
+#: echorepo/templates/explore.html:87 echorepo/templates/results.html:550
 msgid "Desktop version"
 msgstr "Έκδοση επιφάνειας εργασίας"
 
-#: echorepo/templates/explore.html:127 echorepo/templates/results.html:452
+#: echorepo/templates/explore.html:97 echorepo/templates/results.html:887
 msgid "min"
 msgstr "λεπτά"
 
-#: echorepo/templates/explore.html:132 echorepo/templates/results.html:455
+#: echorepo/templates/explore.html:102 echorepo/templates/results.html:892
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/explore.html:136 echorepo/templates/search.html:15
-#: echorepo/templates/search.html:78
+#: echorepo/templates/explore.html:104 echorepo/templates/search.html:19
+#: echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Χώρες"
 
-#: echorepo/templates/explore.html:139
+#: echorepo/templates/explore.html:107
 msgid "All countries"
 msgstr "Όλες οι χώρες"
 
-#: echorepo/templates/explore.html:152 echorepo/templates/results.html:457
+#: echorepo/templates/explore.html:111 echorepo/templates/search.html:29
+msgid "Biogeographical region"
+msgstr "Βιογεωγραφική περιοχή"
+
+#: echorepo/templates/explore.html:115 echorepo/templates/search.html:31
+msgid "Any region"
+msgstr "Οποιαδήποτε περιφέρεια"
+
+#: echorepo/templates/explore.html:130 echorepo/templates/results.html:895
 msgid "Apply"
 msgstr "Εφαρμογή"
 
-#: echorepo/templates/explore.html:157 echorepo/templates/results.html:460
+#: echorepo/templates/explore.html:135 echorepo/templates/results.html:900
 msgid "Export filtered (0)"
 msgstr "Φίλτρο εξαγωγής (0)"
 
-#: echorepo/templates/explore.html:163
+#: echorepo/templates/explore.html:141
 msgid "Copy view link"
 msgstr "Αντιγραφή δεσμού προβολής"
 
@@ -527,7 +547,7 @@ msgstr ""
 "Η πραγματική χώρα (από συντονιστές) δεν περιλαμβάνεται στον προβλεπόμενο "
 "κατάλογο για την παρούσα QR."
 
-#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:269
+#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:524
 msgid "Upload lab data"
 msgstr "Αποστολή δεδομένων εργαστηρίου"
 
@@ -599,24 +619,24 @@ msgstr "Φιλική πρόσβαση GDPR"
 msgid "Download your data anytime"
 msgstr "Κατεβάστε τα δεδομένα σας οποτεδήποτε"
 
-#: echorepo/templates/results.html:3
+#: echorepo/templates/results.html:5
 msgid "ECHOrepo — Your Data"
 msgstr "ECHOREPO — Τα Δεδομένα Σας"
 
-#: echorepo/templates/results.html:9
+#: echorepo/templates/results.html:17
 msgid "Download all samples (CSV)"
 msgstr "Κατεβάστε όλα τα δείγματα (CSV)"
 
-#: echorepo/templates/results.html:14 echorepo/templates/results.html:273
+#: echorepo/templates/results.html:27 echorepo/templates/results.html:532
 #: echorepo/templates/search.html:2 echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Δείγματα αναζήτησης"
 
-#: echorepo/templates/results.html:256
+#: echorepo/templates/results.html:498
 msgid "Your data"
 msgstr "Τα δεδομένα σας"
 
-#: echorepo/templates/results.html:257
+#: echorepo/templates/results.html:500
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
@@ -624,119 +644,139 @@ msgstr ""
 "Εξερευνήστε τις τοποθεσίες του δείγματος εδάφους σας στο χάρτη, στη συνέχεια,"
 " εξαγωγή ή περιήγηση στον πίνακα."
 
-#: echorepo/templates/results.html:264
+#: echorepo/templates/results.html:514
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Διόρθωση θεμάτων δεδομένων (__%(n)s_)"
 
-#: echorepo/templates/results.html:291 echorepo/templates/results.html:352
+#: echorepo/templates/results.html:568 echorepo/templates/results.html:689
 msgid "Final survey"
 msgstr "Τελική έρευνα"
 
-#: echorepo/templates/results.html:293
+#: echorepo/templates/results.html:572
 msgid "We sincerely thank you for your commitment to this project!"
 msgstr "Σας ευχαριστούμε ειλικρινά για τη δέσμευσή σας σε αυτό το έργο!"
 
-#: echorepo/templates/results.html:296
+#: echorepo/templates/results.html:578
 msgid ""
 "This is the third and final survey in the project, following the initial ones"
 " you completed before and after\n"
+"\n"
 "      soil sampling. The majority of questions are consistent with the "
 "previous surveys so that we can accurately\n"
+"\n"
 "      measure changes over time and understand the impact of project "
 "participation."
 msgstr ""
 "Αυτή είναι η τρίτη και τελευταία έρευνα στο έργο, μετά τις αρχικές που "
 "ολοκληρώσατε πριν και μετά\n"
+"\n"
 "δειγματοληψία του εδάφους. Οι περισσότερες ερωτήσεις είναι σύμφωνες με τις "
 "προηγούμενες έρευνες, έτσι ώστε να μπορούμε με ακρίβεια\n"
+"\n"
 "να μετρούν τις αλλαγές με την πάροδο του χρόνου και να κατανοούν τον "
 "αντίκτυπο της συμμετοχής στο έργο."
 
-#: echorepo/templates/results.html:301
+#: echorepo/templates/results.html:588
 msgid ""
 "Before you start: please only complete this survey if the lab results from "
 "your soil sample(s) have already\n"
+"\n"
 "      been added to the repository. If the results are pending, please check "
 "back at a later time."
 msgstr ""
 "Πριν ξεκινήσετε: παρακαλώ συμπληρώστε αυτή την έρευνα μόνο εάν τα "
 "αποτελέσματα του εργαστηρίου από το(τα) δείγμα(τα) εδάφους σας έχουν ήδη\n"
+"\n"
 "προστέθηκε στο αποθετήριο. Εάν εκκρεμούν τα αποτελέσματα, παρακαλούμε ελέγξτε"
 " ξανά αργότερα."
 
-#: echorepo/templates/results.html:307
+#: echorepo/templates/results.html:600
 msgid "Go to final survey"
 msgstr "Μετάβαση στην τελική έρευνα"
 
-#: echorepo/templates/results.html:312
+#: echorepo/templates/results.html:609
 msgid "Data use information"
 msgstr "Πληροφορίες χρήσης δεδομένων"
 
-#: echorepo/templates/results.html:317
+#: echorepo/templates/results.html:619
 msgid "I have already completed it"
 msgstr "Το έχω ήδη ολοκληρώσει"
 
-#: echorepo/templates/results.html:322
+#: echorepo/templates/results.html:629
 msgid "Processing survey data in the ECHO project"
 msgstr "Δεδομένα έρευνας για την επεξεργασία του έργου ECHO"
 
-#: echorepo/templates/results.html:324
+#: echorepo/templates/results.html:633
 msgid ""
 "The objective of this survey data is to examine the impact of project "
 "participation on participant\n"
+"\n"
 "        attitudes and motivation towards soil."
 msgstr ""
 "Στόχος των δεδομένων της έρευνας αυτής είναι να εξεταστούν οι επιπτώσεις της "
 "συμμετοχής του έργου στον συμμετέχοντα\n"
+"\n"
 "στάσεις και κίνητρα προς το έδαφος."
 
-#: echorepo/templates/results.html:328
+#: echorepo/templates/results.html:641
 msgid ""
 "Your information will only be used for scientific purposes. We do not collect"
 " names or addresses. Your\n"
+"\n"
 "        details regarding age and gender are only used for statistical "
 "purposes and all details are collected and\n"
+"\n"
 "        evaluated anonymously. It is not possible to draw conclusions about "
 "your person at any time."
 msgstr ""
 "Οι πληροφορίες σας θα χρησιμοποιηθούν μόνο για επιστημονικούς σκοπούς. Δεν "
 "συλλέγουμε ονόματα ή διευθύνσεις. Το δικό σου\n"
+"\n"
 "Πληροφορίες σχετικά με την ηλικία και το φύλο χρησιμοποιούνται μόνο για "
 "στατιστικούς σκοπούς και συλλέγονται όλες οι λεπτομέρειες και\n"
+"\n"
 "αξιολογήθηκε ανώνυμα. Δεν είναι δυνατόν να βγάλεις συμπεράσματα για το άτομο "
 "σου οποιαδήποτε στιγμή."
 
-#: echorepo/templates/results.html:333
+#: echorepo/templates/results.html:651
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
 "crucial role in providing valuable\n"
+"\n"
 "        insights that enhance the relevance and impact of the ECHO project. "
 "Your honest responses are essential for\n"
+"\n"
 "        understanding how engagement with the project influences attitudes "
 "and motivations, ensuring the project’s\n"
+"\n"
 "        outcomes are meaningful and well-informed."
 msgstr ""
 "Η απάντηση σε κάθε ερώτηση της έρευνας εκτιμάται περισσότερο καθώς παίζει "
 "καθοριστικό ρόλο στην παροχή πολύτιμης\n"
+"\n"
 "πληροφορίες που ενισχύουν τη συνάφεια και τον αντίκτυπο του έργου ECHO. Οι "
 "ειλικρινείς απαντήσεις σας είναι απαραίτητες για\n"
+"\n"
 "κατανόηση του τρόπου με τον οποίο η εμπλοκή με το έργο επηρεάζει τις στάσεις "
 "και τα κίνητρα, εξασφαλίζοντας τη λειτουργία του έργου\n"
+"\n"
 "Τα αποτελέσματα είναι σημαντικά και καλά ενημερωμένα."
 
-#: echorepo/templates/results.html:339
+#: echorepo/templates/results.html:663
 msgid ""
 "The survey will take approximately 8–10 minutes to complete. Please find a "
 "quiet space where you won’t be\n"
+"\n"
 "        interrupted. There are no right or wrong answers — answer "
 "spontaneously."
 msgstr ""
 "Η έρευνα θα διαρκέσει περίπου 8-10 λεπτά για να ολοκληρωθεί. Παρακαλώ βρείτε "
 "ένα ήσυχο χώρο όπου δεν θα είστε\n"
+"\n"
 "Διακόπτεται. Δεν υπάρχουν σωστές ή λάθος απαντήσεις — απαντήστε αυθόρμητα."
 
-#: echorepo/templates/results.html:343
+#: echorepo/templates/results.html:671
 msgid ""
 "Based on the information provided to you, please consent to participate in "
 "the survey below."
@@ -744,152 +784,164 @@ msgstr ""
 "Με βάση τις πληροφορίες που σας παρέχονται, παρακαλούμε συναινείτε να "
 "συμμετάσχετε στην παρακάτω έρευνα."
 
-#: echorepo/templates/results.html:353
+#: echorepo/templates/results.html:691
 msgid "thank you for your participation!"
 msgstr "σας ευχαριστώ για τη συμμετοχή σας!"
 
-#: echorepo/templates/results.html:357
+#: echorepo/templates/results.html:699
 msgid "Show details"
 msgstr "Εμφάνιση λεπτομερειών"
 
-#: echorepo/templates/results.html:361
+#: echorepo/templates/results.html:706
 msgid "Dismiss"
 msgstr "Ελεύθεροι"
 
-#: echorepo/templates/results.html:371
+#: echorepo/templates/results.html:726
 msgid "No data found for"
 msgstr "Δεν βρέθηκαν δεδομένα για"
 
-#: echorepo/templates/results.html:371
+#: echorepo/templates/results.html:726
 msgid ""
 "If you recently submitted samples, try again\n"
+"\n"
 "    later."
 msgstr ""
 "Αν υποβάλατε πρόσφατα δείγματα, προσπαθήστε ξανά.\n"
+"\n"
 "Αργότερα."
 
-#: echorepo/templates/results.html:385
+#: echorepo/templates/results.html:754
 msgid "Download"
 msgstr "Λήψη"
 
-#: echorepo/templates/results.html:392
+#: echorepo/templates/results.html:768
 msgid "CSV (per-user)"
 msgstr "CSV (ανά χρήστη)"
 
-#: echorepo/templates/results.html:400
+#: echorepo/templates/results.html:784
 msgid "XLSX (per-user)"
 msgstr "XLSX (ανά χρήστη)"
 
-#: echorepo/templates/results.html:409
+#: echorepo/templates/results.html:802
 msgid "All samples (CSV, anonymised)"
 msgstr "Όλα τα δείγματα (CSV, ανώνυμα)"
 
-#: echorepo/templates/results.html:414
+#: echorepo/templates/results.html:812
 msgid "GeoJSON (per-user)"
 msgstr "GeoJSON (ανά χρήστη)"
 
-#: echorepo/templates/results.html:420
+#: echorepo/templates/results.html:824
 msgid "Canonical exports"
 msgstr "Κανονική εξαγωγή"
 
-#: echorepo/templates/results.html:423
+#: echorepo/templates/results.html:830
 msgid "samples.csv"
 msgstr "δείγματα.csv"
 
-#: echorepo/templates/results.html:428
+#: echorepo/templates/results.html:840
 msgid "sample_images.csv"
 msgstr "δείγμα_εικόνες.csv"
 
-#: echorepo/templates/results.html:433
+#: echorepo/templates/results.html:850
 msgid "sample_parameters.csv"
 msgstr "δείγμα_παράμετροι.csv"
 
-#: echorepo/templates/results.html:438
+#: echorepo/templates/results.html:860
 msgid "sample_biodiversity.csv"
 msgstr "δείγμα βιοποικιλότητα.csv"
 
-#: echorepo/templates/results.html:443
+#: echorepo/templates/results.html:870
 msgid "All canonical (zip)"
 msgstr "Όλα τα κανονικά (zip)"
 
-#: echorepo/templates/results.html:457
+#: echorepo/templates/results.html:895
 msgid "Apply pH filter"
 msgstr "Εφαρμογή φίλτρου pH"
 
-#: echorepo/templates/results.html:459
+#: echorepo/templates/results.html:898
 msgid "Export rows matching current pH filter"
 msgstr "Εξαγωγή γραμμών που ταιριάζουν με το τρέχον φίλτρο pH"
 
-#: echorepo/templates/results.html:480
+#: echorepo/templates/results.html:939
 msgid "Privacy information"
 msgstr "Πληροφορίες απορρήτου"
 
-#: echorepo/templates/results.html:507
+#: echorepo/templates/results.html:993
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
+"\n"
 "              this project."
 msgstr ""
 "Έχω διαβάσει τις παραπάνω πληροφορίες απορρήτου και συναινώ στην επεξεργασία "
 "των προσωπικών μου δεδομένων για\n"
+"\n"
 "Αυτό το έργο."
 
-#: echorepo/templates/results.html:515
+#: echorepo/templates/results.html:1009
 msgid "Accept and continue"
 msgstr "Αποδοχή και συνέχιση"
 
-#: echorepo/templates/results.html:889
+#: echorepo/templates/results.html:1759
 msgid "Show on map"
 msgstr "Εμφάνιση στο χάρτη"
 
-#: echorepo/templates/results.html:902 echorepo/templates/results.html:926
-#: echorepo/templates/results.html:935
+#: echorepo/templates/results.html:1785 echorepo/templates/results.html:1833
+#: echorepo/templates/results.html:1851
 msgid "Could not locate this sample on the map."
 msgstr "Αδυναμία εντοπισμού του δείγματος στο χάρτη."
 
-#: echorepo/templates/search.html:17 static/js/map.js:226
+#: echorepo/templates/search.html:21 static/js/map.js:231
 msgid "Any country"
 msgstr "Οποιαδήποτε χώρα"
 
-#: echorepo/templates/search.html:22
+#: echorepo/templates/search.html:40
 msgid "pH min"
 msgstr "π H min"
 
-#: echorepo/templates/search.html:26
+#: echorepo/templates/search.html:45
 msgid "pH max"
 msgstr "π H max"
 
-#: echorepo/templates/search.html:38
+#: echorepo/templates/search.html:54
 msgid "Date from"
 msgstr "Ημερομηνία από"
 
-#: echorepo/templates/search.html:42
+#: echorepo/templates/search.html:59
 msgid "Date to"
 msgstr "Ημερομηνία"
 
-#: echorepo/templates/search.html:56
+#: echorepo/templates/search.html:67
 msgid "Export current search"
 msgstr "Εξαγωγή τρέχουσας αναζήτησης"
 
-#: echorepo/templates/search.html:60
+#: echorepo/templates/search.html:70
 msgid "Sign in to export results as ZIP."
 msgstr "Συνδεθείτε στα αποτελέσματα των εξαγωγών ως ZIP."
 
-#: echorepo/templates/search.html:77
+#: echorepo/templates/search.html:86
+msgid "Map"
+msgstr "Χάρτης"
+
+#: echorepo/templates/search.html:88
 msgid "Timestamp"
 msgstr "Χρονοσφραγίδα"
 
-#: echorepo/templates/search.html:82
+#: echorepo/templates/search.html:93
 msgid "Collected by"
 msgstr "Συλλέγεται από"
 
-#: echorepo/templates/search.html:97
+#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
 msgid "Show this sample on map"
 msgstr "Εμφάνιση του δείγματος στο χάρτη"
 
-#: echorepo/templates/search.html:114
+#: echorepo/templates/search.html:123
 msgid "No results for these filters."
 msgstr "Δεν υπάρχουν αποτελέσματα για αυτά τα φίλτρα."
+
+#: echorepo/templates/search.html:138
+msgid "Search results pages"
+msgstr "Σελίδες αποτελεσμάτων αναζήτησης"
 
 #: echorepo/templates/zenodo_publications.html:3
 msgid "ECHOrepo — Zenodo Publications"
@@ -976,90 +1028,102 @@ msgstr "Δεσμός αντιγραφόμενο στο πρόχειρο"
 msgid "Copy this link:"
 msgstr "Αντιγραφή αυτού του συνδέσμου:"
 
-#: static/js/map.js:778 static/js/map.js:3151
+#: static/js/map.js:797 static/js/map.js:3489
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Φίλτρα εξαγωγής (${n})"
 
-#: static/js/map.js:788 static/js/map.js:2945
+#: static/js/map.js:807 static/js/map.js:3281
 msgid "Release mouse to finish drawing."
 msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
 
-#: static/js/map.js:862
+#: static/js/map.js:881
 msgid "Not available"
 msgstr "Υποθ"
 
-#: static/js/map.js:1138
+#: static/js/map.js:1135 static/js/map.js:1249
+msgid "Biogeographical regions"
+msgstr "Βιογεωγραφικές περιοχές"
+
+#: static/js/map.js:1214
+msgid ""
+"Could not load the biogeographical-region overlay. Check that "
+"/static/geo/biogeo_regions_2016.geojson exists."
+msgstr ""
+"Αδυναμία φόρτωσης της επικάλυψης της βιογεωγραφικής περιοχής. Ελέγξτε ότι "
+"/static/geo/biogeo regions 2016.geojson υπάρχει."
+
+#: static/js/map.js:1470
 msgid "Unit conversion help"
 msgstr "Βοήθεια μετατροπής μονάδας"
 
-#: static/js/map.js:1504
+#: static/js/map.js:1836
 msgid "Texture"
 msgstr "Υφή"
 
-#: static/js/map.js:1539
+#: static/js/map.js:1871
 msgid "Observations"
 msgstr "Παρατηρήσεις"
 
-#: static/js/map.js:2175 static/js/map.js:3437
+#: static/js/map.js:2507 static/js/map.js:3809
 msgid "Loading map data..."
 msgstr "Φόρτωση δεδομένων χάρτη..."
 
-#: static/js/map.js:2179
+#: static/js/map.js:2511
 msgid "Please wait"
 msgstr "Παρακαλώ περιμένετε"
 
-#: static/js/map.js:2453
+#: static/js/map.js:2789
 msgid "Loading..."
 msgstr "Φόρτωση..."
 
-#: static/js/map.js:2775
+#: static/js/map.js:3111
 msgid "Draw selection rectangle"
 msgstr "Σχεδίαση ορθογωνίου επιλογής"
 
-#: static/js/map.js:2786
+#: static/js/map.js:3122
 msgid "Delete last point drawn"
 msgstr "Διαγραφή του τελευταίου σημείου που έχει σχεδιαστεί"
 
-#: static/js/map.js:2794
+#: static/js/map.js:3130
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο επιλογής. Μπορείς να "
 "ζωγραφίσεις περισσότερους από έναν."
 
-#: static/js/map.js:2800
+#: static/js/map.js:3136
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Αφήστε το ποντίκι για να προσθέσετε αυτό το ορθογώνιο στην επιλογή."
 
-#: static/js/map.js:2881
+#: static/js/map.js:3217
 msgid "No selected samples to export."
 msgstr "Δεν υπάρχουν επιλεγμένα δείγματα προς εξαγωγή."
 
-#: static/js/map.js:3197
+#: static/js/map.js:3559
 msgid "Please sign in to export data."
 msgstr "Παρακαλώ υπογράψτε για εξαγωγή δεδομένων."
 
-#: static/js/map.js:3264
+#: static/js/map.js:3628
 msgid "Loading sample..."
 msgstr "Φόρτωση δείγματος..."
 
-#: static/js/map.js:3348
+#: static/js/map.js:3712
 msgid "Loading samples..."
 msgstr "Φόρτωση δειγμάτων..."
 
-#: static/js/map.js:3349
+#: static/js/map.js:3713
 msgid "Fetching visible map area"
 msgstr "Ανάκτηση ορατής περιοχής χάρτη"
 
-#: static/js/map.js:3380
+#: static/js/map.js:3744
 msgid "Rendering markers..."
 msgstr "Αποτύπωση δεικτών..."
 
-#: static/js/map.js:3381
+#: static/js/map.js:3745
 msgid "Building clusters and popups"
 msgstr "Συγκροτήματα και αναδυόμενα"
 
-#: static/js/map.js:3438
+#: static/js/map.js:3810
 msgid "Preparing map"
 msgstr "Προετοιμασία χάρτη"
 
@@ -1223,4 +1287,7 @@ msgstr "Προετοιμασία χάρτη"
 
 #~ msgid "Clear all selection rectangles"
 #~ msgstr "Καθαρισμός όλων των ορθογωνίων επιλογής"
+
+#~ msgid "Show approved"
+#~ msgstr "Εμφάνιση εγκεκριμένων"
 
