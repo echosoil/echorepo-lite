@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 00:34+0000\n"
+"POT-Creation-Date: 2026-10-29 10:48+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sk\n"
@@ -68,17 +68,17 @@ msgstr "Vyčistiť"
 msgid "Export filtered ({n})"
 msgstr "Export filtrovaný ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:121 static/js/map.js:1812
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
 msgid "Date"
 msgstr "Dátum"
 
-#: echorepo/i18n.py:121 static/js/map.js:1817
+#: echorepo/i18n.py:121 static/js/map.js:1917
 msgid "QR code"
 msgstr "QR kód"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:94
-#: echorepo/templates/results.html:884 echorepo/templates/search.html:90
-#: static/js/map.js:1822
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:101
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:90
+#: static/js/map.js:1922
 msgid "pH"
 msgstr "p H"
 
@@ -86,27 +86,27 @@ msgstr "p H"
 msgid "Colour"
 msgstr "Farba"
 
-#: echorepo/i18n.py:124 static/js/map.js:1827
+#: echorepo/i18n.py:124 static/js/map.js:1927
 msgid "Soil organic matter"
 msgstr "Organické látky v pôde"
 
-#: echorepo/i18n.py:125 static/js/map.js:1841
+#: echorepo/i18n.py:125 static/js/map.js:1941
 msgid "Structure"
 msgstr "Štruktúra"
 
-#: echorepo/i18n.py:126 static/js/map.js:1846
+#: echorepo/i18n.py:126 static/js/map.js:1946
 msgid "Earthworms"
 msgstr "Dážďovky"
 
-#: echorepo/i18n.py:127 static/js/map.js:1851
+#: echorepo/i18n.py:127 static/js/map.js:1951
 msgid "Plastic"
 msgstr "Plasty"
 
-#: echorepo/i18n.py:128 static/js/map.js:1856
+#: echorepo/i18n.py:128 static/js/map.js:1956
 msgid "Debris"
 msgstr "Debris"
 
-#: echorepo/i18n.py:129 static/js/map.js:1861
+#: echorepo/i18n.py:129 static/js/map.js:1961
 msgid "Contamination"
 msgstr "Kontaminácia"
 
@@ -126,51 +126,63 @@ msgstr "Nakreslite obdĺžnik"
 msgid "Click and drag to draw a rectangle."
 msgstr "Kliknite a pretiahnite nakresliť obdĺžnik."
 
-#: echorepo/i18n.py:134 static/js/map.js:3118
+#: echorepo/i18n.py:134 static/js/map.js:3266
 msgid "Cancel drawing"
 msgstr "Zrušiť výkres"
 
-#: echorepo/i18n.py:135 static/js/map.js:3119
+#: echorepo/i18n.py:135 static/js/map.js:3267
 msgid "Cancel"
 msgstr "Zrušiť"
 
-#: echorepo/i18n.py:136 static/js/map.js:3123
+#: echorepo/i18n.py:136 static/js/map.js:3271
 msgid "Delete last point"
 msgstr "Vypustiť posledný bod"
 
-#: echorepo/i18n.py:137 static/js/map.js:1245
+#: echorepo/i18n.py:137 static/js/map.js:1347
 msgid "Street map"
 msgstr "Mapa ulíc"
 
-#: echorepo/i18n.py:138 static/js/map.js:1246
+#: echorepo/i18n.py:138 static/js/map.js:1348
 msgid "Satellite"
 msgstr "Satelit"
 
-#: echorepo/i18n.py:139
+#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+msgid "Biogeographical regions"
+msgstr "Biogeografické regióny"
+
+#: echorepo/i18n.py:140 static/js/map.js:3861
+msgid "Loading samples..."
+msgstr "Načítavam vzorky..."
+
+#: echorepo/i18n.py:141 static/js/map.js:3862
+msgid "Fetching visible map area"
+msgstr "Sťahujem viditeľnú oblasť mapy"
+
+#: echorepo/i18n.py:142
 msgid "Selection export to a file"
 msgstr "Export výberu do súboru"
 
-#: echorepo/i18n.py:140
+#: echorepo/i18n.py:143
 msgid "Selection export"
 msgstr "Vývoz výberu"
 
-#: echorepo/i18n.py:141
+#: echorepo/i18n.py:144
 msgid "Use selection tool"
 msgstr "Použiť nástroj výberu"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:145
 msgid "to draw one or more areas"
 msgstr "kresliť jednu alebo viac oblastí"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:146
 msgid "Export selection"
 msgstr "Výber exportu"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:147
 msgid "Clear selection"
 msgstr "Vyčistiť výber"
 
-#: echorepo/i18n.py:145 static/js/map.js:1464
+#: echorepo/i18n.py:148 static/js/map.js:1566
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Percentuálne hodnoty (%) možno prepočítať na mg/kg vynásobením 10000."
 
@@ -335,7 +347,7 @@ msgstr "Typ emisie"
 msgid "Any issue"
 msgstr "Akýkoľvek problém"
 
-#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:78
+#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:85
 #: echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Hľadať"
@@ -415,60 +427,62 @@ msgstr "výsledky"
 msgid "ECHOrepo — Explore"
 msgstr "ECHOrepo"
 
-#: echorepo/templates/explore.html:61
+#: echorepo/templates/explore.html:68
 msgid "Explore the map"
 msgstr "Objavte mapu"
 
-#: echorepo/templates/explore.html:64
+#: echorepo/templates/explore.html:71
 msgid "Sign in to export data and access your personal samples."
 msgstr "Prihláste sa na export údajov a prístup k svojim osobným vzorky."
 
-#: echorepo/templates/explore.html:72
+#: echorepo/templates/explore.html:79
 msgid "Download dataset from Zenodo"
 msgstr "Stiahnuť súbor zo Zenoda"
 
-#: echorepo/templates/explore.html:84 echorepo/templates/results.html:544
+#: echorepo/templates/explore.html:91 echorepo/templates/results.html:544
 msgid "Mobile version"
 msgstr "Mobilná verzia"
 
-#: echorepo/templates/explore.html:87 echorepo/templates/results.html:550
+#: echorepo/templates/explore.html:94 echorepo/templates/results.html:550
 msgid "Desktop version"
 msgstr "Verzia plochy"
 
-#: echorepo/templates/explore.html:97 echorepo/templates/results.html:887
+#: echorepo/templates/explore.html:104 echorepo/templates/results.html:844
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/explore.html:102 echorepo/templates/results.html:892
+#: echorepo/templates/explore.html:109 echorepo/templates/results.html:849
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/explore.html:104 echorepo/templates/search.html:19
-#: echorepo/templates/search.html:89
+#: echorepo/templates/explore.html:111 echorepo/templates/results.html:835
+#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Krajina"
 
-#: echorepo/templates/explore.html:107
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
 msgid "All countries"
 msgstr "Všetky krajiny"
 
-#: echorepo/templates/explore.html:111 echorepo/templates/search.html:29
+#: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
+#: echorepo/templates/search.html:29
 msgid "Biogeographical region"
 msgstr "Biogeografický región"
 
-#: echorepo/templates/explore.html:115 echorepo/templates/search.html:31
+#: echorepo/templates/explore.html:122 echorepo/templates/results.html:824
+#: echorepo/templates/search.html:31
 msgid "Any region"
 msgstr "Akýkoľvek región"
 
-#: echorepo/templates/explore.html:130 echorepo/templates/results.html:895
+#: echorepo/templates/explore.html:137 echorepo/templates/results.html:852
 msgid "Apply"
 msgstr "Použiť"
 
-#: echorepo/templates/explore.html:135 echorepo/templates/results.html:900
+#: echorepo/templates/explore.html:142 echorepo/templates/results.html:857
 msgid "Export filtered (0)"
 msgstr "Export filtrované (0)"
 
-#: echorepo/templates/explore.html:141
+#: echorepo/templates/explore.html:148
 msgid "Copy view link"
 msgstr "Kopírovať odkaz na zobrazenie"
 
@@ -797,59 +811,27 @@ msgstr ""
 msgid "Download"
 msgstr "Stiahnuť"
 
-#: echorepo/templates/results.html:768
-msgid "CSV (per-user)"
-msgstr "CSV (na užívateľa)"
-
-#: echorepo/templates/results.html:784
-msgid "XLSX (per-user)"
-msgstr "XLSX (na užívateľa)"
-
-#: echorepo/templates/results.html:802
-msgid "All samples (CSV, anonymised)"
-msgstr "Všetky vzorky (CSV, anonymizované)"
-
-#: echorepo/templates/results.html:812
-msgid "GeoJSON (per-user)"
-msgstr "GeoJSON (na užívateľa)"
-
-#: echorepo/templates/results.html:824
+#: echorepo/templates/results.html:760
 msgid "Canonical exports"
 msgstr "Kanonické vývozy"
 
-#: echorepo/templates/results.html:830
-msgid "samples.csv"
-msgstr "vzorky.csv"
-
-#: echorepo/templates/results.html:840
-msgid "sample_images.csv"
-msgstr "vzorka_obrazy.csv"
-
-#: echorepo/templates/results.html:850
-msgid "sample_parameters.csv"
-msgstr "vzorka_parametre.csv"
-
-#: echorepo/templates/results.html:860
-msgid "sample_biodiversity.csv"
-msgstr "vzorka biodiverzita.csv"
-
-#: echorepo/templates/results.html:870
+#: echorepo/templates/results.html:806
 msgid "All canonical (zip)"
 msgstr "Všetky kanonické (zips)"
 
-#: echorepo/templates/results.html:895
-msgid "Apply pH filter"
-msgstr "Aplikovať pH filter"
+#: echorepo/templates/results.html:852
+msgid "Apply map filters"
+msgstr "Použiť mapové filtre"
 
-#: echorepo/templates/results.html:898
-msgid "Export rows matching current pH filter"
-msgstr "Exportovať riadky zodpovedajúce aktuálnemu pH filtru"
+#: echorepo/templates/results.html:855
+msgid "Export rows matching current map filters"
+msgstr "Export riadkov zodpovedajúcich aktuálnym mapovým filtrom"
 
-#: echorepo/templates/results.html:939
+#: echorepo/templates/results.html:896
 msgid "Privacy information"
 msgstr "Informácie o ochrane súkromia"
 
-#: echorepo/templates/results.html:993
+#: echorepo/templates/results.html:950
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
@@ -861,20 +843,20 @@ msgstr ""
 "\n"
 "Tento projekt."
 
-#: echorepo/templates/results.html:1009
+#: echorepo/templates/results.html:966
 msgid "Accept and continue"
 msgstr "Prijať a pokračovať"
 
-#: echorepo/templates/results.html:1759
+#: echorepo/templates/results.html:1716
 msgid "Show on map"
 msgstr "Zobraziť na mape"
 
-#: echorepo/templates/results.html:1785 echorepo/templates/results.html:1833
-#: echorepo/templates/results.html:1851
+#: echorepo/templates/results.html:1742 echorepo/templates/results.html:1790
+#: echorepo/templates/results.html:1808
 msgid "Could not locate this sample on the map."
 msgstr "Nepodarilo sa nájsť túto vzorku na mape."
 
-#: echorepo/templates/search.html:21 static/js/map.js:231
+#: echorepo/templates/search.html:21 static/js/map.js:324
 msgid "Any country"
 msgstr "Každá krajina"
 
@@ -1003,32 +985,28 @@ msgstr "Navrhované odkazy"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Zatiaľ neboli zaznamenané žiadne publikácie Zenodo."
 
-#: static/js/map.js:172
+#: static/js/map.js:265
 msgid "Link copied to clipboard"
 msgstr "Odkaz skopírovaný do schránky"
 
-#: static/js/map.js:175
+#: static/js/map.js:268
 msgid "Copy this link:"
 msgstr "Kopírovať tento odkaz:"
 
-#: static/js/map.js:797 static/js/map.js:3489
+#: static/js/map.js:890 static/js/map.js:3637
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Export filtrované (${n})"
 
-#: static/js/map.js:807 static/js/map.js:3281
+#: static/js/map.js:900 static/js/map.js:3429
 msgid "Release mouse to finish drawing."
 msgstr "Uvoľnite myš do konca výkresu."
 
-#: static/js/map.js:881
+#: static/js/map.js:974
 msgid "Not available"
 msgstr "Nie je k dispozícii"
 
-#: static/js/map.js:1135 static/js/map.js:1249
-msgid "Biogeographical regions"
-msgstr "Biogeografické regióny"
-
-#: static/js/map.js:1214
+#: static/js/map.js:1316
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1036,75 +1014,67 @@ msgstr ""
 "Nepodarilo sa načítať prekrytie biogeografického regiónu. Skontrolujte, či "
 "existuje /statická/geo/biogeo regióny 2016.geojson."
 
-#: static/js/map.js:1470
+#: static/js/map.js:1572
 msgid "Unit conversion help"
 msgstr "Pomocník konverzie jednotiek"
 
-#: static/js/map.js:1836
+#: static/js/map.js:1936
 msgid "Texture"
 msgstr "Textúra"
 
-#: static/js/map.js:1871
+#: static/js/map.js:1971
 msgid "Observations"
 msgstr "Pripomienky"
 
-#: static/js/map.js:2507 static/js/map.js:3809
+#: static/js/map.js:2609 static/js/map.js:3961
 msgid "Loading map data..."
 msgstr "Načítavam dáta mapy..."
 
-#: static/js/map.js:2511
+#: static/js/map.js:2613
 msgid "Please wait"
 msgstr "Prosím, počkajte"
 
-#: static/js/map.js:2789
+#: static/js/map.js:2892
 msgid "Loading..."
 msgstr "Načítava sa..."
 
-#: static/js/map.js:3111
+#: static/js/map.js:3259
 msgid "Draw selection rectangle"
 msgstr "Kresliť výber obdĺžnik"
 
-#: static/js/map.js:3122
+#: static/js/map.js:3270
 msgid "Delete last point drawn"
 msgstr "Vypustiť posledný bod"
 
-#: static/js/map.js:3130
+#: static/js/map.js:3278
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr "Kliknite a pretiahnite nakresliť obdĺžnik výberu. Môžeš nakresliť viac."
 
-#: static/js/map.js:3136
+#: static/js/map.js:3284
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Vypustiť myš pridať tento obdĺžnik do výberu."
 
-#: static/js/map.js:3217
+#: static/js/map.js:3365
 msgid "No selected samples to export."
 msgstr "Žiadne vybrané vzorky na vývoz."
 
-#: static/js/map.js:3559
+#: static/js/map.js:3707
 msgid "Please sign in to export data."
 msgstr "Prosím prihláste sa na export dát."
 
-#: static/js/map.js:3628
+#: static/js/map.js:3777
 msgid "Loading sample..."
 msgstr "Načítavam vzorku..."
 
-#: static/js/map.js:3712
-msgid "Loading samples..."
-msgstr "Načítavam vzorky..."
-
-#: static/js/map.js:3713
-msgid "Fetching visible map area"
-msgstr "Sťahujem viditeľnú oblasť mapy"
-
-#: static/js/map.js:3744
+#: static/js/map.js:3893
 msgid "Rendering markers..."
 msgstr "Kreslenie značiek..."
 
-#: static/js/map.js:3745
+#: static/js/map.js:3894
 msgid "Building clusters and popups"
 msgstr "Budovanie zoskupení a popupov"
 
-#: static/js/map.js:3810
+#: static/js/map.js:3962
 msgid "Preparing map"
 msgstr "Príprava mapy"
 
@@ -1271,4 +1241,28 @@ msgstr "Príprava mapy"
 
 #~ msgid "Show approved"
 #~ msgstr "Zobraziť schválené"
+
+#~ msgid "CSV (per-user)"
+#~ msgstr "CSV (na užívateľa)"
+
+#~ msgid "XLSX (per-user)"
+#~ msgstr "XLSX (na užívateľa)"
+
+#~ msgid "All samples (CSV, anonymised)"
+#~ msgstr "Všetky vzorky (CSV, anonymizované)"
+
+#~ msgid "GeoJSON (per-user)"
+#~ msgstr "GeoJSON (na užívateľa)"
+
+#~ msgid "samples.csv"
+#~ msgstr "vzorky.csv"
+
+#~ msgid "sample_images.csv"
+#~ msgstr "vzorka_obrazy.csv"
+
+#~ msgid "sample_parameters.csv"
+#~ msgstr "vzorka_parametre.csv"
+
+#~ msgid "sample_biodiversity.csv"
+#~ msgstr "vzorka biodiverzita.csv"
 

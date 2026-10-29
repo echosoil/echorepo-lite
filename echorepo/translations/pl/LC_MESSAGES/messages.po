@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 00:34+0000\n"
+"POT-Creation-Date: 2026-10-29 10:48+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -69,17 +69,17 @@ msgstr "Czysto"
 msgid "Export filtered ({n})"
 msgstr "Eksport filtrowany ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:121 static/js/map.js:1812
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1912
 msgid "Date"
 msgstr "Data"
 
-#: echorepo/i18n.py:121 static/js/map.js:1817
+#: echorepo/i18n.py:121 static/js/map.js:1917
 msgid "QR code"
 msgstr "Kod QR"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:94
-#: echorepo/templates/results.html:884 echorepo/templates/search.html:90
-#: static/js/map.js:1822
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:101
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:90
+#: static/js/map.js:1922
 msgid "pH"
 msgstr "p H"
 
@@ -87,27 +87,27 @@ msgstr "p H"
 msgid "Colour"
 msgstr "Kolor"
 
-#: echorepo/i18n.py:124 static/js/map.js:1827
+#: echorepo/i18n.py:124 static/js/map.js:1927
 msgid "Soil organic matter"
 msgstr "Substancja organiczna gleby"
 
-#: echorepo/i18n.py:125 static/js/map.js:1841
+#: echorepo/i18n.py:125 static/js/map.js:1941
 msgid "Structure"
 msgstr "Struktura"
 
-#: echorepo/i18n.py:126 static/js/map.js:1846
+#: echorepo/i18n.py:126 static/js/map.js:1946
 msgid "Earthworms"
 msgstr "Robaki ziemne"
 
-#: echorepo/i18n.py:127 static/js/map.js:1851
+#: echorepo/i18n.py:127 static/js/map.js:1951
 msgid "Plastic"
 msgstr "Plastikowe"
 
-#: echorepo/i18n.py:128 static/js/map.js:1856
+#: echorepo/i18n.py:128 static/js/map.js:1956
 msgid "Debris"
 msgstr "Odpady"
 
-#: echorepo/i18n.py:129 static/js/map.js:1861
+#: echorepo/i18n.py:129 static/js/map.js:1961
 msgid "Contamination"
 msgstr "Zanieczyszczenie"
 
@@ -127,51 +127,63 @@ msgstr "Narysuj prostokąt"
 msgid "Click and drag to draw a rectangle."
 msgstr "Kliknij i przeciągnij, aby narysować prostokąt."
 
-#: echorepo/i18n.py:134 static/js/map.js:3118
+#: echorepo/i18n.py:134 static/js/map.js:3266
 msgid "Cancel drawing"
 msgstr "Anuluj rysowanie"
 
-#: echorepo/i18n.py:135 static/js/map.js:3119
+#: echorepo/i18n.py:135 static/js/map.js:3267
 msgid "Cancel"
 msgstr "Anuluj"
 
-#: echorepo/i18n.py:136 static/js/map.js:3123
+#: echorepo/i18n.py:136 static/js/map.js:3271
 msgid "Delete last point"
 msgstr "Usuń ostatni punkt"
 
-#: echorepo/i18n.py:137 static/js/map.js:1245
+#: echorepo/i18n.py:137 static/js/map.js:1347
 msgid "Street map"
 msgstr "Mapa ulic"
 
-#: echorepo/i18n.py:138 static/js/map.js:1246
+#: echorepo/i18n.py:138 static/js/map.js:1348
 msgid "Satellite"
 msgstr "Satelitarne"
 
-#: echorepo/i18n.py:139
+#: echorepo/i18n.py:139 static/js/map.js:1235 static/js/map.js:1351
+msgid "Biogeographical regions"
+msgstr "Regiony biogeograficzne"
+
+#: echorepo/i18n.py:140 static/js/map.js:3861
+msgid "Loading samples..."
+msgstr "Ładowanie próbek..."
+
+#: echorepo/i18n.py:141 static/js/map.js:3862
+msgid "Fetching visible map area"
+msgstr "Położenie widocznej powierzchni mapy"
+
+#: echorepo/i18n.py:142
 msgid "Selection export to a file"
 msgstr "Wybór eksportu do pliku"
 
-#: echorepo/i18n.py:140
+#: echorepo/i18n.py:143
 msgid "Selection export"
 msgstr "Wywóz z wyboru"
 
-#: echorepo/i18n.py:141
+#: echorepo/i18n.py:144
 msgid "Use selection tool"
 msgstr "Użyj narzędzia wyboru"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:145
 msgid "to draw one or more areas"
 msgstr "narysować jeden lub więcej obszarów"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:146
 msgid "Export selection"
 msgstr "Wybór eksportu"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:147
 msgid "Clear selection"
 msgstr "Wyczyść zaznaczenie"
 
-#: echorepo/i18n.py:145 static/js/map.js:1464
+#: echorepo/i18n.py:148 static/js/map.js:1566
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
 "Wartości procentowe (%) można przeliczyć na mg / kg przez pomnożenie przez "
@@ -340,7 +352,7 @@ msgstr "Typ wydania"
 msgid "Any issue"
 msgstr "Wszelkie problemy"
 
-#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:78
+#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:85
 #: echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Szukaj"
@@ -420,60 +432,62 @@ msgstr "wyniki"
 msgid "ECHOrepo — Explore"
 msgstr "ECHOREPO - Poznaj"
 
-#: echorepo/templates/explore.html:61
+#: echorepo/templates/explore.html:68
 msgid "Explore the map"
 msgstr "Poznaj mapę"
 
-#: echorepo/templates/explore.html:64
+#: echorepo/templates/explore.html:71
 msgid "Sign in to export data and access your personal samples."
 msgstr "Zaloguj się, aby eksportować dane i uzyskać dostęp do próbek osobistych."
 
-#: echorepo/templates/explore.html:72
+#: echorepo/templates/explore.html:79
 msgid "Download dataset from Zenodo"
 msgstr "Pobierz zbiór danych z Zenodo"
 
-#: echorepo/templates/explore.html:84 echorepo/templates/results.html:544
+#: echorepo/templates/explore.html:91 echorepo/templates/results.html:544
 msgid "Mobile version"
 msgstr "Wersja mobilna"
 
-#: echorepo/templates/explore.html:87 echorepo/templates/results.html:550
+#: echorepo/templates/explore.html:94 echorepo/templates/results.html:550
 msgid "Desktop version"
 msgstr "Wersja pulpitu"
 
-#: echorepo/templates/explore.html:97 echorepo/templates/results.html:887
+#: echorepo/templates/explore.html:104 echorepo/templates/results.html:844
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/explore.html:102 echorepo/templates/results.html:892
+#: echorepo/templates/explore.html:109 echorepo/templates/results.html:849
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/explore.html:104 echorepo/templates/search.html:19
-#: echorepo/templates/search.html:89
+#: echorepo/templates/explore.html:111 echorepo/templates/results.html:835
+#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Kraj"
 
-#: echorepo/templates/explore.html:107
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
 msgid "All countries"
 msgstr "Wszystkie kraje"
 
-#: echorepo/templates/explore.html:111 echorepo/templates/search.html:29
+#: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
+#: echorepo/templates/search.html:29
 msgid "Biogeographical region"
 msgstr "Region biogeograficzny"
 
-#: echorepo/templates/explore.html:115 echorepo/templates/search.html:31
+#: echorepo/templates/explore.html:122 echorepo/templates/results.html:824
+#: echorepo/templates/search.html:31
 msgid "Any region"
 msgstr "Każdy region"
 
-#: echorepo/templates/explore.html:130 echorepo/templates/results.html:895
+#: echorepo/templates/explore.html:137 echorepo/templates/results.html:852
 msgid "Apply"
 msgstr "Zastosuj"
 
-#: echorepo/templates/explore.html:135 echorepo/templates/results.html:900
+#: echorepo/templates/explore.html:142 echorepo/templates/results.html:857
 msgid "Export filtered (0)"
 msgstr "Eksport filtrowany (0)"
 
-#: echorepo/templates/explore.html:141
+#: echorepo/templates/explore.html:148
 msgid "Copy view link"
 msgstr "Kopiuj link widoku"
 
@@ -806,59 +820,27 @@ msgstr ""
 msgid "Download"
 msgstr "Pobierz"
 
-#: echorepo/templates/results.html:768
-msgid "CSV (per-user)"
-msgstr "CSV (per- user)"
-
-#: echorepo/templates/results.html:784
-msgid "XLSX (per-user)"
-msgstr "XLSX (per- user)"
-
-#: echorepo/templates/results.html:802
-msgid "All samples (CSV, anonymised)"
-msgstr "Wszystkie próbki (CSV, anonimowe)"
-
-#: echorepo/templates/results.html:812
-msgid "GeoJSON (per-user)"
-msgstr "GeoJSON (per- user)"
-
-#: echorepo/templates/results.html:824
+#: echorepo/templates/results.html:760
 msgid "Canonical exports"
 msgstr "Eksport kanoniczny"
 
-#: echorepo/templates/results.html:830
-msgid "samples.csv"
-msgstr "samples.csv"
-
-#: echorepo/templates/results.html:840
-msgid "sample_images.csv"
-msgstr "sample _ images.csv"
-
-#: echorepo/templates/results.html:850
-msgid "sample_parameters.csv"
-msgstr "sample _ parameters.csv"
-
-#: echorepo/templates/results.html:860
-msgid "sample_biodiversity.csv"
-msgstr "sample _ biodiversity.csv"
-
-#: echorepo/templates/results.html:870
+#: echorepo/templates/results.html:806
 msgid "All canonical (zip)"
 msgstr "Wszystkie kanoniczne (zip)"
 
-#: echorepo/templates/results.html:895
-msgid "Apply pH filter"
-msgstr "Zastosuj filtr pH"
+#: echorepo/templates/results.html:852
+msgid "Apply map filters"
+msgstr "Zastosuj filtry map"
 
-#: echorepo/templates/results.html:898
-msgid "Export rows matching current pH filter"
-msgstr "Eksportuj wiersze pasujące do bieżącego filtra pH"
+#: echorepo/templates/results.html:855
+msgid "Export rows matching current map filters"
+msgstr "Eksportuj wiersze pasujące do aktualnych filtrów map"
 
-#: echorepo/templates/results.html:939
+#: echorepo/templates/results.html:896
 msgid "Privacy information"
 msgstr "Informacje o prywatności"
 
-#: echorepo/templates/results.html:993
+#: echorepo/templates/results.html:950
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
@@ -870,20 +852,20 @@ msgstr ""
 "\n"
 "Ten projekt."
 
-#: echorepo/templates/results.html:1009
+#: echorepo/templates/results.html:966
 msgid "Accept and continue"
 msgstr "Zaakceptuj i kontynuuj"
 
-#: echorepo/templates/results.html:1759
+#: echorepo/templates/results.html:1716
 msgid "Show on map"
 msgstr "Pokaż na mapie"
 
-#: echorepo/templates/results.html:1785 echorepo/templates/results.html:1833
-#: echorepo/templates/results.html:1851
+#: echorepo/templates/results.html:1742 echorepo/templates/results.html:1790
+#: echorepo/templates/results.html:1808
 msgid "Could not locate this sample on the map."
 msgstr "Nie można znaleźć tej próbki na mapie."
 
-#: echorepo/templates/search.html:21 static/js/map.js:231
+#: echorepo/templates/search.html:21 static/js/map.js:324
 msgid "Any country"
 msgstr "Każdy kraj"
 
@@ -1012,32 +994,28 @@ msgstr "Sugerowane odniesienie"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Nie zarejestrowano jeszcze żadnych publikacji Zenodo."
 
-#: static/js/map.js:172
+#: static/js/map.js:265
 msgid "Link copied to clipboard"
 msgstr "Link skopiowany do schowka"
 
-#: static/js/map.js:175
+#: static/js/map.js:268
 msgid "Copy this link:"
 msgstr "Kopiuj ten link:"
 
-#: static/js/map.js:797 static/js/map.js:3489
+#: static/js/map.js:890 static/js/map.js:3637
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Eksportuj filtrowane (${n})"
 
-#: static/js/map.js:807 static/js/map.js:3281
+#: static/js/map.js:900 static/js/map.js:3429
 msgid "Release mouse to finish drawing."
 msgstr "Zwolnij mysz, aby zakończyć rysunek."
 
-#: static/js/map.js:881
+#: static/js/map.js:974
 msgid "Not available"
 msgstr "Niedostępne"
 
-#: static/js/map.js:1135 static/js/map.js:1249
-msgid "Biogeographical regions"
-msgstr "Regiony biogeograficzne"
-
-#: static/js/map.js:1214
+#: static/js/map.js:1316
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1045,77 +1023,69 @@ msgstr ""
 "Nie można wczytać nakładki na region biogeograficzny. Sprawdź, czy / static /"
 " geo / biogeo _ regions _ 2016.geojson istnieje."
 
-#: static/js/map.js:1470
+#: static/js/map.js:1572
 msgid "Unit conversion help"
 msgstr "Pomoc w konwersji jednostek"
 
-#: static/js/map.js:1836
+#: static/js/map.js:1936
 msgid "Texture"
 msgstr "Tekst"
 
-#: static/js/map.js:1871
+#: static/js/map.js:1971
 msgid "Observations"
 msgstr "Uwagi"
 
-#: static/js/map.js:2507 static/js/map.js:3809
+#: static/js/map.js:2609 static/js/map.js:3961
 msgid "Loading map data..."
 msgstr "Wczytywanie danych map..."
 
-#: static/js/map.js:2511
+#: static/js/map.js:2613
 msgid "Please wait"
 msgstr "Proszę poczekać"
 
-#: static/js/map.js:2789
+#: static/js/map.js:2892
 msgid "Loading..."
 msgstr "Ładowanie..."
 
-#: static/js/map.js:3111
+#: static/js/map.js:3259
 msgid "Draw selection rectangle"
 msgstr "Rysuj prostokąt wyboru"
 
-#: static/js/map.js:3122
+#: static/js/map.js:3270
 msgid "Delete last point drawn"
 msgstr "Usuń ostatni punkt"
 
-#: static/js/map.js:3130
+#: static/js/map.js:3278
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Kliknij i przeciągnij, aby narysować prostokąt wyboru. Możesz narysować "
 "więcej niż jedną."
 
-#: static/js/map.js:3136
+#: static/js/map.js:3284
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Zwolnij mysz, aby dodać ten prostokąt do wyboru."
 
-#: static/js/map.js:3217
+#: static/js/map.js:3365
 msgid "No selected samples to export."
 msgstr "Brak wybranych próbek do wywozu."
 
-#: static/js/map.js:3559
+#: static/js/map.js:3707
 msgid "Please sign in to export data."
 msgstr "Proszę zalogować się do eksportu danych."
 
-#: static/js/map.js:3628
+#: static/js/map.js:3777
 msgid "Loading sample..."
 msgstr "Ładowanie próbki..."
 
-#: static/js/map.js:3712
-msgid "Loading samples..."
-msgstr "Ładowanie próbek..."
-
-#: static/js/map.js:3713
-msgid "Fetching visible map area"
-msgstr "Położenie widocznej powierzchni mapy"
-
-#: static/js/map.js:3744
+#: static/js/map.js:3893
 msgid "Rendering markers..."
 msgstr "Markery renderujące..."
 
-#: static/js/map.js:3745
+#: static/js/map.js:3894
 msgid "Building clusters and popups"
 msgstr "Klastry i populacje"
 
-#: static/js/map.js:3810
+#: static/js/map.js:3962
 msgid "Preparing map"
 msgstr "Przygotowanie mapy"
 
@@ -1280,4 +1250,28 @@ msgstr "Przygotowanie mapy"
 
 #~ msgid "Show approved"
 #~ msgstr "Pokaż zatwierdzony"
+
+#~ msgid "CSV (per-user)"
+#~ msgstr "CSV (per- user)"
+
+#~ msgid "XLSX (per-user)"
+#~ msgstr "XLSX (per- user)"
+
+#~ msgid "All samples (CSV, anonymised)"
+#~ msgstr "Wszystkie próbki (CSV, anonimowe)"
+
+#~ msgid "GeoJSON (per-user)"
+#~ msgstr "GeoJSON (per- user)"
+
+#~ msgid "samples.csv"
+#~ msgstr "samples.csv"
+
+#~ msgid "sample_images.csv"
+#~ msgstr "sample _ images.csv"
+
+#~ msgid "sample_parameters.csv"
+#~ msgstr "sample _ parameters.csv"
+
+#~ msgid "sample_biodiversity.csv"
+#~ msgstr "sample _ biodiversity.csv"
 
