@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Normalize ECHOREPO soil texture/structure from Flutter Dart translations.
 
-Sources: data/app_translations/<locale>.dart (keys are English canonical choices).
+Sources: data/app_translations/<locale>.dart and reviewed soil_classification_overrides.json.
+Generated JSON is an output, not a source of manual corrections.
 Outputs: PostgreSQL samples.*_en; optional local canonical CSV/ZIP;
          static/soil_classifications_i18n.json for map.js.
 
@@ -52,8 +53,19 @@ def unescape_dart(s: str) -> str:
 
 
 def norm(s: object) -> str:
-    """Normalize case, spaces, Unicode width; don't strip meaningful accents."""
-    return ' '.join(unicodedata.normalize('NFKC', str(s or '')).split()).casefold()
+    """Case-insensitive, Unicode-safe normalization of mobile-app choice labels.
+
+    Differences in capitalization, whitespace, dash/hyphen types, and spacing
+    around a trailing asterisk are formatting variants, not new classes.
+    Accents are preserved: do not merge unrelated words automatically.
+    """
+    if s is None:
+        return ''
+    value = unicodedata.normalize('NFKC', str(s)).casefold()
+    value = re.sub(r'[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D-]', ' ', value)
+    value = ' '.join(value.split())
+    value = re.sub(r'\s*\*\s*$', ' *', value)
+    return value
 
 
 def english(key: str) -> str:
@@ -74,25 +86,112 @@ def load_env(path: Path):
         LOG.warning('python-dotenv not installed: only exported environment variables are available')
 
 
-def build_catalog(directory: Path) -> tuple[dict, dict, dict]:
+def load_overrides(path: Path) -> dict:
+    """Load durable, reviewed corrections; generated JSON must not be edited by hand."""
+    if not path.is_file():
+        LOG.info('No overrides file at %s (using Dart translations only)', path)
+        return {'forward_overrides': {}, 'aliases': {}}
+    data = json.loads(path.read_text(encoding='utf-8-sig'))
+    if data.get('schema_version') != 1:
+        raise ValueError(f'Unsupported overrides schema in {path}')
+    for locale, fields in data.get('forward_overrides', {}).items():
+        for field, translations in fields.items():
+            if field not in KEYS:
+                raise ValueError(f'Unknown override field: {field}')
+            for key in translations:
+                if key not in KEYS[field]:
+                    raise ValueError(f'Unknown canonical {field} key {key!r} in {locale}')
+    for field, entries in data.get('aliases', {}).items():
+        if field not in KEYS:
+            raise ValueError(f'Unknown aliases field: {field}')
+        for label, key in entries.items():
+            if key not in KEYS[field]:
+                raise ValueError(f'Alias {label!r} targets unknown {field} key: {key}')
+    return data
+
+
+def catalog_from_locales(locales: dict, overrides: dict) -> tuple[dict, dict, dict]:
+    """Build a clean reverse index from effective locale values and reviewed aliases.
+
+    Forward overrides are applied BEFORE computing ambiguity, so corrected
+    Flutter strings cannot leave obsolete collisions in the reverse mapping.
+    """
+    locales = {loc: {field: dict(values.get(field, {})) for field in KEYS}
+               for loc, values in locales.items()}
+    for locale, fields in overrides.get('forward_overrides', {}).items():
+        if locale not in locales:
+            LOG.warning('Locale override %s has no matching Dart/JSON locale', locale)
+            continue
+        for field, translations in fields.items():
+            for key, text in translations.items():
+                old = locales[locale][field].get(key)
+                if old != text:
+                    LOG.info('Locale override %s/%s/%s: %r -> %r', locale, field, key, old, text)
+                locales[locale][field][key] = str(text).strip()
+
+    reverse_sets: dict[str, dict[str, set[str]]] = {
+        field: defaultdict(set) for field in KEYS
+    }
+    for field, keys in KEYS.items():
+        for key in keys:
+            reverse_sets[field][norm(key)].add(key)
+            reverse_sets[field][norm(english(key))].add(key)
+    for values in locales.values():
+        for field in KEYS:
+            for key, value in values[field].items():
+                if key not in KEYS[field]:
+                    continue
+                if norm(value):
+                    reverse_sets[field][norm(value)].add(key)
+                    # Some Flutter labels append the English key as a hint,
+                    # e.g. "Hiekkainen savi (sandy clay)". The unadorned
+                    # version is a safe alias *only* when the hint matches.
+                    hint = re.fullmatch(r'(.*?)\s*\(\s*([^()]*)\s*\)\s*', str(value))
+                    if hint and norm(hint.group(2)) in {norm(key), norm(english(key))}:
+                        reverse_sets[field][norm(hint.group(1))].add(key)
+
+    # Explicit synonyms are reviewed declarations, not fuzzy guessing.
+    # If an alias conflicts with another translated label, fail visibly rather
+    # than overriding the data with an arbitrary canonical category.
+    for field, labels in overrides.get('aliases', {}).items():
+        for label, key in labels.items():
+            nlabel = norm(label)
+            if not nlabel:
+                raise ValueError(f'Empty synonym in field {field}')
+            existing = reverse_sets[field].get(nlabel, set())
+            if existing and existing != {key}:
+                raise ValueError(
+                    f'Conflicting {field} synonym {label!r} -> {key}; '
+                    f'existing categories: {sorted(existing)}'
+                )
+            reverse_sets[field][nlabel].add(key)
+
+    ambiguous = {
+        field: {label: sorted(keys) for label, keys in vals.items() if len(keys) > 1}
+        for field, vals in reverse_sets.items()
+    }
+    for field, cases in ambiguous.items():
+        for value, keys in sorted(cases.items()):
+            LOG.warning('Ambiguous %s value %r: %s (will NOT auto-normalize)', field, value, keys)
+    clean_reverse = {
+        field: {label: sorted(keys)[0] for label, keys in vals.items() if len(keys) == 1}
+        for field, vals in reverse_sets.items()
+    }
+    catalog = {
+        'schema_version': 1,
+        'english': {field: {key: display_en(key) for key in keys} for field, keys in KEYS.items()},
+        'locales': locales,
+        'reverse': clean_reverse,
+    }
+    return catalog, clean_reverse, ambiguous
+
+
+def build_catalog(directory: Path, overrides: dict) -> tuple[dict, dict, dict]:
     dart_files = sorted(directory.glob('*.dart'))
     if not dart_files:
         raise FileNotFoundError(f'No Dart translation files found at {directory}')
-
-    locales: dict[str, dict] = {}
-    reverse: dict[str, dict[str, set[str]]] = {
-        field: defaultdict(set) for field in KEYS
-    }
-    # Key names also directly match, irrespective of which languages are present.
-    for field, keys in KEYS.items():
-        for key in keys:
-            reverse[field][norm(key)].add(key)
-            reverse[field][norm(english(key))].add(key)
-            if key == 'Other *':
-                reverse[field][norm('Other')].add(key)
-
+    locales = {}
     for source in dart_files:
-        locale = source.stem
         translations: dict[str, str] = {}
         for line in source.read_text(encoding='utf-8-sig').splitlines():
             match = ENTRY.match(line)
@@ -102,34 +201,14 @@ def build_catalog(directory: Path) -> tuple[dict, dict, dict]:
                     value = unescape_dart(match.group('value')).strip()
                     if value:
                         translations[key] = value
-        missing = [k for k in (*TEXTURE, *STRUCTURE) if k not in translations]
+        missing = [key for key in (*TEXTURE, *STRUCTURE) if key not in translations]
         if missing:
             LOG.warning('%s: missing %s', source.name, ', '.join(missing))
-        locales[locale] = {field: {k: translations[k] for k in keys if k in translations}
-                           for field, keys in KEYS.items()}
-        for field, keys in KEYS.items():
-            for key in keys:
-                if key in translations:
-                    reverse[field][norm(translations[key])].add(key)
-
-    ambiguous = {
-        field: {value: sorted(keys) for value, keys in reverse[field].items() if len(keys) > 1}
-        for field in KEYS
-    }
-    for field, cases in ambiguous.items():
-        for value, keys in sorted(cases.items()):
-            LOG.warning('Ambiguous %s value %r: %s (will NOT auto-normalize)', field, value, keys)
-    clean_reverse = {
-        field: {value: next(iter(keys)) for value, keys in reverse[field].items() if len(keys) == 1}
-        for field in KEYS
-    }
-    catalog = {
-        'schema_version': 1,
-        'english': {field: {key: display_en(key) for key in keys} for field, keys in KEYS.items()},
-        'locales': locales,
-        'reverse': clean_reverse,
-    }
-    return catalog, clean_reverse, ambiguous
+        locales[source.stem] = {
+            field: {key: translations[key] for key in keys if key in translations}
+            for field, keys in KEYS.items()
+        }
+    return catalog_from_locales(locales, overrides)
 
 
 def resolve(value: object, field: str, reverse: dict) -> str | None:
@@ -158,7 +237,7 @@ def translate_record(row: dict, reverse: dict, stats: Counter, unknown: dict):
         raw = result.get(src, '')
         converted = resolve(raw, field, reverse)
         if converted is None:
-            if norm(raw):
+            if norm(raw) not in ('', 'none', 'null', 'nan'):
                 stats[f'{field}_unmatched'] += 1
                 unknown[field][str(raw).strip()] += 1
             continue  # Preserve existing translation if input unrecognized.
@@ -285,35 +364,44 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--translations', type=Path, default=ROOT/'data/app_translations')
     ap.add_argument('--json-output', type=Path, default=ROOT/'static/soil_classifications_i18n.json')
+    ap.add_argument('--overrides', type=Path, default=ROOT/'data/app_translations/soil_classification_overrides.json',
+                    help='Reviewed forward corrections and synonyms; never generated automatically')
     ap.add_argument('--canonical-csv', type=Path, default=ROOT/'data/canonical/samples.csv')
     ap.add_argument('--no-postgres', action='store_true')
     ap.add_argument('--no-local-canonical', action='store_true')
     ap.add_argument('--no-json', action='store_true')
     ap.add_argument('--upload-latest', action='store_true', help='Overwrite ONLY latest MinIO samples.csv/all.zip')
     ap.add_argument('--dry-run', action='store_true')
+    ap.add_argument('--unknown-report', type=Path, default=None,
+                    help='Optional CSV of all unrecognized labels and counts (also written during dry-run)')
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     load_env(ROOT/'.env')
+    overrides = load_overrides(args.overrides)
     try:
-        catalog, reverse, ambiguous = build_catalog(args.translations)
+        catalog, reverse, ambiguous = build_catalog(args.translations, overrides)
         LOG.info('Parsed Dart translations from %s', args.translations)
     except FileNotFoundError:
-        # Production can use the version-controlled JSON generated in development.
+        # Production checkout may not include Dart files. Rebuild reverse from
+        # published locale strings + overrides instead of trusting stale keys.
         if not args.json_output.is_file():
             raise
-        catalog = json.loads(args.json_output.read_text(encoding='utf-8'))
-        if catalog.get('schema_version') != 1 or not catalog.get('reverse'):
+        existing = json.loads(args.json_output.read_text(encoding='utf-8'))
+        if existing.get('schema_version') != 1 or not existing.get('locales'):
             raise ValueError(f'Invalid static translations catalog: {args.json_output}')
-        reverse = catalog['reverse']
-        ambiguous = {'texture': {}, 'structure': {}}
-        LOG.info('No Dart files; using existing static JSON catalog: %s', args.json_output)
+        catalog, reverse, ambiguous = catalog_from_locales(existing['locales'], overrides)
+        LOG.info('No Dart files; rebuilt mapping from %s', args.json_output)
     LOG.info('Available %d locales, %d texture keys and %d structure keys',
              len(catalog['locales']), len(TEXTURE), len(STRUCTURE))
     stats = Counter()
     unknown = {'texture': Counter(), 'structure': Counter()}
     if not args.no_json and not args.dry_run:
-        atomic_write_text(args.json_output, json.dumps(catalog, ensure_ascii=False, indent=2, sort_keys=True)+'\n')
-        LOG.info('Wrote map translations: %s', args.json_output)
+        payload = json.dumps(catalog, ensure_ascii=False, indent=2, sort_keys=True)+'\n'
+        if not args.json_output.exists() or args.json_output.read_text(encoding='utf-8') != payload:
+            atomic_write_text(args.json_output, payload)
+            LOG.info('Wrote map translations: %s', args.json_output)
+        else:
+            LOG.info('Map translations already up-to-date: %s', args.json_output)
     if not args.no_postgres:
         normalize_pg(reverse, args.dry_run, stats, unknown)
     csv_changed = False
@@ -334,6 +422,16 @@ def main(argv=None):
     for field in KEYS:
         LOG.info('Unrecognized %s examples: %s', field, unknown[field].most_common(20))
     LOG.info('Ambiguous labels skipped: %s', {k: len(v) for k,v in ambiguous.items()})
+    if args.unknown_report is not None:
+        from io import StringIO
+        report = StringIO(newline='')
+        writer = csv.writer(report, lineterminator='\n')
+        writer.writerow(['field', 'unrecognized_value', 'count'])
+        for field in KEYS:
+            for raw, count in unknown[field].most_common():
+                writer.writerow([field, raw, count])
+        atomic_write_text(args.unknown_report, report.getvalue())
+        LOG.info('Wrote unknown-label report: %s', args.unknown_report)
     return 0
 
 if __name__ == '__main__':
