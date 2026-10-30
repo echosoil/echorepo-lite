@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 11:08+0000\n"
+"POT-Creation-Date: 2026-10-30 10:17+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -32,16 +32,16 @@ msgid "Acidic (≤5.5)"
 msgstr "Acidic (≤5.5)"
 
 #: echorepo/i18n.py:111
-msgid "Slightly acidic (5.5–6.5)"
-msgstr "Ligeramente ácido (5.5–6.5)"
+msgid "Slightly acidic (5.6–6.5)"
+msgstr "Ligeramente ácido (5.6–6.5)"
 
 #: echorepo/i18n.py:112
-msgid "Neutral (6.5–7.5)"
-msgstr "Neutral (6.5–7.5)"
+msgid "Neutral (6.6–7.5)"
+msgstr "Neutral (6.6–7.5)"
 
 #: echorepo/i18n.py:113
-msgid "Slightly alkaline (7.5–8.5)"
-msgstr "Ligeramente alcalino (7.5–8.5)"
+msgid "Slightly alkaline (7.6–8.4)"
+msgstr "Ligeramente alcalino (7.6–8.4)"
 
 #: echorepo/i18n.py:114
 msgid "Alkaline (≥8.5)"
@@ -68,17 +68,17 @@ msgstr "Despejado"
 msgid "Export filtered ({n})"
 msgstr "Exportación filtrada ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1915
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1937
 msgid "Date"
 msgstr "Fecha"
 
-#: echorepo/i18n.py:121 static/js/map.js:1920
+#: echorepo/i18n.py:121 static/js/map.js:1942
 msgid "QR code"
 msgstr "Código QR"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1925
+#: static/js/map.js:1947
 msgid "pH"
 msgstr "p H"
 
@@ -86,27 +86,27 @@ msgstr "p H"
 msgid "Colour"
 msgstr "Color"
 
-#: echorepo/i18n.py:124 static/js/map.js:1930
+#: echorepo/i18n.py:124 static/js/map.js:1952
 msgid "Soil organic matter"
 msgstr "Material orgánico del suelo"
 
-#: echorepo/i18n.py:125 static/js/map.js:1944
+#: echorepo/i18n.py:125 static/js/map.js:1966
 msgid "Structure"
 msgstr "Estructura"
 
-#: echorepo/i18n.py:126 static/js/map.js:1949
+#: echorepo/i18n.py:126 static/js/map.js:1971
 msgid "Earthworms"
 msgstr "Terrestres"
 
-#: echorepo/i18n.py:127 static/js/map.js:1954
+#: echorepo/i18n.py:127 static/js/map.js:1976
 msgid "Plastic"
 msgstr "Plástico"
 
-#: echorepo/i18n.py:128 static/js/map.js:1959
+#: echorepo/i18n.py:128 static/js/map.js:1981
 msgid "Debris"
 msgstr "Debris"
 
-#: echorepo/i18n.py:129 static/js/map.js:1964
+#: echorepo/i18n.py:129 static/js/map.js:1986
 msgid "Contamination"
 msgstr "Contaminación"
 
@@ -126,15 +126,15 @@ msgstr "Dibuja un rectángulo"
 msgid "Click and drag to draw a rectangle."
 msgstr "Hacer clic y arrastrar para dibujar un rectángulo."
 
-#: echorepo/i18n.py:134 static/js/map.js:3269
+#: echorepo/i18n.py:134 static/js/map.js:3291
 msgid "Cancel drawing"
 msgstr "Dibujo Cancelar"
 
-#: echorepo/i18n.py:135 static/js/map.js:3270
+#: echorepo/i18n.py:135 static/js/map.js:3292
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: echorepo/i18n.py:136 static/js/map.js:3274
+#: echorepo/i18n.py:136 static/js/map.js:3296
 msgid "Delete last point"
 msgstr "Eliminar el último punto"
 
@@ -150,11 +150,11 @@ msgstr "Satélite"
 msgid "Biogeographical regions"
 msgstr "Regiones biogeográficas"
 
-#: echorepo/i18n.py:140 static/js/map.js:3864
+#: echorepo/i18n.py:140 static/js/map.js:3886
 msgid "Loading samples..."
 msgstr "Cargando muestras..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3865
+#: echorepo/i18n.py:141 static/js/map.js:3887
 msgid "Fetching visible map area"
 msgstr "Localización de mapa visible"
 
@@ -1006,12 +1006,12 @@ msgstr "Enlace copiado al portapapeles"
 msgid "Copy this link:"
 msgstr "Copia este enlace:"
 
-#: static/js/map.js:893 static/js/map.js:3640
+#: static/js/map.js:893 static/js/map.js:3662
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Exportación filtrada (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3432
+#: static/js/map.js:903 static/js/map.js:3454
 msgid "Release mouse to finish drawing."
 msgstr "Libera el ratón para terminar el dibujo."
 
@@ -1031,65 +1031,65 @@ msgstr ""
 msgid "Unit conversion help"
 msgstr "Ayuda para la conversión de unidades"
 
-#: static/js/map.js:1939
+#: static/js/map.js:1961
 msgid "Texture"
 msgstr "Textura"
 
-#: static/js/map.js:1974
+#: static/js/map.js:1996
 msgid "Observations"
 msgstr "Observaciones"
 
-#: static/js/map.js:2612 static/js/map.js:3964
+#: static/js/map.js:2634 static/js/map.js:3986
 msgid "Loading map data..."
 msgstr "Cargando datos del mapa..."
 
-#: static/js/map.js:2616
+#: static/js/map.js:2638
 msgid "Please wait"
 msgstr "Por favor, espere"
 
-#: static/js/map.js:2895
+#: static/js/map.js:2917
 msgid "Loading..."
 msgstr "Cargando..."
 
-#: static/js/map.js:3262
+#: static/js/map.js:3284
 msgid "Draw selection rectangle"
 msgstr "Dibujo rectángulo de selección"
 
-#: static/js/map.js:3273
+#: static/js/map.js:3295
 msgid "Delete last point drawn"
 msgstr "Eliminar el último punto dibujado"
 
-#: static/js/map.js:3281
+#: static/js/map.js:3303
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Haga clic y arrastre para dibujar un rectángulo de selección. Puedes dibujar "
 "más de uno."
 
-#: static/js/map.js:3287
+#: static/js/map.js:3309
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Libere el ratón para añadir este rectángulo a la selección."
 
-#: static/js/map.js:3368
+#: static/js/map.js:3390
 msgid "No selected samples to export."
 msgstr "No hay muestras seleccionadas para exportar."
 
-#: static/js/map.js:3710
+#: static/js/map.js:3732
 msgid "Please sign in to export data."
 msgstr "Inicie sesión para exportar datos."
 
-#: static/js/map.js:3780
+#: static/js/map.js:3802
 msgid "Loading sample..."
 msgstr "Cargando muestras..."
 
-#: static/js/map.js:3896
+#: static/js/map.js:3918
 msgid "Rendering markers..."
 msgstr "Rendering markers..."
 
-#: static/js/map.js:3897
+#: static/js/map.js:3919
 msgid "Building clusters and popups"
 msgstr "Construyendo grupos y popups"
 
-#: static/js/map.js:3965
+#: static/js/map.js:3987
 msgid "Preparing map"
 msgstr "Mapa de preparación"
 

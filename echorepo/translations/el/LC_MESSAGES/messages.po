@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-29 11:08+0000\n"
+"POT-Creation-Date: 2026-10-30 10:17+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -32,16 +32,16 @@ msgid "Acidic (≤5.5)"
 msgstr "Οξύ (≤5.5)"
 
 #: echorepo/i18n.py:111
-msgid "Slightly acidic (5.5–6.5)"
-msgstr "Ελαφρώς όξινη (5.5–6.5)"
+msgid "Slightly acidic (5.6–6.5)"
+msgstr "Ελαφρώς όξινο (5,6–6,5)"
 
 #: echorepo/i18n.py:112
-msgid "Neutral (6.5–7.5)"
-msgstr "Ουδέτερο (6.5–7.5)"
+msgid "Neutral (6.6–7.5)"
+msgstr "Ουδέτερο (6.6–7.5)"
 
 #: echorepo/i18n.py:113
-msgid "Slightly alkaline (7.5–8.5)"
-msgstr "Ελαφρώς αλκαλικό (7.5–8.5)"
+msgid "Slightly alkaline (7.6–8.4)"
+msgstr "Ελαφρώς αλκαλικό (7.6–8.4)"
 
 #: echorepo/i18n.py:114
 msgid "Alkaline (≥8.5)"
@@ -68,17 +68,17 @@ msgstr "Καθαρισμός"
 msgid "Export filtered ({n})"
 msgstr "Φίλτρο εξαγωγής ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1915
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1937
 msgid "Date"
 msgstr "Ημερομηνία"
 
-#: echorepo/i18n.py:121 static/js/map.js:1920
+#: echorepo/i18n.py:121 static/js/map.js:1942
 msgid "QR code"
 msgstr "Κωδικός QR"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1925
+#: static/js/map.js:1947
 msgid "pH"
 msgstr "p Η"
 
@@ -86,27 +86,27 @@ msgstr "p Η"
 msgid "Colour"
 msgstr "Χρώμα"
 
-#: echorepo/i18n.py:124 static/js/map.js:1930
+#: echorepo/i18n.py:124 static/js/map.js:1952
 msgid "Soil organic matter"
 msgstr "Οργανική ύλη εδάφους"
 
-#: echorepo/i18n.py:125 static/js/map.js:1944
+#: echorepo/i18n.py:125 static/js/map.js:1966
 msgid "Structure"
 msgstr "Δομή"
 
-#: echorepo/i18n.py:126 static/js/map.js:1949
+#: echorepo/i18n.py:126 static/js/map.js:1971
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: echorepo/i18n.py:127 static/js/map.js:1954
+#: echorepo/i18n.py:127 static/js/map.js:1976
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: echorepo/i18n.py:128 static/js/map.js:1959
+#: echorepo/i18n.py:128 static/js/map.js:1981
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: echorepo/i18n.py:129 static/js/map.js:1964
+#: echorepo/i18n.py:129 static/js/map.js:1986
 msgid "Contamination"
 msgstr "Μόλυνση"
 
@@ -126,15 +126,15 @@ msgstr "Σχεδίαση ορθογωνίου"
 msgid "Click and drag to draw a rectangle."
 msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο."
 
-#: echorepo/i18n.py:134 static/js/map.js:3269
+#: echorepo/i18n.py:134 static/js/map.js:3291
 msgid "Cancel drawing"
 msgstr "Ακύρωση σχεδίου"
 
-#: echorepo/i18n.py:135 static/js/map.js:3270
+#: echorepo/i18n.py:135 static/js/map.js:3292
 msgid "Cancel"
 msgstr "Ακύρωση"
 
-#: echorepo/i18n.py:136 static/js/map.js:3274
+#: echorepo/i18n.py:136 static/js/map.js:3296
 msgid "Delete last point"
 msgstr "Διαγραφή τελευταίου σημείου"
 
@@ -150,11 +150,11 @@ msgstr "Δορυφόρος"
 msgid "Biogeographical regions"
 msgstr "Βιογεωγραφικές περιοχές"
 
-#: echorepo/i18n.py:140 static/js/map.js:3864
+#: echorepo/i18n.py:140 static/js/map.js:3886
 msgid "Loading samples..."
 msgstr "Φόρτωση δειγμάτων..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3865
+#: echorepo/i18n.py:141 static/js/map.js:3887
 msgid "Fetching visible map area"
 msgstr "Ανάκτηση ορατής περιοχής χάρτη"
 
@@ -1011,12 +1011,12 @@ msgstr "Δεσμός αντιγραφόμενο στο πρόχειρο"
 msgid "Copy this link:"
 msgstr "Αντιγραφή αυτού του συνδέσμου:"
 
-#: static/js/map.js:893 static/js/map.js:3640
+#: static/js/map.js:893 static/js/map.js:3662
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Φίλτρα εξαγωγής (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3432
+#: static/js/map.js:903 static/js/map.js:3454
 msgid "Release mouse to finish drawing."
 msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
 
@@ -1036,65 +1036,65 @@ msgstr ""
 msgid "Unit conversion help"
 msgstr "Βοήθεια μετατροπής μονάδας"
 
-#: static/js/map.js:1939
+#: static/js/map.js:1961
 msgid "Texture"
 msgstr "Υφή"
 
-#: static/js/map.js:1974
+#: static/js/map.js:1996
 msgid "Observations"
 msgstr "Παρατηρήσεις"
 
-#: static/js/map.js:2612 static/js/map.js:3964
+#: static/js/map.js:2634 static/js/map.js:3986
 msgid "Loading map data..."
 msgstr "Φόρτωση δεδομένων χάρτη..."
 
-#: static/js/map.js:2616
+#: static/js/map.js:2638
 msgid "Please wait"
 msgstr "Παρακαλώ περιμένετε"
 
-#: static/js/map.js:2895
+#: static/js/map.js:2917
 msgid "Loading..."
 msgstr "Φόρτωση..."
 
-#: static/js/map.js:3262
+#: static/js/map.js:3284
 msgid "Draw selection rectangle"
 msgstr "Σχεδίαση ορθογωνίου επιλογής"
 
-#: static/js/map.js:3273
+#: static/js/map.js:3295
 msgid "Delete last point drawn"
 msgstr "Διαγραφή του τελευταίου σημείου που έχει σχεδιαστεί"
 
-#: static/js/map.js:3281
+#: static/js/map.js:3303
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο επιλογής. Μπορείς να "
 "ζωγραφίσεις περισσότερους από έναν."
 
-#: static/js/map.js:3287
+#: static/js/map.js:3309
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Αφήστε το ποντίκι για να προσθέσετε αυτό το ορθογώνιο στην επιλογή."
 
-#: static/js/map.js:3368
+#: static/js/map.js:3390
 msgid "No selected samples to export."
 msgstr "Δεν υπάρχουν επιλεγμένα δείγματα προς εξαγωγή."
 
-#: static/js/map.js:3710
+#: static/js/map.js:3732
 msgid "Please sign in to export data."
 msgstr "Παρακαλώ υπογράψτε για εξαγωγή δεδομένων."
 
-#: static/js/map.js:3780
+#: static/js/map.js:3802
 msgid "Loading sample..."
 msgstr "Φόρτωση δείγματος..."
 
-#: static/js/map.js:3896
+#: static/js/map.js:3918
 msgid "Rendering markers..."
 msgstr "Αποτύπωση δεικτών..."
 
-#: static/js/map.js:3897
+#: static/js/map.js:3919
 msgid "Building clusters and popups"
 msgstr "Συγκροτήματα και αναδυόμενα"
 
-#: static/js/map.js:3965
+#: static/js/map.js:3987
 msgid "Preparing map"
 msgstr "Προετοιμασία χάρτη"
 
