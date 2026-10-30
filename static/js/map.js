@@ -1034,17 +1034,17 @@
   // regions and outlines visible on both street and satellite base layers.
   // Only the appearance changes; biogeographical shapes remain non-interactive.
   const BIOGEO_REGION_COLORS = Object.freeze({
-    'Alpine':        { fill: '#DEEAF1', stroke: '#587487' }, // snow and high mountains
-    'Anatolian':     { fill: '#BF684A', stroke: '#803D2B' }, // warm, dry plateau
-    'Arctic':        { fill: '#B7E6F2', stroke: '#5A9AAA' }, // polar ice
-    'Atlantic':      { fill: '#397FC2', stroke: '#205483' }, // ocean blue
-    'Black Sea':     { fill: '#7168B9', stroke: '#413A83' }, // deep coastal violet
-    'Boreal':        { fill: '#286C49', stroke: '#16452F' }, // northern evergreen forest
-    'Continental':   { fill: '#B78A67', stroke: '#765136' }, // temperate earth
-    'Macaronesian':  { fill: '#38ABA7', stroke: '#186D70' }, // oceanic islands
+    'Alpine': { fill: '#DEEAF1', stroke: '#587487' }, // snow and high mountains
+    'Anatolian': { fill: '#BF684A', stroke: '#803D2B' }, // warm, dry plateau
+    'Arctic': { fill: '#B7E6F2', stroke: '#5A9AAA' }, // polar ice
+    'Atlantic': { fill: '#397FC2', stroke: '#205483' }, // ocean blue
+    'Black Sea': { fill: '#7168B9', stroke: '#413A83' }, // deep coastal violet
+    'Boreal': { fill: '#286C49', stroke: '#16452F' }, // northern evergreen forest
+    'Continental': { fill: '#B78A67', stroke: '#765136' }, // temperate earth
+    'Macaronesian': { fill: '#38ABA7', stroke: '#186D70' }, // oceanic islands
     'Mediterranean': { fill: '#8EA342', stroke: '#566627' }, // olive and scrubland
-    'Pannonian':     { fill: '#D1784C', stroke: '#8A482B' }, // warm basin
-    'Steppic':       { fill: '#E7C64D', stroke: '#957B1E' }  // dry grassland
+    'Pannonian': { fill: '#D1784C', stroke: '#8A482B' }, // warm basin
+    'Steppic': { fill: '#E7C64D', stroke: '#957B1E' }  // dry grassland
   });
 
   function biogeoRegionColors(regionName) {
@@ -1524,7 +1524,7 @@
   function phColor(phLike) {
     const v = typeof phLike === "number" ? phLike : parsePh(phLike);
     if (isNaN(v)) return "#999";
-    if (v < 5.5) return "#d73027";
+    if (v <= 5.5) return "#d73027";
     if (v < 6.5) return "#fc8d59";
     if (v < 7.5) return "#fee08b";
     if (v < 8.5) return "#91bfdb";
