@@ -113,8 +113,8 @@
             <td class="text-center">
               {% if r.lat_display and r.lon_display %}
               <a target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"
-                href="{{ url_for('web.home') }}?sample_id={{ r.sample_display | urlencode }}&single=1&lat={{ r.lat_display }}&lng={{ r.lon_display }}&z=15"
-                title="{{ _('Show only this sample on map') }}">
+                href="{{ url_for('web.home', sample_id=r.sample_display, lat=r.lat_display, lng=r.lon_display, z=15, show_wrong=1) }}"
+                title="{{ _('Show this sample on map') }}">
                 <i class="bi bi-geo-alt"></i>
               </a>
               {% endif %}
