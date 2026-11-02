@@ -115,7 +115,7 @@ def _guess_columns(df: pd.DataFrame) -> tuple[str, str]:
     return qr_col, planned_col
 
 
-def load_qr_to_planned(xlsx_path: str | None = None) -> dict[str, set[str]]:
+def load_qr_to_planned(xlsx_path: str | None = None, *, use_outside_db: bool = False) -> dict[str, set[str]]:
     """
     Load planned countries per QR from an Excel file and return:
       { qr_code (str): {ISO2, ISO2, ...}, ... }
@@ -124,6 +124,12 @@ def load_qr_to_planned(xlsx_path: str | None = None) -> dict[str, set[str]]:
     - Duplicate QRs union their country sets.
     - Returns {} if path not set or file doesn’t exist.
     """
+    source = os.getenv("PLANNED_COUNTRY_SOURCE", "xlsx").strip().lower()
+    if source == "postgres":
+        from .planned_pg import load_map
+        return load_map(outside=use_outside_db)
+    if source != "xlsx":
+        raise ValueError("PLANNED_COUNTRY_SOURCE must be xlsx or postgres")
     path = xlsx_path or getattr(settings, "PLANNED_XLSX", None) or os.getenv("PLANNED_XLSX")
     if not path or not os.path.exists(path):
         print(f"[WARN][planned] planned countries XLSX not found at {path}, skipping")

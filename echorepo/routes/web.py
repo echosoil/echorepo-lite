@@ -1265,18 +1265,20 @@ def coordinate_issues_fix_coords():
 @web_bp.post("/coordinate-issues/accept-country", endpoint="coordinate_issues_accept_country")
 @login_required
 def coordinate_issues_accept_country():
-    """An editor confirms actual ISO2 country; fix one planned.xlsx QR row."""
+    """An editor confirms actual ISO2 country; fix one PostgreSQL QR row."""
     import hmac
     from flask import current_app, flash
-    from ..services.planned_country_corrections import (
-        PlannedCountryCorrectionError,
-        norm_qr,
-        planned_workbook_path,
-        update_planned_country,
+    from ..services.planned_pg import (
+        PlannedCountryError as PlannedCountryCorrectionError,
+        norm_qr, change_country,
     )
+    from contextlib import closing
 
     if not _coordinate_qa_can_edit():
         abort(403, description="Not authorized to edit global coordinate issues")
+    if os.getenv("PLANNED_COUNTRY_SOURCE", "xlsx").strip().lower() != "postgres":
+        flash("Set PLANNED_COUNTRY_SOURCE=postgres after importing planned.xlsx.", "warning")
+        return redirect(url_for("web.coordinate_issues"))
     expected_csrf = str(session.get("_coordinate_fix_csrf") or "")
     supplied_csrf = str(request.form.get("csrf_token") or "")
     if not expected_csrf or not hmac.compare_digest(expected_csrf, supplied_csrf):
@@ -1333,29 +1335,88 @@ def coordinate_issues_accept_country():
                 "This QR has conflicting actual countries; resolve duplicates manually"
             )
         previous = str(match.iloc[0]["planned_iso2"]).strip().upper()
-        old, backup = update_planned_country(
-            planned_workbook_path(), qr, actual, expected_planned=previous
-        )
+        actor = _current_approver_id()
+        with closing(get_pg_conn()) as conn:
+            with conn:
+                old = change_country(conn, qr, actual, expected_planned=previous, actor=actor)
     except (PlannedCountryCorrectionError, OSError, ValueError) as exc:
         flash(f"Planned country not changed: {exc}", "danger")
         return redirect(back_url)
     except Exception:
         current_app.logger.exception("Planned-country QA correction failed: QR=%s", qr)
-        flash("Unable to update planned.xlsx; see application logs.", "danger")
+        flash("Unable to update planned-country database; see application logs.", "danger")
         return redirect(back_url)
 
-    actor = _current_approver_id()
     current_app.logger.warning(
-        "Planned-country QA corrected: qr=%s from=%s to=%s sample=%s actor=%s backup=%s",
-        qr, old, actual, sample_id, actor, backup,
+        "Planned-country QA corrected in PostgreSQL: qr=%s from=%s to=%s sample=%s actor=%s",
+        qr, old, actual, sample_id, actor,
     )
     flash(
-        f"Updated planned.xlsx: {qr}: {old or '(empty)'} -> {actual}. "
+        f"Updated planned country in PostgreSQL: {qr}: {old or '(empty)'} -> {actual}. "
         "The coordinate issue will be recalculated by the next enrichment run.",
         "success",
     )
     return redirect(back_url)
 
+
+
+@web_bp.get("/coordinate-issues/planned/download", endpoint="coordinate_issues_planned_download")
+@login_required
+def coordinate_issues_planned_download():
+    """Download current PostgreSQL planned table as the original five-column XLSX."""
+    from contextlib import closing
+    from ..services.planned_pg import export_xlsx
+    if not _coordinate_qa_can_edit():
+        abort(403)
+    with closing(get_pg_conn()) as conn:
+        with conn:
+            payload = export_xlsx(conn)
+    return send_file(BytesIO(payload), as_attachment=True,
+                     download_name="planned.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@web_bp.post("/coordinate-issues/planned/upload", endpoint="coordinate_issues_planned_upload")
+@login_required
+def coordinate_issues_planned_upload():
+    """Explicitly replace all planned rows in one transaction (prior rows archived)."""
+    import hmac
+    from contextlib import closing
+    from flask import flash, current_app
+    from ..services.planned_pg import MAX_XLSX_BYTES, PlannedCountryError, read_xlsx, replace_all
+    if not _coordinate_qa_can_edit():
+        abort(403)
+    expected = str(session.get("_coordinate_fix_csrf") or "")
+    supplied = str(request.form.get("csrf_token") or "")
+    if not expected or not hmac.compare_digest(expected, supplied):
+        abort(400, description="Invalid planned XLSX upload CSRF token")
+    if request.form.get("confirm_replace") != "1":
+        flash("Confirm replacement of the entire planned-country table.", "warning")
+        return redirect(url_for("web.coordinate_issues"))
+    file = request.files.get("planned_xlsx")
+    if not file or not str(file.filename or "").lower().endswith(".xlsx"):
+        flash("Select an .xlsx file.", "danger")
+        return redirect(url_for("web.coordinate_issues"))
+    try:
+        payload = file.read(MAX_XLSX_BYTES + 1)
+        rows = read_xlsx(payload)
+        actor = _current_approver_id()
+        filename = os.path.basename(str(file.filename or "planned.xlsx").replace("\\", "/"))[:200]
+        with closing(get_pg_conn()) as conn:
+            with conn:
+                result = replace_all(conn, rows, actor=actor, filename=filename)
+    except (PlannedCountryError, ValueError) as exc:
+        flash(f"Planned-country import rejected: {exc}", "danger")
+        return redirect(url_for("web.coordinate_issues"))
+    except Exception:
+        current_app.logger.exception("Planned-country XLSX import failed")
+        flash("Import failed; database transaction rolled back. Check logs.", "danger")
+        return redirect(url_for("web.coordinate_issues"))
+    current_app.logger.warning("Planned-country full import by %s: %s", actor, result)
+    flash(f"Imported {result['rows']} planned rows; duplicate QRs: {result['duplicate_qrs']}; "
+          f"unrecognized country values: {result['unrecognized_countries']}. "
+          "Previous rows are archived in planned_country_imports.", "success")
+    return redirect(url_for("web.coordinate_issues"))
 
 @web_bp.route("/coordinate-issues", endpoint="coordinate_issues", methods=["GET"])
 @login_required
@@ -1627,24 +1688,23 @@ def coordinate_issues():
         orient="records"
     )
 
-    # planned.xlsx may have been corrected after the last QA CSV generation.
-    # Indicate this on the page until the next enrichment refreshes the issues.
+    # Fast indexed lookup, instead of opening/parsing the whole XLSX on every page.
+    planned_row_count = None
     try:
-        from ..services.planned_country_corrections import (
-            norm_qr, planned_workbook_path, read_planned_country_matches,
-        )
-        workbook = planned_workbook_path()
-        planned_now = read_planned_country_matches(
-            workbook,
-            {norm_qr(r.get("QR_qrCode")) for r in rows if r.get("QR_qrCode")},
-        ) if workbook.is_file() else {}
+        from ..services.planned_pg import norm_qr, country_matches, count_rows
+        from contextlib import closing
+        with closing(get_pg_conn()) as conn:
+            with conn:
+                planned_row_count = count_rows(conn)
+                planned_now = country_matches(
+                    conn, {norm_qr(r.get("QR_qrCode")) for r in rows if r.get("QR_qrCode")}
+                )
         for r in rows:
             qr = norm_qr(r.get("QR_qrCode"))
             actual = str(r.get("actual_country_display") or "").strip().upper()
             r["country_already_corrected"] = bool(actual and actual in planned_now.get(qr, set()))
     except Exception:
-        # The POST route will still fail closed on missing/invalid workbook.
-        logging.getLogger(__name__).exception("Could not inspect planned.xlsx on QA page")
+        logging.getLogger(__name__).exception("Cannot query planned-country PostgreSQL table")
         for r in rows:
             r["country_already_corrected"] = False
 
@@ -1659,6 +1719,8 @@ def coordinate_issues():
         total_rows=total_rows,
         file_missing=False,
         csv_path=str(csv_path),
+        planned_row_count=planned_row_count,
+        planned_country_source=os.getenv("PLANNED_COUNTRY_SOURCE", "xlsx"),
     )
 
     
