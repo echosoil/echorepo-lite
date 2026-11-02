@@ -186,6 +186,7 @@
   // normal map filtering or displaying other invalid-coordinate samples.
   // The /my route is login-protected; do not enable this for normal visits.
   const SHOW_REQUESTED_WRONG_COORDINATES =
+    !cfg.public_mode &&
     !!SINGLE_SAMPLE_ID &&
     (
       URL_PARAMS.get('show_wrong') === '1' ||
@@ -3811,7 +3812,8 @@
     params.set('sample_id', id);
     params.set('compact', '1');
 
-    if (opts.includeWrong || SHOW_REQUESTED_WRONG_COORDINATES) {
+    if (SHOW_REQUESTED_WRONG_COORDINATES &&
+        id.toUpperCase() === SINGLE_SAMPLE_ID.toUpperCase()) {
       params.set('include_wrong', '1');
     }
 
