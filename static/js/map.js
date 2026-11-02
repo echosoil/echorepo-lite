@@ -2771,8 +2771,8 @@
     if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
       params.set('sample_id', SINGLE_SAMPLE_ID);
 
-      // Only use this if you want to allow debug display of bad coords:
-      // params.set('include_wrong', '1');
+      // Never widen the normal map API query. A deliberately requested
+      // QA sample is loaded individually and overlaid client-side.
     } else {
       params.set('bbox', getCurrentBboxParam());
     }
@@ -3517,6 +3517,9 @@
         const ll = m.getLatLng(); if (!ll) return;
         if (!inAny(ll)) return;
         const f = m.feature || {}; const props = { ...(f.properties || {}) };
+        // A QA sample may be visible by deliberate deep link, but must not
+        // silently become selectable/exportable with ordinary samples.
+        if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props)) return;
         if (!passesCurrentFilter(props)) return;
         Object.keys(props).forEach(k => { if (SHOULD_DROP(k)) delete props[k]; });
         props[LAT_KEY] = ll.lat; props[LON_KEY] = ll.lng;
@@ -3556,7 +3559,8 @@
         const f = m.feature || {};
         const props = { ...(f.properties || {}) };
 
-        // ---- SINGLE source of truth for filtering ----
+        // Keep deliberately displayed QA samples out of ordinary map exports.
+        if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props)) return;
         if (!passesCurrentFilter(props)) return;
 
         // ---- Clean props ----
