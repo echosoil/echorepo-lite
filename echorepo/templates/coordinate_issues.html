@@ -102,6 +102,7 @@
             <th>{{ _('Actual country') }}</th>
             <th>{{ _('Planned country') }}</th>
             <th>{{ _('Issue type') }}</th>
+            <th>{{ _('Actual country OK?') }}</th>
             <th>{{ _('Fix coordinates') }}</th>
           </tr>
         </thead>
@@ -141,6 +142,42 @@
               {% endif %}
             </td>
 
+            <td class="text-center">
+              {% if r.reason_display == 'country_mismatch' and can_edit_coordinate_issues %}
+                {% set qa_qr = (r.get('QR_qrCode') or '') | trim %}
+                {% set qa_sample_id = (r.get('sampleId') or '') | trim %}
+                {% set qa_user_id = (r.get('userId') or '') | trim %}
+                {% if r.country_already_corrected %}
+                <span class="text-success small" title="{{ _('Waiting for the next enrichment run') }}">
+                  <i class="bi bi-check-circle"></i> {{ _('Already updated') }}
+                </span>
+                {% elif qa_qr and qa_sample_id and qa_user_id and r.actual_country_display %}
+                <form method="POST" action="{{ url_for('web.coordinate_issues_accept_country') }}" class="d-inline-block">
+                  <input type="hidden" name="csrf_token" value="{{ session.get('_coordinate_fix_csrf', '') }}">
+                  <input type="hidden" name="return_url" value="{{ request.full_path }}">
+                  <input type="hidden" name="sampleId" value="{{ qa_sample_id }}">
+                  <input type="hidden" name="userId" value="{{ qa_user_id }}">
+                  <input type="hidden" name="qr_code" value="{{ qa_qr }}">
+                  <input type="hidden" name="actual_country" value="{{ r.actual_country_display }}">
+                  <div class="form-check d-flex align-items-center gap-1 mb-1">
+                    <input class="form-check-input mt-0" type="checkbox" name="confirm_actual_country" value="1"
+                           required id="country-ok-{{ loop.index }}">
+                    <label class="form-check-label small" for="country-ok-{{ loop.index }}">
+                      {{ _('Actual country is correct') }} ({{ r.actual_country_display }})
+                    </label>
+                  </div>
+                  <button class="btn btn-sm btn-outline-success" type="submit">
+                    {{ _('Update planned') }}
+                  </button>
+                </form>
+                {% else %}
+                <span class="text-muted small">{{ _('QR or sample ID unavailable') }}</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+
             <td class="fix-coords-cell">
               {% if can_edit_coordinate_issues %}
               <form method="POST" action="{{ url_for('web.coordinate_issues_fix_coords') }}" class="fix-coords-form">
@@ -170,7 +207,7 @@
           {% endfor %}
           {% else %}
           <tr>
-            <td colspan="9" class="text-center text-muted py-4">
+            <td colspan="10" class="text-center text-muted py-4">
               {{ _('No coordinate issues for these filters.') }}
             </td>
           </tr>
@@ -236,7 +273,7 @@
   }
 
   .coordinate-issue-table {
-    min-width: 1150px;
+    min-width: 1380px;
   }
 
   .coordinate-issue-table td,

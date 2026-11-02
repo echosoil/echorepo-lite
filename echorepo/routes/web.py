@@ -1262,6 +1262,101 @@ def coordinate_issues_fix_coords():
     )
     return redirect(back_url)
 
+@web_bp.post("/coordinate-issues/accept-country", endpoint="coordinate_issues_accept_country")
+@login_required
+def coordinate_issues_accept_country():
+    """An editor confirms actual ISO2 country; fix one planned.xlsx QR row."""
+    import hmac
+    from flask import current_app, flash
+    from ..services.planned_country_corrections import (
+        PlannedCountryCorrectionError,
+        norm_qr,
+        planned_workbook_path,
+        update_planned_country,
+    )
+
+    if not _coordinate_qa_can_edit():
+        abort(403, description="Not authorized to edit global coordinate issues")
+    expected_csrf = str(session.get("_coordinate_fix_csrf") or "")
+    supplied_csrf = str(request.form.get("csrf_token") or "")
+    if not expected_csrf or not hmac.compare_digest(expected_csrf, supplied_csrf):
+        abort(400, description="Invalid or missing country-edit CSRF token")
+
+    raw_back = str(request.form.get("return_url") or "")
+    back_url = url_for("web.coordinate_issues")
+    if (raw_back == "/coordinate-issues" or raw_back.startswith("/coordinate-issues?")) and not any(
+        char in raw_back for char in "\r\n\x00"
+    ) and len(raw_back) <= 2048:
+        back_url = raw_back
+
+    if request.form.get("confirm_actual_country") != "1":
+        flash("Confirm the actual country before updating the planned workbook.", "warning")
+        return redirect(back_url)
+
+    sample_id = str(request.form.get("sampleId") or "").strip()
+    user_id = str(request.form.get("userId") or "").strip()
+    qr = norm_qr(request.form.get("qr_code"))
+    country = str(request.form.get("actual_country") or "").strip().upper()
+    if not sample_id or not user_id or any("/" in v for v in (sample_id, user_id)):
+        flash("Invalid or missing Firebase sample/user identifier.", "danger")
+        return redirect(back_url)
+
+    # Never trust hidden form values as the source of country assignment.
+    # Check the exact Firestore identity and QR against the server-produced QA CSV.
+    try:
+        csv_path = _coordinate_wrong_csv_path()
+        qa = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
+        required = {"sampleId", "userId", "QR_qrCode", "actual_cc", "planned_iso2", "coordinate_check_reason"}
+        if not required.issubset(qa.columns):
+            raise PlannedCountryCorrectionError("Coordinate QA CSV is missing required columns")
+        matching_qr = qa["QR_qrCode"].map(norm_qr) == qr
+        match = qa.loc[
+            matching_qr
+            & (qa["sampleId"].str.strip() == sample_id)
+            & (qa["userId"].str.strip() == user_id)
+            & (qa["coordinate_check_reason"].str.strip() == "country_mismatch")
+        ]
+        if len(match) != 1:
+            raise PlannedCountryCorrectionError("The selected country mismatch cannot be verified uniquely")
+        actual = str(match.iloc[0]["actual_cc"]).strip().upper()
+        if actual != country:
+            raise PlannedCountryCorrectionError("Actual country changed since page was loaded")
+        # A QR can be duplicated across users. Never silently change its planned
+        # country if the QA records disagree about the physical location.
+        other_actuals = {
+            str(v).strip().upper()
+            for v in qa.loc[matching_qr, "actual_cc"]
+            if str(v).strip()
+        }
+        if other_actuals != {actual}:
+            raise PlannedCountryCorrectionError(
+                "This QR has conflicting actual countries; resolve duplicates manually"
+            )
+        previous = str(match.iloc[0]["planned_iso2"]).strip().upper()
+        old, backup = update_planned_country(
+            planned_workbook_path(), qr, actual, expected_planned=previous
+        )
+    except (PlannedCountryCorrectionError, OSError, ValueError) as exc:
+        flash(f"Planned country not changed: {exc}", "danger")
+        return redirect(back_url)
+    except Exception:
+        current_app.logger.exception("Planned-country QA correction failed: QR=%s", qr)
+        flash("Unable to update planned.xlsx; see application logs.", "danger")
+        return redirect(back_url)
+
+    actor = _current_approver_id()
+    current_app.logger.warning(
+        "Planned-country QA corrected: qr=%s from=%s to=%s sample=%s actor=%s backup=%s",
+        qr, old, actual, sample_id, actor, backup,
+    )
+    flash(
+        f"Updated planned.xlsx: {qr}: {old or '(empty)'} -> {actual}. "
+        "The coordinate issue will be recalculated by the next enrichment run.",
+        "success",
+    )
+    return redirect(back_url)
+
+
 @web_bp.route("/coordinate-issues", endpoint="coordinate_issues", methods=["GET"])
 @login_required
 def coordinate_issues():
@@ -1531,6 +1626,27 @@ def coordinate_issues():
     rows = df.iloc[start:end].to_dict(
         orient="records"
     )
+
+    # planned.xlsx may have been corrected after the last QA CSV generation.
+    # Indicate this on the page until the next enrichment refreshes the issues.
+    try:
+        from ..services.planned_country_corrections import (
+            norm_qr, planned_workbook_path, read_planned_country_matches,
+        )
+        workbook = planned_workbook_path()
+        planned_now = read_planned_country_matches(
+            workbook,
+            {norm_qr(r.get("QR_qrCode")) for r in rows if r.get("QR_qrCode")},
+        ) if workbook.is_file() else {}
+        for r in rows:
+            qr = norm_qr(r.get("QR_qrCode"))
+            actual = str(r.get("actual_country_display") or "").strip().upper()
+            r["country_already_corrected"] = bool(actual and actual in planned_now.get(qr, set()))
+    except Exception:
+        # The POST route will still fail closed on missing/invalid workbook.
+        logging.getLogger(__name__).exception("Could not inspect planned.xlsx on QA page")
+        for r in rows:
+            r["country_already_corrected"] = False
 
     return render_template(
         "coordinate_issues.html",
