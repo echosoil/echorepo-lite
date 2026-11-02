@@ -182,12 +182,25 @@
 
     return getSampleIdFromProps(props).toUpperCase() === SINGLE_SAMPLE_ID.toUpperCase();
   }
-  const SHOW_WRONG_IN_SINGLE =
-    SINGLE_SAMPLE_MODE &&
+  // An explicit map link may show ONE QA-flagged sample, without changing
+  // normal map filtering or displaying other invalid-coordinate samples.
+  // The /my route is login-protected; do not enable this for normal visits.
+  const SHOW_REQUESTED_WRONG_COORDINATES =
+    !cfg.public_mode &&
+    !!SINGLE_SAMPLE_ID &&
     (
       URL_PARAMS.get('show_wrong') === '1' ||
       URL_PARAMS.get('show_wrong') === 'true'
     );
+
+  function isExplicitlyRequestedSample(props) {
+    return SHOW_REQUESTED_WRONG_COORDINATES &&
+      getSampleIdFromProps(props).toUpperCase() === SINGLE_SAMPLE_ID.toUpperCase();
+  }
+
+  // Save only the requested QA-flagged feature from a sample-ID-scoped API
+  // fetch; the normal bbox request must continue excluding other bad points.
+  let requestedWrongSampleFeature = null;
 
   // If true, samples flagged by pull_and_enrich as wrong_coordinates
   // are kept in the data but hidden from the map, clusters, selection and export.
@@ -511,7 +524,7 @@
 
     const allowWrongCoordinates =
       !!opts?.includeWrong ||
-      SHOW_WRONG_IN_SINGLE;
+      isExplicitlyRequestedSample(ring.__props || {});
 
     if (
       HIDE_WRONG_COORDINATES &&
@@ -2533,7 +2546,8 @@
     if (!isRequestedSingleSample(props)) return false;
 
     // Hide bad-coordinate samples globally when configured.
-    if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props) && !SHOW_WRONG_IN_SINGLE) return false;
+    if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props) &&
+        !isExplicitlyRequestedSample(props)) return false;
 
     const ts = props.timestamp_utc || props.collectedAt;
     if (!inDateRange(ts)) return false;
@@ -2709,7 +2723,7 @@
           highlight: true,
           openPopup: true,
           fetchIfMissing: true,
-          includeWrong: SHOW_WRONG_IN_SINGLE
+          includeWrong: SHOW_REQUESTED_WRONG_COORDINATES
         }
         : {
           // Normal link from /search:
@@ -2720,7 +2734,7 @@
           highlight: true,
           openPopup: true,
           fetchIfMissing: true,
-          includeWrong: false
+          includeWrong: SHOW_REQUESTED_WRONG_COORDINATES
         };
 
       const ok = await window.__echomapShow(
@@ -2757,8 +2771,8 @@
     if (SINGLE_SAMPLE_MODE && SINGLE_SAMPLE_ID) {
       params.set('sample_id', SINGLE_SAMPLE_ID);
 
-      // Only use this if you want to allow debug display of bad coords:
-      // params.set('include_wrong', '1');
+      // Never widen the normal map API query. A deliberately requested
+      // QA sample is loaded individually and overlaid client-side.
     } else {
       params.set('bbox', getCurrentBboxParam());
     }
@@ -2942,8 +2956,12 @@
                       'loadingSampleDetails', {}, 'Loading sample details...'
                     ))}</div>`
                   );
+                  // The ordinary detail endpoint also excludes QA-flagged
+                  // samples. Include it only when the URL explicitly selected
+                  // this one sample for review.
                   const detailUrl =
-                    `/api/v1/canonical/map.geojson?sample_id=${encodeURIComponent(detailId)}&limit=1`;
+                    `/api/v1/canonical/map.geojson?sample_id=${encodeURIComponent(detailId)}&limit=1` +
+                    (isExplicitlyRequestedSample(p) ? '&include_wrong=1' : '');
                   const detailResponse = await fetch(detailUrl, {
                     credentials: 'same-origin'
                   });
@@ -3499,6 +3517,9 @@
         const ll = m.getLatLng(); if (!ll) return;
         if (!inAny(ll)) return;
         const f = m.feature || {}; const props = { ...(f.properties || {}) };
+        // A QA sample may be visible by deliberate deep link, but must not
+        // silently become selectable/exportable with ordinary samples.
+        if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props)) return;
         if (!passesCurrentFilter(props)) return;
         Object.keys(props).forEach(k => { if (SHOULD_DROP(k)) delete props[k]; });
         props[LAT_KEY] = ll.lat; props[LON_KEY] = ll.lng;
@@ -3538,7 +3559,8 @@
         const f = m.feature || {};
         const props = { ...(f.properties || {}) };
 
-        // ---- SINGLE source of truth for filtering ----
+        // Keep deliberately displayed QA samples out of ordinary map exports.
+        if (HIDE_WRONG_COORDINATES && hasWrongCoordinates(props)) return;
         if (!passesCurrentFilter(props)) return;
 
         // ---- Clean props ----
@@ -3794,7 +3816,8 @@
     params.set('sample_id', id);
     params.set('compact', '1');
 
-    if (opts.includeWrong || SHOW_WRONG_IN_SINGLE) {
+    if (SHOW_REQUESTED_WRONG_COORDINATES &&
+        id.toUpperCase() === SINGLE_SAMPLE_ID.toUpperCase()) {
       params.set('include_wrong', '1');
     }
 
@@ -3823,6 +3846,14 @@
 
       if (!feature) {
         return false;
+      }
+
+      // The normal map API query excludes QA-flagged points. Remember only
+      // this explicitly requested feature so we can overlay it after the
+      // ordinary (correct-samples-only) bbox query finishes.
+      if (isExplicitlyRequestedSample(feature.properties || {}) &&
+          hasWrongCoordinates(feature.properties || {})) {
+        requestedWrongSampleFeature = feature;
       }
 
       const coordinates =
@@ -3913,6 +3944,23 @@
         type: "FeatureCollection",
         features: [],
       };
+
+      // Preserve the normal backend filter and overlay just the one
+      // QA-flagged sample deliberately opened from /search or
+      // /coordinate-issues. Never request all wrong-coordinate samples for
+      // a map viewport.
+      if (requestedWrongSampleFeature) {
+        const requestedId = getSampleIdFromProps(
+          requestedWrongSampleFeature.properties || {}
+        ).toUpperCase();
+        const features = othersGJ.features || [];
+        if (requestedId === SINGLE_SAMPLE_ID.toUpperCase() &&
+            !features.some(feature =>
+              getSampleIdFromProps(feature.properties || {}).toUpperCase() === requestedId
+            )) {
+          othersGJ.features = [...features, requestedWrongSampleFeature];
+        }
+      }
 
       updateMapLoader(
         T('renderingMarkers', {}, 'Rendering markers...'),
