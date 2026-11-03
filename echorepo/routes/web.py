@@ -1711,6 +1711,21 @@ def coordinate_issues():
         orient="records"
     )
 
+
+    # Shorten *presentation only*. Source coordinate strings stay intact.
+    def _coord_preview(value):
+        try:
+            n = float(str(value).strip())
+            if math.isfinite(n):
+                return f"{n:.5f}".rstrip("0").rstrip(".")
+        except (TypeError, ValueError):
+            pass
+        return str(value or "")
+
+    for row in rows:
+        row["lat_short"] = _coord_preview(row.get("lat_display"))
+        row["lon_short"] = _coord_preview(row.get("lon_display"))
+
     # Show live PostgreSQL planned values, not stale values from the QA CSV.
     # One indexed query per page; do not perform one query per sample.
     planned_row_count = None
