@@ -271,6 +271,18 @@
   </nav>
 
   <main id="main" class="container" style="padding-top: 84px;">
+    {# Flask flash messages: in particular, planned XLSX import errors. #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% set alert_type = category if category in ['success', 'info', 'warning', 'danger'] else 'info' %}
+          <div class="alert alert-{{ alert_type }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Close') }}"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
 

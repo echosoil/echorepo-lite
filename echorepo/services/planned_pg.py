@@ -57,8 +57,13 @@ def read_xlsx(payload):
         ws = book.worksheets[0]
         iterator = ws.iter_rows(values_only=True)
         header = next(iterator, ())
-        if tuple(str(v or "").strip() for v in header[:5]) != HEADERS or any(v not in (None, "") for v in header[5:]):
-            raise PlannedCountryError("Expected exactly: " + ", ".join(HEADERS))
+        found_headers = tuple(str(v or "").strip() for v in header)
+        if found_headers[:5] != HEADERS or any(v not in (None, "") for v in header[5:]):
+            raise PlannedCountryError(
+                f"Wrong columns in worksheet {ws.title!r}. "
+                f"Expected {HEADERS!r}; found {found_headers!r}. "
+                "Use the original five-column planned.xlsx layout."
+            )
         rows = []
         for rownum, values in enumerate(iterator, 2):
             if rownum > MAX_ROWS + 1:
