@@ -163,21 +163,33 @@ def change_country(conn, qr, actual_country, *, expected_planned, actor):
     return old
 
 def export_xlsx(conn):
+    """Stream planned rows as XLSX without quadratic worksheet-row lookups."""
+    from openpyxl.cell import WriteOnlyCell
+
     ensure_schema(conn)
-    book=Workbook()
-    ws=book.active
-    ws.title="Planned"
-    ws.append(HEADERS)
+    book = Workbook(write_only=True)
+    ws = book.create_sheet(title="Planned")
+    # In write-only mode, worksheet configuration comes before row insertion.
+    ws.freeze_panes = "A2"
+    for col, width in {"A": 24, "B": 18, "C": 16, "D": 35, "E": 24}.items():
+        ws.column_dimensions[col].width = width
+
+    def text_cell(value):
+        # Prevent formula interpretation, including values beginning with '='.
+        cell = WriteOnlyCell(ws, value="" if value is None else str(value))
+        cell.data_type = "s"
+        return cell
+
+    ws.append([text_cell(value) for value in HEADERS])
     with conn.cursor() as cur:
-        cur.execute("SELECT organization,batch,qr_code,file_path,country_planned FROM planned_country_rows ORDER BY row_number")
+        cur.execute(
+            "SELECT organization,batch,qr_code,file_path,country_planned "
+            "FROM planned_country_rows ORDER BY row_number"
+        )
         for values in cur:
-            ws.append([str(v or "") for v in values])
-            # Prevent Excel interpreting potentially user-supplied strings as formulas.
-            for cell in ws[ws.max_row]: cell.data_type="s"
-    ws.freeze_panes="A2"
-    for col,width in {"A":24,"B":18,"C":16,"D":35,"E":24}.items():
-        ws.column_dimensions[col].width=width
-    out=BytesIO()
+            ws.append([text_cell(value) for value in values])
+
+    out = BytesIO()
     book.save(out)
     book.close()
     return out.getvalue()
