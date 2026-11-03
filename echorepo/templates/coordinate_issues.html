@@ -98,6 +98,18 @@
       · {{ _('Ingestion source:') }} {{ planned_country_source|default('xlsx') }}</span>
   </div>
   <div class="small text-muted mt-2">{{ _('Upload replaces the table in one transaction; the previous version is archived.') }}</div>
+  {% if planned_row_count == 0 %}
+  <div class="alert alert-warning small mt-2 mb-0" role="status">
+    <strong>{{ _('The PostgreSQL planned-country table is empty.') }}</strong>
+    {{ _('Choose the original planned.xlsx, check Replace all planned rows, then click Upload planned XLSX.') }}
+    {{ _('Any import error appears above this page. Do not switch ingestion to PostgreSQL until rows are imported.') }}
+  </div>
+  {% elif planned_row_count is not none and planned_country_source|default('xlsx') != 'postgres' %}
+  <div class="alert alert-info small mt-2 mb-0" role="status">
+    {{ _('The PostgreSQL planned-country table contains rows, but ingestion still reads the XLSX file.') }}
+    {{ _('After verifying the downloaded XLSX, set PLANNED_COUNTRY_SOURCE=postgres and recreate the application container.') }}
+  </div>
+  {% endif %}
 </div>
 {% endif %}
 

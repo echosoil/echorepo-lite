@@ -105,6 +105,9 @@ patches/*
 !patches/.gitkeep
 
 # ── Misc temp files ───────────────────────────────────────────────────────────
+*~
+*.bak
+*.tmp
 *.swp
 *.swo
 
