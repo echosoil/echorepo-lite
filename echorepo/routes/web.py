@@ -1166,6 +1166,28 @@ def _coordinate_qa_can_edit() -> bool:
     return bool(identities & editors)
 
 
+def _coordinate_qa_can_manage_planned_xlsx() -> bool:
+    """Strict XLSX import/export permission, independent of QA edit restriction.
+
+    COORDINATE_QA_EDIT_RESTRICTED=0 never grants access to planned XLSX.
+    """
+    profile = (session.get("kc") or {}).get("profile") or {}
+    identities = {
+        str(value).strip().casefold()
+        for value in (
+            session.get("user"), profile.get("email"),
+            profile.get("preferred_username"),
+        )
+        if value and str(value).strip()
+    }
+    editors = {
+        item.strip().casefold()
+        for item in re.split(r"[,;\s]+", os.getenv("COORDINATE_QA_EDITORS", ""))
+        if item.strip()
+    }
+    return bool(identities & editors)
+
+
 @web_bp.post("/coordinate-issues/fix-coords", endpoint="coordinate_issues_fix_coords")
 @login_required
 def coordinate_issues_fix_coords():
@@ -1366,7 +1388,7 @@ def coordinate_issues_planned_download():
     """Download current PostgreSQL planned table as the original five-column XLSX."""
     from contextlib import closing
     from ..services.planned_pg import export_xlsx
-    if not _coordinate_qa_can_edit():
+    if not _coordinate_qa_can_manage_planned_xlsx():
         abort(403)
     with closing(get_pg_conn()) as conn:
         with conn:
@@ -1384,7 +1406,7 @@ def coordinate_issues_planned_upload():
     from contextlib import closing
     from flask import flash, current_app
     from ..services.planned_pg import MAX_XLSX_BYTES, PlannedCountryError, read_xlsx, replace_all
-    if not _coordinate_qa_can_edit():
+    if not _coordinate_qa_can_manage_planned_xlsx():
         abort(403)
     expected = str(session.get("_coordinate_fix_csrf") or "")
     supplied = str(request.form.get("csrf_token") or "")
@@ -1432,6 +1454,7 @@ def coordinate_issues():
         session["_coordinate_fix_csrf"] = secrets.token_urlsafe(32)
 
     can_edit_coordinate_issues = _coordinate_qa_can_edit()
+    can_manage_planned_xlsx = _coordinate_qa_can_manage_planned_xlsx()
     csv_path = _coordinate_wrong_csv_path()
 
     criteria = {
@@ -1688,29 +1711,48 @@ def coordinate_issues():
         orient="records"
     )
 
-    # Fast indexed lookup, instead of opening/parsing the whole XLSX on every page.
+    # Show live PostgreSQL planned values, not stale values from the QA CSV.
+    # One indexed query per page; do not perform one query per sample.
     planned_row_count = None
+    for r in rows:
+        r["planned_country_snapshot"] = str(r.get("planned_country_display") or "").strip()
+        r["planned_country_current"] = None
+        r["planned_country_ambiguous"] = False
+        r["country_already_corrected"] = False
     try:
-        from ..services.planned_pg import norm_qr, country_matches, count_rows
+        from ..services.planned_pg import norm_qr, count_rows
+        from ..services.planned import _split_planned
         from contextlib import closing
+        qr_keys = {norm_qr(r.get("QR_qrCode")) for r in rows if r.get("QR_qrCode")}
         with closing(get_pg_conn()) as conn:
             with conn:
                 planned_row_count = count_rows(conn)
-                planned_now = country_matches(
-                    conn, {norm_qr(r.get("QR_qrCode")) for r in rows if r.get("QR_qrCode")}
-                )
+                planned_by_qr = {}
+                if qr_keys:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "SELECT qr_key, country_planned FROM planned_country_rows WHERE qr_key = ANY(%s)",
+                            (list(qr_keys),),
+                        )
+                        for key, raw in cur.fetchall():
+                            planned_by_qr.setdefault(key, []).append(str(raw or "").strip())
         for r in rows:
             qr = norm_qr(r.get("QR_qrCode"))
-            actual = str(r.get("actual_country_display") or "").strip().upper()
-            r["country_already_corrected"] = bool(actual and actual in planned_now.get(qr, set()))
+            values = planned_by_qr.get(qr, [])
+            if len(values) > 1:
+                # Multiple QR rows are not safe to display as one assignment.
+                r["planned_country_ambiguous"] = True
+            elif len(values) == 1:
+                r["planned_country_current"] = values[0]
+                actual = str(r.get("actual_country_display") or "").strip().upper()
+                r["country_already_corrected"] = bool(actual and actual in _split_planned(values[0]))
     except Exception:
         logging.getLogger(__name__).exception("Cannot query planned-country PostgreSQL table")
-        for r in rows:
-            r["country_already_corrected"] = False
 
     return render_template(
         "coordinate_issues.html",
         can_edit_coordinate_issues=can_edit_coordinate_issues,
+        can_manage_planned_xlsx=can_manage_planned_xlsx,
         rows=rows,
         criteria=criteria,
         reasons=reasons,
