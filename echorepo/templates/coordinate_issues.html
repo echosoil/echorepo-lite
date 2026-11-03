@@ -77,6 +77,30 @@
   </div>
 </form>
 
+{% if can_edit_coordinate_issues %}
+<div class="card card-body mb-3">
+  <div class="d-flex flex-wrap align-items-center gap-3">
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('web.coordinate_issues_planned_download') }}">
+      <i class="bi bi-file-earmark-excel"></i> {{ _('Download planned XLSX') }}
+    </a>
+    <form method="POST" action="{{ url_for('web.coordinate_issues_planned_upload') }}"
+          enctype="multipart/form-data" class="d-flex flex-wrap align-items-center gap-2">
+      <input type="hidden" name="csrf_token" value="{{ session.get('_coordinate_fix_csrf', '') }}">
+      <input type="file" name="planned_xlsx" accept=".xlsx" class="form-control form-control-sm" required
+             aria-label="{{ _('Upload planned XLSX') }}" style="max-width:19rem">
+      <label class="form-check-label small">
+        <input type="checkbox" class="form-check-input" name="confirm_replace" value="1" required>
+        {{ _('Replace all planned rows') }}
+      </label>
+      <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Upload planned XLSX') }}</button>
+    </form>
+    <span class="small text-muted">{{ _('PostgreSQL planned rows:') }} {{ planned_row_count if planned_row_count is not none else '?' }}
+      · {{ _('Ingestion source:') }} {{ planned_country_source|default('xlsx') }}</span>
+  </div>
+  <div class="small text-muted mt-2">{{ _('Upload replaces the table in one transaction; the previous version is archived.') }}</div>
+</div>
+{% endif %}
+
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span>
@@ -143,7 +167,7 @@
             </td>
 
             <td class="text-center">
-              {% if r.reason_display == 'country_mismatch' and can_edit_coordinate_issues %}
+              {% if r.reason_display == 'country_mismatch' and can_edit_coordinate_issues and planned_country_source|default('xlsx') == 'postgres' %}
                 {% set qa_qr = (r.get('QR_qrCode') or '') | trim %}
                 {% set qa_sample_id = (r.get('sampleId') or '') | trim %}
                 {% set qa_user_id = (r.get('userId') or '') | trim %}

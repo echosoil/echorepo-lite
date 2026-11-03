@@ -2795,9 +2795,12 @@ def main():
     planned_map = {}
     if load_qr_to_planned is not None:
         try:
-            planned_map = load_qr_to_planned(PLANNED_XLSX)
+            planned_map = load_qr_to_planned(PLANNED_XLSX, use_outside_db=True)
             log.info("Loaded planned QR -> country map: %d entries", len(planned_map))
         except Exception as e:
+            if os.getenv("PLANNED_COUNTRY_SOURCE", "xlsx").strip().lower() == "postgres":
+                # Do not silently classify every sample as having no planned country.
+                raise RuntimeError("PostgreSQL planned-country lookup failed") from e
             log.warning("Could not load planned QR countries: %s", e)
 
     # 3) users.csv
