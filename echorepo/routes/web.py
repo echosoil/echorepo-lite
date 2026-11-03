@@ -1717,7 +1717,7 @@ def coordinate_issues():
         try:
             n = float(str(value).strip())
             if math.isfinite(n):
-                return f"{n:.5f}".rstrip("0").rstrip(".")
+                return f"{n:.6f}".rstrip("0").rstrip(".")
         except (TypeError, ValueError):
             pass
         return str(value or "")
@@ -1759,6 +1759,8 @@ def coordinate_issues():
                 r["planned_country_ambiguous"] = True
             elif len(values) == 1:
                 r["planned_country_current"] = values[0]
+                # ISO2 display only; keep raw text in PostgreSQL and export XLSX.
+                r["planned_country_iso2"] = ",".join(sorted(_split_planned(values[0])))
                 actual = str(r.get("actual_country_display") or "").strip().upper()
                 r["country_already_corrected"] = bool(actual and actual in _split_planned(values[0]))
     except Exception:

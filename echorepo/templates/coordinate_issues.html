@@ -132,14 +132,14 @@
               <i class="bi bi-geo-alt-fill"></i>
             </th>
             <th>{{ _('Sample / QR') }}</th>
-            <th>{{ _('User ID') }}</th>
+            <th title="{{ _('User ID') }}">{{ _('User') }}</th>
             <th>{{ _('Lat') }}</th>
             <th>{{ _('Lon') }}</th>
-            <th>{{ _('Actual country') }}</th>
-            <th>{{ _('Planned country') }}</th>
-            <th>{{ _('Issue type') }}</th>
-            <th>{{ _('Actual country OK?') }}</th>
-            <th>{{ _('Fix coordinates') }}</th>
+            <th title="{{ _('Actual country') }}">{{ _('Actual') }}</th>
+            <th title="{{ _('Planned country') }}">{{ _('Planned') }}</th>
+            <th title="{{ _('Issue type') }}">{{ _('Issue') }}</th>
+            <th title="{{ _('Actual country OK?') }}">{{ _('Country OK?') }}</th>
+            <th>{{ _('Save') }}</th>
           </tr>
         </thead>
 
@@ -158,43 +158,48 @@
             </td>
 
             <td>{{ r.sample_display }}</td>
-            <td>{{ r.uid_display }}</td>
-            <td>{{ r.lat_display }}</td>
-            <td>{{ r.lon_display }}</td>
+            <td class="qa-user" title="{{ r.uid_display }}">{{ r.uid_display[:7] }}{% if r.uid_display|length > 7 %}…{% endif %}</td>
+            <td class="qa-coordinate">
+              {% if can_edit_coordinate_issues %}
+              <input form="coord-form-{{ loop.index }}" name="lat_input"
+                     class="form-control form-control-sm coord-input" inputmode="decimal"
+                     aria-label="{{ _('Lat') }}" title="{{ r.lat_display }}"
+                     data-full="{{ r.lat_display }}" data-preview="{{ r.lat_short }}"
+                     value="{{ r.lat_short }}">
+              {% else %}<span title="{{ r.lat_display }}">{{ r.lat_short }}</span>{% endif %}
+            </td>
+            <td class="qa-coordinate">
+              {% if can_edit_coordinate_issues %}
+              <input form="coord-form-{{ loop.index }}" name="lon_input"
+                     class="form-control form-control-sm coord-input" inputmode="decimal"
+                     aria-label="{{ _('Lon') }}" title="{{ r.lon_display }}"
+                     data-full="{{ r.lon_display }}" data-preview="{{ r.lon_short }}"
+                     value="{{ r.lon_short }}">
+              {% else %}<span title="{{ r.lon_display }}">{{ r.lon_short }}</span>{% endif %}
+            </td>
             <td>{{ r.actual_country_display }}</td>
-            <td>
+            <td class="qa-country" title="{{ _('QA snapshot:') }} {{ r.planned_country_snapshot or '—' }}{% if r.planned_country_current is not none %} | {{ _('Current planned country:') }} {{ r.planned_country_current }}{% endif %}">
               {% if planned_country_source|default('xlsx') == 'postgres' %}
                 {% if r.planned_country_ambiguous %}
-                  <span class="text-warning" title="{{ _('Multiple planned rows for this QR; review required') }}">
-                    {{ _('Duplicate QR') }}
-                  </span>
+                  <span class="text-warning" title="{{ _('Multiple planned rows for this QR; review required') }}">!</span>
                 {% elif r.planned_country_current is not none %}
-                  <strong>{{ r.planned_country_current or '—' }}</strong>
-                  {% if r.planned_country_snapshot != r.planned_country_current %}
-                    <div class="small text-muted">
-                      {{ _('QA snapshot:') }} {{ r.planned_country_snapshot or '—' }}
-                    </div>
+                  <strong>{{ r.planned_country_iso2 or '—' }}</strong>
+                  {% if r.planned_country_snapshot != (r.planned_country_iso2 or '') %}
+                    <span class="qa-stale" title="{{ _('QA snapshot:') }} {{ r.planned_country_snapshot or '—' }}">*</span>
                   {% endif %}
-                {% else %}
-                  <span class="text-muted">{{ _('Not in PostgreSQL') }}</span>
-                  {% if r.planned_country_snapshot %}
-                    <div class="small text-muted">{{ _('QA snapshot:') }} {{ r.planned_country_snapshot }}</div>
-                  {% endif %}
-                {% endif %}
-              {% else %}
-                {{ r.planned_country_display }}
-              {% endif %}
+                {% else %}<span class="text-muted" title="{{ _('Not in PostgreSQL') }}">—</span>{% endif %}
+              {% else %}{{ r.planned_country_display }}{% endif %}
             </td>
 
             <td>
               {% if r.reason_display == 'country_mismatch' %}
-              <span class="badge text-bg-danger">{{ r.reason_display }}</span>
+              <span class="badge text-bg-danger" title="{{ r.reason_display }}">{{ _('Mismatch') }}</span>
               {% elif r.reason_display == 'default_coordinates' %}
-              <span class="badge text-bg-warning">{{ r.reason_display }}</span>
+              <span class="badge text-bg-warning" title="{{ r.reason_display }}">{{ _('Default GPS') }}</span>
               {% elif r.reason_display == 'invalid_coordinates' %}
-              <span class="badge text-bg-secondary">{{ r.reason_display }}</span>
+              <span class="badge text-bg-secondary" title="{{ r.reason_display }}">{{ _('Invalid GPS') }}</span>
               {% elif r.reason_display == 'country_not_found' %}
-              <span class="badge text-bg-info">{{ r.reason_display }}</span>
+              <span class="badge text-bg-info" title="{{ r.reason_display }}">{{ _('No country') }}</span>
               {% else %}
               <span class="badge text-bg-light text-dark">{{ r.reason_display }}</span>
               {% endif %}
@@ -207,7 +212,7 @@
                 {% set qa_user_id = (r.get('userId') or '') | trim %}
                 {% if r.country_already_corrected %}
                 <span class="text-success small" title="{{ _('Current PostgreSQL value matches actual country; QA CSV may need a refresh') }}">
-                  <i class="bi bi-check-circle"></i> {{ _('Matches PostgreSQL — awaiting QA refresh') }}
+                  <i class="bi bi-check-circle"></i> {{ _('Matched') }}
                 </span>
                 {% elif qa_qr and qa_sample_id and qa_user_id and r.actual_country_display %}
                 <form method="POST" action="{{ url_for('web.coordinate_issues_accept_country') }}" class="d-inline-block">
@@ -217,16 +222,14 @@
                   <input type="hidden" name="userId" value="{{ qa_user_id }}">
                   <input type="hidden" name="qr_code" value="{{ qa_qr }}">
                   <input type="hidden" name="actual_country" value="{{ r.actual_country_display }}">
-                  <div class="form-check d-flex align-items-center gap-1 mb-1">
+                  <div class="form-check d-inline-flex align-items-center gap-1 mb-0">
                     <input class="form-check-input mt-0" type="checkbox" name="confirm_actual_country" value="1"
                            required id="country-ok-{{ loop.index }}">
                     <label class="form-check-label small" for="country-ok-{{ loop.index }}">
-                      {{ _('Actual country is correct') }} ({{ r.actual_country_display }})
+                      {{ _('OK') }}
                     </label>
                   </div>
-                  <button class="btn btn-sm btn-outline-success" type="submit">
-                    {{ _('Update planned') }}
-                  </button>
+                  <button class="btn btn-sm btn-outline-success qa-action-btn" type="submit" title="{{ _('Update planned') }}">{{ _('Update') }}</button>
                 </form>
                 {% else %}
                 <span class="text-muted small">{{ _('QR or sample ID unavailable') }}</span>
@@ -238,19 +241,15 @@
 
             <td class="fix-coords-cell">
               {% if can_edit_coordinate_issues %}
-              <form method="POST" action="{{ url_for('web.coordinate_issues_fix_coords') }}" class="fix-coords-form">
+              <form id="coord-form-{{ loop.index }}" method="POST" action="{{ url_for('web.coordinate_issues_fix_coords') }}" class="fix-coords-form">
                 {% set firestore_sample_id = (r.get('sampleId') or '') | trim %}
                 {% set firestore_user_id = (r.get('userId') or '') | trim %}
                 <input type="hidden" name="csrf_token" value="{{ session.get('_coordinate_fix_csrf', '') }}">
                 <input type="hidden" name="return_url" value="{{ request.full_path }}">
                 <input type="hidden" name="sampleId" value="{{ firestore_sample_id }}">
                 <input type="hidden" name="userId" value="{{ firestore_user_id }}">
-                <input name="lat_input" class="form-control form-control-sm coord-input"
-                       placeholder="{{ _('Lat') }}" value="{{ r.lat_display }}">
-                <input name="lon_input" class="form-control form-control-sm coord-input"
-                       placeholder="{{ _('Lon') }}" value="{{ r.lon_display }}">
                 {% if firestore_sample_id and firestore_user_id %}
-                <button class="btn btn-sm btn-primary coord-save-btn" type="submit">{{ _('Save') }}</button>
+                <button class="btn btn-sm btn-primary coord-save-btn" type="submit" title="{{ _('Save coordinates') }}">{{ _('Save') }}</button>
                 {% else %}
                 <span class="text-muted small" title="Firestore sampleId/userId missing from QA CSV">
                   {{ _('Sample ID unavailable') }}
@@ -324,6 +323,21 @@
 
 {% endblock %}
 
+{% block extra_js %}
+<script>
+  document.querySelectorAll('.fix-coords-form').forEach(form => {
+    form.addEventListener('submit', () => {
+      const id = form.id;
+      document.querySelectorAll('input[form="' + id + '"][data-preview]').forEach(input => {
+        if (input.value.trim() === input.dataset.preview) {
+          input.value = input.dataset.full;
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
+
 {% block extra_css %}
 <style>
   .table-responsive {
@@ -331,36 +345,45 @@
   }
 
   .coordinate-issue-table {
-    min-width: 1380px;
+    width: 100%;
+    min-width: 900px;
+    table-layout: auto;
   }
-
   .coordinate-issue-table td,
   .coordinate-issue-table th {
     font-family: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 0.85rem;
+    font-size: .76rem;
+    padding: .22rem .3rem;
     white-space: nowrap;
     vertical-align: middle;
   }
-
-  .coordinate-issue-table .fix-coords-cell {
-    min-width: 280px;
-  }
-
-  .coordinate-issue-table .fix-coords-form {
-    display: flex;
-    gap: 0.35rem;
-    align-items: center;
-    flex-wrap: nowrap;
-  }
-
+  .coordinate-issue-table th { font-weight: 600; }
+  .coordinate-issue-table .qa-coordinate { width: 7.4rem; }
+  .coordinate-issue-table .qa-country { width: 3.2rem; text-align: center; }
+  .coordinate-issue-table .qa-user { max-width: 4.7rem; }
+  .coordinate-issue-table .qa-stale { color: #9c6b16; font-weight: bold; cursor: help; }
+  .coordinate-issue-table .fix-coords-cell { width: 4rem; }
+  .coordinate-issue-table .fix-coords-form { display: inline-flex; align-items: center; }
   .coordinate-issue-table .coord-input {
-    width: 7rem;
-    min-width: 7rem;
+    width: 7.2rem;
+    min-width: 0;
+    height: 1.75rem;
+    padding: .12rem .3rem;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
   }
-
-  .coordinate-issue-table .coord-save-btn {
-    min-width: 4.5rem;
+  .coordinate-issue-table .coord-save-btn,
+  .coordinate-issue-table .qa-action-btn {
+    padding: .15rem .4rem;
+    font-size: .73rem;
     white-space: nowrap;
   }
+  .coordinate-issue-table .form-check-input { margin-top: 0; }
+  @media (max-width: 1050px) {
+    .coordinate-issue-table td, .coordinate-issue-table th { font-size: .72rem; padding: .18rem .22rem; }
+    .coordinate-issue-table .qa-coordinate { width: 6.8rem; }
+    .coordinate-issue-table .coord-input { width: 6.6rem; }
+  }
+
 </style>
 {% endblock %}
