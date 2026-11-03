@@ -77,7 +77,7 @@
   </div>
 </form>
 
-{% if can_edit_coordinate_issues %}
+{% if can_manage_planned_xlsx|default(false) %}
 <div class="card card-body mb-3">
   <div class="d-flex flex-wrap align-items-center gap-3">
     <a class="btn btn-outline-primary btn-sm" href="{{ url_for('web.coordinate_issues_planned_download') }}">
@@ -162,7 +162,29 @@
             <td>{{ r.lat_display }}</td>
             <td>{{ r.lon_display }}</td>
             <td>{{ r.actual_country_display }}</td>
-            <td>{{ r.planned_country_display }}</td>
+            <td>
+              {% if planned_country_source|default('xlsx') == 'postgres' %}
+                {% if r.planned_country_ambiguous %}
+                  <span class="text-warning" title="{{ _('Multiple planned rows for this QR; review required') }}">
+                    {{ _('Duplicate QR') }}
+                  </span>
+                {% elif r.planned_country_current is not none %}
+                  <strong>{{ r.planned_country_current or '—' }}</strong>
+                  {% if r.planned_country_snapshot != r.planned_country_current %}
+                    <div class="small text-muted">
+                      {{ _('QA snapshot:') }} {{ r.planned_country_snapshot or '—' }}
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted">{{ _('Not in PostgreSQL') }}</span>
+                  {% if r.planned_country_snapshot %}
+                    <div class="small text-muted">{{ _('QA snapshot:') }} {{ r.planned_country_snapshot }}</div>
+                  {% endif %}
+                {% endif %}
+              {% else %}
+                {{ r.planned_country_display }}
+              {% endif %}
+            </td>
 
             <td>
               {% if r.reason_display == 'country_mismatch' %}
@@ -184,8 +206,8 @@
                 {% set qa_sample_id = (r.get('sampleId') or '') | trim %}
                 {% set qa_user_id = (r.get('userId') or '') | trim %}
                 {% if r.country_already_corrected %}
-                <span class="text-success small" title="{{ _('Waiting for the next enrichment run') }}">
-                  <i class="bi bi-check-circle"></i> {{ _('Already updated') }}
+                <span class="text-success small" title="{{ _('Current PostgreSQL value matches actual country; QA CSV may need a refresh') }}">
+                  <i class="bi bi-check-circle"></i> {{ _('Matches PostgreSQL — awaiting QA refresh') }}
                 </span>
                 {% elif qa_qr and qa_sample_id and qa_user_id and r.actual_country_display %}
                 <form method="POST" action="{{ url_for('web.coordinate_issues_accept_country') }}" class="d-inline-block">
