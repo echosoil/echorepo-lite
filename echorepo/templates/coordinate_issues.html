@@ -23,7 +23,7 @@
   <div class="row g-3 align-items-end">
     <div class="col-md-3">
       <label class="form-label" for="sample_id">{{ _('Sample / QR') }}</label>
-      <input type="text" id="sample_id" name="sample_id" value="{{ criteria.sample_id }}" class="form-control">
+      <textarea id="sample_id" name="sample_id" class="form-control" rows="2" placeholder="QR codes or fragments, separated by commas, spaces or newlines">{{ criteria.sample_id }}</textarea>
     </div>
 
     <div class="col-md-3">
@@ -159,7 +159,8 @@
 
             <td>{{ r.sample_display }}</td>
             <td class="qa-user" title="{{ r.uid_display }}">{{ r.uid_display[:7] }}{% if r.uid_display|length > 7 %}…{% endif %}</td>
-            <td class="qa-coordinate">
+            <td class="qa-coordinate{% if r.qa_coords_saved %} qa-saved{% endif %}"
+                {% if r.qa_coords_saved %}title="{{ _('Saved GPS in PostgreSQL QA override; canonical data awaits enrichment') }}"{% endif %}>
               {% if can_edit_coordinate_issues %}
               <input form="coord-form-{{ loop.index }}" name="lat_input"
                      class="form-control form-control-sm coord-input" inputmode="decimal"
@@ -168,7 +169,7 @@
                      value="{{ r.lat_short }}">
               {% else %}<span title="{{ r.lat_display }}">{{ r.lat_short }}</span>{% endif %}
             </td>
-            <td class="qa-coordinate">
+            <td class="qa-coordinate{% if r.qa_coords_saved %} qa-saved{% endif %}">
               {% if can_edit_coordinate_issues %}
               <input form="coord-form-{{ loop.index }}" name="lon_input"
                      class="form-control form-control-sm coord-input" inputmode="decimal"
@@ -215,22 +216,12 @@
                   <i class="bi bi-check-circle"></i> {{ _('Matched') }}
                 </span>
                 {% elif qa_qr and qa_sample_id and qa_user_id and r.actual_country_display %}
-                <form method="POST" action="{{ url_for('web.coordinate_issues_accept_country') }}" class="d-inline-block">
-                  <input type="hidden" name="csrf_token" value="{{ session.get('_coordinate_fix_csrf', '') }}">
-                  <input type="hidden" name="return_url" value="{{ request.full_path }}">
-                  <input type="hidden" name="sampleId" value="{{ qa_sample_id }}">
-                  <input type="hidden" name="userId" value="{{ qa_user_id }}">
-                  <input type="hidden" name="qr_code" value="{{ qa_qr }}">
-                  <input type="hidden" name="actual_country" value="{{ r.actual_country_display }}">
-                  <div class="form-check d-inline-flex align-items-center gap-1 mb-0">
-                    <input class="form-check-input mt-0" type="checkbox" name="confirm_actual_country" value="1"
-                           required id="country-ok-{{ loop.index }}">
-                    <label class="form-check-label small" for="country-ok-{{ loop.index }}">
-                      {{ _('OK') }}
-                    </label>
-                  </div>
-                  <button class="btn btn-sm btn-outline-success qa-action-btn" type="submit" title="{{ _('Update planned') }}">{{ _('Update') }}</button>
-                </form>
+                <div class="form-check d-inline-flex align-items-center gap-1 mb-0">
+                  <input class="form-check-input mt-0" form="coord-form-{{ loop.index }}"
+                         type="checkbox" name="confirm_actual_country" value="1" id="country-ok-{{ loop.index }}">
+                  <label class="form-check-label small" for="country-ok-{{ loop.index }}"
+                         title="{{ _('Confirm the actual country when pressing Save') }}">{{ _('OK') }}</label>
+                </div>
                 {% else %}
                 <span class="text-muted small">{{ _('QR or sample ID unavailable') }}</span>
                 {% endif %}
@@ -248,8 +239,10 @@
                 <input type="hidden" name="return_url" value="{{ request.full_path }}">
                 <input type="hidden" name="sampleId" value="{{ firestore_sample_id }}">
                 <input type="hidden" name="userId" value="{{ firestore_user_id }}">
+                <input type="hidden" name="qr_code" value="{{ r.get('QR_qrCode', '') }}">
+                <input type="hidden" name="actual_country" value="{{ r.actual_country_display }}">
                 {% if firestore_sample_id and firestore_user_id %}
-                <button class="btn btn-sm btn-primary coord-save-btn" type="submit" title="{{ _('Save coordinates') }}">{{ _('Save') }}</button>
+                <button class="btn btn-sm btn-primary coord-save-btn" type="submit" title="{{ _('Save GPS coordinates and optional planned country') }}">{{ _('Save') }}</button>
                 {% else %}
                 <span class="text-muted small" title="Firestore sampleId/userId missing from QA CSV">
                   {{ _('Sample ID unavailable') }}
@@ -359,6 +352,7 @@
   }
   .coordinate-issue-table th { font-weight: 600; }
   .coordinate-issue-table .qa-coordinate { width: 7.4rem; }
+  .coordinate-issue-table .qa-saved { background: rgba(30,130,80,.09); }
   .coordinate-issue-table .qa-country { width: 3.2rem; text-align: center; }
   .coordinate-issue-table .qa-user { max-width: 4.7rem; }
   .coordinate-issue-table .qa-stale { color: #9c6b16; font-weight: bold; cursor: help; }

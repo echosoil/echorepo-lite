@@ -1251,6 +1251,73 @@ def coordinate_issues_fix_coords():
         flash("Sample ID and Firestore owner do not match uniquely; nothing was changed.", "danger")
         return redirect(back_url)
 
+    # Country confirmation and GPS editing share a Save button. The country
+    # supplied by the QA snapshot is trustworthy only while GPS is unchanged.
+    old_lat = parse_coord(str(matches.iloc[0].get("GPS_lat") or ""), is_lon=False)
+    old_lon = parse_coord(str(matches.iloc[0].get("GPS_long") or ""), is_lon=True)
+    # A private PostgreSQL QA override may be fresher than the SQLite cache.
+    try:
+        from ..services.coordinate_qa_exact_overrides import read_exact_overrides
+        override = read_exact_overrides([sample_id]).get(sample_id)
+        if override and override[0] == form_uid:
+            old_lat, old_lon = float(override[1]), float(override[2])
+    except Exception:
+        current_app.logger.exception("QA coordinate read: private PostgreSQL lookup failed")
+        flash("Cannot verify current QA coordinates; nothing changed.", "danger")
+        return redirect(back_url)
+    coordinates_changed = (old_lat is None or old_lon is None or
+                           abs(lat - old_lat) > 1e-9 or abs(lon - old_lon) > 1e-9)
+    confirm_country = request.form.get("confirm_actual_country") == "1"
+    if confirm_country and coordinates_changed:
+        flash("Save the new GPS coordinates first, then review the recalculated actual country before confirming it.", "warning")
+        return redirect(back_url)
+
+    if confirm_country:
+        from contextlib import closing
+        from ..services.planned_pg import norm_qr, change_country, PlannedCountryError
+        if os.getenv("PLANNED_COUNTRY_SOURCE", "xlsx").strip().lower() != "postgres":
+            flash("Country corrections require PLANNED_COUNTRY_SOURCE=postgres.", "danger")
+            return redirect(back_url)
+        qr = norm_qr(request.form.get("qr_code"))
+        qa = pd.read_csv(_coordinate_wrong_csv_path(), dtype=str, keep_default_na=False)
+        required = {"sampleId", "userId", "QR_qrCode", "actual_cc", "planned_iso2", "coordinate_check_reason"}
+        if not required.issubset(qa.columns):
+            flash("QA snapshot lacks the fields needed to verify the country.", "danger")
+            return redirect(back_url)
+        matching_qr = qa["QR_qrCode"].map(norm_qr) == qr
+        match = qa.loc[matching_qr & (qa["sampleId"].str.strip() == sample_id)
+                       & (qa["userId"].str.strip() == form_uid)
+                       & (qa["coordinate_check_reason"].str.strip() == "country_mismatch")]
+        if len(match) != 1:
+            flash("Cannot uniquely verify this country mismatch.", "danger")
+            return redirect(back_url)
+        actual = str(match.iloc[0]["actual_cc"]).strip().upper()
+        if actual != str(request.form.get("actual_country") or "").strip().upper():
+            flash("Actual country changed; refresh the page.", "danger")
+            return redirect(back_url)
+        other_actuals = {str(v).strip().upper() for v in qa.loc[matching_qr, "actual_cc"] if str(v).strip()}
+        if other_actuals != {actual}:
+            flash("QR has conflicting actual countries; country was not changed.", "danger")
+            return redirect(back_url)
+        try:
+            with closing(get_pg_conn()) as conn:
+                with conn:
+                    change_country(conn, qr, actual, expected_planned=str(match.iloc[0]["planned_iso2"]).strip().upper(), actor=actor)
+        except (PlannedCountryError, ValueError) as exc:
+            flash(f"Planned country unchanged: {exc}", "danger")
+            return redirect(back_url)
+        except Exception:
+            current_app.logger.exception("QA country Save failed")
+            flash("Country update failed; see server logs.", "danger")
+            return redirect(back_url)
+        # There is no need to rewrite an unchanged Firestore GPS record.
+        flash(f"Planned country updated to {actual} for {qr}. QA flags refresh on enrichment.", "success")
+        return redirect(back_url)
+
+    if not coordinates_changed:
+        flash("No GPS changes to save.", "info")
+        return redirect(back_url)
+
     try:
         ok, info = update_coords_by_user_sample(form_uid, sample_id, lat, lon)
     except Exception:
@@ -1274,6 +1341,16 @@ def coordinate_issues_fix_coords():
             "QA coordinate save: Firebase updated, SQLite failed %s: %s", sample_id, local_info
         )
         flash("Saved in Firebase, but SQLite was not updated. Check server logs.", "warning")
+        return redirect(back_url)
+
+    # Keep a private exact-coordinate override so the QA page reflects a save
+    # immediately; public PostgreSQL coordinate columns must remain jittered.
+    try:
+        from ..services.coordinate_qa_exact_overrides import save_exact_override
+        save_exact_override(sample_id, form_uid, lat, lon, actor)
+    except Exception:
+        current_app.logger.exception("QA coordinate saved upstream but PostgreSQL override failed: %s", sample_id)
+        flash("GPS saved in Firebase and SQLite, but instant QA display failed. Check logs.", "warning")
         return redirect(back_url)
 
     current_app.logger.info("QA coordinate save succeeded: sample=%s editor=%s", sample_id, actor)
@@ -1584,24 +1661,15 @@ def coordinate_issues():
     # ----------------------------------------------------------
 
     if criteria["sample_id"]:
-        q = criteria["sample_id"]
-
-        mask = _series_contains(
-            df["sample_display"],
-            q,
-        )
-
-        for extra_col in (
-            "sampleId",
-            "sample_id",
-            "QR_qrCode",
-        ):
-            if extra_col in df.columns:
-                mask = mask | _series_contains(
-                    df[extra_col],
-                    q,
-                )
-
+        terms = list(dict.fromkeys(x.casefold() for x in
+                  re.split(r"[,;\s]+", criteria["sample_id"].strip()) if x))
+        if len(terms) > 200:
+            abort(400, description="A maximum of 200 Sample/QR terms is allowed")
+        search_cols = [c for c in ("sample_display", "sampleId", "sample_id", "QR_qrCode") if c in df.columns]
+        mask = pd.Series(False, index=df.index)
+        for term in terms:
+            for col in search_cols:
+                mask |= df[col].fillna("").astype(str).str.contains(term, case=False, regex=False)
         df = df.loc[mask].copy()
 
     if criteria["user_id"]:
@@ -1711,6 +1779,26 @@ def coordinate_issues():
         orient="records"
     )
 
+
+    # Load exact GPS values previously saved through this QA page. The public
+    # PostgreSQL lat/lon columns are jittered and are deliberately NOT used.
+    try:
+        from ..services.coordinate_qa_exact_overrides import read_exact_overrides
+        current_coords = read_exact_overrides({str(r.get("sampleId") or "").strip() for r in rows})
+        for row in rows:
+            sid = str(row.get("sampleId") or "").strip()
+            uid = str(row.get("userId") or "").strip()
+            saved = current_coords.get(sid)
+            if saved and saved[0] == uid:
+                row["lat_display"] = str(saved[1])
+                row["lon_display"] = str(saved[2])
+                row["qa_coords_saved"] = True
+            else:
+                row["qa_coords_saved"] = False
+    except Exception:
+        logging.getLogger(__name__).exception("Private PostgreSQL QA coordinates unavailable")
+        for row in rows:
+            row["qa_coords_saved"] = False
 
     # Shorten *presentation only*. Source coordinate strings stay intact.
     def _coord_preview(value):
