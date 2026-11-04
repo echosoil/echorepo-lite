@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-30 10:17+0000\n"
+"POT-Creation-Date: 2026-11-04 11:55+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: hu\n"
@@ -68,17 +68,17 @@ msgstr "Tiszta"
 msgid "Export filtered ({n})"
 msgstr "Kivitel szűrve ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1937
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1950
 msgid "Date"
 msgstr "Időpont"
 
-#: echorepo/i18n.py:121 static/js/map.js:1942
+#: echorepo/i18n.py:121 static/js/map.js:1955
 msgid "QR code"
 msgstr "QR-kód"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1947
+#: static/js/map.js:1960
 msgid "pH"
 msgstr "pH"
 
@@ -86,27 +86,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Szín"
 
-#: echorepo/i18n.py:124 static/js/map.js:1952
+#: echorepo/i18n.py:124 static/js/map.js:1965
 msgid "Soil organic matter"
 msgstr "Talajszerves anyag"
 
-#: echorepo/i18n.py:125 static/js/map.js:1966
+#: echorepo/i18n.py:125 static/js/map.js:1979
 msgid "Structure"
 msgstr "Struktúra"
 
-#: echorepo/i18n.py:126 static/js/map.js:1971
+#: echorepo/i18n.py:126 static/js/map.js:1984
 msgid "Earthworms"
 msgstr "Földigiliszták"
 
-#: echorepo/i18n.py:127 static/js/map.js:1976
+#: echorepo/i18n.py:127 static/js/map.js:1989
 msgid "Plastic"
 msgstr "Műanyag"
 
-#: echorepo/i18n.py:128 static/js/map.js:1981
+#: echorepo/i18n.py:128 static/js/map.js:1994
 msgid "Debris"
 msgstr "Levonás"
 
-#: echorepo/i18n.py:129 static/js/map.js:1986
+#: echorepo/i18n.py:129 static/js/map.js:1999
 msgid "Contamination"
 msgstr "Szennyeződés"
 
@@ -126,35 +126,35 @@ msgstr "Egy téglalap rajzolása"
 msgid "Click and drag to draw a rectangle."
 msgstr "Kattintson és húzza, hogy rajzoljon egy téglalap."
 
-#: echorepo/i18n.py:134 static/js/map.js:3291
+#: echorepo/i18n.py:134 static/js/map.js:3309
 msgid "Cancel drawing"
 msgstr "A rajz törlése"
 
-#: echorepo/i18n.py:135 static/js/map.js:3292
+#: echorepo/i18n.py:135 static/js/map.js:3310
 msgid "Cancel"
 msgstr "Törlés"
 
-#: echorepo/i18n.py:136 static/js/map.js:3296
+#: echorepo/i18n.py:136 static/js/map.js:3314
 msgid "Delete last point"
 msgstr "Az utolsó pont törlése"
 
-#: echorepo/i18n.py:137 static/js/map.js:1350
+#: echorepo/i18n.py:137 static/js/map.js:1363
 msgid "Street map"
 msgstr "Utcai térkép"
 
-#: echorepo/i18n.py:138 static/js/map.js:1351
+#: echorepo/i18n.py:138 static/js/map.js:1364
 msgid "Satellite"
 msgstr "Műholdas"
 
-#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
+#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
 msgid "Biogeographical regions"
 msgstr "Biológiai földrajzi régiók"
 
-#: echorepo/i18n.py:140 static/js/map.js:3886
+#: echorepo/i18n.py:140 static/js/map.js:3917
 msgid "Loading samples..."
 msgstr "Minták betöltése..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3887
+#: echorepo/i18n.py:141 static/js/map.js:3918
 msgid "Fetching visible map area"
 msgstr "Látható térkép területe"
 
@@ -186,7 +186,7 @@ msgstr "Kiválasztás törlése"
 msgid "Loading sample details..."
 msgstr "Mintaadatok betöltése..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1569
+#: echorepo/i18n.py:149 static/js/map.js:1582
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "A százalékos értékek (%) átszámítható mg / kg-ra, megszorozva 10000-rel."
 
@@ -297,26 +297,30 @@ msgid "Sign in"
 msgstr "Jelentkezz be"
 
 #: echorepo/templates/base.html:281
+msgid "Close"
+msgstr "Bezárás"
+
+#: echorepo/templates/base.html:293
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "Az ECHOREPO az EU és az UKRI által finanszírozott"
 
-#: echorepo/templates/base.html:281
+#: echorepo/templates/base.html:293
 msgid "project"
 msgstr "projekt"
 
-#: echorepo/templates/base.html:283
+#: echorepo/templates/base.html:295
 msgid "Need help?"
 msgstr "Segítsek?"
 
-#: echorepo/templates/base.html:291
+#: echorepo/templates/base.html:303
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "A brit kutatás és innováció (UKRI) finanszírozza"
 
-#: echorepo/templates/base.html:297
+#: echorepo/templates/base.html:309
 msgid "Co-funded by the European Union"
 msgstr "Az Európai Unió által finanszírozott"
 
-#: echorepo/templates/base.html:301
+#: echorepo/templates/base.html:313
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr "Az Európai Unió és az Egyesült Királyság kutatási és innovációs programja"
 
@@ -338,18 +342,18 @@ msgid "The coordinate issues file was not found:"
 msgstr "A koordináta probléma fájl nem található:"
 
 #: echorepo/templates/coordinate_issues.html:25
-#: echorepo/templates/coordinate_issues.html:98 echorepo/templates/search.html:11
+#: echorepo/templates/coordinate_issues.html:134 echorepo/templates/search.html:11
 #: echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Minta / QR"
 
 #: echorepo/templates/coordinate_issues.html:30
-#: echorepo/templates/coordinate_issues.html:99
+#: echorepo/templates/coordinate_issues.html:135
 msgid "User ID"
 msgstr "Felhasználóazonosító"
 
 #: echorepo/templates/coordinate_issues.html:35
-#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:140
 msgid "Issue type"
 msgstr "Kibocsátástípus"
 
@@ -363,12 +367,12 @@ msgid "Search"
 msgstr "Keresés"
 
 #: echorepo/templates/coordinate_issues.html:55
-#: echorepo/templates/coordinate_issues.html:102
+#: echorepo/templates/coordinate_issues.html:138
 msgid "Actual country"
 msgstr "Tényleges ország"
 
 #: echorepo/templates/coordinate_issues.html:61
-#: echorepo/templates/coordinate_issues.html:103
+#: echorepo/templates/coordinate_issues.html:139
 msgid "Planned country"
 msgstr "Tervezett ország"
 
@@ -376,60 +380,213 @@ msgstr "Tervezett ország"
 msgid "Export current results"
 msgstr "Az aktuális eredmények exportálása"
 
-#: echorepo/templates/coordinate_issues.html:83
+#: echorepo/templates/coordinate_issues.html:84
+msgid "Download planned XLSX"
+msgstr "Tervezett XLSX letöltése"
+
+#: echorepo/templates/coordinate_issues.html:90
+#: echorepo/templates/coordinate_issues.html:95
+msgid "Upload planned XLSX"
+msgstr "Tervezett XLSX feltöltése"
+
+#: echorepo/templates/coordinate_issues.html:93
+msgid "Replace all planned rows"
+msgstr "Az összes tervezett sor cseréje"
+
+#: echorepo/templates/coordinate_issues.html:97
+msgid "PostgreSQL planned rows:"
+msgstr "A T1 tőkeinstrumentumokban lévő részesedések teljes összege"
+
+#: echorepo/templates/coordinate_issues.html:98
+msgid "Ingestion source:"
+msgstr "A lenyelés forrása:"
+
+#: echorepo/templates/coordinate_issues.html:100
+msgid ""
+"Upload replaces the table in one transaction; the previous version is "
+"archived."
+msgstr ""
+"A feltöltés egy tranzakcióban helyettesíti a táblázatot; az előző verzió "
+"archivált."
+
+#: echorepo/templates/coordinate_issues.html:103
+msgid "The PostgreSQL planned-country table is empty."
+msgstr "A PostgreSQL tervezett-country asztal üres."
+
+#: echorepo/templates/coordinate_issues.html:104
+msgid ""
+"Choose the original planned.xlsx, check Replace all planned rows, then click "
+"Upload planned XLSX."
+msgstr ""
+"Válassza ki az eredeti tervezett. xlsx, ellenőrizze az összes tervezett sort,"
+" majd kattintson a tervezett XLSX feltöltésére."
+
+#: echorepo/templates/coordinate_issues.html:105
+msgid ""
+"Any import error appears above this page. Do not switch ingestion to "
+"PostgreSQL until rows are imported."
+msgstr ""
+"Bármely behozatali hiba ezen az oldalon jelenik meg. A lenyelést ne váltsa "
+"PostgreSQL-re, amíg a sorok be nem kerülnek."
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid ""
+"The PostgreSQL planned-country table contains rows, but ingestion still reads"
+" the XLSX file."
+msgstr ""
+"A PostgreSQL planned- country tábla sorokat tartalmaz, de a lenyelés még "
+"mindig az XLSX fájlt olvassa."
+
+#: echorepo/templates/coordinate_issues.html:110
+msgid ""
+"After verifying the downloaded XLSX, set PLANNED_COUNTRY_SOURCE=postgres and "
+"recreate the application container."
+msgstr ""
+"Miután ellenőriztük a letöltött XLSX-et, állítsuk be a PLANNED _ Country _ "
+"SOURCE = postgres-t, és állítsuk újra az alkalmazás tartályát."
+
+#: echorepo/templates/coordinate_issues.html:119
 msgid "coordinate issue(s)"
 msgstr "koordináta-kibocsátás (ok)"
 
-#: echorepo/templates/coordinate_issues.html:86
+#: echorepo/templates/coordinate_issues.html:122
 msgid "Source:"
 msgstr "Forrás:"
 
-#: echorepo/templates/coordinate_issues.html:100
-#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/issues.html:31
+#: echorepo/templates/coordinate_issues.html:135 echorepo/templates/issues.html:29
+#: echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Felhasználó"
+
+#: echorepo/templates/coordinate_issues.html:136
+#: echorepo/templates/coordinate_issues.html:167 echorepo/templates/issues.html:31
 #: echorepo/templates/issues.html:77 echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Lat"
 
-#: echorepo/templates/coordinate_issues.html:101
-#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/coordinate_issues.html:137
+#: echorepo/templates/coordinate_issues.html:176 echorepo/templates/issues.html:32
 #: echorepo/templates/issues.html:78 echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Lon"
 
-#: echorepo/templates/coordinate_issues.html:105
-msgid "Fix coordinates"
-msgstr "Koordináták beállítása"
+#: echorepo/templates/coordinate_issues.html:138
+msgid "Actual"
+msgstr "Tényleges"
 
-#: echorepo/templates/coordinate_issues.html:117
-msgid "Show only this sample on map"
-msgstr "Csak ez a minta jelenjen meg a térképen"
+#: echorepo/templates/coordinate_issues.html:139
+msgid "Planned"
+msgstr "Tervezett"
 
-#: echorepo/templates/coordinate_issues.html:158 echorepo/templates/issues.html:53
+#: echorepo/templates/coordinate_issues.html:140
+msgid "Issue"
+msgstr "Kiállítás"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Actual country OK?"
+msgstr "A valódi ország oké?"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Country OK?"
+msgstr "Az ország rendben van?"
+
+#: echorepo/templates/coordinate_issues.html:142
+#: echorepo/templates/coordinate_issues.html:245 echorepo/templates/issues.html:53
 #: echorepo/templates/issues.html:96
 msgid "Save"
 msgstr "Mentés"
 
-#: echorepo/templates/coordinate_issues.html:161
+#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/search.html:105
+#: echorepo/templates/search.html:106
+msgid "Show this sample on map"
+msgstr "A minta megjelenítése a térképen"
+
+#: echorepo/templates/coordinate_issues.html:163
+msgid "Saved GPS in PostgreSQL QA override; canonical data awaits enrichment"
+msgstr ""
+"Megtakarított GPS a PostgreSQL QA felülbírálatban; kanonikus adatok a "
+"dúsításra várnak"
+
+#: echorepo/templates/coordinate_issues.html:182
+#: echorepo/templates/coordinate_issues.html:189
+msgid "QA snapshot:"
+msgstr "QA pillanatfelvétel:"
+
+#: echorepo/templates/coordinate_issues.html:182
+msgid "Current planned country:"
+msgstr "A jelenlegi tervezett ország:"
+
+#: echorepo/templates/coordinate_issues.html:185
+msgid "Multiple planned rows for this QR; review required"
+msgstr "Több tervezett sor erre a QR-re; felülvizsgálat szükséges"
+
+#: echorepo/templates/coordinate_issues.html:191
+msgid "Not in PostgreSQL"
+msgstr "Nem PostgreSQL-ben"
+
+#: echorepo/templates/coordinate_issues.html:197
+msgid "Mismatch"
+msgstr "Megtévesztés"
+
+#: echorepo/templates/coordinate_issues.html:199
+msgid "Default GPS"
+msgstr "Alapértelmezett GPS"
+
+#: echorepo/templates/coordinate_issues.html:201
+msgid "Invalid GPS"
+msgstr "Érvénytelen GPS"
+
+#: echorepo/templates/coordinate_issues.html:203
+msgid "No country"
+msgstr "Nincs ország"
+
+#: echorepo/templates/coordinate_issues.html:215
+msgid "Current PostgreSQL value matches actual country; QA CSV may need a refresh"
+msgstr ""
+"Aktuális PostgreSQL érték megegyezik a tényleges ország; QA CSV szüksége "
+"lehet egy frissítést"
+
+#: echorepo/templates/coordinate_issues.html:216
+msgid "Matched"
+msgstr "Párolt"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "Confirm the actual country when pressing Save"
+msgstr "A mentés megnyomásakor a tényleges ország megerősítése"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "OK"
+msgstr "OKÉ"
+
+#: echorepo/templates/coordinate_issues.html:226
+msgid "QR or sample ID unavailable"
+msgstr "QR vagy mintaazonosító nem áll rendelkezésre"
+
+#: echorepo/templates/coordinate_issues.html:245
+msgid "Save GPS coordinates and optional planned country"
+msgstr "A GPS koordináták és a tervezett ország mentése"
+
+#: echorepo/templates/coordinate_issues.html:248
 msgid "Sample ID unavailable"
 msgstr "A minta azonosítója nem található"
 
-#: echorepo/templates/coordinate_issues.html:166
+#: echorepo/templates/coordinate_issues.html:253
 msgid "Read-only"
 msgstr "Csak olvasható"
 
-#: echorepo/templates/coordinate_issues.html:174
+#: echorepo/templates/coordinate_issues.html:261
 msgid "No coordinate issues for these filters."
 msgstr "Nincs koordináta probléma a szűrőkkel."
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "Showing page"
 msgstr "Megjelenítő oldal"
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "of"
 msgstr "ii"
 
-#: echorepo/templates/coordinate_issues.html:187 echorepo/templates/search.html:136
+#: echorepo/templates/coordinate_issues.html:274 echorepo/templates/search.html:136
 msgid "results"
 msgstr "eredmények"
 
@@ -471,7 +628,7 @@ msgid "Country"
 msgstr "Ország"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:326
+#: echorepo/templates/search.html:21 static/js/map.js:339
 msgid "Any country"
 msgstr "Bármely ország"
 
@@ -525,10 +682,6 @@ msgstr "Nincs bejegyzés alapértelmezett koordinátákkal"
 #: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
 msgid "Sample"
 msgstr "Minta"
-
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
-msgid "User"
-msgstr "Felhasználó"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
 msgid "QR"
@@ -905,10 +1058,6 @@ msgstr "Időbélyegző"
 msgid "Collected by"
 msgstr "Gyűjtötte:"
 
-#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
-msgid "Show this sample on map"
-msgstr "A minta megjelenítése a térképen"
-
 #: echorepo/templates/search.html:123
 msgid "No results for these filters."
 msgstr "Ezekre a szűrőkre nincs eredmény."
@@ -994,28 +1143,28 @@ msgstr "Javasolt hivatkozás"
 msgid "No Zenodo publications have been logged yet."
 msgstr "A Zenodo kiadványait még nem jegyezték be."
 
-#: static/js/map.js:265
+#: static/js/map.js:278
 msgid "Link copied to clipboard"
 msgstr "A vágólapra másolt link"
 
-#: static/js/map.js:268
+#: static/js/map.js:281
 msgid "Copy this link:"
 msgstr "Másold ezt a linket:"
 
-#: static/js/map.js:893 static/js/map.js:3662
+#: static/js/map.js:906 static/js/map.js:3684
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Kivitel szűrve (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3454
+#: static/js/map.js:916 static/js/map.js:3472
 msgid "Release mouse to finish drawing."
 msgstr "Engedd el az egeret, hogy befejezze a rajzot."
 
-#: static/js/map.js:977
+#: static/js/map.js:990
 msgid "Not available"
 msgstr "Nincs"
 
-#: static/js/map.js:1319
+#: static/js/map.js:1332
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1023,69 +1172,69 @@ msgstr ""
 "Nem sikerült betölteni a biogeográfiai térségi átfedést. Ellenőrizze, hogy "
 "létezik-e / static / geo / biogeo _ regions _ 2016.geojson."
 
-#: static/js/map.js:1575
+#: static/js/map.js:1588
 msgid "Unit conversion help"
 msgstr "Egységkonverziós segítség"
 
-#: static/js/map.js:1961
+#: static/js/map.js:1974
 msgid "Texture"
 msgstr "Textúra"
 
-#: static/js/map.js:1996
+#: static/js/map.js:2009
 msgid "Observations"
 msgstr "Megfigyelések"
 
-#: static/js/map.js:2634 static/js/map.js:3986
+#: static/js/map.js:2648 static/js/map.js:4034
 msgid "Loading map data..."
 msgstr "Térképadatok betöltése..."
 
-#: static/js/map.js:2638
+#: static/js/map.js:2652
 msgid "Please wait"
 msgstr "Kérem, várjon"
 
-#: static/js/map.js:2917
+#: static/js/map.js:2931
 msgid "Loading..."
 msgstr "Betöltés..."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3302
 msgid "Draw selection rectangle"
 msgstr "A kijelölési téglalap rajzolása"
 
-#: static/js/map.js:3295
+#: static/js/map.js:3313
 msgid "Delete last point drawn"
 msgstr "Az utolsó lehívott pont törlése"
 
-#: static/js/map.js:3303
+#: static/js/map.js:3321
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Kattintson és húzza, hogy rajzoljon egy választás téglalap. Többet is "
 "rajzolhatsz."
 
-#: static/js/map.js:3309
+#: static/js/map.js:3327
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Engedje el az egeret, hogy ezt a téglalapot a kiválasztáshoz."
 
-#: static/js/map.js:3390
+#: static/js/map.js:3408
 msgid "No selected samples to export."
 msgstr "Kiválasztott mintákat nem lehet exportálni."
 
-#: static/js/map.js:3732
+#: static/js/map.js:3754
 msgid "Please sign in to export data."
 msgstr "Kérem, jelentkezzen be az adatok exportálásához."
 
-#: static/js/map.js:3802
+#: static/js/map.js:3825
 msgid "Loading sample..."
 msgstr "A minta betöltése..."
 
-#: static/js/map.js:3918
+#: static/js/map.js:3966
 msgid "Rendering markers..."
 msgstr "Jelölések..."
 
-#: static/js/map.js:3919
+#: static/js/map.js:3967
 msgid "Building clusters and popups"
 msgstr "Építési klaszterek és poppok"
 
-#: static/js/map.js:3987
+#: static/js/map.js:4035
 msgid "Preparing map"
 msgstr "A térkép előkészítése"
 
@@ -1118,4 +1267,10 @@ msgstr "A térkép előkészítése"
 
 #~ msgid "All countries"
 #~ msgstr "Valamennyi ország"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Koordináták beállítása"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Csak ez a minta jelenjen meg a térképen"
 

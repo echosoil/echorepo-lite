@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-30 10:17+0000\n"
+"POT-Creation-Date: 2026-11-04 11:55+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: bg\n"
@@ -68,17 +68,17 @@ msgstr "Изчистване"
 msgid "Export filtered ({n})"
 msgstr "Изнасяне на филтъра ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1937
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1950
 msgid "Date"
 msgstr "Дата"
 
-#: echorepo/i18n.py:121 static/js/map.js:1942
+#: echorepo/i18n.py:121 static/js/map.js:1955
 msgid "QR code"
 msgstr "QR код"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1947
+#: static/js/map.js:1960
 msgid "pH"
 msgstr "pH"
 
@@ -86,27 +86,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Цвят"
 
-#: echorepo/i18n.py:124 static/js/map.js:1952
+#: echorepo/i18n.py:124 static/js/map.js:1965
 msgid "Soil organic matter"
 msgstr "Почвена органична материя"
 
-#: echorepo/i18n.py:125 static/js/map.js:1966
+#: echorepo/i18n.py:125 static/js/map.js:1979
 msgid "Structure"
 msgstr "Структура"
 
-#: echorepo/i18n.py:126 static/js/map.js:1971
+#: echorepo/i18n.py:126 static/js/map.js:1984
 msgid "Earthworms"
 msgstr "Земни червеи"
 
-#: echorepo/i18n.py:127 static/js/map.js:1976
+#: echorepo/i18n.py:127 static/js/map.js:1989
 msgid "Plastic"
 msgstr "Пластмасови"
 
-#: echorepo/i18n.py:128 static/js/map.js:1981
+#: echorepo/i18n.py:128 static/js/map.js:1994
 msgid "Debris"
 msgstr "Дебри"
 
-#: echorepo/i18n.py:129 static/js/map.js:1986
+#: echorepo/i18n.py:129 static/js/map.js:1999
 msgid "Contamination"
 msgstr "Замърсяване"
 
@@ -126,35 +126,35 @@ msgstr "Показване на правоъгълник"
 msgid "Click and drag to draw a rectangle."
 msgstr "Щракнете и плъзнете, за да нарисувате правоъгълник."
 
-#: echorepo/i18n.py:134 static/js/map.js:3291
+#: echorepo/i18n.py:134 static/js/map.js:3309
 msgid "Cancel drawing"
 msgstr "Отмяна на чертежа"
 
-#: echorepo/i18n.py:135 static/js/map.js:3292
+#: echorepo/i18n.py:135 static/js/map.js:3310
 msgid "Cancel"
 msgstr "Отмяна"
 
-#: echorepo/i18n.py:136 static/js/map.js:3296
+#: echorepo/i18n.py:136 static/js/map.js:3314
 msgid "Delete last point"
 msgstr "Изтриване на последната точка"
 
-#: echorepo/i18n.py:137 static/js/map.js:1350
+#: echorepo/i18n.py:137 static/js/map.js:1363
 msgid "Street map"
 msgstr "Улична карта"
 
-#: echorepo/i18n.py:138 static/js/map.js:1351
+#: echorepo/i18n.py:138 static/js/map.js:1364
 msgid "Satellite"
 msgstr "Сателит"
 
-#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
+#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
 msgid "Biogeographical regions"
 msgstr "Биогеографски райони"
 
-#: echorepo/i18n.py:140 static/js/map.js:3886
+#: echorepo/i18n.py:140 static/js/map.js:3917
 msgid "Loading samples..."
 msgstr "Зареждане на проби..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3887
+#: echorepo/i18n.py:141 static/js/map.js:3918
 msgid "Fetching visible map area"
 msgstr "Търсене на видима зона на картата"
 
@@ -186,7 +186,7 @@ msgstr "Изчистване на избора"
 msgid "Loading sample details..."
 msgstr "Зареждане на данните от пробата..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1569
+#: echorepo/i18n.py:149 static/js/map.js:1582
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
 "Процентните стойности (%) могат да бъдат преобразувани в mg/kg чрез "
@@ -297,26 +297,30 @@ msgid "Sign in"
 msgstr "Подпишете се"
 
 #: echorepo/templates/base.html:281
+msgid "Close"
+msgstr "Затваряне"
+
+#: echorepo/templates/base.html:293
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo е част от финансирането от ЕС и UKRI"
 
-#: echorepo/templates/base.html:281
+#: echorepo/templates/base.html:293
 msgid "project"
 msgstr "проект"
 
-#: echorepo/templates/base.html:283
+#: echorepo/templates/base.html:295
 msgid "Need help?"
 msgstr "Имаш ли нужда от помощ?"
 
-#: echorepo/templates/base.html:291
+#: echorepo/templates/base.html:303
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "Финансиран от UK Research and Innovation (UKRI)"
 
-#: echorepo/templates/base.html:297
+#: echorepo/templates/base.html:309
 msgid "Co-funded by the European Union"
 msgstr "Съфинансирани от Европейския съюз"
 
-#: echorepo/templates/base.html:301
+#: echorepo/templates/base.html:313
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr "Финансирани от Европейския съюз и UK Research and Innovation"
 
@@ -338,18 +342,18 @@ msgid "The coordinate issues file was not found:"
 msgstr "Файлът не беше намерен:"
 
 #: echorepo/templates/coordinate_issues.html:25
-#: echorepo/templates/coordinate_issues.html:98 echorepo/templates/search.html:11
+#: echorepo/templates/coordinate_issues.html:134 echorepo/templates/search.html:11
 #: echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Проба / QR"
 
 #: echorepo/templates/coordinate_issues.html:30
-#: echorepo/templates/coordinate_issues.html:99
+#: echorepo/templates/coordinate_issues.html:135
 msgid "User ID"
 msgstr "Идентификационен номер на потребителя"
 
 #: echorepo/templates/coordinate_issues.html:35
-#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:140
 msgid "Issue type"
 msgstr "Вид емисия"
 
@@ -363,12 +367,12 @@ msgid "Search"
 msgstr "Търсене"
 
 #: echorepo/templates/coordinate_issues.html:55
-#: echorepo/templates/coordinate_issues.html:102
+#: echorepo/templates/coordinate_issues.html:138
 msgid "Actual country"
 msgstr "Действителна държава"
 
 #: echorepo/templates/coordinate_issues.html:61
-#: echorepo/templates/coordinate_issues.html:103
+#: echorepo/templates/coordinate_issues.html:139
 msgid "Planned country"
 msgstr "Планирана държава"
 
@@ -376,60 +380,209 @@ msgstr "Планирана държава"
 msgid "Export current results"
 msgstr "Експортиране на текущите резултати"
 
-#: echorepo/templates/coordinate_issues.html:83
-msgid "coordinate issue(s)"
-msgstr "координатна емисия(s)"
+#: echorepo/templates/coordinate_issues.html:84
+msgid "Download planned XLSX"
+msgstr "Изтегляне на планирания XLSX"
 
-#: echorepo/templates/coordinate_issues.html:86
-msgid "Source:"
+#: echorepo/templates/coordinate_issues.html:90
+#: echorepo/templates/coordinate_issues.html:95
+msgid "Upload planned XLSX"
+msgstr "Качване на планирания XLSX"
+
+#: echorepo/templates/coordinate_issues.html:93
+msgid "Replace all planned rows"
+msgstr "Замяна на всички планирани редове"
+
+#: echorepo/templates/coordinate_issues.html:97
+msgid "PostgreSQL planned rows:"
+msgstr "ПостгреСQL планирани редове:"
+
+#: echorepo/templates/coordinate_issues.html:98
+msgid "Ingestion source:"
 msgstr "Източник:"
 
 #: echorepo/templates/coordinate_issues.html:100
-#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/issues.html:31
+msgid ""
+"Upload replaces the table in one transaction; the previous version is "
+"archived."
+msgstr "Качване заменя таблицата в една сделка; предишната версия се архивира."
+
+#: echorepo/templates/coordinate_issues.html:103
+msgid "The PostgreSQL planned-country table is empty."
+msgstr "Планираната таблица PostgreSQL е празна."
+
+#: echorepo/templates/coordinate_issues.html:104
+msgid ""
+"Choose the original planned.xlsx, check Replace all planned rows, then click "
+"Upload planned XLSX."
+msgstr ""
+"Изберете оригиналния план. xlsx, проверка Замяна на всички планирани редове, "
+"след това кликнете Качване на планирани XLSX."
+
+#: echorepo/templates/coordinate_issues.html:105
+msgid ""
+"Any import error appears above this page. Do not switch ingestion to "
+"PostgreSQL until rows are imported."
+msgstr ""
+"Грешка при внос се появява над тази страница. Не превключвайте поглъщането на"
+" PostgreSQL, докато не бъдат внесени редове."
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid ""
+"The PostgreSQL planned-country table contains rows, but ingestion still reads"
+" the XLSX file."
+msgstr ""
+"В таблицата PostgreSQL планирана държава съдържа редове, но поглъщането все "
+"още чете файла XLSX."
+
+#: echorepo/templates/coordinate_issues.html:110
+msgid ""
+"After verifying the downloaded XLSX, set PLANNED_COUNTRY_SOURCE=postgres and "
+"recreate the application container."
+msgstr ""
+"След проверка на изтеглените XLSX, задайте PlanNED COUNTRY SOURCE= postgrece "
+"и пресъздайте контейнера за кандидатстване."
+
+#: echorepo/templates/coordinate_issues.html:119
+msgid "coordinate issue(s)"
+msgstr "координатна емисия(s)"
+
+#: echorepo/templates/coordinate_issues.html:122
+msgid "Source:"
+msgstr "Източник:"
+
+#: echorepo/templates/coordinate_issues.html:135 echorepo/templates/issues.html:29
+#: echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Потребител"
+
+#: echorepo/templates/coordinate_issues.html:136
+#: echorepo/templates/coordinate_issues.html:167 echorepo/templates/issues.html:31
 #: echorepo/templates/issues.html:77 echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Лат"
 
-#: echorepo/templates/coordinate_issues.html:101
-#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/coordinate_issues.html:137
+#: echorepo/templates/coordinate_issues.html:176 echorepo/templates/issues.html:32
 #: echorepo/templates/issues.html:78 echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Лон"
 
-#: echorepo/templates/coordinate_issues.html:105
-msgid "Fix coordinates"
-msgstr "Определяне на координатите"
+#: echorepo/templates/coordinate_issues.html:138
+msgid "Actual"
+msgstr "Действителен"
 
-#: echorepo/templates/coordinate_issues.html:117
-msgid "Show only this sample on map"
-msgstr "Показване само на тази проба на картата"
+#: echorepo/templates/coordinate_issues.html:139
+msgid "Planned"
+msgstr "Планирано"
 
-#: echorepo/templates/coordinate_issues.html:158 echorepo/templates/issues.html:53
+#: echorepo/templates/coordinate_issues.html:140
+msgid "Issue"
+msgstr "Издаване"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Actual country OK?"
+msgstr "Истинската страна добре ли е?"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Country OK?"
+msgstr "Страната добре ли е?"
+
+#: echorepo/templates/coordinate_issues.html:142
+#: echorepo/templates/coordinate_issues.html:245 echorepo/templates/issues.html:53
 #: echorepo/templates/issues.html:96
 msgid "Save"
 msgstr "Запис"
 
-#: echorepo/templates/coordinate_issues.html:161
+#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/search.html:105
+#: echorepo/templates/search.html:106
+msgid "Show this sample on map"
+msgstr "Показване на тази проба на картата"
+
+#: echorepo/templates/coordinate_issues.html:163
+msgid "Saved GPS in PostgreSQL QA override; canonical data awaits enrichment"
+msgstr "Запис на GPS в PostgreSQL QA overover; каноничните данни очакват обогатяване"
+
+#: echorepo/templates/coordinate_issues.html:182
+#: echorepo/templates/coordinate_issues.html:189
+msgid "QA snapshot:"
+msgstr "QA снимка:"
+
+#: echorepo/templates/coordinate_issues.html:182
+msgid "Current planned country:"
+msgstr "Текуща планирана държава:"
+
+#: echorepo/templates/coordinate_issues.html:185
+msgid "Multiple planned rows for this QR; review required"
+msgstr "Множество планирани редове за този QR; изисква се преглед"
+
+#: echorepo/templates/coordinate_issues.html:191
+msgid "Not in PostgreSQL"
+msgstr "Не в PostgreSQL"
+
+#: echorepo/templates/coordinate_issues.html:197
+msgid "Mismatch"
+msgstr "Грешка"
+
+#: echorepo/templates/coordinate_issues.html:199
+msgid "Default GPS"
+msgstr "GPS по подразбиране"
+
+#: echorepo/templates/coordinate_issues.html:201
+msgid "Invalid GPS"
+msgstr "Невалиден GPS"
+
+#: echorepo/templates/coordinate_issues.html:203
+msgid "No country"
+msgstr "Няма страна"
+
+#: echorepo/templates/coordinate_issues.html:215
+msgid "Current PostgreSQL value matches actual country; QA CSV may need a refresh"
+msgstr ""
+"Текуща PostgreSQL стойност съвпада с действителната страна; QA CSV може да се"
+" наложи обновяване"
+
+#: echorepo/templates/coordinate_issues.html:216
+msgid "Matched"
+msgstr "Съвпадение"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "Confirm the actual country when pressing Save"
+msgstr "Потвърдете действителната страна при натискане на Save"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "OK"
+msgstr "ДОБРЕ"
+
+#: echorepo/templates/coordinate_issues.html:226
+msgid "QR or sample ID unavailable"
+msgstr "QR или идентификаторът на пробата е недостъпен"
+
+#: echorepo/templates/coordinate_issues.html:245
+msgid "Save GPS coordinates and optional planned country"
+msgstr "Запис на GPS координати и незадължителна планирана страна"
+
+#: echorepo/templates/coordinate_issues.html:248
 msgid "Sample ID unavailable"
 msgstr "Недостъпен идентификатор на пробата"
 
-#: echorepo/templates/coordinate_issues.html:166
+#: echorepo/templates/coordinate_issues.html:253
 msgid "Read-only"
 msgstr "Само за четене"
 
-#: echorepo/templates/coordinate_issues.html:174
+#: echorepo/templates/coordinate_issues.html:261
 msgid "No coordinate issues for these filters."
 msgstr "Няма проблеми с координацията на тези филтри."
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "Showing page"
 msgstr "Показване на страница"
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "of"
 msgstr "от"
 
-#: echorepo/templates/coordinate_issues.html:187 echorepo/templates/search.html:136
+#: echorepo/templates/coordinate_issues.html:274 echorepo/templates/search.html:136
 msgid "results"
 msgstr "резултати"
 
@@ -471,7 +624,7 @@ msgid "Country"
 msgstr "Държава"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:326
+#: echorepo/templates/search.html:21 static/js/map.js:339
 msgid "Any country"
 msgstr "Всяка държава"
 
@@ -525,10 +678,6 @@ msgstr "Няма записи с координати по подразбира�
 #: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
 msgid "Sample"
 msgstr "Проба"
-
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
-msgid "User"
-msgstr "Потребител"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
 msgid "QR"
@@ -906,10 +1055,6 @@ msgstr "Времеви печат"
 msgid "Collected by"
 msgstr "Събрано от"
 
-#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
-msgid "Show this sample on map"
-msgstr "Показване на тази проба на картата"
-
 #: echorepo/templates/search.html:123
 msgid "No results for these filters."
 msgstr "Няма резултати за тези филтри."
@@ -995,28 +1140,28 @@ msgstr "Предложение за позоваване"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Все още няма записани публикации на Зенодо."
 
-#: static/js/map.js:265
+#: static/js/map.js:278
 msgid "Link copied to clipboard"
 msgstr "Копиране на линк в системния буфер"
 
-#: static/js/map.js:268
+#: static/js/map.js:281
 msgid "Copy this link:"
 msgstr "Копиране на тази връзка:"
 
-#: static/js/map.js:893 static/js/map.js:3662
+#: static/js/map.js:906 static/js/map.js:3684
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Експортиране на филтър (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3454
+#: static/js/map.js:916 static/js/map.js:3472
 msgid "Release mouse to finish drawing."
 msgstr "Освободете мишката, за да завършите чертеж."
 
-#: static/js/map.js:977
+#: static/js/map.js:990
 msgid "Not available"
 msgstr "Няма"
 
-#: static/js/map.js:1319
+#: static/js/map.js:1332
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1024,69 +1169,69 @@ msgstr ""
 "Не може да се зареди биогеографското покритие. Проверете дали "
 "/static/geo/biogeo regions 2016.geojson съществува."
 
-#: static/js/map.js:1575
+#: static/js/map.js:1588
 msgid "Unit conversion help"
 msgstr "Помощ за преобразуване на единица"
 
-#: static/js/map.js:1961
+#: static/js/map.js:1974
 msgid "Texture"
 msgstr "Текстура"
 
-#: static/js/map.js:1996
+#: static/js/map.js:2009
 msgid "Observations"
 msgstr "Становища"
 
-#: static/js/map.js:2634 static/js/map.js:3986
+#: static/js/map.js:2648 static/js/map.js:4034
 msgid "Loading map data..."
 msgstr "Зареждане на данните от картата..."
 
-#: static/js/map.js:2638
+#: static/js/map.js:2652
 msgid "Please wait"
 msgstr "Моля те, почакай"
 
-#: static/js/map.js:2917
+#: static/js/map.js:2931
 msgid "Loading..."
 msgstr "Зареждане..."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3302
 msgid "Draw selection rectangle"
 msgstr "Показване на правоъгълник за избор"
 
-#: static/js/map.js:3295
+#: static/js/map.js:3313
 msgid "Delete last point drawn"
 msgstr "Изтриване на последната изтеглена точка"
 
-#: static/js/map.js:3303
+#: static/js/map.js:3321
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Щракнете и плъзнете, за да нарисувате правоъгълник за избор. Можеш да "
 "нарисуваш повече от един."
 
-#: static/js/map.js:3309
+#: static/js/map.js:3327
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Освободете мишката, за да добавите този правоъгълник към избора."
 
-#: static/js/map.js:3390
+#: static/js/map.js:3408
 msgid "No selected samples to export."
 msgstr "Няма избрани проби за износ."
 
-#: static/js/map.js:3732
+#: static/js/map.js:3754
 msgid "Please sign in to export data."
 msgstr "Моля, въведете данните за износ."
 
-#: static/js/map.js:3802
+#: static/js/map.js:3825
 msgid "Loading sample..."
 msgstr "Зареждане на проба..."
 
-#: static/js/map.js:3918
+#: static/js/map.js:3966
 msgid "Rendering markers..."
 msgstr "Пренасям маркери..."
 
-#: static/js/map.js:3919
+#: static/js/map.js:3967
 msgid "Building clusters and popups"
 msgstr "Строителни клъстери и изскачащи прозорци"
 
-#: static/js/map.js:3987
+#: static/js/map.js:4035
 msgid "Preparing map"
 msgstr "Подготовка на картата"
 
@@ -1119,4 +1264,10 @@ msgstr "Подготовка на картата"
 
 #~ msgid "All countries"
 #~ msgstr "Всички държави"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Определяне на координатите"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Показване само на тази проба на картата"
 

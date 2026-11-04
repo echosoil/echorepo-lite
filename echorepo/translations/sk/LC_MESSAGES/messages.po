@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-30 10:17+0000\n"
+"POT-Creation-Date: 2026-11-04 11:55+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sk\n"
@@ -68,17 +68,17 @@ msgstr "Vyčistiť"
 msgid "Export filtered ({n})"
 msgstr "Export filtrovaný ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1937
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1950
 msgid "Date"
 msgstr "Dátum"
 
-#: echorepo/i18n.py:121 static/js/map.js:1942
+#: echorepo/i18n.py:121 static/js/map.js:1955
 msgid "QR code"
 msgstr "QR kód"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1947
+#: static/js/map.js:1960
 msgid "pH"
 msgstr "p H"
 
@@ -86,27 +86,27 @@ msgstr "p H"
 msgid "Colour"
 msgstr "Farba"
 
-#: echorepo/i18n.py:124 static/js/map.js:1952
+#: echorepo/i18n.py:124 static/js/map.js:1965
 msgid "Soil organic matter"
 msgstr "Organické látky v pôde"
 
-#: echorepo/i18n.py:125 static/js/map.js:1966
+#: echorepo/i18n.py:125 static/js/map.js:1979
 msgid "Structure"
 msgstr "Štruktúra"
 
-#: echorepo/i18n.py:126 static/js/map.js:1971
+#: echorepo/i18n.py:126 static/js/map.js:1984
 msgid "Earthworms"
 msgstr "Dážďovky"
 
-#: echorepo/i18n.py:127 static/js/map.js:1976
+#: echorepo/i18n.py:127 static/js/map.js:1989
 msgid "Plastic"
 msgstr "Plasty"
 
-#: echorepo/i18n.py:128 static/js/map.js:1981
+#: echorepo/i18n.py:128 static/js/map.js:1994
 msgid "Debris"
 msgstr "Debris"
 
-#: echorepo/i18n.py:129 static/js/map.js:1986
+#: echorepo/i18n.py:129 static/js/map.js:1999
 msgid "Contamination"
 msgstr "Kontaminácia"
 
@@ -126,35 +126,35 @@ msgstr "Nakreslite obdĺžnik"
 msgid "Click and drag to draw a rectangle."
 msgstr "Kliknite a pretiahnite nakresliť obdĺžnik."
 
-#: echorepo/i18n.py:134 static/js/map.js:3291
+#: echorepo/i18n.py:134 static/js/map.js:3309
 msgid "Cancel drawing"
 msgstr "Zrušiť výkres"
 
-#: echorepo/i18n.py:135 static/js/map.js:3292
+#: echorepo/i18n.py:135 static/js/map.js:3310
 msgid "Cancel"
 msgstr "Zrušiť"
 
-#: echorepo/i18n.py:136 static/js/map.js:3296
+#: echorepo/i18n.py:136 static/js/map.js:3314
 msgid "Delete last point"
 msgstr "Vypustiť posledný bod"
 
-#: echorepo/i18n.py:137 static/js/map.js:1350
+#: echorepo/i18n.py:137 static/js/map.js:1363
 msgid "Street map"
 msgstr "Mapa ulíc"
 
-#: echorepo/i18n.py:138 static/js/map.js:1351
+#: echorepo/i18n.py:138 static/js/map.js:1364
 msgid "Satellite"
 msgstr "Satelit"
 
-#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
+#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
 msgid "Biogeographical regions"
 msgstr "Biogeografické regióny"
 
-#: echorepo/i18n.py:140 static/js/map.js:3886
+#: echorepo/i18n.py:140 static/js/map.js:3917
 msgid "Loading samples..."
 msgstr "Načítavam vzorky..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3887
+#: echorepo/i18n.py:141 static/js/map.js:3918
 msgid "Fetching visible map area"
 msgstr "Sťahujem viditeľnú oblasť mapy"
 
@@ -186,7 +186,7 @@ msgstr "Vyčistiť výber"
 msgid "Loading sample details..."
 msgstr "Načítavam detaily vzorky..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1569
+#: echorepo/i18n.py:149 static/js/map.js:1582
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Percentuálne hodnoty (%) možno prepočítať na mg/kg vynásobením 10000."
 
@@ -291,26 +291,30 @@ msgid "Sign in"
 msgstr "Prihlásiť sa"
 
 #: echorepo/templates/base.html:281
+msgid "Close"
+msgstr "Zavrieť"
+
+#: echorepo/templates/base.html:293
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo je súčasťou financovania EÚ a UKRI"
 
-#: echorepo/templates/base.html:281
+#: echorepo/templates/base.html:293
 msgid "project"
 msgstr "projekt"
 
-#: echorepo/templates/base.html:283
+#: echorepo/templates/base.html:295
 msgid "Need help?"
 msgstr "Potrebuješ pomoc?"
 
-#: echorepo/templates/base.html:291
+#: echorepo/templates/base.html:303
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "Financované UK Research and Innovation (UKRI)"
 
-#: echorepo/templates/base.html:297
+#: echorepo/templates/base.html:309
 msgid "Co-funded by the European Union"
 msgstr "Spolufinancované Európskou úniou"
 
-#: echorepo/templates/base.html:301
+#: echorepo/templates/base.html:313
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr "Financované Európskou úniou a UK výskum a inovácie"
 
@@ -332,18 +336,18 @@ msgid "The coordinate issues file was not found:"
 msgstr "Súbor súradníc nebol nájdený:"
 
 #: echorepo/templates/coordinate_issues.html:25
-#: echorepo/templates/coordinate_issues.html:98 echorepo/templates/search.html:11
+#: echorepo/templates/coordinate_issues.html:134 echorepo/templates/search.html:11
 #: echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Vzorka/QR"
 
 #: echorepo/templates/coordinate_issues.html:30
-#: echorepo/templates/coordinate_issues.html:99
+#: echorepo/templates/coordinate_issues.html:135
 msgid "User ID"
 msgstr "ID užívateľa"
 
 #: echorepo/templates/coordinate_issues.html:35
-#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:140
 msgid "Issue type"
 msgstr "Typ emisie"
 
@@ -357,12 +361,12 @@ msgid "Search"
 msgstr "Hľadať"
 
 #: echorepo/templates/coordinate_issues.html:55
-#: echorepo/templates/coordinate_issues.html:102
+#: echorepo/templates/coordinate_issues.html:138
 msgid "Actual country"
 msgstr "Skutočná krajina"
 
 #: echorepo/templates/coordinate_issues.html:61
-#: echorepo/templates/coordinate_issues.html:103
+#: echorepo/templates/coordinate_issues.html:139
 msgid "Planned country"
 msgstr "Plánovaná krajina"
 
@@ -370,60 +374,211 @@ msgstr "Plánovaná krajina"
 msgid "Export current results"
 msgstr "Exportovať aktuálne výsledky"
 
-#: echorepo/templates/coordinate_issues.html:83
+#: echorepo/templates/coordinate_issues.html:84
+msgid "Download planned XLSX"
+msgstr "Plánované stiahnutie XLSX"
+
+#: echorepo/templates/coordinate_issues.html:90
+#: echorepo/templates/coordinate_issues.html:95
+msgid "Upload planned XLSX"
+msgstr "Nahrať plánovaný XLSX"
+
+#: echorepo/templates/coordinate_issues.html:93
+msgid "Replace all planned rows"
+msgstr "Nahradiť všetky plánované riadky"
+
+#: echorepo/templates/coordinate_issues.html:97
+msgid "PostgreSQL planned rows:"
+msgstr "Plánované postgreSQL riadky:"
+
+#: echorepo/templates/coordinate_issues.html:98
+msgid "Ingestion source:"
+msgstr "Zdroj príjmu:"
+
+#: echorepo/templates/coordinate_issues.html:100
+msgid ""
+"Upload replaces the table in one transaction; the previous version is "
+"archived."
+msgstr ""
+"Upload nahradí tabuľku v jednej transakcii; predchádzajúca verzia je "
+"archivovaná."
+
+#: echorepo/templates/coordinate_issues.html:103
+msgid "The PostgreSQL planned-country table is empty."
+msgstr "Plánovaná tabuľka PostgreSQL je prázdna."
+
+#: echorepo/templates/coordinate_issues.html:104
+msgid ""
+"Choose the original planned.xlsx, check Replace all planned rows, then click "
+"Upload planned XLSX."
+msgstr ""
+"Vyberte si originál plánované. xlsx, check Nahradiť všetky plánované riadky, "
+"potom kliknite na Upload plánované XLSX."
+
+#: echorepo/templates/coordinate_issues.html:105
+msgid ""
+"Any import error appears above this page. Do not switch ingestion to "
+"PostgreSQL until rows are imported."
+msgstr ""
+"Akákoľvek chyba importu sa objaví nad touto stránkou. Neprepínajte požitie na"
+" PostgreSQL, kým nie sú importované riadky."
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid ""
+"The PostgreSQL planned-country table contains rows, but ingestion still reads"
+" the XLSX file."
+msgstr ""
+"PostgreSQL plánovaná tabuľka krajiny obsahuje riadky, ale požitie stále číta "
+"XLSX súbor."
+
+#: echorepo/templates/coordinate_issues.html:110
+msgid ""
+"After verifying the downloaded XLSX, set PLANNED_COUNTRY_SOURCE=postgres and "
+"recreate the application container."
+msgstr ""
+"Po overení stiahnutého XLSX, nastaviť PLANNED COUNTRY SOURCE=postgres a znovu"
+" vytvoriť aplikačný kontajner."
+
+#: echorepo/templates/coordinate_issues.html:119
 msgid "coordinate issue(s)"
 msgstr "súradnicové otázky"
 
-#: echorepo/templates/coordinate_issues.html:86
+#: echorepo/templates/coordinate_issues.html:122
 msgid "Source:"
 msgstr "Zdroj:"
 
-#: echorepo/templates/coordinate_issues.html:100
-#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/issues.html:31
+#: echorepo/templates/coordinate_issues.html:135 echorepo/templates/issues.html:29
+#: echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Užívateľ"
+
+#: echorepo/templates/coordinate_issues.html:136
+#: echorepo/templates/coordinate_issues.html:167 echorepo/templates/issues.html:31
 #: echorepo/templates/issues.html:77 echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Lat"
 
-#: echorepo/templates/coordinate_issues.html:101
-#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/coordinate_issues.html:137
+#: echorepo/templates/coordinate_issues.html:176 echorepo/templates/issues.html:32
 #: echorepo/templates/issues.html:78 echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Lon"
 
-#: echorepo/templates/coordinate_issues.html:105
-msgid "Fix coordinates"
-msgstr "Opraviť súradnice"
+#: echorepo/templates/coordinate_issues.html:138
+msgid "Actual"
+msgstr "Skutočný"
 
-#: echorepo/templates/coordinate_issues.html:117
-msgid "Show only this sample on map"
-msgstr "Zobraziť iba túto vzorku na mape"
+#: echorepo/templates/coordinate_issues.html:139
+msgid "Planned"
+msgstr "Plánované"
 
-#: echorepo/templates/coordinate_issues.html:158 echorepo/templates/issues.html:53
+#: echorepo/templates/coordinate_issues.html:140
+msgid "Issue"
+msgstr "Otázka"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Actual country OK?"
+msgstr "Skutočná krajina OK?"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Country OK?"
+msgstr "Krajina OK?"
+
+#: echorepo/templates/coordinate_issues.html:142
+#: echorepo/templates/coordinate_issues.html:245 echorepo/templates/issues.html:53
 #: echorepo/templates/issues.html:96
 msgid "Save"
 msgstr "Uložiť"
 
-#: echorepo/templates/coordinate_issues.html:161
+#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/search.html:105
+#: echorepo/templates/search.html:106
+msgid "Show this sample on map"
+msgstr "Zobraziť túto vzorku na mape"
+
+#: echorepo/templates/coordinate_issues.html:163
+msgid "Saved GPS in PostgreSQL QA override; canonical data awaits enrichment"
+msgstr "Uložené GPS v prepise PostgreSQL QA; kanonické dáta čakajú na obohatenie"
+
+#: echorepo/templates/coordinate_issues.html:182
+#: echorepo/templates/coordinate_issues.html:189
+msgid "QA snapshot:"
+msgstr "QA snímka:"
+
+#: echorepo/templates/coordinate_issues.html:182
+msgid "Current planned country:"
+msgstr "Aktuálna plánovaná krajina:"
+
+#: echorepo/templates/coordinate_issues.html:185
+msgid "Multiple planned rows for this QR; review required"
+msgstr "Početné plánované riadky pre tento QR; požadované preskúmanie"
+
+#: echorepo/templates/coordinate_issues.html:191
+msgid "Not in PostgreSQL"
+msgstr "Nie v PostgreSQL"
+
+#: echorepo/templates/coordinate_issues.html:197
+msgid "Mismatch"
+msgstr "Nesúlad"
+
+#: echorepo/templates/coordinate_issues.html:199
+msgid "Default GPS"
+msgstr "Štandardné GPS"
+
+#: echorepo/templates/coordinate_issues.html:201
+msgid "Invalid GPS"
+msgstr "Neplatné GPS"
+
+#: echorepo/templates/coordinate_issues.html:203
+msgid "No country"
+msgstr "Žiadna krajina"
+
+#: echorepo/templates/coordinate_issues.html:215
+msgid "Current PostgreSQL value matches actual country; QA CSV may need a refresh"
+msgstr ""
+"Aktuálna hodnota PostgreSQL zodpovedá skutočnej krajine; QA CSV môže "
+"potrebovať obnovenie"
+
+#: echorepo/templates/coordinate_issues.html:216
+msgid "Matched"
+msgstr "Zodpovedajúce"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "Confirm the actual country when pressing Save"
+msgstr "Potvrdiť skutočnú krajinu pri stlačení Uložiť"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "OK"
+msgstr "OK"
+
+#: echorepo/templates/coordinate_issues.html:226
+msgid "QR or sample ID unavailable"
+msgstr "QR alebo ID vzorky nie je k dispozícii"
+
+#: echorepo/templates/coordinate_issues.html:245
+msgid "Save GPS coordinates and optional planned country"
+msgstr "Uložiť GPS súradnice a voliteľné plánované krajiny"
+
+#: echorepo/templates/coordinate_issues.html:248
 msgid "Sample ID unavailable"
 msgstr "ID vzorky nie je k dispozícii"
 
-#: echorepo/templates/coordinate_issues.html:166
+#: echorepo/templates/coordinate_issues.html:253
 msgid "Read-only"
 msgstr "Len na čítanie"
 
-#: echorepo/templates/coordinate_issues.html:174
+#: echorepo/templates/coordinate_issues.html:261
 msgid "No coordinate issues for these filters."
 msgstr "Žiadne problémy s koordináciou týchto filtrov."
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "Showing page"
 msgstr "Zobrazenie stránky"
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "of"
 msgstr "z"
 
-#: echorepo/templates/coordinate_issues.html:187 echorepo/templates/search.html:136
+#: echorepo/templates/coordinate_issues.html:274 echorepo/templates/search.html:136
 msgid "results"
 msgstr "výsledky"
 
@@ -465,7 +620,7 @@ msgid "Country"
 msgstr "Krajina"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:326
+#: echorepo/templates/search.html:21 static/js/map.js:339
 msgid "Any country"
 msgstr "Každá krajina"
 
@@ -519,10 +674,6 @@ msgstr "Žiadne položky so štandardnými súradnicami"
 #: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
 msgid "Sample"
 msgstr "Vzorka"
-
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
-msgid "User"
-msgstr "Užívateľ"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
 msgid "QR"
@@ -897,10 +1048,6 @@ msgstr "Časová pečiatka"
 msgid "Collected by"
 msgstr "Zhromažďované"
 
-#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
-msgid "Show this sample on map"
-msgstr "Zobraziť túto vzorku na mape"
-
 #: echorepo/templates/search.html:123
 msgid "No results for these filters."
 msgstr "Žiadne výsledky pre tieto filtre."
@@ -986,28 +1133,28 @@ msgstr "Navrhované odkazy"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Zatiaľ neboli zaznamenané žiadne publikácie Zenodo."
 
-#: static/js/map.js:265
+#: static/js/map.js:278
 msgid "Link copied to clipboard"
 msgstr "Odkaz skopírovaný do schránky"
 
-#: static/js/map.js:268
+#: static/js/map.js:281
 msgid "Copy this link:"
 msgstr "Kopírovať tento odkaz:"
 
-#: static/js/map.js:893 static/js/map.js:3662
+#: static/js/map.js:906 static/js/map.js:3684
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Export filtrované (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3454
+#: static/js/map.js:916 static/js/map.js:3472
 msgid "Release mouse to finish drawing."
 msgstr "Uvoľnite myš do konca výkresu."
 
-#: static/js/map.js:977
+#: static/js/map.js:990
 msgid "Not available"
 msgstr "Nie je k dispozícii"
 
-#: static/js/map.js:1319
+#: static/js/map.js:1332
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1015,67 +1162,67 @@ msgstr ""
 "Nepodarilo sa načítať prekrytie biogeografického regiónu. Skontrolujte, či "
 "existuje /statická/geo/biogeo regióny 2016.geojson."
 
-#: static/js/map.js:1575
+#: static/js/map.js:1588
 msgid "Unit conversion help"
 msgstr "Pomocník konverzie jednotiek"
 
-#: static/js/map.js:1961
+#: static/js/map.js:1974
 msgid "Texture"
 msgstr "Textúra"
 
-#: static/js/map.js:1996
+#: static/js/map.js:2009
 msgid "Observations"
 msgstr "Pripomienky"
 
-#: static/js/map.js:2634 static/js/map.js:3986
+#: static/js/map.js:2648 static/js/map.js:4034
 msgid "Loading map data..."
 msgstr "Načítavam dáta mapy..."
 
-#: static/js/map.js:2638
+#: static/js/map.js:2652
 msgid "Please wait"
 msgstr "Prosím, počkajte"
 
-#: static/js/map.js:2917
+#: static/js/map.js:2931
 msgid "Loading..."
 msgstr "Načítava sa..."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3302
 msgid "Draw selection rectangle"
 msgstr "Kresliť výber obdĺžnik"
 
-#: static/js/map.js:3295
+#: static/js/map.js:3313
 msgid "Delete last point drawn"
 msgstr "Vypustiť posledný bod"
 
-#: static/js/map.js:3303
+#: static/js/map.js:3321
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr "Kliknite a pretiahnite nakresliť obdĺžnik výberu. Môžeš nakresliť viac."
 
-#: static/js/map.js:3309
+#: static/js/map.js:3327
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Vypustiť myš pridať tento obdĺžnik do výberu."
 
-#: static/js/map.js:3390
+#: static/js/map.js:3408
 msgid "No selected samples to export."
 msgstr "Žiadne vybrané vzorky na vývoz."
 
-#: static/js/map.js:3732
+#: static/js/map.js:3754
 msgid "Please sign in to export data."
 msgstr "Prosím prihláste sa na export dát."
 
-#: static/js/map.js:3802
+#: static/js/map.js:3825
 msgid "Loading sample..."
 msgstr "Načítavam vzorku..."
 
-#: static/js/map.js:3918
+#: static/js/map.js:3966
 msgid "Rendering markers..."
 msgstr "Kreslenie značiek..."
 
-#: static/js/map.js:3919
+#: static/js/map.js:3967
 msgid "Building clusters and popups"
 msgstr "Budovanie zoskupení a popupov"
 
-#: static/js/map.js:3987
+#: static/js/map.js:4035
 msgid "Preparing map"
 msgstr "Príprava mapy"
 
@@ -1269,4 +1416,10 @@ msgstr "Príprava mapy"
 
 #~ msgid "All countries"
 #~ msgstr "Všetky krajiny"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Opraviť súradnice"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Zobraziť iba túto vzorku na mape"
 

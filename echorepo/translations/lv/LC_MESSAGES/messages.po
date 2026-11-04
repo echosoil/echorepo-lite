@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-30 10:17+0000\n"
+"POT-Creation-Date: 2026-11-04 11:55+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lv\n"
@@ -69,17 +69,17 @@ msgstr "Tīrīt"
 msgid "Export filtered ({n})"
 msgstr "Eksportēt filtrētu ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1937
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1950
 msgid "Date"
 msgstr "Datums"
 
-#: echorepo/i18n.py:121 static/js/map.js:1942
+#: echorepo/i18n.py:121 static/js/map.js:1955
 msgid "QR code"
 msgstr "QR kods"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1947
+#: static/js/map.js:1960
 msgid "pH"
 msgstr "pH"
 
@@ -87,27 +87,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Krāsa"
 
-#: echorepo/i18n.py:124 static/js/map.js:1952
+#: echorepo/i18n.py:124 static/js/map.js:1965
 msgid "Soil organic matter"
 msgstr "Augsnes organiskās vielas"
 
-#: echorepo/i18n.py:125 static/js/map.js:1966
+#: echorepo/i18n.py:125 static/js/map.js:1979
 msgid "Structure"
 msgstr "Struktūra"
 
-#: echorepo/i18n.py:126 static/js/map.js:1971
+#: echorepo/i18n.py:126 static/js/map.js:1984
 msgid "Earthworms"
 msgstr "Sliekas"
 
-#: echorepo/i18n.py:127 static/js/map.js:1976
+#: echorepo/i18n.py:127 static/js/map.js:1989
 msgid "Plastic"
 msgstr "Plastmasas"
 
-#: echorepo/i18n.py:128 static/js/map.js:1981
+#: echorepo/i18n.py:128 static/js/map.js:1994
 msgid "Debris"
 msgstr "Debri"
 
-#: echorepo/i18n.py:129 static/js/map.js:1986
+#: echorepo/i18n.py:129 static/js/map.js:1999
 msgid "Contamination"
 msgstr "Piesārņojums"
 
@@ -127,35 +127,35 @@ msgstr "Zīmēt"
 msgid "Click and drag to draw a rectangle."
 msgstr "Noklikšķiniet un velciet, lai zīmētu taisnstūri."
 
-#: echorepo/i18n.py:134 static/js/map.js:3291
+#: echorepo/i18n.py:134 static/js/map.js:3309
 msgid "Cancel drawing"
 msgstr "Atcelt zīmēšanu"
 
-#: echorepo/i18n.py:135 static/js/map.js:3292
+#: echorepo/i18n.py:135 static/js/map.js:3310
 msgid "Cancel"
 msgstr "Atcelt"
 
-#: echorepo/i18n.py:136 static/js/map.js:3296
+#: echorepo/i18n.py:136 static/js/map.js:3314
 msgid "Delete last point"
 msgstr "Svītrot pēdējo punktu"
 
-#: echorepo/i18n.py:137 static/js/map.js:1350
+#: echorepo/i18n.py:137 static/js/map.js:1363
 msgid "Street map"
 msgstr "Ielu karte"
 
-#: echorepo/i18n.py:138 static/js/map.js:1351
+#: echorepo/i18n.py:138 static/js/map.js:1364
 msgid "Satellite"
 msgstr "Satelīts"
 
-#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
+#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
 msgid "Biogeographical regions"
 msgstr "Bioģeogrāfiskie reģioni"
 
-#: echorepo/i18n.py:140 static/js/map.js:3886
+#: echorepo/i18n.py:140 static/js/map.js:3917
 msgid "Loading samples..."
 msgstr "Ielādē paraugus..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3887
+#: echorepo/i18n.py:141 static/js/map.js:3918
 msgid "Fetching visible map area"
 msgstr "Ielādē redzamo kartes apgabalu"
 
@@ -187,7 +187,7 @@ msgstr "Notīrīt izvēli"
 msgid "Loading sample details..."
 msgstr "Ielādē informāciju par paraugu..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1569
+#: echorepo/i18n.py:149 static/js/map.js:1582
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Procentuālās vērtības (%) var pārrēķināt mg/kg, reizinot ar 10000."
 
@@ -294,26 +294,30 @@ msgid "Sign in"
 msgstr "Paraksts"
 
 #: echorepo/templates/base.html:281
+msgid "Close"
+msgstr "Aizvērt"
+
+#: echorepo/templates/base.html:293
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo ir daļa no ES un UKRI finansētās"
 
-#: echorepo/templates/base.html:281
+#: echorepo/templates/base.html:293
 msgid "project"
 msgstr "projekts"
 
-#: echorepo/templates/base.html:283
+#: echorepo/templates/base.html:295
 msgid "Need help?"
 msgstr "Vajadzīga palīdzība?"
 
-#: echorepo/templates/base.html:291
+#: echorepo/templates/base.html:303
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "Finansē Apvienotās Karalistes pētniecība un inovācija (UKRI)"
 
-#: echorepo/templates/base.html:297
+#: echorepo/templates/base.html:309
 msgid "Co-funded by the European Union"
 msgstr "Eiropas Savienības līdzfinansējums"
 
-#: echorepo/templates/base.html:301
+#: echorepo/templates/base.html:313
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr "Finansē Eiropas Savienība un Apvienotā Karaliste Pētniecība un inovācija"
 
@@ -335,18 +339,18 @@ msgid "The coordinate issues file was not found:"
 msgstr "Koordinātu problēmu fails netika atrasts:"
 
 #: echorepo/templates/coordinate_issues.html:25
-#: echorepo/templates/coordinate_issues.html:98 echorepo/templates/search.html:11
+#: echorepo/templates/coordinate_issues.html:134 echorepo/templates/search.html:11
 #: echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Paraugs / QR"
 
 #: echorepo/templates/coordinate_issues.html:30
-#: echorepo/templates/coordinate_issues.html:99
+#: echorepo/templates/coordinate_issues.html:135
 msgid "User ID"
 msgstr "Lietotāja ID"
 
 #: echorepo/templates/coordinate_issues.html:35
-#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:140
 msgid "Issue type"
 msgstr "Emisijas veids"
 
@@ -360,12 +364,12 @@ msgid "Search"
 msgstr "Meklēt"
 
 #: echorepo/templates/coordinate_issues.html:55
-#: echorepo/templates/coordinate_issues.html:102
+#: echorepo/templates/coordinate_issues.html:138
 msgid "Actual country"
 msgstr "Faktiskā valsts"
 
 #: echorepo/templates/coordinate_issues.html:61
-#: echorepo/templates/coordinate_issues.html:103
+#: echorepo/templates/coordinate_issues.html:139
 msgid "Planned country"
 msgstr "Plānotā valsts"
 
@@ -373,60 +377,209 @@ msgstr "Plānotā valsts"
 msgid "Export current results"
 msgstr "Eksportēt pašreizējos rezultātus"
 
-#: echorepo/templates/coordinate_issues.html:83
+#: echorepo/templates/coordinate_issues.html:84
+msgid "Download planned XLSX"
+msgstr "Lejupielādēt plānoto XLSX"
+
+#: echorepo/templates/coordinate_issues.html:90
+#: echorepo/templates/coordinate_issues.html:95
+msgid "Upload planned XLSX"
+msgstr "Augšupielādē plānoto XLSX"
+
+#: echorepo/templates/coordinate_issues.html:93
+msgid "Replace all planned rows"
+msgstr "Aizvietot visas plānotās rindas"
+
+#: echorepo/templates/coordinate_issues.html:97
+msgid "PostgreSQL planned rows:"
+msgstr "PostgreSQL plānotās rindas:"
+
+#: echorepo/templates/coordinate_issues.html:98
+msgid "Ingestion source:"
+msgstr "Norīšanas avots:"
+
+#: echorepo/templates/coordinate_issues.html:100
+msgid ""
+"Upload replaces the table in one transaction; the previous version is "
+"archived."
+msgstr "Augšupielāde aizvieto tabulu vienā darījumā; iepriekšējā versija ir arhivēta."
+
+#: echorepo/templates/coordinate_issues.html:103
+msgid "The PostgreSQL planned-country table is empty."
+msgstr "PostgreSQL plānotā valstu tabula ir tukša."
+
+#: echorepo/templates/coordinate_issues.html:104
+msgid ""
+"Choose the original planned.xlsx, check Replace all planned rows, then click "
+"Upload planned XLSX."
+msgstr ""
+"Izvēlieties oriģinālo plānoto. xlsx, pārbaudiet Aizstāt visas plānotās "
+"rindas, pēc tam noklikšķiniet Augšupielādēt plānoto XLSX."
+
+#: echorepo/templates/coordinate_issues.html:105
+msgid ""
+"Any import error appears above this page. Do not switch ingestion to "
+"PostgreSQL until rows are imported."
+msgstr ""
+"Virs šīs lapas parādās importa kļūda. Nemainiet norīšanu uz PostgreSQL, kamēr"
+" rindas nav importētas."
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid ""
+"The PostgreSQL planned-country table contains rows, but ingestion still reads"
+" the XLSX file."
+msgstr ""
+"PostgreSQL plānveida valstu tabula satur rindas, bet norīšana joprojām lasa "
+"XLSX failu."
+
+#: echorepo/templates/coordinate_issues.html:110
+msgid ""
+"After verifying the downloaded XLSX, set PLANNED_COUNTRY_SOURCE=postgres and "
+"recreate the application container."
+msgstr ""
+"Pēc tam, kad pārbauda lejupielādēto XLSX, iestatīt PLANED COUNTRY "
+"SOURCE=postgres un atjaunot pieteikumu konteineru."
+
+#: echorepo/templates/coordinate_issues.html:119
 msgid "coordinate issue(s)"
 msgstr "koordinātu jautājums(-i)"
 
-#: echorepo/templates/coordinate_issues.html:86
+#: echorepo/templates/coordinate_issues.html:122
 msgid "Source:"
 msgstr "Avots:"
 
-#: echorepo/templates/coordinate_issues.html:100
-#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/issues.html:31
+#: echorepo/templates/coordinate_issues.html:135 echorepo/templates/issues.html:29
+#: echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Lietotājs"
+
+#: echorepo/templates/coordinate_issues.html:136
+#: echorepo/templates/coordinate_issues.html:167 echorepo/templates/issues.html:31
 #: echorepo/templates/issues.html:77 echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Lats"
 
-#: echorepo/templates/coordinate_issues.html:101
-#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/coordinate_issues.html:137
+#: echorepo/templates/coordinate_issues.html:176 echorepo/templates/issues.html:32
 #: echorepo/templates/issues.html:78 echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Lon"
 
-#: echorepo/templates/coordinate_issues.html:105
-msgid "Fix coordinates"
-msgstr "Fiksētās koordinātas"
+#: echorepo/templates/coordinate_issues.html:138
+msgid "Actual"
+msgstr "Faktiski"
 
-#: echorepo/templates/coordinate_issues.html:117
-msgid "Show only this sample on map"
-msgstr "Kartē rādīt tikai šo paraugu"
+#: echorepo/templates/coordinate_issues.html:139
+msgid "Planned"
+msgstr "Plānots"
 
-#: echorepo/templates/coordinate_issues.html:158 echorepo/templates/issues.html:53
+#: echorepo/templates/coordinate_issues.html:140
+msgid "Issue"
+msgstr "Jautājums"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Actual country OK?"
+msgstr "Faktiskā valsts OK?"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Country OK?"
+msgstr "Valsts labi?"
+
+#: echorepo/templates/coordinate_issues.html:142
+#: echorepo/templates/coordinate_issues.html:245 echorepo/templates/issues.html:53
 #: echorepo/templates/issues.html:96
 msgid "Save"
 msgstr "Saglabāt"
 
-#: echorepo/templates/coordinate_issues.html:161
+#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/search.html:105
+#: echorepo/templates/search.html:106
+msgid "Show this sample on map"
+msgstr "Rādīt šo paraugu kartē"
+
+#: echorepo/templates/coordinate_issues.html:163
+msgid "Saved GPS in PostgreSQL QA override; canonical data awaits enrichment"
+msgstr "Saglabāts GPS PostgreSQL QA režīmā; kanoniski dati gaida bagātināšanu"
+
+#: echorepo/templates/coordinate_issues.html:182
+#: echorepo/templates/coordinate_issues.html:189
+msgid "QA snapshot:"
+msgstr "QA momentuzņēmums:"
+
+#: echorepo/templates/coordinate_issues.html:182
+msgid "Current planned country:"
+msgstr "Pašreizējā plānotā valsts:"
+
+#: echorepo/templates/coordinate_issues.html:185
+msgid "Multiple planned rows for this QR; review required"
+msgstr "Vairāku plānoto rindu šim QR; nepieciešams pārskats"
+
+#: echorepo/templates/coordinate_issues.html:191
+msgid "Not in PostgreSQL"
+msgstr "Nav PostgreSQL"
+
+#: echorepo/templates/coordinate_issues.html:197
+msgid "Mismatch"
+msgstr "Neatbilstība"
+
+#: echorepo/templates/coordinate_issues.html:199
+msgid "Default GPS"
+msgstr "Noklusētais GPS"
+
+#: echorepo/templates/coordinate_issues.html:201
+msgid "Invalid GPS"
+msgstr "Nederīgs GPS"
+
+#: echorepo/templates/coordinate_issues.html:203
+msgid "No country"
+msgstr "Nav valsts"
+
+#: echorepo/templates/coordinate_issues.html:215
+msgid "Current PostgreSQL value matches actual country; QA CSV may need a refresh"
+msgstr ""
+"Pašreizējā PostgreSQL vērtība atbilst reālajai valstij; QA CSV var būt "
+"nepieciešams atsvaidzināt"
+
+#: echorepo/templates/coordinate_issues.html:216
+msgid "Matched"
+msgstr "Atbilst"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "Confirm the actual country when pressing Save"
+msgstr "Apstipriniet faktisko valsti, nospiežot Saglabāt"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "OK"
+msgstr "LABI"
+
+#: echorepo/templates/coordinate_issues.html:226
+msgid "QR or sample ID unavailable"
+msgstr "QR vai parauga ID nav pieejams"
+
+#: echorepo/templates/coordinate_issues.html:245
+msgid "Save GPS coordinates and optional planned country"
+msgstr "Saglabāt GPS koordinātas un pēc izvēles plānoto valsti"
+
+#: echorepo/templates/coordinate_issues.html:248
 msgid "Sample ID unavailable"
 msgstr "Parauga ID nav pieejams"
 
-#: echorepo/templates/coordinate_issues.html:166
+#: echorepo/templates/coordinate_issues.html:253
 msgid "Read-only"
 msgstr "Tikai lasāms"
 
-#: echorepo/templates/coordinate_issues.html:174
+#: echorepo/templates/coordinate_issues.html:261
 msgid "No coordinate issues for these filters."
 msgstr "Šiem filtriem nav koordināšu problēmu."
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "Showing page"
 msgstr "Parādīt lapu"
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "of"
 msgstr "skaits *"
 
-#: echorepo/templates/coordinate_issues.html:187 echorepo/templates/search.html:136
+#: echorepo/templates/coordinate_issues.html:274 echorepo/templates/search.html:136
 msgid "results"
 msgstr "rezultāti"
 
@@ -468,7 +621,7 @@ msgid "Country"
 msgstr "Valsts"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:326
+#: echorepo/templates/search.html:21 static/js/map.js:339
 msgid "Any country"
 msgstr "Jebkura valsts"
 
@@ -522,10 +675,6 @@ msgstr "Nav ierakstu ar noklusējuma koordinātām"
 #: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
 msgid "Sample"
 msgstr "Paraugs"
-
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
-msgid "User"
-msgstr "Lietotājs"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
 msgid "QR"
@@ -901,10 +1050,6 @@ msgstr "Laika zīmogs"
 msgid "Collected by"
 msgstr "Savācējs"
 
-#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
-msgid "Show this sample on map"
-msgstr "Rādīt šo paraugu kartē"
-
 #: echorepo/templates/search.html:123
 msgid "No results for these filters."
 msgstr "Šiem filtriem rezultātu nav."
@@ -990,28 +1135,28 @@ msgstr "Ieteiktā atsauce"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Zenodo publikācijas vēl nav reģistrētas."
 
-#: static/js/map.js:265
+#: static/js/map.js:278
 msgid "Link copied to clipboard"
 msgstr "Saite nokopēta starpliktuvē"
 
-#: static/js/map.js:268
+#: static/js/map.js:281
 msgid "Copy this link:"
 msgstr "Kopēt šo saiti:"
 
-#: static/js/map.js:893 static/js/map.js:3662
+#: static/js/map.js:906 static/js/map.js:3684
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Eksportēt filtrētus (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3454
+#: static/js/map.js:916 static/js/map.js:3472
 msgid "Release mouse to finish drawing."
 msgstr "Atlaid peli, lai pabeigtu zīmēšanu."
 
-#: static/js/map.js:977
+#: static/js/map.js:990
 msgid "Not available"
 msgstr "Nav pieejams"
 
-#: static/js/map.js:1319
+#: static/js/map.js:1332
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1019,69 +1164,69 @@ msgstr ""
 "Neizdevās ielādēt bioģeogrāfiskā reģiona pārklājumu. Pārbaudīt, vai pastāv "
 "/static/geo/biogeo regions 2016.geojson."
 
-#: static/js/map.js:1575
+#: static/js/map.js:1588
 msgid "Unit conversion help"
 msgstr "Palīdzība vienību konversijā"
 
-#: static/js/map.js:1961
+#: static/js/map.js:1974
 msgid "Texture"
 msgstr "Tekstūra"
 
-#: static/js/map.js:1996
+#: static/js/map.js:2009
 msgid "Observations"
 msgstr "Novērojumi"
 
-#: static/js/map.js:2634 static/js/map.js:3986
+#: static/js/map.js:2648 static/js/map.js:4034
 msgid "Loading map data..."
 msgstr "Ielādē kartes datus..."
 
-#: static/js/map.js:2638
+#: static/js/map.js:2652
 msgid "Please wait"
 msgstr "Lūdzu uzgaidiet"
 
-#: static/js/map.js:2917
+#: static/js/map.js:2931
 msgid "Loading..."
 msgstr "Ielādē..."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3302
 msgid "Draw selection rectangle"
 msgstr "Zīmēt iezīmēto taisnstūri"
 
-#: static/js/map.js:3295
+#: static/js/map.js:3313
 msgid "Delete last point drawn"
 msgstr "Dzēst pēdējo punktu"
 
-#: static/js/map.js:3303
+#: static/js/map.js:3321
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Nospiediet un velciet, lai zīmētu iezīmēto taisnstūri. Jūs varat izdarīt "
 "vairāk nekā vienu."
 
-#: static/js/map.js:3309
+#: static/js/map.js:3327
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Atlaidiet peli, lai iezīmētajam pievienotu šo taisnstūri."
 
-#: static/js/map.js:3390
+#: static/js/map.js:3408
 msgid "No selected samples to export."
 msgstr "Eksportam atlasīto paraugu nav."
 
-#: static/js/map.js:3732
+#: static/js/map.js:3754
 msgid "Please sign in to export data."
 msgstr "Lai eksportētu datus, lūdzu, pierakstieties."
 
-#: static/js/map.js:3802
+#: static/js/map.js:3825
 msgid "Loading sample..."
 msgstr "Ielādē paraugu..."
 
-#: static/js/map.js:3918
+#: static/js/map.js:3966
 msgid "Rendering markers..."
 msgstr "Renderē marķierus..."
 
-#: static/js/map.js:3919
+#: static/js/map.js:3967
 msgid "Building clusters and popups"
 msgstr "Kopu un uznirstošo logu būvniecība"
 
-#: static/js/map.js:3987
+#: static/js/map.js:4035
 msgid "Preparing map"
 msgstr "Sagatavo karti"
 
@@ -1114,4 +1259,10 @@ msgstr "Sagatavo karti"
 
 #~ msgid "All countries"
 #~ msgstr "Visas valstis"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Fiksētās koordinātas"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Kartē rādīt tikai šo paraugu"
 

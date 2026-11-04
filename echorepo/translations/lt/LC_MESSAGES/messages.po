@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-30 10:17+0000\n"
+"POT-Creation-Date: 2026-11-04 11:55+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lt\n"
@@ -69,17 +69,17 @@ msgstr "Išvalyti"
 msgid "Export filtered ({n})"
 msgstr "Eksportuoti filtruotą ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1937
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1950
 msgid "Date"
 msgstr "Data"
 
-#: echorepo/i18n.py:121 static/js/map.js:1942
+#: echorepo/i18n.py:121 static/js/map.js:1955
 msgid "QR code"
 msgstr "QR kodas"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1947
+#: static/js/map.js:1960
 msgid "pH"
 msgstr "pH"
 
@@ -87,27 +87,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Spalva"
 
-#: echorepo/i18n.py:124 static/js/map.js:1952
+#: echorepo/i18n.py:124 static/js/map.js:1965
 msgid "Soil organic matter"
 msgstr "Dirvožemio organinės medžiagos"
 
-#: echorepo/i18n.py:125 static/js/map.js:1966
+#: echorepo/i18n.py:125 static/js/map.js:1979
 msgid "Structure"
 msgstr "Struktūra"
 
-#: echorepo/i18n.py:126 static/js/map.js:1971
+#: echorepo/i18n.py:126 static/js/map.js:1984
 msgid "Earthworms"
 msgstr "Sliekai"
 
-#: echorepo/i18n.py:127 static/js/map.js:1976
+#: echorepo/i18n.py:127 static/js/map.js:1989
 msgid "Plastic"
 msgstr "Plastikiniai"
 
-#: echorepo/i18n.py:128 static/js/map.js:1981
+#: echorepo/i18n.py:128 static/js/map.js:1994
 msgid "Debris"
 msgstr "Nuolaužos"
 
-#: echorepo/i18n.py:129 static/js/map.js:1986
+#: echorepo/i18n.py:129 static/js/map.js:1999
 msgid "Contamination"
 msgstr "Teršalai"
 
@@ -127,35 +127,35 @@ msgstr "Piešti stačiakampį"
 msgid "Click and drag to draw a rectangle."
 msgstr "Spauskite ir vilkite, kad pieštumėte stačiakampį."
 
-#: echorepo/i18n.py:134 static/js/map.js:3291
+#: echorepo/i18n.py:134 static/js/map.js:3309
 msgid "Cancel drawing"
 msgstr "NAME OF TRANSLATORS"
 
-#: echorepo/i18n.py:135 static/js/map.js:3292
+#: echorepo/i18n.py:135 static/js/map.js:3310
 msgid "Cancel"
 msgstr "Atsisakyti"
 
-#: echorepo/i18n.py:136 static/js/map.js:3296
+#: echorepo/i18n.py:136 static/js/map.js:3314
 msgid "Delete last point"
 msgstr "Išbraukti paskutinį punktą:"
 
-#: echorepo/i18n.py:137 static/js/map.js:1350
+#: echorepo/i18n.py:137 static/js/map.js:1363
 msgid "Street map"
 msgstr "Gatvės žemėlapis"
 
-#: echorepo/i18n.py:138 static/js/map.js:1351
+#: echorepo/i18n.py:138 static/js/map.js:1364
 msgid "Satellite"
 msgstr "Palydovas"
 
-#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
+#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
 msgid "Biogeographical regions"
 msgstr "Biogeografijos regionai"
 
-#: echorepo/i18n.py:140 static/js/map.js:3886
+#: echorepo/i18n.py:140 static/js/map.js:3917
 msgid "Loading samples..."
 msgstr "Pakrovimo pavyzdžiai..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3887
+#: echorepo/i18n.py:141 static/js/map.js:3918
 msgid "Fetching visible map area"
 msgstr "Rodyti žemėlapio plotą"
 
@@ -187,7 +187,7 @@ msgstr "Išvalyti žymėjimą"
 msgid "Loading sample details..."
 msgstr "Sumontuotas pavyzdys..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1569
+#: echorepo/i18n.py:149 static/js/map.js:1582
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Procentines vertes (%) galima paversti mg / kg dauginant iš 10000."
 
@@ -298,26 +298,30 @@ msgid "Sign in"
 msgstr "Pasirašymas"
 
 #: echorepo/templates/base.html:281
+msgid "Close"
+msgstr "Užverti"
+
+#: echorepo/templates/base.html:293
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHA yra ES ir UKRI finansuojamų projektų dalis"
 
-#: echorepo/templates/base.html:281
+#: echorepo/templates/base.html:293
 msgid "project"
 msgstr "projektas"
 
-#: echorepo/templates/base.html:283
+#: echorepo/templates/base.html:295
 msgid "Need help?"
 msgstr "Man reikia pagalbos?"
 
-#: echorepo/templates/base.html:291
+#: echorepo/templates/base.html:303
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "Finansuoja JK mokslinių tyrimų ir inovacijų (UKRI)"
 
-#: echorepo/templates/base.html:297
+#: echorepo/templates/base.html:309
 msgid "Co-funded by the European Union"
 msgstr "Europos Sąjungos bendrai finansuojamas"
 
-#: echorepo/templates/base.html:301
+#: echorepo/templates/base.html:313
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr "Finansuojama Europos Sąjungos ir JK mokslinių tyrimų ir inovacijų"
 
@@ -339,18 +343,18 @@ msgid "The coordinate issues file was not found:"
 msgstr "Koordinačių klausimų failas nerastas:"
 
 #: echorepo/templates/coordinate_issues.html:25
-#: echorepo/templates/coordinate_issues.html:98 echorepo/templates/search.html:11
+#: echorepo/templates/coordinate_issues.html:134 echorepo/templates/search.html:11
 #: echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Ėminys / QR"
 
 #: echorepo/templates/coordinate_issues.html:30
-#: echorepo/templates/coordinate_issues.html:99
+#: echorepo/templates/coordinate_issues.html:135
 msgid "User ID"
 msgstr "Vartotojo ID"
 
 #: echorepo/templates/coordinate_issues.html:35
-#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:140
 msgid "Issue type"
 msgstr "Emisijos tipas"
 
@@ -364,12 +368,12 @@ msgid "Search"
 msgstr "Ieškoti"
 
 #: echorepo/templates/coordinate_issues.html:55
-#: echorepo/templates/coordinate_issues.html:102
+#: echorepo/templates/coordinate_issues.html:138
 msgid "Actual country"
 msgstr "Faktinė šalis"
 
 #: echorepo/templates/coordinate_issues.html:61
-#: echorepo/templates/coordinate_issues.html:103
+#: echorepo/templates/coordinate_issues.html:139
 msgid "Planned country"
 msgstr "Planuojama šalis"
 
@@ -377,60 +381,209 @@ msgstr "Planuojama šalis"
 msgid "Export current results"
 msgstr "Eksportuoti dabartinius rezultatus"
 
-#: echorepo/templates/coordinate_issues.html:83
+#: echorepo/templates/coordinate_issues.html:84
+msgid "Download planned XLSX"
+msgstr "Atsisiųsti planuojamą XLSX"
+
+#: echorepo/templates/coordinate_issues.html:90
+#: echorepo/templates/coordinate_issues.html:95
+msgid "Upload planned XLSX"
+msgstr "Nusiųsti planuojamą XLSX"
+
+#: echorepo/templates/coordinate_issues.html:93
+msgid "Replace all planned rows"
+msgstr "Pakeisti visas planuojamas eilutes"
+
+#: echorepo/templates/coordinate_issues.html:97
+msgid "PostgreSQL planned rows:"
+msgstr "PostgreSQL planuojamos eilutės:"
+
+#: echorepo/templates/coordinate_issues.html:98
+msgid "Ingestion source:"
+msgstr "Siurbiamasis šaltinis:"
+
+#: echorepo/templates/coordinate_issues.html:100
+msgid ""
+"Upload replaces the table in one transaction; the previous version is "
+"archived."
+msgstr "Nusiųsti pakeičia vieno sandorio lentelę; ankstesnė versija yra archyvuojama."
+
+#: echorepo/templates/coordinate_issues.html:103
+msgid "The PostgreSQL planned-country table is empty."
+msgstr "Planuojama PostgreSQL šalies lentelė yra tuščia."
+
+#: echorepo/templates/coordinate_issues.html:104
+msgid ""
+"Choose the original planned.xlsx, check Replace all planned rows, then click "
+"Upload planned XLSX."
+msgstr ""
+"Pasirinkite numatytą originalą. xlsx, patikrinti Pakeisti visas planuojamas "
+"eilutes, tada spustelėkite Įkelti planuojamą XLSX."
+
+#: echorepo/templates/coordinate_issues.html:105
+msgid ""
+"Any import error appears above this page. Do not switch ingestion to "
+"PostgreSQL until rows are imported."
+msgstr ""
+"Ant šio puslapio yra bet kokia importo klaida. Nekeiskite prarijus "
+"PostgreSQL, kol nebus importuotos eilutės."
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid ""
+"The PostgreSQL planned-country table contains rows, but ingestion still reads"
+" the XLSX file."
+msgstr ""
+"PostgreSQL planuota šalis lentelėje yra eilutės, bet prarijus vis dar "
+"skaityti XLSX failą."
+
+#: echorepo/templates/coordinate_issues.html:110
+msgid ""
+"After verifying the downloaded XLSX, set PLANNED_COUNTRY_SOURCE=postgres and "
+"recreate the application container."
+msgstr ""
+"Patikrinkite atsisiųstą XLSX, nustatyti PLNAND _ ŠALIS _ SURCE = postgres ir "
+"atkurti paraiškos konteinerį."
+
+#: echorepo/templates/coordinate_issues.html:119
 msgid "coordinate issue(s)"
 msgstr "koordinuoti problemą (-es)"
 
-#: echorepo/templates/coordinate_issues.html:86
+#: echorepo/templates/coordinate_issues.html:122
 msgid "Source:"
 msgstr "Šaltiniai:"
 
-#: echorepo/templates/coordinate_issues.html:100
-#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/issues.html:31
+#: echorepo/templates/coordinate_issues.html:135 echorepo/templates/issues.html:29
+#: echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Naudotojas"
+
+#: echorepo/templates/coordinate_issues.html:136
+#: echorepo/templates/coordinate_issues.html:167 echorepo/templates/issues.html:31
 #: echorepo/templates/issues.html:77 echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Lat"
 
-#: echorepo/templates/coordinate_issues.html:101
-#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/coordinate_issues.html:137
+#: echorepo/templates/coordinate_issues.html:176 echorepo/templates/issues.html:32
 #: echorepo/templates/issues.html:78 echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Lon"
 
-#: echorepo/templates/coordinate_issues.html:105
-msgid "Fix coordinates"
-msgstr "Fiksuoti koordinates"
+#: echorepo/templates/coordinate_issues.html:138
+msgid "Actual"
+msgstr "Faktinis"
 
-#: echorepo/templates/coordinate_issues.html:117
-msgid "Show only this sample on map"
-msgstr "Rodyti tik šį pavyzdį žemėlapyje"
+#: echorepo/templates/coordinate_issues.html:139
+msgid "Planned"
+msgstr "Planuojama"
 
-#: echorepo/templates/coordinate_issues.html:158 echorepo/templates/issues.html:53
+#: echorepo/templates/coordinate_issues.html:140
+msgid "Issue"
+msgstr "NAME OF TRANSLATORS"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Actual country OK?"
+msgstr "Šalyje, gerai?"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Country OK?"
+msgstr "Šaliai viskas gerai?"
+
+#: echorepo/templates/coordinate_issues.html:142
+#: echorepo/templates/coordinate_issues.html:245 echorepo/templates/issues.html:53
 #: echorepo/templates/issues.html:96
 msgid "Save"
 msgstr "Įrašyti"
 
-#: echorepo/templates/coordinate_issues.html:161
+#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/search.html:105
+#: echorepo/templates/search.html:106
+msgid "Show this sample on map"
+msgstr "Rodyti šį mėginį žemėlapyje"
+
+#: echorepo/templates/coordinate_issues.html:163
+msgid "Saved GPS in PostgreSQL QA override; canonical data awaits enrichment"
+msgstr "Taupyta GPS PostgreSQL QA override; kanoniniai duomenys laukia praturtinimo"
+
+#: echorepo/templates/coordinate_issues.html:182
+#: echorepo/templates/coordinate_issues.html:189
+msgid "QA snapshot:"
+msgstr "QA nuotrauka:"
+
+#: echorepo/templates/coordinate_issues.html:182
+msgid "Current planned country:"
+msgstr "NAME OF TRANSLATORS"
+
+#: echorepo/templates/coordinate_issues.html:185
+msgid "Multiple planned rows for this QR; review required"
+msgstr "@ info: whatsthis"
+
+#: echorepo/templates/coordinate_issues.html:191
+msgid "Not in PostgreSQL"
+msgstr "Ne PostgreSQL"
+
+#: echorepo/templates/coordinate_issues.html:197
+msgid "Mismatch"
+msgstr "@ info: tooltip"
+
+#: echorepo/templates/coordinate_issues.html:199
+msgid "Default GPS"
+msgstr "NAME OF TRANSLATORS"
+
+#: echorepo/templates/coordinate_issues.html:201
+msgid "Invalid GPS"
+msgstr "Klaidinga GPS"
+
+#: echorepo/templates/coordinate_issues.html:203
+msgid "No country"
+msgstr "Nr šalis"
+
+#: echorepo/templates/coordinate_issues.html:215
+msgid "Current PostgreSQL value matches actual country; QA CSV may need a refresh"
+msgstr ""
+"Dabartinis PostgreSQL vertė atitinka faktinę šalį; QA CSV gali prireikti "
+"atnaujinti"
+
+#: echorepo/templates/coordinate_issues.html:216
+msgid "Matched"
+msgstr "Megztas arba nertas"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "Confirm the actual country when pressing Save"
+msgstr "@ info: whatsthis"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "OK"
+msgstr "GERAI"
+
+#: echorepo/templates/coordinate_issues.html:226
+msgid "QR or sample ID unavailable"
+msgstr "QR arba mėginio ID nėra"
+
+#: echorepo/templates/coordinate_issues.html:245
+msgid "Save GPS coordinates and optional planned country"
+msgstr "Įrašyti GPS koordinates ir neprivalomą planuojamą šalį"
+
+#: echorepo/templates/coordinate_issues.html:248
 msgid "Sample ID unavailable"
 msgstr "Bandinio ID nerasta"
 
-#: echorepo/templates/coordinate_issues.html:166
+#: echorepo/templates/coordinate_issues.html:253
 msgid "Read-only"
 msgstr "@ item: inlistbox"
 
-#: echorepo/templates/coordinate_issues.html:174
+#: echorepo/templates/coordinate_issues.html:261
 msgid "No coordinate issues for these filters."
 msgstr "Nr koordinuoti klausimus šių filtrų."
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "Showing page"
 msgstr "Rodomas puslapis"
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "of"
 msgstr "iš"
 
-#: echorepo/templates/coordinate_issues.html:187 echorepo/templates/search.html:136
+#: echorepo/templates/coordinate_issues.html:274 echorepo/templates/search.html:136
 msgid "results"
 msgstr "rezultatai"
 
@@ -474,7 +627,7 @@ msgid "Country"
 msgstr "Šalis"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:326
+#: echorepo/templates/search.html:21 static/js/map.js:339
 msgid "Any country"
 msgstr "Šalis"
 
@@ -528,10 +681,6 @@ msgstr "Nėra įrašų su numatytosiomis koordinatėmis"
 #: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
 msgid "Sample"
 msgstr "Bandinys"
-
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
-msgid "User"
-msgstr "Naudotojas"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
 msgid "QR"
@@ -904,10 +1053,6 @@ msgstr "Laikas"
 msgid "Collected by"
 msgstr "Renkamas"
 
-#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
-msgid "Show this sample on map"
-msgstr "Rodyti šį mėginį žemėlapyje"
-
 #: echorepo/templates/search.html:123
 msgid "No results for these filters."
 msgstr "Nr rezultatai šių filtrų."
@@ -991,96 +1136,96 @@ msgstr "Siūlyta nuoroda"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Zenodo publikacijų dar nėra."
 
-#: static/js/map.js:265
+#: static/js/map.js:278
 msgid "Link copied to clipboard"
 msgstr "Nuoroda nukopijuota į iškarpinę"
 
-#: static/js/map.js:268
+#: static/js/map.js:281
 msgid "Copy this link:"
 msgstr "Kopijuoti šią nuorodą:"
 
-#: static/js/map.js:893 static/js/map.js:3662
+#: static/js/map.js:906 static/js/map.js:3684
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Eksportuoti filtruotą (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3454
+#: static/js/map.js:916 static/js/map.js:3472
 msgid "Release mouse to finish drawing."
 msgstr "Paleisti pelę baigti piešimo."
 
-#: static/js/map.js:977
+#: static/js/map.js:990
 msgid "Not available"
 msgstr "Netaikoma"
 
-#: static/js/map.js:1319
+#: static/js/map.js:1332
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
 msgstr "Nepavyko įkelti regiono gyventojų. III PRIEDAS."
 
-#: static/js/map.js:1575
+#: static/js/map.js:1588
 msgid "Unit conversion help"
 msgstr "Vieneto konvertavimo pagalba"
 
-#: static/js/map.js:1961
+#: static/js/map.js:1974
 msgid "Texture"
 msgstr "Kėbulas"
 
-#: static/js/map.js:1996
+#: static/js/map.js:2009
 msgid "Observations"
 msgstr "Pastabos"
 
-#: static/js/map.js:2634 static/js/map.js:3986
+#: static/js/map.js:2648 static/js/map.js:4034
 msgid "Loading map data..."
 msgstr "Įkeliami žemėlapio duomenys..."
 
-#: static/js/map.js:2638
+#: static/js/map.js:2652
 msgid "Please wait"
 msgstr "Prašau palaukti"
 
-#: static/js/map.js:2917
+#: static/js/map.js:2931
 msgid "Loading..."
 msgstr "Įkeliama..."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3302
 msgid "Draw selection rectangle"
 msgstr "Piešti pasirinkimo stačiakampį"
 
-#: static/js/map.js:3295
+#: static/js/map.js:3313
 msgid "Delete last point drawn"
 msgstr "Išbraukti paskutinį punktą"
 
-#: static/js/map.js:3303
+#: static/js/map.js:3321
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Spauskite ir vilkite norėdami piešti pažymėtą stačiakampį. Jūs galite piešti "
 "daugiau nei vieną."
 
-#: static/js/map.js:3309
+#: static/js/map.js:3327
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "@ info: whatsthis."
 
-#: static/js/map.js:3390
+#: static/js/map.js:3408
 msgid "No selected samples to export."
 msgstr "Eksportuoti atrinktų mėginių nėra."
 
-#: static/js/map.js:3732
+#: static/js/map.js:3754
 msgid "Please sign in to export data."
 msgstr "Prašome prisijungti prie eksporto duomenų."
 
-#: static/js/map.js:3802
+#: static/js/map.js:3825
 msgid "Loading sample..."
 msgstr "Pakrovimo pavyzdys..."
 
-#: static/js/map.js:3918
+#: static/js/map.js:3966
 msgid "Rendering markers..."
 msgstr "Žymekliai..."
 
-#: static/js/map.js:3919
+#: static/js/map.js:3967
 msgid "Building clusters and popups"
 msgstr "Kliūčių ir langų statyba"
 
-#: static/js/map.js:3987
+#: static/js/map.js:4035
 msgid "Preparing map"
 msgstr "Ruošiamas žemėlapis"
 
@@ -1113,4 +1258,10 @@ msgstr "Ruošiamas žemėlapis"
 
 #~ msgid "All countries"
 #~ msgstr "Visos šalys"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Fiksuoti koordinates"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Rodyti tik šį pavyzdį žemėlapyje"
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-30 10:17+0000\n"
+"POT-Creation-Date: 2026-11-04 11:55+0000\n"
 "PO-Revision-Date: 2026-08-24 14:15+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lb\n"
@@ -72,17 +72,17 @@ msgid "Export filtered ({n})"
 msgstr "Gefiltert exportéieren ({n})"
 
 #: echorepo/i18n.py:120 echorepo/templates/explore.html:128
-#: static/js/map.js:1937
+#: static/js/map.js:1950
 msgid "Date"
 msgstr "Datum"
 
-#: echorepo/i18n.py:121 static/js/map.js:1942
+#: echorepo/i18n.py:121 static/js/map.js:1955
 msgid "QR code"
 msgstr "QR-Code"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1947
+#: static/js/map.js:1960
 msgid "pH"
 msgstr "pH"
 
@@ -90,27 +90,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Faarf"
 
-#: echorepo/i18n.py:124 static/js/map.js:1952
+#: echorepo/i18n.py:124 static/js/map.js:1965
 msgid "Soil organic matter"
 msgstr "Organesch Matière am Buedem"
 
-#: echorepo/i18n.py:125 static/js/map.js:1966
+#: echorepo/i18n.py:125 static/js/map.js:1979
 msgid "Structure"
 msgstr "Struktur"
 
-#: echorepo/i18n.py:126 static/js/map.js:1971
+#: echorepo/i18n.py:126 static/js/map.js:1984
 msgid "Earthworms"
 msgstr "Reewierm"
 
-#: echorepo/i18n.py:127 static/js/map.js:1976
+#: echorepo/i18n.py:127 static/js/map.js:1989
 msgid "Plastic"
 msgstr "Plastik"
 
-#: echorepo/i18n.py:128 static/js/map.js:1981
+#: echorepo/i18n.py:128 static/js/map.js:1994
 msgid "Debris"
 msgstr "Reschter"
 
-#: echorepo/i18n.py:129 static/js/map.js:1986
+#: echorepo/i18n.py:129 static/js/map.js:1999
 msgid "Contamination"
 msgstr "Verschmotzung"
 
@@ -130,35 +130,35 @@ msgstr "E Rechteck zeechnen"
 msgid "Click and drag to draw a rectangle."
 msgstr "Klickt an zitt, fir e Rechteck ze zeechnen."
 
-#: echorepo/i18n.py:134 static/js/map.js:3291
+#: echorepo/i18n.py:134 static/js/map.js:3309
 msgid "Cancel drawing"
 msgstr "Zeechnen ofbriechen"
 
-#: echorepo/i18n.py:135 static/js/map.js:3292
+#: echorepo/i18n.py:135 static/js/map.js:3310
 msgid "Cancel"
 msgstr "Ofbriechen"
 
-#: echorepo/i18n.py:136 static/js/map.js:3296
+#: echorepo/i18n.py:136 static/js/map.js:3314
 msgid "Delete last point"
 msgstr "Leschte Punkt läschen"
 
-#: echorepo/i18n.py:137 static/js/map.js:1350
+#: echorepo/i18n.py:137 static/js/map.js:1363
 msgid "Street map"
 msgstr "Stroossekaart"
 
-#: echorepo/i18n.py:138 static/js/map.js:1351
+#: echorepo/i18n.py:138 static/js/map.js:1364
 msgid "Satellite"
 msgstr "Satellit"
 
-#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
+#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
 msgid "Biogeographical regions"
 msgstr ""
 
-#: echorepo/i18n.py:140 static/js/map.js:3886
+#: echorepo/i18n.py:140 static/js/map.js:3917
 msgid "Loading samples..."
 msgstr "Prouwe ginn gelueden..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3887
+#: echorepo/i18n.py:141 static/js/map.js:3918
 msgid "Fetching visible map area"
 msgstr "Siichtbare Kaartberäich gëtt ofgeruff"
 
@@ -191,7 +191,7 @@ msgstr "Auswiel läschen"
 msgid "Loading sample details..."
 msgstr "Prouwe ginn gelueden..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1569
+#: echorepo/i18n.py:149 static/js/map.js:1582
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
 "Prozentwäerter (%) kënnen a mg/kg ëmgerechent ginn, andeems se mat 10000 "
@@ -310,26 +310,31 @@ msgid "Sign in"
 msgstr "Umellen"
 
 #: echorepo/templates/base.html:281
+#, fuzzy
+msgid "Close"
+msgstr "Läschen"
+
+#: echorepo/templates/base.html:293
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "ECHOrepo ass Deel vum EU- an UKRI-finanzéierten"
 
-#: echorepo/templates/base.html:281
+#: echorepo/templates/base.html:293
 msgid "project"
 msgstr "Projet"
 
-#: echorepo/templates/base.html:283
+#: echorepo/templates/base.html:295
 msgid "Need help?"
 msgstr "Braucht Dir Hëllef?"
 
-#: echorepo/templates/base.html:291
+#: echorepo/templates/base.html:303
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "Finanzéiert vun UK Research and Innovation (UKRI)"
 
-#: echorepo/templates/base.html:297
+#: echorepo/templates/base.html:309
 msgid "Co-funded by the European Union"
 msgstr "Matfinanzéiert vun der Europäescher Unioun"
 
-#: echorepo/templates/base.html:301
+#: echorepo/templates/base.html:313
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr "Finanzéiert vun der Europäescher Unioun an UK Research and Innovation"
 
@@ -349,18 +354,18 @@ msgid "The coordinate issues file was not found:"
 msgstr "D’Datei mat de Koordinateproblemer gouf net fonnt:"
 
 #: echorepo/templates/coordinate_issues.html:25
-#: echorepo/templates/coordinate_issues.html:98
+#: echorepo/templates/coordinate_issues.html:134
 #: echorepo/templates/search.html:11 echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Prouf / QR"
 
 #: echorepo/templates/coordinate_issues.html:30
-#: echorepo/templates/coordinate_issues.html:99
+#: echorepo/templates/coordinate_issues.html:135
 msgid "User ID"
 msgstr "Benotzer-ID"
 
 #: echorepo/templates/coordinate_issues.html:35
-#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:140
 msgid "Issue type"
 msgstr "Aart vum Problem"
 
@@ -374,12 +379,12 @@ msgid "Search"
 msgstr "Sichen"
 
 #: echorepo/templates/coordinate_issues.html:55
-#: echorepo/templates/coordinate_issues.html:102
+#: echorepo/templates/coordinate_issues.html:138
 msgid "Actual country"
 msgstr "Tatsächlecht Land"
 
 #: echorepo/templates/coordinate_issues.html:61
-#: echorepo/templates/coordinate_issues.html:103
+#: echorepo/templates/coordinate_issues.html:139
 msgid "Planned country"
 msgstr "Geplangt Land"
 
@@ -387,64 +392,212 @@ msgstr "Geplangt Land"
 msgid "Export current results"
 msgstr "Aktuell Resultater exportéieren"
 
-#: echorepo/templates/coordinate_issues.html:83
+#: echorepo/templates/coordinate_issues.html:84
+msgid "Download planned XLSX"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:90
+#: echorepo/templates/coordinate_issues.html:95
+#, fuzzy
+msgid "Upload planned XLSX"
+msgstr "Eropgelueden Datei"
+
+#: echorepo/templates/coordinate_issues.html:93
+msgid "Replace all planned rows"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:97
+msgid "PostgreSQL planned rows:"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:98
+msgid "Ingestion source:"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:100
+msgid ""
+"Upload replaces the table in one transaction; the previous version is "
+"archived."
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:103
+msgid "The PostgreSQL planned-country table is empty."
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:104
+msgid ""
+"Choose the original planned.xlsx, check Replace all planned rows, then "
+"click Upload planned XLSX."
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:105
+msgid ""
+"Any import error appears above this page. Do not switch ingestion to "
+"PostgreSQL until rows are imported."
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid ""
+"The PostgreSQL planned-country table contains rows, but ingestion still "
+"reads the XLSX file."
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:110
+msgid ""
+"After verifying the downloaded XLSX, set PLANNED_COUNTRY_SOURCE=postgres "
+"and recreate the application container."
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:119
 msgid "coordinate issue(s)"
 msgstr "Koordinateproblem(er)"
 
-#: echorepo/templates/coordinate_issues.html:86
+#: echorepo/templates/coordinate_issues.html:122
 msgid "Source:"
 msgstr "Quell:"
 
-#: echorepo/templates/coordinate_issues.html:100
-#: echorepo/templates/coordinate_issues.html:154
+#: echorepo/templates/coordinate_issues.html:135
+#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Benotzer"
+
+#: echorepo/templates/coordinate_issues.html:136
+#: echorepo/templates/coordinate_issues.html:167
 #: echorepo/templates/issues.html:31 echorepo/templates/issues.html:77
 #: echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Breet"
 
-#: echorepo/templates/coordinate_issues.html:101
-#: echorepo/templates/coordinate_issues.html:156
+#: echorepo/templates/coordinate_issues.html:137
+#: echorepo/templates/coordinate_issues.html:176
 #: echorepo/templates/issues.html:32 echorepo/templates/issues.html:78
 #: echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Längt"
 
-#: echorepo/templates/coordinate_issues.html:105
-msgid "Fix coordinates"
-msgstr "Koordinate korrigéieren"
+#: echorepo/templates/coordinate_issues.html:138
+#, fuzzy
+msgid "Actual"
+msgstr "Tatsächlecht Land"
 
-#: echorepo/templates/coordinate_issues.html:117
-msgid "Show only this sample on map"
-msgstr "Nëmmen dës Prouf op der Kaart weisen"
+#: echorepo/templates/coordinate_issues.html:139
+#, fuzzy
+msgid "Planned"
+msgstr "Geplangt Land"
 
-#: echorepo/templates/coordinate_issues.html:158
+#: echorepo/templates/coordinate_issues.html:140
+#, fuzzy
+msgid "Issue"
+msgstr "All Problem"
+
+#: echorepo/templates/coordinate_issues.html:141
+#, fuzzy
+msgid "Actual country OK?"
+msgstr "Tatsächlecht Land"
+
+#: echorepo/templates/coordinate_issues.html:141
+#, fuzzy
+msgid "Country OK?"
+msgstr "Land"
+
+#: echorepo/templates/coordinate_issues.html:142
+#: echorepo/templates/coordinate_issues.html:245
 #: echorepo/templates/issues.html:53 echorepo/templates/issues.html:96
 msgid "Save"
 msgstr "Späicheren"
 
-#: echorepo/templates/coordinate_issues.html:161
+#: echorepo/templates/coordinate_issues.html:154
+#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
+msgid "Show this sample on map"
+msgstr "Dës Prouf op der Kaart weisen"
+
+#: echorepo/templates/coordinate_issues.html:163
+msgid "Saved GPS in PostgreSQL QA override; canonical data awaits enrichment"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:182
+#: echorepo/templates/coordinate_issues.html:189
+msgid "QA snapshot:"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:182
+#, fuzzy
+msgid "Current planned country:"
+msgstr "Geplangt Land"
+
+#: echorepo/templates/coordinate_issues.html:185
+msgid "Multiple planned rows for this QR; review required"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:191
+msgid "Not in PostgreSQL"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:197
+#, fuzzy
+msgid "Mismatch"
+msgstr "Ofwäichunge beim Land"
+
+#: echorepo/templates/coordinate_issues.html:199
+msgid "Default GPS"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:201
+msgid "Invalid GPS"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:203
+#, fuzzy
+msgid "No country"
+msgstr "All Land"
+
+#: echorepo/templates/coordinate_issues.html:215
+msgid "Current PostgreSQL value matches actual country; QA CSV may need a refresh"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:216
+msgid "Matched"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "Confirm the actual country when pressing Save"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "OK"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:226
+msgid "QR or sample ID unavailable"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:245
+msgid "Save GPS coordinates and optional planned country"
+msgstr ""
+
+#: echorepo/templates/coordinate_issues.html:248
 msgid "Sample ID unavailable"
 msgstr ""
 
-#: echorepo/templates/coordinate_issues.html:166
+#: echorepo/templates/coordinate_issues.html:253
 msgid "Read-only"
 msgstr ""
 
-#: echorepo/templates/coordinate_issues.html:174
+#: echorepo/templates/coordinate_issues.html:261
 msgid "No coordinate issues for these filters."
 msgstr "Keng Koordinateproblemer fir dës Filteren."
 
-#: echorepo/templates/coordinate_issues.html:186
+#: echorepo/templates/coordinate_issues.html:273
 #: echorepo/templates/search.html:135
 msgid "Showing page"
 msgstr "Säit"
 
-#: echorepo/templates/coordinate_issues.html:186
+#: echorepo/templates/coordinate_issues.html:273
 #: echorepo/templates/search.html:135
 msgid "of"
 msgstr "vun"
 
-#: echorepo/templates/coordinate_issues.html:187
+#: echorepo/templates/coordinate_issues.html:274
 #: echorepo/templates/search.html:136
 msgid "results"
 msgstr "Resultater"
@@ -489,7 +642,7 @@ msgid "Country"
 msgstr "Land"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:326
+#: echorepo/templates/search.html:21 static/js/map.js:339
 msgid "Any country"
 msgstr "All Land"
 
@@ -543,10 +696,6 @@ msgstr "Keng Entréë mat Standardkoordinaten"
 #: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
 msgid "Sample"
 msgstr "Prouf"
-
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
-msgid "User"
-msgstr "Benotzer"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
 msgid "QR"
@@ -927,10 +1076,6 @@ msgstr "Zäitstempel"
 msgid "Collected by"
 msgstr "Gesammelt vun"
 
-#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
-msgid "Show this sample on map"
-msgstr "Dës Prouf op der Kaart weisen"
-
 #: echorepo/templates/search.html:123
 msgid "No results for these filters."
 msgstr "Keng Resultater fir dës Filteren."
@@ -1016,96 +1161,96 @@ msgstr "Virgeschloe Referenz"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Et goufen nach keng Zenodo-Publikatioune protokolléiert."
 
-#: static/js/map.js:265
+#: static/js/map.js:278
 msgid "Link copied to clipboard"
 msgstr "Link an d’Tëschenoflag kopéiert"
 
-#: static/js/map.js:268
+#: static/js/map.js:281
 msgid "Copy this link:"
 msgstr "Dëse Link kopéieren:"
 
-#: static/js/map.js:893 static/js/map.js:3662
+#: static/js/map.js:906 static/js/map.js:3684
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Gefiltert exportéieren (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3454
+#: static/js/map.js:916 static/js/map.js:3472
 msgid "Release mouse to finish drawing."
 msgstr "Maustast lassloossen, fir d’Zeechnen ofzeschléissen."
 
-#: static/js/map.js:977
+#: static/js/map.js:990
 msgid "Not available"
 msgstr "Net verfügbar"
 
-#: static/js/map.js:1319
+#: static/js/map.js:1332
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
 msgstr ""
 
-#: static/js/map.js:1575
+#: static/js/map.js:1588
 msgid "Unit conversion help"
 msgstr "Hëllef bei der Ëmrechnung vun Eenheeten"
 
-#: static/js/map.js:1961
+#: static/js/map.js:1974
 msgid "Texture"
 msgstr "Textur"
 
-#: static/js/map.js:1996
+#: static/js/map.js:2009
 msgid "Observations"
 msgstr "Observatiounen"
 
-#: static/js/map.js:2634 static/js/map.js:3986
+#: static/js/map.js:2648 static/js/map.js:4034
 msgid "Loading map data..."
 msgstr "Kaartendonnéeë ginn gelueden..."
 
-#: static/js/map.js:2638
+#: static/js/map.js:2652
 msgid "Please wait"
 msgstr "W.e.g. waarden"
 
-#: static/js/map.js:2917
+#: static/js/map.js:2931
 msgid "Loading..."
 msgstr "Luet..."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3302
 msgid "Draw selection rectangle"
 msgstr "Auswielrechteck zeechnen"
 
-#: static/js/map.js:3295
+#: static/js/map.js:3313
 msgid "Delete last point drawn"
 msgstr "Leschte gezeechente Punkt läschen"
 
-#: static/js/map.js:3303
+#: static/js/map.js:3321
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Klickt an zitt, fir en Auswielrechteck ze zeechnen. Dir kënnt méi wéi een"
 " zeechnen."
 
-#: static/js/map.js:3309
+#: static/js/map.js:3327
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Maustast lassloossen, fir dëst Rechteck bei d’Auswiel bäizefügen."
 
-#: static/js/map.js:3390
+#: static/js/map.js:3408
 msgid "No selected samples to export."
 msgstr "Keng ausgewielte Prouwe fir ze exportéieren."
 
-#: static/js/map.js:3732
+#: static/js/map.js:3754
 msgid "Please sign in to export data."
 msgstr "Mellt Iech w.e.g. un, fir Donnéeën ze exportéieren."
 
-#: static/js/map.js:3802
+#: static/js/map.js:3825
 msgid "Loading sample..."
 msgstr "Prouf gëtt gelueden..."
 
-#: static/js/map.js:3918
+#: static/js/map.js:3966
 msgid "Rendering markers..."
 msgstr "Markéierunge ginn duergestallt..."
 
-#: static/js/map.js:3919
+#: static/js/map.js:3967
 msgid "Building clusters and popups"
 msgstr "Cluster a Pop-ups ginn erstallt"
 
-#: static/js/map.js:3987
+#: static/js/map.js:4035
 msgid "Preparing map"
 msgstr "Kaart gëtt virbereet"
 
@@ -1303,4 +1448,10 @@ msgstr "Kaart gëtt virbereet"
 
 #~ msgid "All countries"
 #~ msgstr "All Länner"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Koordinate korrigéieren"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Nëmmen dës Prouf op der Kaart weisen"
 
