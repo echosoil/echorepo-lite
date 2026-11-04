@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-30 10:17+0000\n"
+"POT-Creation-Date: 2026-11-04 11:55+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -68,17 +68,17 @@ msgstr "Καθαρισμός"
 msgid "Export filtered ({n})"
 msgstr "Φίλτρο εξαγωγής ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1937
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1950
 msgid "Date"
 msgstr "Ημερομηνία"
 
-#: echorepo/i18n.py:121 static/js/map.js:1942
+#: echorepo/i18n.py:121 static/js/map.js:1955
 msgid "QR code"
 msgstr "Κωδικός QR"
 
 #: echorepo/i18n.py:122 echorepo/templates/explore.html:101
 #: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1947
+#: static/js/map.js:1960
 msgid "pH"
 msgstr "p Η"
 
@@ -86,27 +86,27 @@ msgstr "p Η"
 msgid "Colour"
 msgstr "Χρώμα"
 
-#: echorepo/i18n.py:124 static/js/map.js:1952
+#: echorepo/i18n.py:124 static/js/map.js:1965
 msgid "Soil organic matter"
 msgstr "Οργανική ύλη εδάφους"
 
-#: echorepo/i18n.py:125 static/js/map.js:1966
+#: echorepo/i18n.py:125 static/js/map.js:1979
 msgid "Structure"
 msgstr "Δομή"
 
-#: echorepo/i18n.py:126 static/js/map.js:1971
+#: echorepo/i18n.py:126 static/js/map.js:1984
 msgid "Earthworms"
 msgstr "Γαιοσκώληκες"
 
-#: echorepo/i18n.py:127 static/js/map.js:1976
+#: echorepo/i18n.py:127 static/js/map.js:1989
 msgid "Plastic"
 msgstr "Πλαστικό"
 
-#: echorepo/i18n.py:128 static/js/map.js:1981
+#: echorepo/i18n.py:128 static/js/map.js:1994
 msgid "Debris"
 msgstr "Αποβράσματα"
 
-#: echorepo/i18n.py:129 static/js/map.js:1986
+#: echorepo/i18n.py:129 static/js/map.js:1999
 msgid "Contamination"
 msgstr "Μόλυνση"
 
@@ -126,35 +126,35 @@ msgstr "Σχεδίαση ορθογωνίου"
 msgid "Click and drag to draw a rectangle."
 msgstr "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο."
 
-#: echorepo/i18n.py:134 static/js/map.js:3291
+#: echorepo/i18n.py:134 static/js/map.js:3309
 msgid "Cancel drawing"
 msgstr "Ακύρωση σχεδίου"
 
-#: echorepo/i18n.py:135 static/js/map.js:3292
+#: echorepo/i18n.py:135 static/js/map.js:3310
 msgid "Cancel"
 msgstr "Ακύρωση"
 
-#: echorepo/i18n.py:136 static/js/map.js:3296
+#: echorepo/i18n.py:136 static/js/map.js:3314
 msgid "Delete last point"
 msgstr "Διαγραφή τελευταίου σημείου"
 
-#: echorepo/i18n.py:137 static/js/map.js:1350
+#: echorepo/i18n.py:137 static/js/map.js:1363
 msgid "Street map"
 msgstr "Χάρτης οδών"
 
-#: echorepo/i18n.py:138 static/js/map.js:1351
+#: echorepo/i18n.py:138 static/js/map.js:1364
 msgid "Satellite"
 msgstr "Δορυφόρος"
 
-#: echorepo/i18n.py:139 static/js/map.js:1238 static/js/map.js:1354
+#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
 msgid "Biogeographical regions"
 msgstr "Βιογεωγραφικές περιοχές"
 
-#: echorepo/i18n.py:140 static/js/map.js:3886
+#: echorepo/i18n.py:140 static/js/map.js:3917
 msgid "Loading samples..."
 msgstr "Φόρτωση δειγμάτων..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3887
+#: echorepo/i18n.py:141 static/js/map.js:3918
 msgid "Fetching visible map area"
 msgstr "Ανάκτηση ορατής περιοχής χάρτη"
 
@@ -186,7 +186,7 @@ msgstr "Καθαρισμός επιλογής"
 msgid "Loading sample details..."
 msgstr "Φόρτωση λεπτομερειών δείγματος..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1569
+#: echorepo/i18n.py:149 static/js/map.js:1582
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Οι τιμές (%) μπορούν να μετατραπούν σε mg/kg πολλαπλασιάζοντας με 10000."
 
@@ -301,26 +301,30 @@ msgid "Sign in"
 msgstr "Υπογραφή"
 
 #: echorepo/templates/base.html:281
+msgid "Close"
+msgstr "Κλείσιμο"
+
+#: echorepo/templates/base.html:293
 msgid "ECHOrepo is part of the EU- and UKRI-funded"
 msgstr "Το ECHOrepo είναι μέρος της χρηματοδοτούμενης από την ΕΕ και το UKRI"
 
-#: echorepo/templates/base.html:281
+#: echorepo/templates/base.html:293
 msgid "project"
 msgstr "έργο"
 
-#: echorepo/templates/base.html:283
+#: echorepo/templates/base.html:295
 msgid "Need help?"
 msgstr "Χρειάζεσαι βοήθεια?"
 
-#: echorepo/templates/base.html:291
+#: echorepo/templates/base.html:303
 msgid "Funded by UK Research and Innovation (UKRI)"
 msgstr "Χρηματοδοτείται από το Ηνωμένο Βασίλειο Έρευνα και Καινοτομία (UKRI)"
 
-#: echorepo/templates/base.html:297
+#: echorepo/templates/base.html:309
 msgid "Co-funded by the European Union"
 msgstr "Συγχρηματοδότηση από την Ευρωπαϊκή Ένωση"
 
-#: echorepo/templates/base.html:301
+#: echorepo/templates/base.html:313
 msgid "Funded by the European Union and UK Research and Innovation"
 msgstr ""
 "Χρηματοδοτείται από την Ευρωπαϊκή Ένωση και το Ηνωμένο Βασίλειο Έρευνα και "
@@ -344,18 +348,18 @@ msgid "The coordinate issues file was not found:"
 msgstr "Το αρχείο θεμάτων συντεταγμένων δε βρέθηκε:"
 
 #: echorepo/templates/coordinate_issues.html:25
-#: echorepo/templates/coordinate_issues.html:98 echorepo/templates/search.html:11
+#: echorepo/templates/coordinate_issues.html:134 echorepo/templates/search.html:11
 #: echorepo/templates/search.html:87
 msgid "Sample / QR"
 msgstr "Δείγμα / QR"
 
 #: echorepo/templates/coordinate_issues.html:30
-#: echorepo/templates/coordinate_issues.html:99
+#: echorepo/templates/coordinate_issues.html:135
 msgid "User ID"
 msgstr "ID χρήστη"
 
 #: echorepo/templates/coordinate_issues.html:35
-#: echorepo/templates/coordinate_issues.html:104
+#: echorepo/templates/coordinate_issues.html:140
 msgid "Issue type"
 msgstr "Τύπος έκδοσης"
 
@@ -369,12 +373,12 @@ msgid "Search"
 msgstr "Αναζήτηση"
 
 #: echorepo/templates/coordinate_issues.html:55
-#: echorepo/templates/coordinate_issues.html:102
+#: echorepo/templates/coordinate_issues.html:138
 msgid "Actual country"
 msgstr "Πραγματική χώρα"
 
 #: echorepo/templates/coordinate_issues.html:61
-#: echorepo/templates/coordinate_issues.html:103
+#: echorepo/templates/coordinate_issues.html:139
 msgid "Planned country"
 msgstr "Προγραμματισμένη χώρα"
 
@@ -382,60 +386,212 @@ msgstr "Προγραμματισμένη χώρα"
 msgid "Export current results"
 msgstr "Εξαγωγή των τρεχόντων αποτελεσμάτων"
 
-#: echorepo/templates/coordinate_issues.html:83
+#: echorepo/templates/coordinate_issues.html:84
+msgid "Download planned XLSX"
+msgstr "Λήψη προγραμματισμένου XLSX"
+
+#: echorepo/templates/coordinate_issues.html:90
+#: echorepo/templates/coordinate_issues.html:95
+msgid "Upload planned XLSX"
+msgstr "Αποστολή προγραμματισμένου XLSX"
+
+#: echorepo/templates/coordinate_issues.html:93
+msgid "Replace all planned rows"
+msgstr "Αντικατάσταση όλων των προγραμματισμένων γραμμών"
+
+#: echorepo/templates/coordinate_issues.html:97
+msgid "PostgreSQL planned rows:"
+msgstr "Προγραμματισμένες γραμμές PostgreSQL:"
+
+#: echorepo/templates/coordinate_issues.html:98
+msgid "Ingestion source:"
+msgstr "Πηγή κατάποσης:"
+
+#: echorepo/templates/coordinate_issues.html:100
+msgid ""
+"Upload replaces the table in one transaction; the previous version is "
+"archived."
+msgstr ""
+"Η αποστολή αντικαθιστά τον πίνακα σε μία συναλλαγή· η προηγούμενη έκδοση "
+"αρχειοθετείται."
+
+#: echorepo/templates/coordinate_issues.html:103
+msgid "The PostgreSQL planned-country table is empty."
+msgstr "Ο προγραμματισμένος πίνακας PostgreSQL είναι άδειος."
+
+#: echorepo/templates/coordinate_issues.html:104
+msgid ""
+"Choose the original planned.xlsx, check Replace all planned rows, then click "
+"Upload planned XLSX."
+msgstr ""
+"Επιλέξτε το αρχικό προγραμματισμένο. xlsx, ελέγξτε Αντικατάσταση όλων των "
+"προγραμματισμένων γραμμών, στη συνέχεια, κάντε κλικ στο Αποστολή "
+"προγραμματισμένων XLSX."
+
+#: echorepo/templates/coordinate_issues.html:105
+msgid ""
+"Any import error appears above this page. Do not switch ingestion to "
+"PostgreSQL until rows are imported."
+msgstr ""
+"Κάθε σφάλμα εισαγωγής εμφανίζεται πάνω από αυτή τη σελίδα. Μην αλλάξετε την "
+"κατάποση σε PostgreSQL μέχρι να εισαχθούν σειρές."
+
+#: echorepo/templates/coordinate_issues.html:109
+msgid ""
+"The PostgreSQL planned-country table contains rows, but ingestion still reads"
+" the XLSX file."
+msgstr ""
+"Ο προγραμματισμένος πίνακας PostgreSQL περιέχει σειρές, αλλά η κατάποση "
+"εξακολουθεί να διαβάζει το αρχείο XLSX."
+
+#: echorepo/templates/coordinate_issues.html:110
+msgid ""
+"After verifying the downloaded XLSX, set PLANNED_COUNTRY_SOURCE=postgres and "
+"recreate the application container."
+msgstr ""
+"Μετά την επαλήθευση του download XLSX, ρυθμίστε PLANNED COUNTRY "
+"SOURCE=postgres και αναδημιουργήστε το δοχείο εφαρμογής."
+
+#: echorepo/templates/coordinate_issues.html:119
 msgid "coordinate issue(s)"
 msgstr "θέματα συντονισμού"
 
-#: echorepo/templates/coordinate_issues.html:86
+#: echorepo/templates/coordinate_issues.html:122
 msgid "Source:"
 msgstr "Πηγή:"
 
-#: echorepo/templates/coordinate_issues.html:100
-#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/issues.html:31
+#: echorepo/templates/coordinate_issues.html:135 echorepo/templates/issues.html:29
+#: echorepo/templates/issues.html:75
+msgid "User"
+msgstr "Χρήστης"
+
+#: echorepo/templates/coordinate_issues.html:136
+#: echorepo/templates/coordinate_issues.html:167 echorepo/templates/issues.html:31
 #: echorepo/templates/issues.html:77 echorepo/templates/search.html:91
 msgid "Lat"
 msgstr "Λατ"
 
-#: echorepo/templates/coordinate_issues.html:101
-#: echorepo/templates/coordinate_issues.html:156 echorepo/templates/issues.html:32
+#: echorepo/templates/coordinate_issues.html:137
+#: echorepo/templates/coordinate_issues.html:176 echorepo/templates/issues.html:32
 #: echorepo/templates/issues.html:78 echorepo/templates/search.html:92
 msgid "Lon"
 msgstr "Λον"
 
-#: echorepo/templates/coordinate_issues.html:105
-msgid "Fix coordinates"
-msgstr "Καθορισμός συντεταγμένων"
+#: echorepo/templates/coordinate_issues.html:138
+msgid "Actual"
+msgstr "Πραγματική"
 
-#: echorepo/templates/coordinate_issues.html:117
-msgid "Show only this sample on map"
-msgstr "Εμφάνιση μόνο αυτού του δείγματος στο χάρτη"
+#: echorepo/templates/coordinate_issues.html:139
+msgid "Planned"
+msgstr "Σχεδιασμένο"
 
-#: echorepo/templates/coordinate_issues.html:158 echorepo/templates/issues.html:53
+#: echorepo/templates/coordinate_issues.html:140
+msgid "Issue"
+msgstr "Θέμα"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Actual country OK?"
+msgstr "Πραγματική χώρα εντάξει?"
+
+#: echorepo/templates/coordinate_issues.html:141
+msgid "Country OK?"
+msgstr "Η χώρα είναι εντάξει?"
+
+#: echorepo/templates/coordinate_issues.html:142
+#: echorepo/templates/coordinate_issues.html:245 echorepo/templates/issues.html:53
 #: echorepo/templates/issues.html:96
 msgid "Save"
 msgstr "Αποθήκευση"
 
-#: echorepo/templates/coordinate_issues.html:161
+#: echorepo/templates/coordinate_issues.html:154 echorepo/templates/search.html:105
+#: echorepo/templates/search.html:106
+msgid "Show this sample on map"
+msgstr "Εμφάνιση του δείγματος στο χάρτη"
+
+#: echorepo/templates/coordinate_issues.html:163
+msgid "Saved GPS in PostgreSQL QA override; canonical data awaits enrichment"
+msgstr ""
+"Αποθηκευμένο GPS στην παράκαμψη PostgreSQL QA· κανονικά δεδομένα περιμένουν "
+"εμπλουτισμό"
+
+#: echorepo/templates/coordinate_issues.html:182
+#: echorepo/templates/coordinate_issues.html:189
+msgid "QA snapshot:"
+msgstr "Φωτογραφία QA:"
+
+#: echorepo/templates/coordinate_issues.html:182
+msgid "Current planned country:"
+msgstr "Τρέχουσα προγραμματισμένη χώρα:"
+
+#: echorepo/templates/coordinate_issues.html:185
+msgid "Multiple planned rows for this QR; review required"
+msgstr "Πολλαπλές προγραμματισμένες γραμμές για αυτό το QR· απαιτείται επανεξέταση"
+
+#: echorepo/templates/coordinate_issues.html:191
+msgid "Not in PostgreSQL"
+msgstr "Όχι στο PostgreSQL"
+
+#: echorepo/templates/coordinate_issues.html:197
+msgid "Mismatch"
+msgstr "Αταίριασμα"
+
+#: echorepo/templates/coordinate_issues.html:199
+msgid "Default GPS"
+msgstr "Προκαθορισμένο GPS"
+
+#: echorepo/templates/coordinate_issues.html:201
+msgid "Invalid GPS"
+msgstr "Μη έγκυρο GPS"
+
+#: echorepo/templates/coordinate_issues.html:203
+msgid "No country"
+msgstr "Καμία χώρα"
+
+#: echorepo/templates/coordinate_issues.html:215
+msgid "Current PostgreSQL value matches actual country; QA CSV may need a refresh"
+msgstr "Η τρέχουσα τιμή PostgreSQL ταιριάζει με την πραγματική χώρα"
+
+#: echorepo/templates/coordinate_issues.html:216
+msgid "Matched"
+msgstr "Ταίριασμα"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "Confirm the actual country when pressing Save"
+msgstr "Επιβεβαίωση της πραγματικής χώρας όταν πατάτε Αποθήκευση"
+
+#: echorepo/templates/coordinate_issues.html:223
+msgid "OK"
+msgstr "ΕΝΤΆΞΕΙ"
+
+#: echorepo/templates/coordinate_issues.html:226
+msgid "QR or sample ID unavailable"
+msgstr "QR ή δεν υπάρχει αναγνωριστικό δείγμα"
+
+#: echorepo/templates/coordinate_issues.html:245
+msgid "Save GPS coordinates and optional planned country"
+msgstr "Αποθήκευση συντεταγμένων GPS και προαιρετική προγραμματισμένη χώρα"
+
+#: echorepo/templates/coordinate_issues.html:248
 msgid "Sample ID unavailable"
 msgstr "Δείγμα ID μη διαθέσιμο"
 
-#: echorepo/templates/coordinate_issues.html:166
+#: echorepo/templates/coordinate_issues.html:253
 msgid "Read-only"
 msgstr "Μόνο για ανάγνωση"
 
-#: echorepo/templates/coordinate_issues.html:174
+#: echorepo/templates/coordinate_issues.html:261
 msgid "No coordinate issues for these filters."
 msgstr "Δεν υπάρχουν θέματα συντεταγμένων για αυτά τα φίλτρα."
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "Showing page"
 msgstr "Εμφάνιση σελίδας"
 
-#: echorepo/templates/coordinate_issues.html:186 echorepo/templates/search.html:135
+#: echorepo/templates/coordinate_issues.html:273 echorepo/templates/search.html:135
 msgid "of"
 msgstr "του"
 
-#: echorepo/templates/coordinate_issues.html:187 echorepo/templates/search.html:136
+#: echorepo/templates/coordinate_issues.html:274 echorepo/templates/search.html:136
 msgid "results"
 msgstr "αποτελέσματα"
 
@@ -477,7 +633,7 @@ msgid "Country"
 msgstr "Χώρες"
 
 #: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:326
+#: echorepo/templates/search.html:21 static/js/map.js:339
 msgid "Any country"
 msgstr "Οποιαδήποτε χώρα"
 
@@ -531,10 +687,6 @@ msgstr "Χωρίς καταχωρήσεις με προκαθορισμένες 
 #: echorepo/templates/issues.html:28 echorepo/templates/issues.html:74
 msgid "Sample"
 msgstr "Δείγμα"
-
-#: echorepo/templates/issues.html:29 echorepo/templates/issues.html:75
-msgid "User"
-msgstr "Χρήστης"
 
 #: echorepo/templates/issues.html:30 echorepo/templates/issues.html:76
 msgid "QR"
@@ -914,10 +1066,6 @@ msgstr "Χρονοσφραγίδα"
 msgid "Collected by"
 msgstr "Συλλέγεται από"
 
-#: echorepo/templates/search.html:105 echorepo/templates/search.html:106
-msgid "Show this sample on map"
-msgstr "Εμφάνιση του δείγματος στο χάρτη"
-
 #: echorepo/templates/search.html:123
 msgid "No results for these filters."
 msgstr "Δεν υπάρχουν αποτελέσματα για αυτά τα φίλτρα."
@@ -1003,28 +1151,28 @@ msgstr "Προτεινόμενη αναφορά"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Δεν έχουν καταγραφεί ακόμα εκδόσεις του Zenodo."
 
-#: static/js/map.js:265
+#: static/js/map.js:278
 msgid "Link copied to clipboard"
 msgstr "Δεσμός αντιγραφόμενο στο πρόχειρο"
 
-#: static/js/map.js:268
+#: static/js/map.js:281
 msgid "Copy this link:"
 msgstr "Αντιγραφή αυτού του συνδέσμου:"
 
-#: static/js/map.js:893 static/js/map.js:3662
+#: static/js/map.js:906 static/js/map.js:3684
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Φίλτρα εξαγωγής (${n})"
 
-#: static/js/map.js:903 static/js/map.js:3454
+#: static/js/map.js:916 static/js/map.js:3472
 msgid "Release mouse to finish drawing."
 msgstr "Αφήστε το ποντίκι να τελειώσει το σχέδιο."
 
-#: static/js/map.js:977
+#: static/js/map.js:990
 msgid "Not available"
 msgstr "Υποθ"
 
-#: static/js/map.js:1319
+#: static/js/map.js:1332
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1032,69 +1180,69 @@ msgstr ""
 "Αδυναμία φόρτωσης της επικάλυψης της βιογεωγραφικής περιοχής. Ελέγξτε ότι "
 "/static/geo/biogeo regions 2016.geojson υπάρχει."
 
-#: static/js/map.js:1575
+#: static/js/map.js:1588
 msgid "Unit conversion help"
 msgstr "Βοήθεια μετατροπής μονάδας"
 
-#: static/js/map.js:1961
+#: static/js/map.js:1974
 msgid "Texture"
 msgstr "Υφή"
 
-#: static/js/map.js:1996
+#: static/js/map.js:2009
 msgid "Observations"
 msgstr "Παρατηρήσεις"
 
-#: static/js/map.js:2634 static/js/map.js:3986
+#: static/js/map.js:2648 static/js/map.js:4034
 msgid "Loading map data..."
 msgstr "Φόρτωση δεδομένων χάρτη..."
 
-#: static/js/map.js:2638
+#: static/js/map.js:2652
 msgid "Please wait"
 msgstr "Παρακαλώ περιμένετε"
 
-#: static/js/map.js:2917
+#: static/js/map.js:2931
 msgid "Loading..."
 msgstr "Φόρτωση..."
 
-#: static/js/map.js:3284
+#: static/js/map.js:3302
 msgid "Draw selection rectangle"
 msgstr "Σχεδίαση ορθογωνίου επιλογής"
 
-#: static/js/map.js:3295
+#: static/js/map.js:3313
 msgid "Delete last point drawn"
 msgstr "Διαγραφή του τελευταίου σημείου που έχει σχεδιαστεί"
 
-#: static/js/map.js:3303
+#: static/js/map.js:3321
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Κάντε κλικ και σύρετε για να σχεδιάσετε ένα ορθογώνιο επιλογής. Μπορείς να "
 "ζωγραφίσεις περισσότερους από έναν."
 
-#: static/js/map.js:3309
+#: static/js/map.js:3327
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Αφήστε το ποντίκι για να προσθέσετε αυτό το ορθογώνιο στην επιλογή."
 
-#: static/js/map.js:3390
+#: static/js/map.js:3408
 msgid "No selected samples to export."
 msgstr "Δεν υπάρχουν επιλεγμένα δείγματα προς εξαγωγή."
 
-#: static/js/map.js:3732
+#: static/js/map.js:3754
 msgid "Please sign in to export data."
 msgstr "Παρακαλώ υπογράψτε για εξαγωγή δεδομένων."
 
-#: static/js/map.js:3802
+#: static/js/map.js:3825
 msgid "Loading sample..."
 msgstr "Φόρτωση δείγματος..."
 
-#: static/js/map.js:3918
+#: static/js/map.js:3966
 msgid "Rendering markers..."
 msgstr "Αποτύπωση δεικτών..."
 
-#: static/js/map.js:3919
+#: static/js/map.js:3967
 msgid "Building clusters and popups"
 msgstr "Συγκροτήματα και αναδυόμενα"
 
-#: static/js/map.js:3987
+#: static/js/map.js:4035
 msgid "Preparing map"
 msgstr "Προετοιμασία χάρτη"
 
@@ -1288,4 +1436,10 @@ msgstr "Προετοιμασία χάρτη"
 
 #~ msgid "All countries"
 #~ msgstr "Όλες οι χώρες"
+
+#~ msgid "Fix coordinates"
+#~ msgstr "Καθορισμός συντεταγμένων"
+
+#~ msgid "Show only this sample on map"
+#~ msgstr "Εμφάνιση μόνο αυτού του δείγματος στο χάρτη"
 
