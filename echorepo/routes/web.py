@@ -660,6 +660,32 @@ def landing():
     return redirect(url_for("web.explore"))
 
 
+@web_bp.get("/my/map/owned-ids")
+@login_required
+def my_map_owned_ids():
+    """Return only the authenticated user's map IDs, never public ownership metadata.
+
+    The public canonical map GeoJSON deliberately omits collected_by. The
+    browser uses this private ID list to split markers between map toggles.
+    Keep the membership definition aligned with /my (query_user_df).
+    """
+    user_key = session.get("user") or (session.get("kc") or {}).get("profile", {}).get("email")
+    if not user_key:
+        abort(401, description="No authenticated user identifier")
+    df = query_user_df(user_key)
+    ids = set()
+    for column in ("QR_qrCode", "sample_id", "sampleId"):
+        if column not in df.columns:
+            continue
+        for raw in df[column].dropna():
+            value = str(raw).strip().upper()
+            if value and value not in {"NAN", "NONE", "NULL"}:
+                ids.add(value)
+    response = jsonify({"sample_ids": sorted(ids)})
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 @web_bp.get("/my", endpoint="home")
 @login_required
 def home():
