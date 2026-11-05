@@ -1002,6 +1002,7 @@
 'lon_col': lon_col|default('GPS_long'),
 
 'hide_wrong_coordinates': true,
+'personal_map': true,
 
 'biodiv_marker': biodiv_marker|default('16S,ITS'),
 
@@ -1013,7 +1014,7 @@
 
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=43"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=44"></script>
 
 
 
