@@ -3,8 +3,6 @@ services:
     build:
       context: ./streamlit
 
-    container_name: echorepo-streamlit
-
     restart: unless-stopped
 
     ports:
@@ -17,10 +15,14 @@ services:
     volumes:
       - ./notebooks/lib:/app/lib:ro
 
+    command:
+      - streamlit
+      - run
+      - streamlit_app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.headless=true
+      - --server.baseUrlPath=research/dashboard
+
     networks:
-      - echorepo-shared
-
-
-networks:
-  echorepo-shared:
-    external: true
+      - default

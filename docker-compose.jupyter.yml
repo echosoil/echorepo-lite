@@ -8,22 +8,33 @@ services:
 
     volumes:
       - ${JUPYTER_WORK_DIR:-./notebooks}:/home/jovyan/work
-      - ./jupyter/custom/custom.css:/home/jovyan/.jupyter/custom/custom.css:ro
-      - ./static/img/echorepo_logo_light.svg:/home/jovyan/.jupyter/custom/echorepo_logo.svg:ro
+
+      - type: bind
+        source: ./jupyter/custom/custom.css
+        target: /home/jovyan/.jupyter/custom/custom.css
+        read_only: true
+        bind:
+          create_host_path: false
+
+      - type: bind
+        source: ./static/img/echorepo_logo_light.svg
+        target: /home/jovyan/.jupyter/custom/echorepo_logo.svg
+        read_only: true
+        bind:
+          create_host_path: false
 
     environment:
-      JUPYTER_TOKEN: ${JUPYTER_TOKEN}
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?Set JUPYTER_TOKEN in .env}
       ECHOREPO_URL: "http://echorepo-lite:8000"
       PYTHONPATH: "/home/jovyan/work"
 
     command:
       - start-notebook.py
       - --ServerApp.root_dir=/home/jovyan/work
+      - --ServerApp.base_url=/research/workspace/
+      - --ServerApp.trust_xheaders=True
+      - --ServerApp.allow_remote_access=True
       - --custom-css
 
     networks:
-      - echorepo-shared
-
-networks:
-  echorepo-shared:
-    external: true
+      - default
