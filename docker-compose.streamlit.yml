@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
 
     ports:
-      - "127.0.0.1:8501:8501"
-
+      - "172.31.5.252:8501:8501"
+      
     environment:
       ECHOREPO_URL: "http://echorepo-lite:8000"
       PYTHONPATH: "/app"
