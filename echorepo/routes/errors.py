@@ -114,7 +114,6 @@ def issues():
     user_key = session.get("user")
     df = query_user_df(user_key)
 
-
     orig_lat_col = getattr(settings, "ORIG_LAT_COL", None) or settings.LAT_COL
     orig_lon_col = getattr(settings, "ORIG_LON_COL", None) or settings.LON_COL
 
@@ -127,11 +126,7 @@ def issues():
 
     def _truthy_series(s):
         return (
-            s.fillna("")
-            .astype(str)
-            .str.strip()
-            .str.lower()
-            .isin({"1", "true", "yes", "y", "on"})
+            s.fillna("").astype(str).str.strip().str.lower().isin({"1", "true", "yes", "y", "on"})
         )
 
     if df is None or df.empty:
@@ -216,7 +211,6 @@ def issues():
         orig_lat_col=orig_lat_col,
         orig_lon_col=orig_lon_col,
     )
-
 
 
 @errors_bp.post("/issues/fix-coords")

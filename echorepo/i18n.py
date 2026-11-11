@@ -8,7 +8,6 @@ from flask_babel import gettext as _real_gettext
 
 from .services.i18n_overrides import get_overrides
 
-
 # ---------------------------------------------------------------------------
 # Supported languages
 #
@@ -97,6 +96,7 @@ LOCALE_FLAGS = {
 # Raw English msgids used by JavaScript
 # ---------------------------------------------------------------------------
 
+
 def N_(message: str) -> str:
     """
     Mark a string for Babel extraction without translating it immediately.
@@ -146,7 +146,9 @@ BASE_LABEL_MSGIDS = {
     "exportSelection": N_("Export selection"),
     "clearSelection": N_("Clear selection"),
     "loadingSampleDetails": N_("Loading sample details..."),
-    "elementalConcentrationsHelp": N_("Percentage values (%) can be converted to mg/kg by multiplying by 10000."),
+    "elementalConcentrationsHelp": N_(
+        "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
+    ),
 }
 
 
@@ -156,6 +158,7 @@ babel = Babel()
 # ---------------------------------------------------------------------------
 # Locale helpers
 # ---------------------------------------------------------------------------
+
 
 def canonical_locale(value: str | None) -> str:
     """
@@ -185,10 +188,7 @@ def base_labels() -> dict:
     """
     Translate the raw English JavaScript msgids for the active locale.
     """
-    return {
-        key: _real_gettext(msgid)
-        for key, msgid in BASE_LABEL_MSGIDS.items()
-    }
+    return {key: _real_gettext(msgid) for key, msgid in BASE_LABEL_MSGIDS.items()}
 
 
 def _select_locale():
@@ -231,6 +231,7 @@ def _select_locale():
 # JS translation labels + overrides
 # ---------------------------------------------------------------------------
 
+
 def build_i18n_labels(base: dict) -> dict:
     """
     Build JavaScript labels for the active language.
@@ -260,6 +261,7 @@ def build_i18n_labels(base: dict) -> dict:
 # ---------------------------------------------------------------------------
 # Flask-Babel initialization
 # ---------------------------------------------------------------------------
+
 
 def init_i18n(app):
     app.config.setdefault("BABEL_DEFAULT_LOCALE", "en")
@@ -325,10 +327,7 @@ lang_bp = Blueprint(
 def set_language(lang_code):
     locale = canonical_locale(lang_code)
 
-    resp = redirect(
-        request.referrer
-        or url_for("web.home")
-    )
+    resp = redirect(request.referrer or url_for("web.home"))
 
     resp.set_cookie(
         "locale",

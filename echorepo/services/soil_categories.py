@@ -5,7 +5,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-
 TEXTURE_VALUES = {
     "sandy",
     "sandy loam",
@@ -28,24 +27,14 @@ STRUCTURE_VALUES = {
 }
 
 
-VOCAB_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "metadata"
-    / "canonical"
-    / "soil_categories.json"
-)
+VOCAB_PATH = Path(__file__).resolve().parents[2] / "metadata" / "canonical" / "soil_categories.json"
 
 
 def _normalize_lookup_key(value: Any) -> str:
     if value is None:
         return ""
 
-    return " ".join(
-        str(value)
-        .strip()
-        .casefold()
-        .split()
-    )
+    return " ".join(str(value).strip().casefold().split())
 
 
 @lru_cache(maxsize=1)
@@ -65,11 +54,7 @@ def load_soil_category_mapping() -> dict[str, dict[str, str]]:
         values = raw.get(category, {})
 
         result[category] = {
-            _normalize_lookup_key(source): (
-                str(target)
-                .strip()
-                .lower()
-            )
+            _normalize_lookup_key(source): (str(target).strip().lower())
             for source, target in values.items()
         }
 
@@ -84,9 +69,7 @@ def canonical_soil_value(
         "soil_texture",
         "soil_structure",
     ):
-        raise ValueError(
-            f"Unknown soil category: {category}"
-        )
+        raise ValueError(f"Unknown soil category: {category}")
 
     key = _normalize_lookup_key(value)
 
@@ -109,22 +92,18 @@ def standardize_soil_columns(df):
     df = df.copy()
 
     if "soil_texture_orig" in df.columns:
-        df["soil_texture_en"] = (
-            df["soil_texture_orig"].map(
-                lambda value: canonical_soil_value(
-                    value,
-                    "soil_texture",
-                )
+        df["soil_texture_en"] = df["soil_texture_orig"].map(
+            lambda value: canonical_soil_value(
+                value,
+                "soil_texture",
             )
         )
 
     if "soil_structure_orig" in df.columns:
-        df["soil_structure_en"] = (
-            df["soil_structure_orig"].map(
-                lambda value: canonical_soil_value(
-                    value,
-                    "soil_structure",
-                )
+        df["soil_structure_en"] = df["soil_structure_orig"].map(
+            lambda value: canonical_soil_value(
+                value,
+                "soil_structure",
             )
         )
 

@@ -8,6 +8,7 @@ This is best-effort detection: small/oblique plates, handwriting, profiles,
 and non-frontal faces may be missed. Human review is necessary before treating
 images as guaranteed anonymized.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,12 +19,14 @@ from pathlib import Path
 def _libraries():
     import cv2
     import numpy as np
+
     return cv2, np
 
 
 @lru_cache(maxsize=1)
 def _ocr_engine():
     from rapidocr import RapidOCR
+
     return RapidOCR()
 
 
@@ -70,23 +73,30 @@ def _obscure_region(rgb, rect, mode: str):
     elif mode == "blur":
         # Deliberately much stronger than a normal photographic Gaussian blur:
         # discard ~95% of the original spatial resolution, then smooth.
-        tiny = cv2.resize(roi, (max(1, w // 20), max(1, h // 20)),
-                          interpolation=cv2.INTER_AREA)
+        tiny = cv2.resize(roi, (max(1, w // 20), max(1, h // 20)), interpolation=cv2.INTER_AREA)
         pixelated = cv2.resize(tiny, (w, h), interpolation=cv2.INTER_LINEAR)
-        roi[:] = cv2.GaussianBlur(pixelated, (0, 0),
-                                  sigmaX=max(3, w / 15), sigmaY=max(3, h / 15))
+        roi[:] = cv2.GaussianBlur(pixelated, (0, 0), sigmaX=max(3, w / 15), sigmaY=max(3, h / 15))
     else:
         raise ValueError("mode must be 'blur' or 'solid'")
 
 
-def redact_pil_image(image, *, blur_text=True, blur_faces=True, blur_qr=True,
-                     mode="blur", detect_max_side=2600, margin=0.20):
+def redact_pil_image(
+    image,
+    *,
+    blur_text=True,
+    blur_faces=True,
+    blur_qr=True,
+    mode="blur",
+    detect_max_side=2600,
+    margin=0.20,
+):
     """Return (redacted_PIL_RGB_image, {'text_regions': N, 'faces': N}).
 
     Input must already have EXIF orientation applied. Raises if a detector fails;
     the caller MUST NOT publish the original as a fallback.
     """
     from PIL import Image
+
     cv2, np = _libraries()
 
     if mode not in {"blur", "solid"}:
@@ -104,8 +114,9 @@ def redact_pil_image(image, *, blur_text=True, blur_faces=True, blur_qr=True,
         raise ValueError("Empty image")
     scale = max(1.0, max(width, height) / detect_max_side)
     if scale > 1:
-        work = full.resize((max(1, round(width / scale)),
-                            max(1, round(height / scale))), Image.Resampling.LANCZOS)
+        work = full.resize(
+            (max(1, round(width / scale)), max(1, round(height / scale))), Image.Resampling.LANCZOS
+        )
     else:
         work = full
     # Use exact size ratio to map detections to original pixels; rounding may differ.
@@ -146,12 +157,17 @@ def redact_pil_image(image, *, blur_text=True, blur_faces=True, blur_qr=True,
     if blur_faces:
         work_rgb = np.asarray(work)
         gray = cv2.cvtColor(work_rgb, cv2.COLOR_RGB2GRAY)
-        faces = _face_cascade().detectMultiScale(gray, scaleFactor=1.1,
-                                                 minNeighbors=4, minSize=(24, 24))
+        faces = _face_cascade().detectMultiScale(
+            gray, scaleFactor=1.1, minNeighbors=4, minSize=(24, 24)
+        )
         for x, y, w, h in faces:
-            rect = _bounding_rect([(x * sx, y * sy),
-                                   ((x + w) * sx, (y + h) * sy)],
-                                  1.0, width, height, max(margin, 0.30))
+            rect = _bounding_rect(
+                [(x * sx, y * sy), ((x + w) * sx, (y + h) * sy)],
+                1.0,
+                width,
+                height,
+                max(margin, 0.30),
+            )
             if rect:
                 regions.append(rect)
                 counts["faces"] += 1
@@ -175,6 +191,7 @@ def main():
     if args.text_only and args.faces_only:
         parser.error("Cannot combine --text-only and --faces-only")
     from PIL import Image, ImageOps
+
     with Image.open(args.image) as original:
         oriented = ImageOps.exif_transpose(original)
         redacted, counts = redact_pil_image(
@@ -187,9 +204,11 @@ def main():
         )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     redacted.save(args.output, format="JPEG", quality=90, optimize=True)
-    print(f"Redacted: {counts['text_regions']} text regions, {counts['faces']} faces, "
-          f"{counts['qr_codes']} QR codes. "
-          f"Saved {args.output}")
+    print(
+        f"Redacted: {counts['text_regions']} text regions, {counts['faces']} faces, "
+        f"{counts['qr_codes']} QR codes. "
+        f"Saved {args.output}"
+    )
 
 
 if __name__ == "__main__":

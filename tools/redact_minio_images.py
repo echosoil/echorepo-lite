@@ -11,6 +11,7 @@ Warning: if the MinIO bucket is public, new photos will be visible BEFORE this
 job executes. For strict privacy, mirror into a private staging bucket and
 publish only the sanitized image (not implemented by this standalone job).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,9 +35,18 @@ from tools.privacy_redact import redact_pil_image
 log = logging.getLogger("redact_minio_images")
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".jfif", ".png", ".webp"}
 AUDIT_COLUMNS = (
-    "processed_at_utc", "processing_version", "user_id", "sample_id", "field",
-    "object_name", "storage_path", "mode", "text_regions", "faces",
-    "qr_codes", "total_regions",
+    "processed_at_utc",
+    "processing_version",
+    "user_id",
+    "sample_id",
+    "field",
+    "object_name",
+    "storage_path",
+    "mode",
+    "text_regions",
+    "faces",
+    "qr_codes",
+    "total_regions",
 )
 
 
@@ -81,8 +91,7 @@ def load_done(path: Path, version: str) -> tuple[set[tuple[str, str]], set[str]]
     return done, legacy
 
 
-def record_done(path: Path, version: str, name: str, etag: str,
-                done: set[tuple[str, str]]) -> None:
+def record_done(path: Path, version: str, name: str, etag: str, done: set[tuple[str, str]]) -> None:
     item = (name, etag_of(etag))
     if item in done:
         return
@@ -104,8 +113,9 @@ def audit_seen(path: Path) -> set[tuple[str, str]]:
         return {(r["processing_version"], r["object_name"]) for r in rdr}
 
 
-def record_audit(path: Path, version: str, name: str, mode: str,
-                 counts: dict[str, int], public_base: str) -> None:
+def record_audit(
+    path: Path, version: str, name: str, mode: str, counts: dict[str, int], public_base: str
+) -> None:
     counts = {k: int(counts.get(k, 0)) for k in ("text_regions", "faces", "qr_codes")}
     total = sum(counts.values())
     if total == 0:
@@ -132,13 +142,21 @@ def record_audit(path: Path, version: str, name: str, mode: str,
         writer.writerow(entry)
         fh.flush()
         os.fsync(fh.fileno())
-    log.info("[affected] %s text=%d faces=%d qr=%d", name,
-             counts["text_regions"], counts["faces"], counts["qr_codes"])
+    log.info(
+        "[affected] %s text=%d faces=%d qr=%d",
+        name,
+        counts["text_regions"],
+        counts["faces"],
+        counts["qr_codes"],
+    )
 
 
 def minio_client():
     from minio import Minio
-    endpoint = os.getenv("MINIO_ENDPOINT_OUTSIDE") or os.getenv("MINIO_ENDPOINT") or "localhost:9000"
+
+    endpoint = (
+        os.getenv("MINIO_ENDPOINT_OUTSIDE") or os.getenv("MINIO_ENDPOINT") or "localhost:9000"
+    )
     secure = endpoint.startswith("https://")
     endpoint = endpoint.removeprefix("https://").removeprefix("http://").rstrip("/")
     access = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER")
@@ -161,18 +179,30 @@ def metadata_value(metadata: dict, key: str) -> str:
     return ""
 
 
-def redact_bytes(data: bytes, *, mode: str, max_side: int,
-                 blur_text: bool, blur_faces: bool, blur_qr: bool,
-                 max_pixels: int, jpeg_quality: int) -> tuple[bytes, dict[str, int]]:
+def redact_bytes(
+    data: bytes,
+    *,
+    mode: str,
+    max_side: int,
+    blur_text: bool,
+    blur_faces: bool,
+    blur_qr: bool,
+    max_pixels: int,
+    jpeg_quality: int,
+) -> tuple[bytes, dict[str, int]]:
     from PIL import Image, ImageOps
+
     with Image.open(io.BytesIO(data)) as image:
         image.load()
         if image.width * image.height > max_pixels:
             raise ValueError(f"Image too large: {image.width}x{image.height}")
         oriented = ImageOps.exif_transpose(image)
         obscured, counts = redact_pil_image(
-            oriented, mode=mode, blur_text=blur_text,
-            blur_faces=blur_faces, blur_qr=blur_qr,
+            oriented,
+            mode=mode,
+            blur_text=blur_text,
+            blur_faces=blur_faces,
+            blur_qr=blur_qr,
             detect_max_side=max_side,
         )
     result = io.BytesIO()
@@ -183,19 +213,29 @@ def redact_bytes(data: bytes, *, mode: str, max_side: int,
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true", help="List pending images without OCR or writes")
-    parser.add_argument("--max-images", type=int, default=0, help="Process only N pending images (0=all)")
-    parser.add_argument("--prefix", default="", help="Limit object prefix for testing")
-    parser.add_argument("--force", action="store_true", help="Reprocess checked images (may double-blur)")
     parser.add_argument(
-        "--trust-legacy-progress", action="store_true",
-        help=("One-time conversion: treat old v1<TAB>object_name entries as "
-              "already processed and bind them to current MinIO ETags. "
-              "ONLY use if the mirrored objects have not been replaced since "
-              "the older redactor processed them."),
+        "--dry-run", action="store_true", help="List pending images without OCR or writes"
     )
     parser.add_argument(
-        "--migrate-legacy-only", action="store_true",
+        "--max-images", type=int, default=0, help="Process only N pending images (0=all)"
+    )
+    parser.add_argument("--prefix", default="", help="Limit object prefix for testing")
+    parser.add_argument(
+        "--force", action="store_true", help="Reprocess checked images (may double-blur)"
+    )
+    parser.add_argument(
+        "--trust-legacy-progress",
+        action="store_true",
+        help=(
+            "One-time conversion: treat old v1<TAB>object_name entries as "
+            "already processed and bind them to current MinIO ETags. "
+            "ONLY use if the mirrored objects have not been replaced since "
+            "the older redactor processed them."
+        ),
+    )
+    parser.add_argument(
+        "--migrate-legacy-only",
+        action="store_true",
         help="Convert old progress markers but do not run OCR on other images",
     )
     args = parser.parse_args(argv)
@@ -206,8 +246,10 @@ def main(argv=None) -> int:
     if args.max_images < 0:
         parser.error("--max-images must be >= 0")
 
-    logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper(),
-                        format="%(asctime)s %(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=os.getenv("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s %(levelname)s: %(message)s",
+    )
     version = os.getenv("PRIVACY_PROCESSING_VERSION", "v1").strip()
     mode = os.getenv("PRIVACY_REDACTION_MODE", "blur").strip().lower()
     max_side = int(os.getenv("PRIVACY_DETECT_MAX_SIDE", "2600"))
@@ -242,8 +284,13 @@ def main(argv=None) -> int:
     log.info(
         "MinIO %s; bucket=%s version=%s mode=%s etag_markers=%d "
         "legacy_unqualified=%d trust_legacy=%s dry_run=%s",
-        os.getenv("MINIO_ENDPOINT_OUTSIDE", "localhost:9000"), bucket,
-        version, mode, len(done), len(unresolved_legacy), args.trust_legacy_progress,
+        os.getenv("MINIO_ENDPOINT_OUTSIDE", "localhost:9000"),
+        bucket,
+        version,
+        mode,
+        len(done),
+        len(unresolved_legacy),
+        args.trust_legacy_progress,
         args.dry_run,
     )
     if unresolved_legacy and not args.trust_legacy_progress:
@@ -251,7 +298,8 @@ def main(argv=None) -> int:
             "%d old two-column privacy markers are present. They cannot "
             "verify current MinIO content. If these images have NOT been "
             "overwritten since old redaction, migrate once with "
-            "--trust-legacy-progress to prevent repeated blur.", len(unresolved_legacy),
+            "--trust-legacy-progress to prevent repeated blur.",
+            len(unresolved_legacy),
         )
     if unresolved_legacy and args.trust_legacy_progress:
         log.warning(
@@ -259,9 +307,16 @@ def main(argv=None) -> int:
             "and MUST NOT be used if they might have been replaced with "
             "unredacted images since their old privacy processing."
         )
-    stats = {"scanned": 0, "already_done": 0, "legacy_migrated": 0,
-             "legacy_would_migrate": 0, "pending": 0,
-             "processed": 0, "affected": 0, "failed": 0}
+    stats = {
+        "scanned": 0,
+        "already_done": 0,
+        "legacy_migrated": 0,
+        "legacy_would_migrate": 0,
+        "pending": 0,
+        "processed": 0,
+        "affected": 0,
+        "failed": 0,
+    }
     for item in client.list_objects(bucket, prefix=args.prefix, recursive=True):
         name = item.object_name
         if not is_photo_object(name):
@@ -281,9 +336,13 @@ def main(argv=None) -> int:
                 log.warning("Skipping concurrent change to %s", name)
                 continue
             existing_version = metadata_value(meta, "privacy-version")
-            if (not args.force and args.trust_legacy_progress
-                    and name in legacy and name not in qualified_names
-                    and not existing_version):
+            if (
+                not args.force
+                and args.trust_legacy_progress
+                and name in legacy
+                and name not in qualified_names
+                and not existing_version
+            ):
                 # Legacy records have no ETag. This is a user-authorized
                 # migration: the *current* MinIO version is assumed to be
                 # the image redacted by the previous job, NOT re-processed.
@@ -305,9 +364,14 @@ def main(argv=None) -> int:
                 }
                 if not args.dry_run:
                     if sum(counts.values()) and (version, name) not in seen:
-                        record_audit(audit_path, version, name,
-                                     metadata_value(meta, "privacy-mode") or mode,
-                                     counts, public_base)
+                        record_audit(
+                            audit_path,
+                            version,
+                            name,
+                            metadata_value(meta, "privacy-mode") or mode,
+                            counts,
+                            public_base,
+                        )
                         seen.add((version, name))
                     record_done(progress_path, version, name, latest_etag, done)
                 stats["already_done"] += 1
@@ -332,9 +396,14 @@ def main(argv=None) -> int:
                 if len(raw) > max_bytes:
                     raise ValueError(f"Image larger than {max_bytes} bytes")
                 redacted, counts = redact_bytes(
-                    raw, mode=mode, max_side=max_side,
-                    blur_text=blur_text, blur_faces=blur_faces, blur_qr=blur_qr,
-                    max_pixels=max_pixels, jpeg_quality=jpeg_quality,
+                    raw,
+                    mode=mode,
+                    max_side=max_side,
+                    blur_text=blur_text,
+                    blur_faces=blur_faces,
+                    blur_qr=blur_qr,
+                    max_pixels=max_pixels,
+                    jpeg_quality=jpeg_quality,
                 )
                 # A lightweight guard against the mirror changing the object
                 # between download and redacted upload. Use cross-job flock
@@ -348,9 +417,14 @@ def main(argv=None) -> int:
                     "privacy-faces": str(counts["faces"]),
                     "privacy-qr-codes": str(counts["qr_codes"]),
                 }
-                written = client.put_object(bucket, name, io.BytesIO(redacted),
-                                            len(redacted), content_type="image/jpeg",
-                                            metadata=metadata)
+                written = client.put_object(
+                    bucket,
+                    name,
+                    io.BytesIO(redacted),
+                    len(redacted),
+                    content_type="image/jpeg",
+                    metadata=metadata,
+                )
                 # Audit after successful publication; MinIO metadata supports
                 # recovery should audit append fail before progress append.
                 record_audit(audit_path, version, name, mode, counts, public_base)

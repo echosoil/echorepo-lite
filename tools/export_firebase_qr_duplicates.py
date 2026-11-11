@@ -37,7 +37,6 @@ import pandas as pd
 from dotenv import load_dotenv
 from firebase_admin import auth, credentials, firestore
 
-
 THIS_DIR = Path(__file__).resolve().parent
 DEFAULT_ROOT = THIS_DIR.parent
 ENV_PATH = Path(os.getenv("ENV_FILE", str(DEFAULT_ROOT / ".env")))
@@ -78,9 +77,7 @@ def init_firebase() -> None:
     )
 
     if not creds_path or not os.path.exists(creds_path):
-        raise FileNotFoundError(
-            f"Firebase service account JSON not found: {creds_path}"
-        )
+        raise FileNotFoundError(f"Firebase service account JSON not found: {creds_path}")
 
     log.info("Initializing Firebase")
     cred = credentials.Certificate(creds_path)
@@ -403,27 +400,18 @@ def add_duplicate_diagnostics(
     if "QR_qrCode" in out.columns:
         qr_norm = out["QR_qrCode"].map(norm_qr)
     else:
-        qr_norm = (
-            out["matched_requested_qr"]
-            .astype(str)
-            .str.split(",")
-            .str[0]
-            .map(norm_qr)
-        )
+        qr_norm = out["matched_requested_qr"].astype(str).str.split(",").str[0].map(norm_qr)
 
     out["qr_normalized"] = qr_norm
-    owner_counts = (
-        out.groupby("qr_normalized")["userId"]
-        .transform(lambda s: s.astype(str).str.strip().replace("", pd.NA).nunique())
+    owner_counts = out.groupby("qr_normalized")["userId"].transform(
+        lambda s: s.astype(str).str.strip().replace("", pd.NA).nunique()
     )
 
     out["owner_count_for_qr"] = owner_counts
     out["multiple_owners_for_qr"] = owner_counts > 1
     counts = Counter(qr_norm)
     out["duplicate_count_for_qr"] = qr_norm.map(counts)
-    out["duplicate_index_for_qr"] = (
-        out.groupby("qr_normalized", dropna=False).cumcount() + 1
-    )
+    out["duplicate_index_for_qr"] = out.groupby("qr_normalized", dropna=False).cumcount() + 1
 
     order = {q: i for i, q in enumerate(requested_qrs)}
     out["_requested_order"] = qr_norm.map(lambda q: order.get(q, len(order)))

@@ -7,8 +7,8 @@ import re
 import zipfile
 from collections.abc import Sequence
 from dataclasses import dataclass
-from functools import lru_cache
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -17,7 +17,6 @@ from psycopg2.extras import RealDictCursor
 
 from .db import get_pg_conn
 from .soil_categories import standardize_soil_columns
-
 
 ZENODO_DOI = "10.5281/zenodo.19722513"
 
@@ -178,10 +177,7 @@ EXPORT_SPECS = {
     ),
     "sample_images.csv": ExportSpec(
         filename="sample_images.csv",
-        description=(
-            "Canonical image metadata linked to samples "
-            "(IDs, URLs and descriptions)."
-        ),
+        description=("Canonical image metadata linked to samples (IDs, URLs and descriptions)."),
     ),
     "sample_parameters.csv": ExportSpec(
         filename="sample_parameters.csv",
@@ -192,8 +188,7 @@ EXPORT_SPECS = {
         notes=(
             "Rows with numeric values below the configured canonical export "
             "threshold (default 0.01) are omitted.",
-            "Oxide-form parameter rows are excluded from the canonical export "
-            "by default.",
+            "Oxide-form parameter rows are excluded from the canonical export by default.",
         ),
     ),
     "sample_biodiversity.csv": ExportSpec(
@@ -202,10 +197,7 @@ EXPORT_SPECS = {
             "Microbial taxonomic abundance statistics by reported taxonomic rank "
             "per sample and molecular marker (for example 16S or ITS)."
         ),
-        notes=(
-            "Raw OTU-level source data are not included "
-            "in this canonical export.",
-        ),
+        notes=("Raw OTU-level source data are not included in this canonical export.",),
     ),
     "parameter_definitions.csv": ExportSpec(
         filename="parameter_definitions.csv",
@@ -226,11 +218,7 @@ EXPORT_SPECS = {
 
 
 def _utc_now_iso() -> str:
-    return (
-        datetime.now(timezone.utc)
-        .isoformat(timespec="seconds")
-        .replace("+00:00", "Z")
-    )
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _normalise_sample_ids(
@@ -242,8 +230,7 @@ def _normalise_sample_ids(
     cleaned = {
         str(sample_id).strip().upper()
         for sample_id in sample_ids
-        if sample_id is not None
-        and str(sample_id).strip()
+        if sample_id is not None and str(sample_id).strip()
     }
 
     return sorted(cleaned)
@@ -254,9 +241,7 @@ def _fetch_dataframe(
     params: tuple,
     columns: list[str],
 ) -> pd.DataFrame:
-    with get_pg_conn() as conn, conn.cursor(
-        cursor_factory=RealDictCursor
-    ) as cur:
+    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(sql, params)
         rows = cur.fetchall()
 
@@ -284,10 +269,7 @@ def looks_like_oxide(label: str) -> bool:
         text,
     )
 
-    return (
-        len(tokens) >= 2
-        and any(token.startswith("O") for token in tokens)
-    )
+    return len(tokens) >= 2 and any(token.startswith("O") for token in tokens)
 
 
 def drop_parameter_values_below(
@@ -300,11 +282,7 @@ def drop_parameter_values_below(
 
     Non-numeric values and values equal to the threshold are retained.
     """
-    if (
-        df is None
-        or df.empty
-        or value_col not in df.columns
-    ):
+    if df is None or df.empty or value_col not in df.columns:
         return df
 
     numeric_values = pd.to_numeric(
@@ -312,10 +290,7 @@ def drop_parameter_values_below(
         errors="coerce",
     )
 
-    keep = (
-        numeric_values.isna()
-        | (numeric_values >= threshold)
-    )
+    keep = numeric_values.isna() | (numeric_values >= threshold)
 
     return df.loc[keep].copy()
 
@@ -334,20 +309,13 @@ def drop_oxide_rows(
     )
 
     if code_col in df.columns:
-        oxide_mask |= (
-            df[code_col]
-            .fillna("")
-            .map(looks_like_oxide)
-        )
+        oxide_mask |= df[code_col].fillna("").map(looks_like_oxide)
 
     if name_col in df.columns:
-        oxide_mask |= (
-            df[name_col]
-            .fillna("")
-            .map(looks_like_oxide)
-        )
+        oxide_mask |= df[name_col].fillna("").map(looks_like_oxide)
 
     return df.loc[~oxide_mask].copy()
+
 
 def _standardize_timestamp_columns(
     df: pd.DataFrame,
@@ -401,9 +369,7 @@ def _standardize_nullable_integer_columns(
             continue
 
         non_null_numeric = numeric.dropna()
-        if not non_null_numeric.empty and (
-            (non_null_numeric % 1).abs() > 1e-12
-        ).any():
+        if not non_null_numeric.empty and ((non_null_numeric % 1).abs() > 1e-12).any():
             continue
 
         df[col] = numeric.astype("Int64")
@@ -432,9 +398,7 @@ def _resolve_metadata_file(
         if not path.is_absolute():
             path = Path.cwd() / path
         if not path.exists():
-            raise FileNotFoundError(
-                f"{env_name} points to a missing file: {path}"
-            )
+            raise FileNotFoundError(f"{env_name} points to a missing file: {path}")
         return path.resolve()
 
     relative = Path(default_relative_path)
@@ -481,9 +445,7 @@ def _first_text(mapping: dict[str, object], *keys: str) -> str:
 
 def _validate_http_uri(value: str, *, field: str, code: str) -> None:
     if value and not value.startswith(("http://", "https://")):
-        raise ValueError(
-            f"{field} for {code!r} must be an HTTP(S) URI, got {value!r}"
-        )
+        raise ValueError(f"{field} for {code!r} must be an HTTP(S) URI, got {value!r}")
 
 
 @lru_cache(maxsize=1)
@@ -507,9 +469,7 @@ def _parameter_definition_records() -> tuple[dict[str, str], ...]:
         seen.add(folded)
 
         if not isinstance(raw_definition, dict):
-            raise ValueError(
-                f"Definition for parameter {code!r} must be an object in {path}"
-            )
+            raise ValueError(f"Definition for parameter {code!r} must be an object in {path}")
 
         name = _first_text(
             raw_definition,
@@ -518,9 +478,7 @@ def _parameter_definition_records() -> tuple[dict[str, str], ...]:
             "label",
         )
         if not name:
-            raise ValueError(
-                f"Parameter {code!r} has no name/parameter_name in {path}"
-            )
+            raise ValueError(f"Parameter {code!r} has no name/parameter_name in {path}")
 
         uri = _first_text(
             raw_definition,
@@ -577,9 +535,7 @@ def _analysis_method_records() -> tuple[dict[str, str], ...]:
         seen.add(folded)
 
         if not isinstance(raw_definition, dict):
-            raise ValueError(
-                f"Definition for method {code!r} must be an object in {path}"
-            )
+            raise ValueError(f"Definition for method {code!r} must be an object in {path}")
 
         name = _first_text(
             raw_definition,
@@ -588,9 +544,7 @@ def _analysis_method_records() -> tuple[dict[str, str], ...]:
             "label",
         )
         if not name:
-            raise ValueError(
-                f"Method {code!r} has no name/method_name in {path}"
-            )
+            raise ValueError(f"Method {code!r} has no name/method_name in {path}")
 
         description = _first_text(
             raw_definition,
@@ -638,10 +592,7 @@ def _parameter_definition_index() -> dict[str, dict[str, str]]:
 
 
 def _analysis_method_index() -> dict[str, dict[str, str]]:
-    return {
-        record["method_code"].casefold(): dict(record)
-        for record in _analysis_method_records()
-    }
+    return {record["method_code"].casefold(): dict(record) for record in _analysis_method_records()}
 
 
 def _method_code_from_source_text(
@@ -679,10 +630,7 @@ def _method_code_from_source_text(
         if folded in candidates:
             return record["method_code"]
 
-    raise ValueError(
-        f"Cannot map analysis_method {text!r} to a code in "
-        f"{ANALYSIS_METHODS_JSON}"
-    )
+    raise ValueError(f"Cannot map analysis_method {text!r} to a code in {ANALYSIS_METHODS_JSON}")
 
 
 def _normalise_parameter_rows(df: pd.DataFrame) -> pd.DataFrame:
@@ -727,8 +675,10 @@ def _normalise_parameter_rows(df: pd.DataFrame) -> pd.DataFrame:
             methods,
         )
 
-        if source_method and configured_method and (
-            source_method.casefold() != configured_method.casefold()
+        if (
+            source_method
+            and configured_method
+            and (source_method.casefold() != configured_method.casefold())
         ):
             raise ValueError(
                 f"Parameter {parameter_code!r} row has analysis method "
@@ -766,6 +716,7 @@ def _normalise_parameter_rows(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     return output[PARAMETER_PUBLIC_COLUMNS].copy()
+
 
 def _rewrite_local_image_urls(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -816,9 +767,7 @@ def get_samples_df(
     ids = _normalise_sample_ids(sample_ids)
 
     if ids == []:
-        return pd.DataFrame(columns=SAMPLE_COLUMNS).rename(
-            columns=SAMPLE_PUBLIC_COLUMN_MAP
-        )
+        return pd.DataFrame(columns=SAMPLE_COLUMNS).rename(columns=SAMPLE_PUBLIC_COLUMN_MAP)
 
     where_sql = ""
     params: tuple = ()
@@ -864,9 +813,7 @@ def get_images_df(
     ids = _normalise_sample_ids(sample_ids)
 
     if ids == []:
-        return pd.DataFrame(columns=IMAGE_COLUMNS).rename(
-            columns=IMAGE_PUBLIC_COLUMN_MAP
-        )
+        return pd.DataFrame(columns=IMAGE_COLUMNS).rename(columns=IMAGE_PUBLIC_COLUMN_MAP)
 
     where_sql = ""
     params: tuple = ()
@@ -943,9 +890,9 @@ def get_biodiversity_df(
     ids = _normalise_sample_ids(sample_ids)
 
     if ids == []:
-        return pd.DataFrame(
-            columns=BIODIVERSITY_COLUMNS
-        ).rename(columns=BIODIVERSITY_PUBLIC_COLUMN_MAP)
+        return pd.DataFrame(columns=BIODIVERSITY_COLUMNS).rename(
+            columns=BIODIVERSITY_PUBLIC_COLUMN_MAP
+        )
 
     where_sql = ""
     params: tuple = ()
@@ -1019,9 +966,7 @@ def get_export_df(
     if filename == "analysis_methods.csv":
         return get_analysis_methods_df()
 
-    raise ValueError(
-        f"Unsupported canonical export: {filename}"
-    )
+    raise ValueError(f"Unsupported canonical export: {filename}")
 
 
 def dataframe_to_csv_body(
@@ -1045,17 +990,11 @@ def build_live_csv(
         "# ECHOrepo Canonical Dataset",
         f"# File: {filename}",
         f"# Generated at: {_utc_now_iso()}",
-        (
-            "# Downloaded from: "
-            f"{base_url}/download/canonical/{filename}"
-        ),
+        (f"# Downloaded from: {base_url}/download/canonical/{filename}"),
         f"# Description: {spec.description}",
     ]
 
-    header.extend(
-        f"# Note: {note}"
-        for note in spec.notes
-    )
+    header.extend(f"# Note: {note}" for note in spec.notes)
 
     header.append(
         "# Note: This is a live export. For a fixed, "
@@ -1065,10 +1004,7 @@ def build_live_csv(
     if snapshot_date:
         header.extend(
             [
-                (
-                    "# DOI for latest citable snapshot: "
-                    f"{ZENODO_DOI}"
-                ),
+                (f"# DOI for latest citable snapshot: {ZENODO_DOI}"),
                 (
                     "# Latest citable snapshot (all.zip): "
                     f"{base_url}/download/canonical/"
@@ -1082,17 +1018,13 @@ def build_live_csv(
             ]
         )
     else:
-        header.append(
-            "# Latest citable snapshot: "
-            "(not available yet on this instance)"
-        )
+        header.append("# Latest citable snapshot: (not available yet on this instance)")
 
     header.append("")
 
     return (
         df,
-        "\n".join(header)
-        + dataframe_to_csv_body(df),
+        "\n".join(header) + dataframe_to_csv_body(df),
     )
 
 
@@ -1109,29 +1041,16 @@ def build_snapshot_csv(
         "# ECHOrepo Canonical Dataset",
         f"# File: {filename}",
         f"# Version date: {version_date}",
-        (
-            "# Version URL: "
-            f"{base_url}/download/canonical/"
-            f"{version_date}/{filename}"
-        ),
-        (
-            "# Latest canonical: "
-            f"{base_url}/download/canonical/{filename}"
-        ),
+        (f"# Version URL: {base_url}/download/canonical/{version_date}/{filename}"),
+        (f"# Latest canonical: {base_url}/download/canonical/{filename}"),
         f"# Description: {spec.description}",
     ]
 
-    header.extend(
-        f"# Note: {note}"
-        for note in spec.notes
-    )
+    header.extend(f"# Note: {note}" for note in spec.notes)
 
     header.append("")
 
-    return (
-        "\n".join(header)
-        + dataframe_to_csv_body(df)
-    )
+    return "\n".join(header) + dataframe_to_csv_body(df)
 
 
 def build_snapshot_bundle(
@@ -1168,6 +1087,7 @@ def build_snapshot_bundle(
         csv_contents=csv_contents,
         zip_bytes=zip_buffer.getvalue(),
     )
+
 
 FILTERED_EXPORT_FILENAMES = {
     "samples.csv": "samples_filtered.csv",
@@ -1213,10 +1133,7 @@ def build_filtered_csv(
         f"# Description: {spec.description}",
     ]
 
-    header.extend(
-        f"# Note: {note}"
-        for note in spec.notes
-    )
+    header.extend(f"# Note: {note}" for note in spec.notes)
 
     header.extend(
         [
@@ -1229,10 +1146,7 @@ def build_filtered_csv(
         ]
     )
 
-    return (
-        "\n".join(header)
-        + dataframe_to_csv_body(df)
-    )
+    return "\n".join(header) + dataframe_to_csv_body(df)
 
 
 def build_filtered_bundle(
@@ -1295,9 +1209,7 @@ def build_machine_bundle(
             sample_ids=sample_ids,
         )
 
-        csv_contents[filename] = (
-            dataframe_to_csv_body(df)
-        )
+        csv_contents[filename] = dataframe_to_csv_body(df)
 
     zip_buffer = io.BytesIO()
 

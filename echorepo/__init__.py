@@ -21,15 +21,15 @@ from flask_babel import ngettext as _real_ngettext
 from .analytics import hash_ip, log_usage_event
 from .auth.routes import auth_bp, init_oauth
 from .config import settings
-from .i18n import BASE_LABEL_MSGIDS, SUPPORTED_LOCALES, LOCALE_FLAGS, init_i18n, lang_bp
+from .i18n import BASE_LABEL_MSGIDS, LOCALE_FLAGS, SUPPORTED_LOCALES, init_i18n, lang_bp
 from .routes import data_api
 from .routes.api import api_bp
 from .routes.errors import errors_bp
 from .routes.i18n_admin import bp as i18n_admin_bp
+from .routes.storage import storage_bp
 from .routes.web import web_bp
 from .services.db import init_db_sanity
 from .services.i18n_overrides import get_overrides, get_overrides_msgid
-from .routes.storage import storage_bp
 
 # ---------- Logging ----------
 logger = logging.getLogger(__name__)
@@ -149,13 +149,8 @@ def request_duration_ms() -> int | None:
     if started_at is None:
         return None
 
-    return int(
-        (
-            time.perf_counter()
-            - started_at
-        )
-        * 1000
-    )
+    return int((time.perf_counter() - started_at) * 1000)
+
 
 # ---------- create app ----------
 def create_app() -> Flask:
@@ -193,7 +188,8 @@ def create_app() -> Flask:
         or os.getenv(
             "ENABLE_DEBUG_ROUTES",
             "0",
-        ) == "1"
+        )
+        == "1"
     )
 
     # ---- Request timing logging, see /tmp/echorepo-slow.log ----
@@ -201,15 +197,11 @@ def create_app() -> Flask:
     def start_request_timer():
         g.request_started_at = time.perf_counter()
 
-    
     @app.after_request
     def log_slow_request(response):
         duration_ms = request_duration_ms()
 
-        if (
-            duration_ms is not None
-            and duration_ms > 100
-        ):
+        if duration_ms is not None and duration_ms > 100:
             app.logger.info(
                 "SLOW %s %s %d ms",
                 request.method,
@@ -218,19 +210,14 @@ def create_app() -> Flask:
             )
 
         return response
-    
+
     # Base config
-    secret_key = (
-        os.environ.get("SECRET_KEY")
-        or settings.SECRET_KEY
-    )
+    secret_key = os.environ.get("SECRET_KEY") or settings.SECRET_KEY
 
     if not secret_key:
-        raise RuntimeError(
-            "SECRET_KEY is not configured"
-        )
+        raise RuntimeError("SECRET_KEY is not configured")
 
-    app.config["SECRET_KEY"] = secret_key 
+    app.config["SECRET_KEY"] = secret_key
 
     app.config.update(
         SESSION_COOKIE_SAMESITE=settings.SESSION_COOKIE_SAMESITE,
@@ -245,6 +232,7 @@ def create_app() -> Flask:
         ORIG_COL_SUFFIX=getattr(settings, "ORIG_COL_SUFFIX", "_orig"),
         HIDE_ORIG_COLS=getattr(settings, "HIDE_ORIG_COLS", True),
         MAX_JITTER_METERS=getattr(settings, "MAX_JITTER_METERS", 1000),
+        LOESS_OVERLAY_ENABLED=settings.LOESS_OVERLAY_ENABLED,
         # Firebase / creds
         FIREBASE_PROJECT_ID=getattr(settings, "FIREBASE_PROJECT_ID", None),
         GOOGLE_APPLICATION_CREDENTIALS=getattr(settings, "GOOGLE_APPLICATION_CREDENTIALS", None),
@@ -308,16 +296,13 @@ def create_app() -> Flask:
             }
         )
 
-
     # Install once during application creation.
     install_gettext_callables()
-
 
     # Keep this only if Babel genuinely overwrites the callables per request.
     @app.before_request
     def restore_gettext_callables():
         install_gettext_callables()
-
 
     @app.before_request
     def inject_current_user():
@@ -395,8 +380,7 @@ def create_app() -> Flask:
 
         if view_func is None:
             app.logger.warning(
-                "Skipping alias %s: target %s "
-                "does not exist",
+                "Skipping alias %s: target %s does not exist",
                 endpoint,
                 target,
             )
@@ -425,7 +409,6 @@ def create_app() -> Flask:
         resp.headers["Cache-Control"] = "no-store"
         return resp
 
-
     @app.get("/i18n/labels.js")
     def i18n_labels_js():
         try:
@@ -445,7 +428,6 @@ def create_app() -> Flask:
         if resp.mimetype == "text/html":
             resp.headers["Cache-Control"] = "no-store"
         return resp
-
 
     @app.after_request
     def _log_usage(response):
@@ -490,9 +472,7 @@ def create_app() -> Flask:
             }:
                 event_type = "upload"
 
-            elif path.startswith(
-                "/api/v1/lab-enrichment"
-            ):
+            elif path.startswith("/api/v1/lab-enrichment"):
                 event_type = "upload"
 
             elif path.startswith("/api/"):
@@ -539,9 +519,9 @@ def create_app() -> Flask:
 
         return response
 
-
     # ----- Debug routes --------------------------------------------
     if ENABLE_DEBUG_ROUTES:
+
         @app.get("/i18n/probe-json")
         def i18n_probe_json():
             s = request.args.get("s", "About")

@@ -18,9 +18,9 @@ import re
 import sys
 import zipfile
 from collections import Counter
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable
 
 EXPECTED_SCHEMAS = {
     "samples.csv": [
@@ -224,11 +224,7 @@ def check_header(filename: str, fieldnames: list[str] | None, v: Validation) -> 
     actual = fieldnames or []
     expected = EXPECTED_SCHEMAS[filename]
     if actual != expected:
-        v.error(
-            f"{filename}: header mismatch\n"
-            f"  expected: {expected}\n"
-            f"  actual:   {actual}"
-        )
+        v.error(f"{filename}: header mismatch\n  expected: {expected}\n  actual:   {actual}")
 
 
 def validate_generic_types(filename: str, rows: Iterable[dict[str, str]], v: Validation) -> None:
@@ -273,6 +269,7 @@ def validate_samples(rows: list[dict[str, str]], v: Validation) -> None:
         v.error(f"samples.csv: duplicate sample_id values: {duplicates[:20]}")
 
     for line_no, row in enumerate(rows, start=2):
+
         def number(col: str) -> float | None:
             value = row.get(col)
             if is_blank(value):
@@ -303,9 +300,7 @@ def validate_samples(rows: list[dict[str, str]], v: Validation) -> None:
         if ph is not None and not (0 <= ph <= 14):
             v.warn(f"samples.csv:{line_no}: soil_ph_field outside usual pH range 0..14: {ph}")
         if som is not None and not (0 <= som <= 100):
-            v.warn(
-                f"samples.csv:{line_no}: soil_organic_matter_estimate_pct outside 0..100: {som}"
-            )
+            v.warn(f"samples.csv:{line_no}: soil_organic_matter_estimate_pct outside 0..100: {som}")
 
         texture = str(row.get("soil_texture_en") or "").strip()
         if texture and texture not in TEXTURE_VALUES:
@@ -365,16 +360,13 @@ def check_foreign_keys(tables: dict[str, list[dict[str, str]]], v: Validation) -
 
     if definitions is not None:
         definition_codes = {
-            key[0] for key in unique_key(
-                "parameter_definitions.csv", definitions, ("parameter_code",), v
-            )
+            key[0]
+            for key in unique_key("parameter_definitions.csv", definitions, ("parameter_code",), v)
         }
 
     if methods is not None:
         method_codes = {
-            key[0] for key in unique_key(
-                "analysis_methods.csv", methods, ("method_code",), v
-            )
+            key[0] for key in unique_key("analysis_methods.csv", methods, ("method_code",), v)
         }
 
     images = tables.get("sample_images.csv")

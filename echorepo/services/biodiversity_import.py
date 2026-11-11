@@ -40,10 +40,7 @@ BIODIVERSITY_POST_MIN10_FILENAME_TOKEN = "__POSTMIN10__"
 
 def _apply_min10_postfilter_for_filename(filename: str) -> bool:
     basename = Path(filename or "").name
-    return (
-        BIODIVERSITY_POST_MIN10_FILENAME_TOKEN.casefold()
-        in basename.casefold()
-    )
+    return BIODIVERSITY_POST_MIN10_FILENAME_TOKEN.casefold() in basename.casefold()
 
 
 def _normalise_biodiversity_header(value) -> str:
@@ -303,19 +300,14 @@ def _import_biodiversity_streaming(
 
     level = "Phylum"
 
-    apply_min10_postfilter = _apply_min10_postfilter_for_filename(
-        filename
-    )
+    apply_min10_postfilter = _apply_min10_postfilter_for_filename(filename)
 
     # Never apply a second <10 calculation to a sample-split part: such a
     # part contains only a subset of the original sample columns.
-    if (
-        apply_min10_postfilter
-        and re.search(
-            r"_part\d{3}(?:\.|_|$)",
-            Path(filename or "").name,
-            re.IGNORECASE,
-        )
+    if apply_min10_postfilter and re.search(
+        r"_part\d{3}(?:\.|_|$)",
+        Path(filename or "").name,
+        re.IGNORECASE,
     ):
         abort(
             400,
@@ -1280,10 +1272,7 @@ def _import_biodiversity_streaming(
                 # The normal split-file workflow already applied this rule
                 # against the COMPLETE original matrix during preprocessing.
                 # Re-apply it here only for explicitly marked unsplit files.
-                if (
-                    apply_min10_postfilter
-                    and row_total < BIODIVERSITY_MIN_OTU_TOTAL_READS
-                ):
+                if apply_min10_postfilter and row_total < BIODIVERSITY_MIN_OTU_TOTAL_READS:
                     excluded_low_total_features += 1
                     continue
 
