@@ -745,7 +745,7 @@
         font-weight: 400;
         color: #6c757d;
       }
-      
+
       .echo-selection-tool-symbol {
         display: inline-block;
         width: 14px;
@@ -1364,6 +1364,14 @@
     map.on('zoomend', refreshBiogeoLabels);
   }
 
+  // LOESS: optional, separately sourced public crowd-observation overlay.
+  // Never include in ECHO's ownership index, filters, QA or sample exports.
+  const loessOverlay = cfg.public_mode && cfg.loess_overlay_enabled &&
+    window.ECHOREPO_LOESS?.createLayer
+    ? window.ECHOREPO_LOESS.createLayer(map, {
+      url: cfg.loess_overlay_url || '/static/geo/loess_surveys.geojson'
+    }) : null;
+
   // Created only after the current translations have been loaded.
   let baseLayerControl = null;
 
@@ -1378,9 +1386,14 @@
         [T('streetMap', {}, 'Street map')]: streetLayer,
         [T('satellite', {}, 'Satellite')]: satelliteLayer
       },
-      biogeoOverlay
-        ? { [T('biogeographicalRegions', {}, 'Biogeographical regions')]: biogeoOverlay }
-        : null,
+      {
+        ...(biogeoOverlay
+          ? { [T('biogeographicalRegions', {}, 'Biogeographical regions')]: biogeoOverlay }
+          : {}),
+        ...(loessOverlay
+          ? { [T('loessObservations', {}, 'LOESS soil observations')]: loessOverlay }
+          : {})
+      },
       {
         position: 'topright',
         collapsed: false
