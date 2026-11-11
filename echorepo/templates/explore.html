@@ -165,8 +165,10 @@
     // The EEA overlay is available even when the map is public.
     biogeo_overlay_enabled: true,
     biogeo_overlay_url: {{ url_for('static', filename='geo/biogeo_regions_2016.geojson') | tojson }},
-    loess_overlay_enabled: true,
+    loess_overlay_enabled: {{ config.get('LOESS_OVERLAY_ENABLED', False) | tojson }},
+    {% if config.get('LOESS_OVERLAY_ENABLED', False) %}
     loess_overlay_url: {{ url_for('static', filename='geo/loess_surveys.geojson') | tojson }} + '?v=3',
+    {% endif %}
     export_authenticated: {{ (true if can_export else false) | tojson }},
   geojson_user_url: null,
     geojson_others_url: "/public/others_geojson",
@@ -221,7 +223,9 @@
   })();
 </script>
 
+{% if config.get('LOESS_OVERLAY_ENABLED', False) %}
 <script src="{{ url_for('static', filename='js/loess_overlay.js') }}?v=3"></script>
+{% endif %}
 <script src="{{ url_for('static', filename='js/map.js') }}?v=45"></script>
 
 <script>

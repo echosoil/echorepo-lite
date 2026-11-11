@@ -45,6 +45,12 @@ class Settings:
     DEFAULT_COORD_LAT: float = float(os.getenv("DEFAULT_COORD_LAT", "46.5"))
     DEFAULT_COORD_LON: float = float(os.getenv("DEFAULT_COORD_LON", "11.35"))
 
+    # -------- Optional map overlays --------
+    LOESS_OVERLAY_ENABLED: bool = (
+        os.getenv("LOESS_OVERLAY_ENABLED", "false").strip().lower()
+        in ("1", "true", "yes", "on")
+    )
+
     # -------- Demo options --------
     DEMO_MODE: bool = os.getenv("DEMO_MODE", "false").lower() in ("1", "true", "yes")
     DEMO_USER: str = os.getenv("DEMO_USER", "echosoil@echosoil.eu")

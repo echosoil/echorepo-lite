@@ -6,7 +6,7 @@ services:
     user: root
 
     ports:
-      - "172.31.5.252:8888:8888"
+      - "${LOCAL_IP}:8888:8888"
 
     volumes:
       - ${JUPYTER_WORK_DIR:-./notebooks}:/home/jovyan/work

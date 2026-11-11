@@ -1,3 +1,4 @@
+
 services:
   streamlit:
     build:
@@ -6,8 +7,8 @@ services:
     restart: unless-stopped
 
     ports:
-      - "172.31.5.252:8501:8501"
-      
+      - "${LOCAL_IP}:8501:8501"
+
     environment:
       ECHOREPO_URL: "http://echorepo-lite:8000"
       PYTHONPATH: "/app"
@@ -23,6 +24,10 @@ services:
       - --server.port=8501
       - --server.headless=true
       - --server.baseUrlPath=research/dashboard
+      - --server.enableCORS=true
+      - --server.enableXsrfProtection=true
+      - --server.enableWebsocketCompression=false
+      - --browser.gatherUsageStats=false
 
     networks:
       - default

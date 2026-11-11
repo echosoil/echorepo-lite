@@ -232,6 +232,7 @@ def create_app() -> Flask:
         ORIG_COL_SUFFIX=getattr(settings, "ORIG_COL_SUFFIX", "_orig"),
         HIDE_ORIG_COLS=getattr(settings, "HIDE_ORIG_COLS", True),
         MAX_JITTER_METERS=getattr(settings, "MAX_JITTER_METERS", 1000),
+        LOESS_OVERLAY_ENABLED=settings.LOESS_OVERLAY_ENABLED,
         # Firebase / creds
         FIREBASE_PROJECT_ID=getattr(settings, "FIREBASE_PROJECT_ID", None),
         GOOGLE_APPLICATION_CREDENTIALS=getattr(settings, "GOOGLE_APPLICATION_CREDENTIALS", None),
