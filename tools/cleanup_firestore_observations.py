@@ -31,6 +31,7 @@ The whole `data` array is replaced because Firestore does not support editing
 one array element; a last-update-time precondition prevents concurrent clobbering.
 Only the selected field is removed. No changes to Postgres/SQLite/MinIO.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,13 +48,27 @@ from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parent.parent
 BACKUP_COLUMNS = (
-    "firebase_project", "document_path", "user_id", "sample_id",
-    "step_type", "field", "step_index", "old_value",
-    "document_update_time", "match_mode", "match_text", "ignore_case",
+    "firebase_project",
+    "document_path",
+    "user_id",
+    "sample_id",
+    "step_type",
+    "field",
+    "step_index",
+    "old_value",
+    "document_update_time",
+    "match_mode",
+    "match_text",
+    "ignore_case",
 )
 LEGACY_BACKUP_COLUMNS = (
-    "firebase_project", "document_path", "user_id", "sample_id",
-    "step_index", "old_observations", "document_update_time",
+    "firebase_project",
+    "document_path",
+    "user_id",
+    "sample_id",
+    "step_index",
+    "old_observations",
+    "document_update_time",
 )
 
 
@@ -91,8 +106,9 @@ def matching_steps(data: object, rule: MatchRule) -> list[tuple[int, str]]:
     return found
 
 
-def remove_matching_fields(data: object, rule: MatchRule,
-                           expected: list[tuple[int, str]]) -> list | None:
+def remove_matching_fields(
+    data: object, rule: MatchRule, expected: list[tuple[int, str]]
+) -> list | None:
     """Return edited copy if every matched value is unchanged since scan."""
     if not isinstance(data, list):
         return None
@@ -101,18 +117,19 @@ def remove_matching_fields(data: object, rule: MatchRule,
         if not isinstance(index, int) or index < 0 or index >= len(new_data):
             return None
         step = new_data[index]
-        if (not isinstance(step, dict)
-                or step.get("type") != rule.step_type
-                or not isinstance(step.get("info"), dict)
-                or step["info"].get(rule.field) != old_value
-                or not rule.matches(old_value)):
+        if (
+            not isinstance(step, dict)
+            or step.get("type") != rule.step_type
+            or not isinstance(step.get("info"), dict)
+            or step["info"].get(rule.field) != old_value
+            or not rule.matches(old_value)
+        ):
             return None
         del step["info"][rule.field]
     return new_data
 
 
-def restore_fields(data: object,
-                   expected: list[tuple[int, str, str, str]]) -> list | None:
+def restore_fields(data: object, expected: list[tuple[int, str, str, str]]) -> list | None:
     """Restore only absent keys; never overwrite existing values."""
     if not isinstance(data, list):
         return None
@@ -124,10 +141,12 @@ def restore_fields(data: object,
             return None
         seen.add(key)
         step = new_data[index]
-        if (not isinstance(step, dict)
-                or step.get("type") != step_type
-                or not isinstance(step.get("info"), dict)
-                or field in step["info"]):
+        if (
+            not isinstance(step, dict)
+            or step.get("type") != step_type
+            or not isinstance(step.get("info"), dict)
+            or field in step["info"]
+        ):
             return None
         step["info"][field] = old_value
     return new_data
@@ -137,6 +156,7 @@ def credentials_file() -> Path:
     # Same .env, env precedence, and host-side service-account path fallback as
     # tools/pull_and_enrich_samples.py.
     from dotenv import load_dotenv
+
     load_dotenv(ROOT / ".env")
     raw = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/opt/echorepo/keys/firebase-sa.json")
     path = Path(raw).expanduser()
@@ -152,6 +172,7 @@ def credentials_file() -> Path:
 def firebase_connection():
     import firebase_admin
     from firebase_admin import credentials, firestore
+
     path = credentials_file()
     sa = json.loads(path.read_text(encoding="utf-8"))
     service_project = str(sa.get("project_id") or "")
@@ -190,9 +211,13 @@ def private_csv(path: Path, rows: list[dict], columns=BACKUP_COLUMNS):
         raise
 
 
-def collect_matches(db, project: str, rule: MatchRule,
-                    only_sample_id: str | None = None,
-                    only_user_id: str | None = None):
+def collect_matches(
+    db,
+    project: str,
+    rule: MatchRule,
+    only_sample_id: str | None = None,
+    only_user_id: str | None = None,
+):
     docs = {}
     scanned = 0
     print("Scanning Firestore collection_group('samples')...", flush=True)
@@ -211,24 +236,28 @@ def collect_matches(db, project: str, rule: MatchRule,
         if scanned % 500 == 0:
             print(f"Scanned {scanned} documents...", flush=True)
     count = sum(len(entry[2]) for entry in docs.values())
-    print(f"Scanned {scanned} sample documents; matched {len(docs)} documents / {count} field values.")
+    print(
+        f"Scanned {scanned} sample documents; matched {len(docs)} documents / {count} field values."
+    )
     rows = []
     for path, (uid, sid, matches, updated) in sorted(docs.items()):
         for index, value in matches:
-            rows.append({
-                "firebase_project": project,
-                "document_path": path,
-                "user_id": uid,
-                "sample_id": sid,
-                "step_type": rule.step_type,
-                "field": rule.field,
-                "step_index": index,
-                "old_value": value,
-                "document_update_time": str(updated) if updated is not None else "",
-                "match_mode": rule.mode,
-                "match_text": rule.text,
-                "ignore_case": str(rule.ignore_case),
-            })
+            rows.append(
+                {
+                    "firebase_project": project,
+                    "document_path": path,
+                    "user_id": uid,
+                    "sample_id": sid,
+                    "step_type": rule.step_type,
+                    "field": rule.field,
+                    "step_index": index,
+                    "old_value": value,
+                    "document_update_time": str(updated) if updated is not None else "",
+                    "match_mode": rule.mode,
+                    "match_text": rule.text,
+                    "ignore_case": str(rule.ignore_case),
+                }
+            )
     return docs, rows
 
 
@@ -256,8 +285,10 @@ def apply_matches(db, LastUpdateOption, docs, rule: MatchRule) -> int:
         except Exception as exc:
             failed += 1
             print(f"FAILED {path}: {type(exc).__name__}: {exc}", file=sys.stderr)
-    print(f"Result: updated_documents={edited}, removed_fields={removed}, "
-          f"skipped={skipped}, failed={failed}")
+    print(
+        f"Result: updated_documents={edited}, removed_fields={removed}, "
+        f"skipped={skipped}, failed={failed}"
+    )
     return 1 if failed or skipped else 0
 
 
@@ -297,8 +328,7 @@ def load_backup(backup_path: Path, project: str):
     return docs, len(records)
 
 
-def restore_backup(db, LastUpdateOption, backup_path: Path, project: str,
-                   dry_run: bool) -> int:
+def restore_backup(db, LastUpdateOption, backup_path: Path, project: str, dry_run: bool) -> int:
     docs, records_count = load_backup(backup_path, project)
     print(f"Restore candidates: {len(docs)} documents / {records_count} fields")
     if dry_run:
@@ -329,21 +359,34 @@ def restore_backup(db, LastUpdateOption, backup_path: Path, project: str,
 
 
 def make_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--step-type", "--category", dest="step_type",
-                        help="Exact data[*].type, e.g. METALS or SOIL_DIVER")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--step-type",
+        "--category",
+        dest="step_type",
+        help="Exact data[*].type, e.g. METALS or SOIL_DIVER",
+    )
     parser.add_argument("--field", help="Exact key inside data[*].info, e.g. info or observations")
     patterns = parser.add_mutually_exclusive_group()
     patterns.add_argument("--contains", help="Match a case-sensitive substring")
     patterns.add_argument("--equals", help="Match an entire string exactly")
-    parser.add_argument("--ignore-case", action="store_true", help="Make string matching case-insensitive")
-    parser.add_argument("--apply", action="store_true", help="Write to Firestore; otherwise dry-run")
-    parser.add_argument("--confirm-project", help="Required with --apply, must equal Firebase project")
+    parser.add_argument(
+        "--ignore-case", action="store_true", help="Make string matching case-insensitive"
+    )
+    parser.add_argument(
+        "--apply", action="store_true", help="Write to Firestore; otherwise dry-run"
+    )
+    parser.add_argument(
+        "--confirm-project", help="Required with --apply, must equal Firebase project"
+    )
     parser.add_argument("--sample-id", help="Restrict to exact sample document ID")
     parser.add_argument("--user-id", help="Restrict to exact parent user document ID")
     parser.add_argument("--report", type=Path, help="New private CSV backup file (not overwritten)")
-    parser.add_argument("--restore-from", type=Path, help="Restore from this backup CSV instead of scanning")
+    parser.add_argument(
+        "--restore-from", type=Path, help="Restore from this backup CSV instead of scanning"
+    )
     return parser
 
 
@@ -352,9 +395,18 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     if args.restore_from:
-        if any((args.step_type, args.field, args.contains is not None,
-                args.equals is not None, args.ignore_case, args.sample_id,
-                args.user_id, args.report)):
+        if any(
+            (
+                args.step_type,
+                args.field,
+                args.contains is not None,
+                args.equals is not None,
+                args.ignore_case,
+                args.sample_id,
+                args.user_id,
+                args.report,
+            )
+        ):
             parser.error("--restore-from cannot be combined with matching or scan options")
     else:
         if not args.step_type or not args.field:
@@ -375,13 +427,18 @@ def main(argv=None) -> int:
         print(f"Operation: {'RESTORE' if args.apply else 'RESTORE DRY RUN'}")
         return restore_backup(db, LastUpdateOption, args.restore_from, project, not args.apply)
 
-    rule = MatchRule(args.step_type, args.field,
-                     "equals" if args.equals is not None else "contains",
-                     args.equals if args.equals is not None else args.contains,
-                     args.ignore_case)
-    print(f"Operation: {'APPLY' if args.apply else 'DRY RUN'}; "
-          f"target={rule.step_type}.info.{rule.field}; "
-          f"{rule.mode}={rule.text!r}; ignore_case={rule.ignore_case}")
+    rule = MatchRule(
+        args.step_type,
+        args.field,
+        "equals" if args.equals is not None else "contains",
+        args.equals if args.equals is not None else args.contains,
+        args.ignore_case,
+    )
+    print(
+        f"Operation: {'APPLY' if args.apply else 'DRY RUN'}; "
+        f"target={rule.step_type}.info.{rule.field}; "
+        f"{rule.mode}={rule.text!r}; ignore_case={rule.ignore_case}"
+    )
 
     docs, rows = collect_matches(db, project, rule, args.sample_id, args.user_id)
     report = args.report or default_report_path(rule)
@@ -389,13 +446,17 @@ def main(argv=None) -> int:
     print(f"Backup/report created: {report} (mode 0600)")
     for row in rows[:15]:
         preview = row["old_value"].replace("\r", " ").replace("\n", " ")[:150]
-        print(f"  {row['document_path']} data[{row['step_index']}].info.{row['field']}: {preview!r}")
+        print(
+            f"  {row['document_path']} data[{row['step_index']}].info.{row['field']}: {preview!r}"
+        )
     if len(rows) > 15:
         print(f"  ... {len(rows) - 15} additional matching fields in backup")
 
     if not args.apply:
-        print("DRY RUN: nothing changed in Firebase. To proceed, rerun with "
-              "--apply --confirm-project PROJECT_ID")
+        print(
+            "DRY RUN: nothing changed in Firebase. To proceed, rerun with "
+            "--apply --confirm-project PROJECT_ID"
+        )
         return 0
     if not docs:
         print("No matches; nothing to update")

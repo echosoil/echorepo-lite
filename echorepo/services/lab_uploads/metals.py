@@ -10,11 +10,11 @@ from typing import Any
 import pandas as pd
 
 from echorepo.config import settings
-from echorepo.services.db import _ensure_lab_enrichment
 
 # Transitional import. Later, move this helper from routes/data_api.py
 # into a shared service module.
 from echorepo.routes.data_api import _oxide_to_metal
+from echorepo.services.db import _ensure_lab_enrichment
 
 from .exceptions import (
     InvalidLabUpload,
@@ -45,9 +45,7 @@ def _read_metals_dataframe(
     filename: str,
 ) -> pd.DataFrame:
     if not data:
-        raise InvalidLabUpload(
-            f"{filename}: uploaded file is empty"
-        )
+        raise InvalidLabUpload(f"{filename}: uploaded file is empty")
 
     suffix = Path(filename).suffix.lower()
 
@@ -88,14 +86,10 @@ def _read_metals_dataframe(
         raise
 
     except Exception as exc:
-        raise InvalidLabUpload(
-            f"Cannot read {filename}: {exc}"
-        ) from exc
+        raise InvalidLabUpload(f"Cannot read {filename}: {exc}") from exc
 
     if df.empty:
-        raise InvalidLabUpload(
-            f"{filename}: uploaded file has no rows"
-        )
+        raise InvalidLabUpload(f"{filename}: uploaded file has no rows")
 
     return df
 
@@ -117,9 +111,7 @@ def import_metals_file(
     filename = str(filename or "").strip()
 
     if not filename:
-        raise InvalidLabUpload(
-            "Uploaded file has no filename"
-        )
+        raise InvalidLabUpload("Uploaded file has no filename")
 
     df = _read_metals_dataframe(
         data=data,
@@ -129,30 +121,20 @@ def import_metals_file(
     db_path = str(settings.SQLITE_PATH or "").strip()
 
     if not db_path:
-        raise LabImportError(
-            "SQLITE_PATH is not configured"
-        )
+        raise LabImportError("SQLITE_PATH is not configured")
 
     if not os.path.isfile(db_path):
-        raise LabImportError(
-            f"SQLite database not found at {db_path}"
-        )
+        raise LabImportError(f"SQLite database not found at {db_path}")
 
     fieldnames = list(df.columns)
 
     id_column = next(
-        (
-            column
-            for column in fieldnames
-            if str(column).strip().lower() == "id"
-        ),
+        (column for column in fieldnames if str(column).strip().lower() == "id"),
         None,
     )
 
     if id_column is None:
-        raise InvalidLabUpload(
-            f"{filename}: expected an ID column"
-        )
+        raise InvalidLabUpload(f"{filename}: expected an ID column")
 
     values_upserted = 0
 
@@ -164,20 +146,13 @@ def import_metals_file(
             for _, row in df.iterrows():
                 raw_dict = row.to_dict()
 
-                qr = _normalize_qr(
-                    raw_dict.get(id_column)
-                )
+                qr = _normalize_qr(raw_dict.get(id_column))
 
                 if not qr:
                     continue
 
                 clean_raw = {
-                    str(key): (
-                        ""
-                        if pd.isna(value)
-                        else value
-                    )
-                    for key, value in raw_dict.items()
+                    str(key): ("" if pd.isna(value) else value) for key, value in raw_dict.items()
                 }
 
                 raw_json = json.dumps(
@@ -211,24 +186,13 @@ def import_metals_file(
                     unit = ""
 
                     if index + 1 < len(fieldnames):
-                        possible_unit_column = (
-                            fieldnames[index + 1]
-                        )
+                        possible_unit_column = fieldnames[index + 1]
 
-                        if (
-                            str(possible_unit_column)
-                            .strip()
-                            .lower()
-                            .startswith("unit")
-                        ):
-                            unit_value = row.get(
-                                possible_unit_column
-                            )
+                        if str(possible_unit_column).strip().lower().startswith("unit"):
+                            unit_value = row.get(possible_unit_column)
 
                             if not pd.isna(unit_value):
-                                unit = str(
-                                    unit_value
-                                ).strip()
+                                unit = str(unit_value).strip()
 
                     cur.execute(
                         """
@@ -320,16 +284,12 @@ def import_metals_file(
             # when no exception occurred.
 
     except sqlite3.Error as exc:
-        raise LabImportError(
-            f"SQLite import failed for {filename}: {exc}"
-        ) from exc
+        raise LabImportError(f"SQLite import failed for {filename}: {exc}") from exc
 
     except LabImportError:
         raise
 
     except Exception as exc:
-        raise LabImportError(
-            f"Laboratory import failed for {filename}: {exc}"
-        ) from exc
+        raise LabImportError(f"Laboratory import failed for {filename}: {exc}") from exc
 
     return values_upserted

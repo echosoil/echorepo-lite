@@ -10,10 +10,9 @@ import time
 import urllib.error
 import urllib.request
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
 
 from babel.messages.pofile import read_po, write_po
-
 
 # ---------------------------------------------------------------------------
 # Placeholder handling
@@ -106,6 +105,7 @@ def repair_legacy_tokens(text: str, tokens: list[str]) -> str:
         return out
 
     if tokens:
+
         def repl(m):
             try:
                 idx = int(m.group(1))
@@ -128,6 +128,7 @@ def repair_legacy_tokens(text: str, tokens: list[str]) -> str:
 # ---------------------------------------------------------------------------
 # PO handling
 # ---------------------------------------------------------------------------
+
 
 def write_po_robust(path: str, catalog, width: int = 80) -> None:
     try:
@@ -207,6 +208,7 @@ def repair_existing_catalog(catalog) -> int:
 # ---------------------------------------------------------------------------
 # LibreTranslate HTTP client
 # ---------------------------------------------------------------------------
+
 
 def _lt_post(url: str, payload: dict, timeout: int = 60):
     req = urllib.request.Request(
@@ -316,10 +318,7 @@ def lt_translate_batch(
     except Exception as exc:
         if verbose:
             print(f"[{target}] batch request failed ({exc}); using per-item calls")
-        return [
-            lt_translate_single(endpoint_base, text, target, source, verbose)
-            for text in texts
-        ]
+        return [lt_translate_single(endpoint_base, text, target, source, verbose) for text in texts]
 
     out: list[str] = []
 
@@ -346,10 +345,7 @@ def lt_translate_batch(
                 f"[{target}] batch response length mismatch "
                 f"({len(out)} != {len(texts)}); using per-item calls"
             )
-        return [
-            lt_translate_single(endpoint_base, text, target, source, verbose)
-            for text in texts
-        ]
+        return [lt_translate_single(endpoint_base, text, target, source, verbose) for text in texts]
 
     return out
 
@@ -357,6 +353,7 @@ def lt_translate_batch(
 # ---------------------------------------------------------------------------
 # Translation logic
 # ---------------------------------------------------------------------------
+
 
 def translate_catalog(
     po_path: str,
@@ -402,16 +399,13 @@ def translate_catalog(
 
             singular_needed = force or is_fuzzy or not values[0]
             plural_indexes = list(range(1, num_plurals))
-            plural_needed = (
-                bool(plural_indexes)
-                and (force or is_fuzzy or any(not values[i] for i in plural_indexes))
+            plural_needed = bool(plural_indexes) and (
+                force or is_fuzzy or any(not values[i] for i in plural_indexes)
             )
 
             if singular_needed:
                 protected, tokens = protect_placeholders(singular_src)
-                tasks.append(
-                    (msg, "singular", protected, tokens, [0], force or is_fuzzy)
-                )
+                tasks.append((msg, "singular", protected, tokens, [0], force or is_fuzzy))
 
             if plural_needed:
                 protected, tokens = protect_placeholders(plural_src)
@@ -431,9 +425,7 @@ def translate_catalog(
             if force or is_fuzzy or not current:
                 src = msg.id if isinstance(msg.id, str) else msg.id[0]
                 protected, tokens = protect_placeholders(src)
-                tasks.append(
-                    (msg, "simple", protected, tokens, None, force or is_fuzzy)
-                )
+                tasks.append((msg, "simple", protected, tokens, None, force or is_fuzzy))
 
     if verbose:
         print(f"[{target_lang}] queued translation tasks: {len(tasks)}")
@@ -458,9 +450,7 @@ def translate_catalog(
         if verbose:
             print(f"[{target_lang}] batch {i}..{i + len(batch) - 1}")
 
-        outs = lt_translate_batch(
-            endpoint, texts, target_lang, source_lang, verbose=verbose
-        )
+        outs = lt_translate_batch(endpoint, texts, target_lang, source_lang, verbose=verbose)
 
         for task, raw_translation in zip(batch, outs):
             msg, part, _protected, tokens, target_indexes, overwrite = task
@@ -513,6 +503,7 @@ def translate_catalog(
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def discover_languages(trans_dir: str) -> list[str]:
     langs = []

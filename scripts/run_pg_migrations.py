@@ -18,29 +18,15 @@ def get_pg_dsn():
         or "postgres"
     )
     port = (
-        os.getenv("POSTGRES_PORT")
-        or os.getenv("DB_PORT")
-        or os.getenv("DB_PORT_INSIDE")
-        or "5432"
+        os.getenv("POSTGRES_PORT") or os.getenv("DB_PORT") or os.getenv("DB_PORT_INSIDE") or "5432"
     )
-    db = (
-        os.getenv("POSTGRES_DB")
-        or os.getenv("DB_NAME")
-        or "echorepo"
-    )
-    user = (
-        os.getenv("POSTGRES_USER")
-        or os.getenv("DB_USER")
-        or "echorepo"
-    )
-    password = (
-        os.getenv("POSTGRES_PASSWORD")
-        or os.getenv("DB_PASSWORD")
-        or ""
-    )
+    db = os.getenv("POSTGRES_DB") or os.getenv("DB_NAME") or "echorepo"
+    user = os.getenv("POSTGRES_USER") or os.getenv("DB_USER") or "echorepo"
+    password = os.getenv("POSTGRES_PASSWORD") or os.getenv("DB_PASSWORD") or ""
 
     return f"host={host} port={port} dbname={db} user={user} password={password}"
-    
+
+
 def ensure_migration_table(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -93,9 +79,7 @@ def main():
 
                     print(f"[apply] {filename}")
 
-                    sql = path.read_text(
-                        encoding="utf-8"
-                    )
+                    sql = path.read_text(encoding="utf-8")
 
                     cur.execute(sql)
                     mark_migration_applied(
@@ -110,9 +94,7 @@ def main():
                 # Essential after any PostgreSQL error.
                 conn.rollback()
 
-                print(
-                    f"[error] {filename}: {e}"
-                )
+                print(f"[error] {filename}: {e}")
 
                 raise
 

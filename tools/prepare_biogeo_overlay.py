@@ -4,6 +4,7 @@
 Run from the ECHOREPO repository root. The original polygons remain untouched.
 Requires geopandas, shapely, pyproj, and a shapefile reader (pyogrio/fiona).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -62,13 +63,17 @@ def main() -> None:
     # Use the same region-name normalisation as the EEA/Postgres indexer.
     source = source[[name_col, source.geometry.name]].copy()
     source["region_name"] = source[name_col].map(clean_region)
-    source = source[source.geometry.notna() & ~source.geometry.is_empty & source["region_name"].ne("")]
+    source = source[
+        source.geometry.notna() & ~source.geometry.is_empty & source["region_name"].ne("")
+    ]
     if source.empty:
         parser.error("No named polygon geometries found")
     source = source.set_geometry(source.geometry.name).to_crs("EPSG:3035")
     # Combine fragments belonging to the same region, rather than sending
     # every source polygon as an independent map feature.
-    dissolved = source[["region_name", source.geometry.name]].dissolve(by="region_name", as_index=False)
+    dissolved = source[["region_name", source.geometry.name]].dissolve(
+        by="region_name", as_index=False
+    )
     if args.tolerance_m:
         dissolved.geometry = dissolved.geometry.simplify(args.tolerance_m, preserve_topology=True)
     simplified = dissolved.to_crs("EPSG:4326")

@@ -12,13 +12,13 @@ import shutil
 import sys
 import tempfile
 import zipfile
+from collections.abc import Iterable
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 from urllib.parse import quote, urlsplit
 
 import requests
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -250,8 +250,7 @@ def request_ok(
 ) -> None:
     if response.status_code not in expected:
         raise RuntimeError(
-            f"{context} failed with HTTP {response.status_code}: "
-            f"{response.text[:3000]}"
+            f"{context} failed with HTTP {response.status_code}: {response.text[:3000]}"
         )
 
 
@@ -272,16 +271,12 @@ def build_filter_params(args: argparse.Namespace) -> dict[str, str]:
 
     for item in args.extra_param or []:
         if "=" not in item:
-            raise ValueError(
-                f"Invalid --extra-param value {item!r}; expected key=value"
-            )
+            raise ValueError(f"Invalid --extra-param value {item!r}; expected key=value")
         key, value = item.split("=", 1)
         key = key.strip()
         value = value.strip()
         if not key:
-            raise ValueError(
-                f"Invalid --extra-param value {item!r}; key is empty"
-            )
+            raise ValueError(f"Invalid --extra-param value {item!r}; key is empty")
         params[key] = value
 
     return params
@@ -317,8 +312,7 @@ def parse_subject(raw: str) -> dict[str, str]:
     parts = [part.strip() for part in raw.split("|")]
     if len(parts) < 2 or not parts[0] or not parts[1]:
         raise ValueError(
-            f"Invalid subject specification {raw!r}; expected "
-            "'term|identifier|scheme'"
+            f"Invalid subject specification {raw!r}; expected 'term|identifier|scheme'"
         )
 
     subject = {"term": parts[0], "identifier": parts[1]}
@@ -365,20 +359,16 @@ def build_zenodo_metadata(args: argparse.Namespace) -> dict[str, Any]:
         curator = parse_creator(args.data_curator)
         curator["type"] = "DataCurator"
         metadata["contributors"] = [curator]
-        
+
     keywords = parse_keywords(args.keyword)
     if keywords:
         metadata["keywords"] = keywords
     if args.version:
         metadata["version"] = args.version
     if args.communities:
-        metadata["communities"] = [
-            {"identifier": identifier} for identifier in args.communities
-        ]
+        metadata["communities"] = [{"identifier": identifier} for identifier in args.communities]
     if args.grant:
-        metadata["grants"] = [
-            {"id": normalize_grant_id(grant)} for grant in args.grant
-        ]
+        metadata["grants"] = [{"id": normalize_grant_id(grant)} for grant in args.grant]
     if args.subject:
         metadata["subjects"] = [parse_subject(value) for value in args.subject]
     if args.copyright:
@@ -417,9 +407,7 @@ def download_api_file(
 
             content_type = response.headers.get("Content-Type", "")
             if content_type.lower().startswith("text/html"):
-                raise RuntimeError(
-                    "API returned HTML instead of a canonical ZIP/CSV resource"
-                )
+                raise RuntimeError("API returned HTML instead of a canonical ZIP/CSV resource")
 
             size_bytes = 0
             with partial_path.open("wb") as file_handle:
@@ -485,9 +473,7 @@ def extract_csv_resources(
         with zipfile.ZipFile(source_path) as archive:
             bad_member = archive.testzip()
             if bad_member is not None:
-                raise RuntimeError(
-                    f"Downloaded ZIP failed its CRC check at {bad_member!r}"
-                )
+                raise RuntimeError(f"Downloaded ZIP failed its CRC check at {bad_member!r}")
 
             for info in archive.infolist():
                 basename = _safe_zip_member_basename(info)
@@ -496,9 +482,7 @@ def extract_csv_resources(
                 if not _matches_any_pattern(basename, patterns):
                     continue
                 if info.flag_bits & 0x1:
-                    raise ValueError(
-                        f"Encrypted ZIP member is not supported: {info.filename!r}"
-                    )
+                    raise ValueError(f"Encrypted ZIP member is not supported: {info.filename!r}")
 
                 folded = basename.casefold()
                 if folded in selected_casefold:
@@ -512,16 +496,13 @@ def extract_csv_resources(
 
             if not selected:
                 raise RuntimeError(
-                    "No CSV files in the downloaded ZIP matched: "
-                    + ", ".join(patterns)
+                    "No CSV files in the downloaded ZIP matched: " + ", ".join(patterns)
                 )
 
             extracted: list[Path] = []
             for basename in sorted(selected):
                 destination = output_dir / basename
-                with archive.open(selected[basename]) as source, destination.open(
-                    "wb"
-                ) as target:
+                with archive.open(selected[basename]) as source, destination.open("wb") as target:
                     shutil.copyfileobj(source, target)
                 if destination.stat().st_size == 0:
                     raise RuntimeError(f"Extracted CSV is empty: {basename}")
@@ -535,9 +516,7 @@ def extract_csv_resources(
             raise RuntimeError(f"CSV is empty: {source_path}")
         return [destination]
 
-    raise ValueError(
-        f"Downloaded source is neither a ZIP archive nor a CSV file: {source_path}"
-    )
+    raise ValueError(f"Downloaded source is neither a ZIP archive nor a CSV file: {source_path}")
 
 
 def decode_csv_bytes(raw: bytes) -> tuple[str, str]:
@@ -595,9 +574,7 @@ def infer_csvw_datatype(column_name: str, values: list[str]) -> str:
     nonempty = [value.strip() for value in values if value.strip()]
 
     if name.endswith("_uri") or name.endswith("_url"):
-        if not nonempty or all(
-            value.startswith(("http://", "https://")) for value in nonempty
-        ):
+        if not nonempty or all(value.startswith(("http://", "https://")) for value in nonempty):
             return "anyURI"
 
     if not nonempty:
@@ -668,9 +645,7 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
     except StopIteration as exc:
         raise ValueError(f"CSV has no header row: {path.name}") from exc
     except csv.Error as exc:
-        raise ValueError(
-            f"Cannot parse the header of {path.name}: {exc}"
-        ) from exc
+        raise ValueError(f"Cannot parse the header of {path.name}: {exc}") from exc
 
     headers = [header.lstrip("\ufeff").strip() for header in headers]
     if not headers or any(not header for header in headers):
@@ -705,14 +680,10 @@ def analyse_csv(path: Path, sample_rows: int = 200) -> dict[str, Any]:
 
     except csv.Error as exc:
         raise ValueError(
-            f"Malformed CSV in {path.name} near physical line "
-            f"{reader.line_num}: {exc}"
+            f"Malformed CSV in {path.name} near physical line {reader.line_num}: {exc}"
         ) from exc
 
-    inferred = {
-        header: infer_csvw_datatype(header, values_by_column[header])
-        for header in headers
-    }
+    inferred = {header: infer_csvw_datatype(header, values_by_column[header]) for header in headers}
 
     return {
         "path": path,
@@ -767,8 +738,7 @@ def validate_public_resource_values(
             parsed = urlsplit(value)
         except ValueError as exc:
             raise RuntimeError(
-                f"Invalid image_url in sample_images.csv row {row_number}: "
-                f"{value!r}"
+                f"Invalid image_url in sample_images.csv row {row_number}: {value!r}"
             ) from exc
 
         if parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
@@ -798,8 +768,7 @@ def _read_csv_dict_rows(path: Path) -> list[dict[str, str]]:
             continue
         if len(row) != len(headers):
             raise RuntimeError(
-                f"{path.name} row {row_number} has {len(row)} cells; "
-                f"expected {len(headers)}."
+                f"{path.name} row {row_number} has {len(row)} cells; expected {len(headers)}."
             )
         rows.append(dict(zip(headers, row)))
 
@@ -842,9 +811,7 @@ def validate_reference_integrity(csv_paths: list[Path]) -> None:
     duplicate_parameter_codes = sorted(
         {code for code in parameter_codes if parameter_codes.count(code) > 1}
     )
-    duplicate_method_codes = sorted(
-        {code for code in method_codes if method_codes.count(code) > 1}
-    )
+    duplicate_method_codes = sorted({code for code in method_codes if method_codes.count(code) > 1})
     if duplicate_parameter_codes:
         raise RuntimeError(
             "parameter_definitions.csv contains duplicate parameter_code values: "
@@ -852,8 +819,7 @@ def validate_reference_integrity(csv_paths: list[Path]) -> None:
         )
     if duplicate_method_codes:
         raise RuntimeError(
-            "analysis_methods.csv contains duplicate method_code values: "
-            f"{duplicate_method_codes}"
+            f"analysis_methods.csv contains duplicate method_code values: {duplicate_method_codes}"
         )
 
     parameter_code_set = set(parameter_codes)
@@ -967,10 +933,7 @@ def canonical_schema_summary(
 def validate_echorepo_resource_schemas(
     analyses: list[dict[str, Any]],
 ) -> None:
-    by_filename = {
-        analysis["filename"]: analysis
-        for analysis in analyses
-    }
+    by_filename = {analysis["filename"]: analysis for analysis in analyses}
     expected_files = set(CANONICAL_RESOURCE_SCHEMAS)
     actual_files = set(by_filename)
 
@@ -988,10 +951,7 @@ def validate_echorepo_resource_schemas(
         analysis = by_filename[filename]
         actual_headers = analysis["headers"]
 
-        if (
-            filename == "sample_biodiversity.csv"
-            and actual_headers == LEGACY_BIODIVERSITY_HEADERS
-        ):
+        if filename == "sample_biodiversity.csv" and actual_headers == LEGACY_BIODIVERSITY_HEADERS:
             raise RuntimeError(
                 "The ECHOREPO API returned the obsolete raw-OTU biodiversity "
                 "schema. Refusing to prepare or publish this bundle."
@@ -1005,8 +965,7 @@ def validate_echorepo_resource_schemas(
 
         if analysis["encoding"] != "utf-8":
             raise RuntimeError(
-                f"Canonical resource {filename} is not UTF-8: "
-                f"detected {analysis['encoding']}"
+                f"Canonical resource {filename} is not UTF-8: detected {analysis['encoding']}"
             )
 
         if analysis["delimiter"] != ",":
@@ -1025,33 +984,24 @@ def validate_metadata_config_against_analyses(
     if not isinstance(tables, dict):
         return ["Metadata configuration has no 'tables' object."]
 
-    actual_by_filename = {
-        analysis["filename"]: set(analysis["headers"])
-        for analysis in analyses
-    }
+    actual_by_filename = {analysis["filename"]: set(analysis["headers"]) for analysis in analyses}
 
     for filename, actual_headers in actual_by_filename.items():
         table_config = tables.get(filename)
         if not isinstance(table_config, dict):
-            warnings.append(
-                f"{filename} has no table-level metadata configuration."
-            )
+            warnings.append(f"{filename} has no table-level metadata configuration.")
             continue
 
         configured_columns = table_config.get("columns")
         if isinstance(configured_columns, dict):
             stale_columns = sorted(set(configured_columns) - actual_headers)
             if stale_columns:
-                warnings.append(
-                    f"{filename} metadata contains obsolete columns: "
-                    f"{stale_columns}."
-                )
+                warnings.append(f"{filename} metadata contains obsolete columns: {stale_columns}.")
 
     unknown_tables = sorted(set(tables) - set(actual_by_filename))
     if unknown_tables:
         warnings.append(
-            "Metadata configuration contains tables not present in this bundle: "
-            f"{unknown_tables}."
+            f"Metadata configuration contains tables not present in this bundle: {unknown_tables}."
         )
 
     return warnings
@@ -1082,14 +1032,10 @@ def validate_canonical_metadata_coverage(
 
             required_fields = ("title", "description", "datatype")
             absent_fields = [
-                field
-                for field in required_fields
-                if metadata.get(field) in (None, "", [])
+                field for field in required_fields if metadata.get(field) in (None, "", [])
             ]
             if absent_fields:
-                incomplete.append(
-                    f"{filename}:{column_name} missing {', '.join(absent_fields)}"
-                )
+                incomplete.append(f"{filename}:{column_name} missing {', '.join(absent_fields)}")
 
     if missing or incomplete:
         parts: list[str] = []
@@ -1117,9 +1063,7 @@ def load_metadata_config(path: str | None) -> tuple[dict[str, Any], list[str]]:
     try:
         value = json.loads(config_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise ValueError(
-            f"Cannot read metadata configuration {config_path}: {exc}"
-        ) from exc
+        raise ValueError(f"Cannot read metadata configuration {config_path}: {exc}") from exc
 
     if not isinstance(value, dict):
         raise ValueError("Metadata configuration must be a JSON object")
@@ -1154,9 +1098,7 @@ def normalize_property_urls(value: Any) -> list[str]:
     elif isinstance(value, list):
         values = value
     else:
-        raise ValueError(
-            f"propertyUrl must be a string or list, got {type(value).__name__}"
-        )
+        raise ValueError(f"propertyUrl must be a string or list, got {type(value).__name__}")
 
     output: list[str] = []
     for item in values:
@@ -1170,8 +1112,7 @@ def normalize_property_urls(value: Any) -> list[str]:
 
     if len(output) > 1:
         raise ValueError(
-            "CSVW propertyUrl accepts one URI template per column; "
-            f"got multiple values: {output}"
+            f"CSVW propertyUrl accepts one URI template per column; got multiple values: {output}"
         )
     return output
 
@@ -1188,14 +1129,10 @@ def column_config_for(
 ) -> dict[str, Any]:
     table_config = table_config_for(config, filename)
     table_columns = (
-        table_config.get("columns")
-        if isinstance(table_config.get("columns"), dict)
-        else {}
+        table_config.get("columns") if isinstance(table_config.get("columns"), dict) else {}
     )
     global_columns = (
-        config.get("global_columns")
-        if isinstance(config.get("global_columns"), dict)
-        else {}
+        config.get("global_columns") if isinstance(config.get("global_columns"), dict) else {}
     )
     return _merge_dicts(
         global_columns.get(column_name),
@@ -1216,18 +1153,13 @@ def build_column_description(
     title = str(metadata.get("title") or metadata.get("element") or "").strip()
     description = str(metadata.get("description") or "").strip()
     datatype = str(
-        metadata.get("datatype")
-        or analysis["inferred_datatypes"][column_name]
-        or "string"
+        metadata.get("datatype") or analysis["inferred_datatypes"][column_name] or "string"
     ).strip()
 
     if not title:
         title = humanize_column_name(column_name)
     if not description:
-        description = (
-            f"Value of the '{column_name}' column in the ECHOREPO "
-            f"resource {filename}."
-        )
+        description = f"Value of the '{column_name}' column in the ECHOREPO resource {filename}."
         warnings.append(
             f"{filename}:{column_name} has no reviewed description; "
             "a generic description was generated."
@@ -1313,9 +1245,7 @@ def build_csvw_document(
     for analysis in sorted(analyses, key=lambda item: item["filename"]):
         filename = analysis["filename"]
         table_config = table_config_for(config, filename)
-        table_title = str(
-            table_config.get("title") or f"ECHOREPO {filename}"
-        ).strip()
+        table_title = str(table_config.get("title") or f"ECHOREPO {filename}").strip()
         table_description = str(
             table_config.get("description")
             or f"Tabular ECHOREPO data resource stored in {filename}."
@@ -1356,25 +1286,19 @@ def build_csvw_document(
 
         if foreign_keys:
             if not isinstance(foreign_keys, list):
-                raise ValueError(
-                    f"foreignKeys for {filename} must be an array"
-                )
+                raise ValueError(f"foreignKeys for {filename} must be an array")
 
             for foreign_key in foreign_keys:
                 if not isinstance(foreign_key, dict):
                     raise ValueError(
-                        f"Invalid foreign key configuration for {filename}: "
-                        f"{foreign_key!r}"
+                        f"Invalid foreign key configuration for {filename}: {foreign_key!r}"
                     )
                 local_columns = foreign_key.get("columnReference")
                 local_columns = (
-                    [local_columns]
-                    if isinstance(local_columns, str)
-                    else list(local_columns or [])
+                    [local_columns] if isinstance(local_columns, str) else list(local_columns or [])
                 )
                 missing_local = [
-                    column for column in local_columns
-                    if column not in analysis["headers"]
+                    column for column in local_columns if column not in analysis["headers"]
                 ]
                 if missing_local:
                     raise ValueError(
@@ -1384,14 +1308,11 @@ def build_csvw_document(
 
                 reference = foreign_key.get("reference")
                 if not isinstance(reference, dict):
-                    raise ValueError(
-                        f"Foreign key for {filename} has no valid reference object"
-                    )
+                    raise ValueError(f"Foreign key for {filename} has no valid reference object")
                 resource = reference.get("resource")
                 if resource not in filenames:
                     raise ValueError(
-                        f"Foreign key for {filename} references missing resource "
-                        f"{resource!r}"
+                        f"Foreign key for {filename} references missing resource {resource!r}"
                     )
 
             table_schema["foreignKeys"] = foreign_keys
@@ -1476,9 +1397,7 @@ def validate_csvw_document(
     if not isinstance(tables, list) or not tables:
         raise ValueError("file.json must contain a non-empty tables array")
 
-    expected_headers = {
-        analysis["filename"]: analysis["headers"] for analysis in analyses
-    }
+    expected_headers = {analysis["filename"]: analysis["headers"] for analysis in analyses}
     described_files: set[str] = set()
 
     for table in tables:
@@ -1492,9 +1411,7 @@ def validate_csvw_document(
             raise ValueError(f"file.json has no columns array for {filename}")
         described_headers = [column.get("name") for column in columns]
         if described_headers != expected_headers[filename]:
-            raise ValueError(
-                f"file.json column order for {filename} does not match its CSV header"
-            )
+            raise ValueError(f"file.json column order for {filename} does not match its CSV header")
 
     if described_files != set(expected_headers):
         missing = sorted(set(expected_headers) - described_files)
@@ -1530,9 +1447,7 @@ def validate_soilvoc_uris(
             continue
 
         if response.status_code != 200:
-            warnings.append(
-                f"SoilVoc API returned HTTP {response.status_code} for {uri}"
-            )
+            warnings.append(f"SoilVoc API returned HTTP {response.status_code} for {uri}")
             continue
 
         try:
@@ -1543,9 +1458,7 @@ def validate_soilvoc_uris(
 
         returned_uri = str(payload.get("uri", ""))
         if returned_uri != uri:
-            warnings.append(
-                f"SoilVoc API returned {returned_uri!r} while validating {uri!r}"
-            )
+            warnings.append(f"SoilVoc API returned {returned_uri!r} while validating {uri!r}")
     return warnings
 
 
@@ -1809,10 +1722,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--api-path",
         default=None,
-        help=(
-            "API path relative to --api-base; default: "
-            f"{DEFAULT_API_PATH}"
-        ),
+        help=(f"API path relative to --api-base; default: {DEFAULT_API_PATH}"),
     )
     parser.add_argument(
         "--source-file",
@@ -1826,8 +1736,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--title", required=True)
     parser.add_argument("--description", required=True)
     parser.add_argument("--creator", action="append", required=True)
-    parser.add_argument("--data-curator", default="",
-        help="Data curator as 'Name|Affiliation|ORCID'",)
+    parser.add_argument(
+        "--data-curator",
+        default="",
+        help="Data curator as 'Name|Affiliation|ORCID'",
+    )
     parser.add_argument("--keyword", action="append")
     parser.add_argument("--communities", nargs="*")
     parser.add_argument("--license", default="CC-BY-4.0")
@@ -2035,9 +1948,7 @@ def main() -> int:
                     raise FileNotFoundError(f"Source file does not exist: {source_path}")
                 download_url = source_path.as_uri()
             else:
-                download_name = args.download_name or infer_download_name_from_path(
-                    str(api_path)
-                )
+                download_name = args.download_name or infer_download_name_from_path(str(api_path))
                 source_path = temp_path / download_name
                 headers = build_echorepo_headers(
                     echorepo_api_key,
@@ -2058,9 +1969,7 @@ def main() -> int:
             source_content_type = str(download_info.get("content_type") or "")
             if not source_content_type:
                 source_content_type = (
-                    "application/zip"
-                    if zipfile.is_zipfile(source_path)
-                    else "text/csv"
+                    "application/zip" if zipfile.is_zipfile(source_path) else "text/csv"
                 )
 
             log_row["download_url"] = download_url
@@ -2069,9 +1978,7 @@ def main() -> int:
             log_row["source_content_type"] = source_content_type
             log_row["source_sha256"] = sha256_file(source_path)
             log_row["source_etag"] = str(download_info.get("etag") or "")
-            log_row["source_last_modified"] = str(
-                download_info.get("last_modified") or ""
-            )
+            log_row["source_last_modified"] = str(download_info.get("last_modified") or "")
 
             csv_paths = extract_csv_resources(source_path, resources_dir, patterns)
             analyses = [analyse_csv(path) for path in csv_paths]
@@ -2111,9 +2018,7 @@ def main() -> int:
                 download_url,
                 reserved_doi=None,
             )
-            metadata_warnings = deduplicate_strings(
-                [*config_warnings, *metadata_warnings]
-            )
+            metadata_warnings = deduplicate_strings([*config_warnings, *metadata_warnings])
             validate_csvw_document(csvw_document, analyses)
 
             if args.validate_soilvoc or args.require_soilvoc_validation:
@@ -2127,18 +2032,12 @@ def main() -> int:
                     soilvoc_uris,
                     args.soilvoc_api_base,
                 )
-                metadata_warnings = deduplicate_strings(
-                    [*metadata_warnings, *soilvoc_warnings]
-                )
+                metadata_warnings = deduplicate_strings([*metadata_warnings, *soilvoc_warnings])
                 if args.require_soilvoc_validation and soilvoc_warnings:
-                    raise RuntimeError(
-                        "SoilVoc validation failed: " + "; ".join(soilvoc_warnings)
-                    )
+                    raise RuntimeError("SoilVoc validation failed: " + "; ".join(soilvoc_warnings))
 
             if args.require_complete_metadata and metadata_warnings:
-                raise RuntimeError(
-                    "Metadata is not complete: " + "; ".join(metadata_warnings)
-                )
+                raise RuntimeError("Metadata is not complete: " + "; ".join(metadata_warnings))
 
             draft: dict[str, Any] | None = None
             deposition_id = ""
@@ -2185,9 +2084,7 @@ def main() -> int:
                 download_url,
                 reserved_doi=reserved_doi,
             )
-            metadata_warnings = deduplicate_strings(
-                [*metadata_warnings, *second_pass_warnings]
-            )
+            metadata_warnings = deduplicate_strings([*metadata_warnings, *second_pass_warnings])
             validate_csvw_document(csvw_document, analyses)
 
             file_json_path = resources_dir / args.file_json_name
@@ -2295,8 +2192,7 @@ def main() -> int:
                 deposition_id,
             )
             remote_names = sorted(
-                str(item.get("filename") or item.get("name") or "")
-                for item in remote_files
+                str(item.get("filename") or item.get("name") or "") for item in remote_files
             )
             if remote_names != sorted(uploaded_names):
                 raise RuntimeError(
@@ -2316,9 +2212,7 @@ def main() -> int:
             log_row["conceptrecid"] = str(published.get("conceptrecid", ""))
             log_row["version_doi"] = str(published.get("doi", ""))
             log_row["concept_doi"] = derive_concept_doi(published) or ""
-            log_row["zenodo_html"] = str(
-                published.get("links", {}).get("html", "")
-            )
+            log_row["zenodo_html"] = str(published.get("links", {}).get("html", ""))
             log_row["latest_draft_html"] = str(
                 updated.get("links", {}).get(
                     "latest_draft_html",

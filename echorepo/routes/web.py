@@ -1,8 +1,8 @@
 import csv
 import logging
+import math
 import os
 import re
-import math
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
@@ -32,8 +32,28 @@ from echorepo.services.i18n_overrides import (
 
 from ..auth.decorators import login_required
 from ..config import settings
+from ..services.biodiversity_import import (
+    _import_biodiversity_streaming,
+    _looks_like_biodiversity_file,
+)
+from ..services.canonical_exports import (
+    SAMPLE_COLUMNS as CANONICAL_SAMPLE_COLS,
+)
+from ..services.canonical_exports import (
+    build_filtered_bundle,
+    build_live_csv,
+    build_snapshot_bundle,
+)
+from ..services.canonical_exports import (
+    looks_like_oxide as _looks_like_oxide,
+)
 from ..services.db import get_pg_conn, query_user_df
 from ..services.lab_permissions import can_upload_lab_data
+from ..services.lab_uploads import (
+    InvalidLabUpload,
+    LabImportError,
+    import_metals_file,
+)
 from ..services.storage.minio import (
     StorageError,
     StorageNotConfigured,
@@ -45,25 +65,7 @@ from ..services.storage.minio import (
     upload_canonical_zip,
 )
 from ..services.validation import find_default_coord_rows, select_country_mismatches
-from ..services.biodiversity_import import (
-    _looks_like_biodiversity_file,
-    _import_biodiversity_streaming,
-    )
-
 from ..utils.table import make_table_html, strip_orig_cols
-
-from ..services.canonical_exports import (
-    SAMPLE_COLUMNS as CANONICAL_SAMPLE_COLS,
-    build_filtered_bundle,
-    build_live_csv,
-    build_snapshot_bundle,
-    looks_like_oxide as _looks_like_oxide,
-)
-from ..services.lab_uploads import (
-    InvalidLabUpload,
-    LabImportError,
-    import_metals_file,
-)
 
 # Zenodo sync log path (can also be set via env var)
 ZENODO_LOG_DEFAULT = os.getenv("ZENODO_LOG_FILE", "/data/zenodo_sync_log.csv")
@@ -80,6 +82,7 @@ PRIVACY_CSV_PATH = os.getenv("PRIVACY_CSV_PATH", "/data/privacy_acceptances.csv"
 # blueprint
 web_bp = Blueprint("web", __name__)
 
+
 def _current_ui_i18n() -> dict:
     """
     Build the current UI translation payload.
@@ -89,16 +92,11 @@ def _current_ui_i18n() -> dict:
       2. msgid overrides
       3. JS key overrides
     """
-    loc = _canon_locale(
-        str(get_locale() or "en")
-    )
+    loc = _canon_locale(str(get_locale() or "en"))
 
     return {
         "labels": make_labels(loc),
-        "by_msgid": (
-            get_overrides_msgid(loc)
-            or {}
-        ),
+        "by_msgid": (get_overrides_msgid(loc) or {}),
         "locale": loc,
     }
 
@@ -106,11 +104,7 @@ def _current_ui_i18n() -> dict:
 def get_map_allowed_countries():
     raw = os.getenv("MAP_ALLOWED_COUNTRIES", "")
 
-    return sorted({
-        code.strip().upper()
-        for code in raw.split(",")
-        if code.strip()
-    })
+    return sorted({code.strip().upper() for code in raw.split(",") if code.strip()})
 
 
 def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -138,8 +132,6 @@ def _drop_oxide_columns_from_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-
-
 # --------------------------------------------------------------------------
 # --- Privacy acceptance helpers -------------------------------------------
 # --------------------------------------------------------------------------
@@ -165,7 +157,7 @@ def _repo_user_id_from_df(df: pd.DataFrame, fallback: str | None) -> str | None:
 
 def _current_authenticated_identifiers() -> set[str]:
     """Identifiers for the current user, for ownership-only display fields."""
-    profile = ((session.get("kc") or {}).get("profile") or {})
+    profile = (session.get("kc") or {}).get("profile") or {}
     possible = {
         session.get("user"),
         profile.get("email"),
@@ -309,10 +301,7 @@ def _survey_timeout_reached(
 
         first_sample_at = dates.min()
 
-        survey_available_at = (
-            first_sample_at
-            + pd.DateOffset(months=months)
-        )
+        survey_available_at = first_sample_at + pd.DateOffset(months=months)
 
         now = pd.Timestamp.now(tz="UTC")
 
@@ -377,10 +366,7 @@ def _build_sosci_url(user_id: str | None) -> str | None:
     return f"{base}{sep}{urlencode({'r': user_id})}"
 
 
-
-
 # --------- Biodiversity helpers
-
 
 
 # --------- Search helpers
@@ -452,6 +438,7 @@ def _current_approver_id() -> str:
         or "unknown"
     )
 
+
 def _coordinate_wrong_csv_path() -> Path:
     """
     Resolve the CSV produced by pull_and_enrich_samples.py.
@@ -484,6 +471,7 @@ def _series_contains(series: pd.Series, text: str) -> pd.Series:
     if not text:
         return pd.Series(True, index=series.index)
     return series.fillna("").astype(str).str.contains(text, case=False, na=False, regex=False)
+
 
 def _parse_sample_id_list(raw: str) -> list[str]:
     """
@@ -545,9 +533,7 @@ _CANONICAL_EXPORTS = {
     },
     "sample_biodiversity.csv": {
         "dataset": "canonical_sample_biodiversity",
-        "empty_message": (
-            "No compact biodiversity statistics found in database"
-        ),
+        "empty_message": ("No compact biodiversity statistics found in database"),
     },
 }
 
@@ -590,25 +576,19 @@ def download_canonical_samples():
 @web_bp.get("/download/canonical/sample_images.csv")
 @login_required
 def download_canonical_sample_images():
-    return _send_live_canonical_csv(
-        "sample_images.csv"
-    )
+    return _send_live_canonical_csv("sample_images.csv")
 
 
 @web_bp.get("/download/canonical/sample_parameters.csv")
 @login_required
 def download_canonical_sample_parameters():
-    return _send_live_canonical_csv(
-        "sample_parameters.csv"
-    )
+    return _send_live_canonical_csv("sample_parameters.csv")
 
 
 @web_bp.get("/download/canonical/sample_biodiversity.csv")
 @login_required
 def download_canonical_sample_biodiversity():
-    return _send_live_canonical_csv(
-        "sample_biodiversity.csv"
-    )
+    return _send_live_canonical_csv("sample_biodiversity.csv")
 
 
 @web_bp.get("/download/canonical/all.zip")
@@ -620,11 +600,7 @@ def download_canonical_zip():
         "kind": "canonical_export",
     }
 
-    version_date = (
-        datetime.utcnow()
-        .date()
-        .isoformat()
-    )
+    version_date = datetime.utcnow().date().isoformat()
 
     bundle = build_snapshot_bundle(
         base_url=request.url_root.rstrip("/"),
@@ -711,7 +687,12 @@ def home():
     if not user_key:
         requested_url = request.full_path.rstrip("?")
 
-        return redirect(url_for("auth.login", next=requested_url,))
+        return redirect(
+            url_for(
+                "auth.login",
+                next=requested_url,
+            )
+        )
 
     # lab upload permission flag
     can_upload = can_upload_lab_data(user_key)
@@ -770,10 +751,7 @@ def home():
         months=survey_after_months,
     )
 
-    show_survey = bool(survey_url) and (
-        has_lab_results
-        or survey_due_by_age
-    )
+    show_survey = bool(survey_url) and (has_lab_results or survey_due_by_age)
 
     # --- survey override via URL (?survey=on/off), for testing ---
     survey_override_enabled = _env_true("SURVEY_DEBUG_OVERRIDE", False)
@@ -829,7 +807,7 @@ def home():
         defaults = find_default_coord_rows(df)
         mism = select_country_mismatches(df)
         issue_count = len(defaults) + len(mism)
-        
+
     # HTML copy — prettify timestamp column
     df_html = df.copy()
     if "fs_createdAt" in df_html.columns:
@@ -892,12 +870,7 @@ def i18n_labels():
 
     # Do not let browsers or reverse proxies retain an old
     # translation response after an override is changed.
-    response.headers[
-        "Cache-Control"
-    ] = (
-        "no-store, no-cache, "
-        "must-revalidate, max-age=0"
-    )
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
 
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
@@ -1006,19 +979,33 @@ def download_all_csv():
     # exporting the raw Firestore rows. As an additional guard, remove
     # commonly-identifying and original-coordinate columns if present.
     excluded = {
-        "userid", "user_id", "uid", "email", "collected_by",
-        "first_name", "last_name", "name", "phone", "telephone",
-        "gps_lat", "gps_long", "gps_lon", "gps_lng",
-        "latitude_orig", "longitude_orig", "lat_orig", "lon_orig",
+        "userid",
+        "user_id",
+        "uid",
+        "email",
+        "collected_by",
+        "first_name",
+        "last_name",
+        "name",
+        "phone",
+        "telephone",
+        "gps_lat",
+        "gps_long",
+        "gps_lon",
+        "gps_lng",
+        "latitude_orig",
+        "longitude_orig",
+        "lat_orig",
+        "lon_orig",
     }
     user_key_column = getattr(settings, "USER_KEY_COLUMN", None)
     if user_key_column:
         excluded.add(user_key_column.lower())
 
     to_drop = [
-        col for col in df_all.columns
-        if str(col).lower() in excluded
-        or str(col).lower().endswith("_orig")
+        col
+        for col in df_all.columns
+        if str(col).lower() in excluded or str(col).lower().endswith("_orig")
     ]
     df_all = df_all.drop(columns=to_drop, errors="ignore")
     df_all = _drop_oxide_columns_from_df(df_all)
@@ -1045,11 +1032,7 @@ def download_sample_csv():
         /download/sample_csv?sample_id=GLMA-3458
         /download/sample_csv?sampleId=GLMA-3458
     """
-    sample_id = (
-        request.args.get("sample_id")
-        or request.args.get("sampleId")
-        or ""
-    ).strip()
+    sample_id = (request.args.get("sample_id") or request.args.get("sampleId") or "").strip()
 
     if not sample_id:
         abort(
@@ -1061,9 +1044,7 @@ def download_sample_csv():
 
     with (
         get_pg_conn() as conn,
-        conn.cursor(
-            cursor_factory=RealDictCursor
-        ) as cur,
+        conn.cursor(cursor_factory=RealDictCursor) as cur,
     ):
         cur.execute(
             f"""
@@ -1080,31 +1061,21 @@ def download_sample_csv():
     if not row:
         abort(
             404,
-            description=(
-                f"Canonical sample not found: "
-                f"{sample_id}"
-            ),
+            description=(f"Canonical sample not found: {sample_id}"),
         )
 
     row = dict(row)
 
-    canonical_sample_id = str(
-        row.get("sample_id") or sample_id
-    ).strip()
+    canonical_sample_id = str(row.get("sample_id") or sample_id).strip()
 
     # ----------------------------------------------------------
     # Determine whether the logged-in user owns this sample.
     # ----------------------------------------------------------
     possible_user_ids = _current_authenticated_identifiers()
 
-    collected_by = str(
-        row.get("collected_by") or ""
-    ).strip().casefold()
+    collected_by = str(row.get("collected_by") or "").strip().casefold()
 
-    is_owner = bool(
-        collected_by
-        and collected_by in possible_user_ids
-    )
+    is_owner = bool(collected_by and collected_by in possible_user_ids)
 
     # Do not disclose the submitter identifier to another user.
     if not is_owner:
@@ -1129,8 +1100,7 @@ def download_sample_csv():
 
     g._analytics_extra = {
         "dataset": "canonical_sample",
-        "file_name":
-            f"sample_{safe_filename_id}.csv",
+        "file_name": f"sample_{safe_filename_id}.csv",
         "kind": "sample_export",
         "sample_id": canonical_sample_id,
     }
@@ -1138,9 +1108,7 @@ def download_sample_csv():
     return send_file(
         buf,
         as_attachment=True,
-        download_name=(
-            f"sample_{safe_filename_id}.csv"
-        ),
+        download_name=(f"sample_{safe_filename_id}.csv"),
         mimetype="text/csv",
     )
 
@@ -1155,8 +1123,6 @@ def lab_upload():
     if not can_upload_lab_data(user_key):
         abort(403, description="Not authorised to upload lab data")
     return render_template("lab_upload.html")
-
-
 
 
 # Global QA edits are separate from /issues/fix-coords (owner-only).
@@ -1201,7 +1167,8 @@ def _coordinate_qa_can_manage_planned_xlsx() -> bool:
     identities = {
         str(value).strip().casefold()
         for value in (
-            session.get("user"), profile.get("email"),
+            session.get("user"),
+            profile.get("email"),
             profile.get("preferred_username"),
         )
         if value and str(value).strip()
@@ -1219,7 +1186,9 @@ def _coordinate_qa_can_manage_planned_xlsx() -> bool:
 def coordinate_issues_fix_coords():
     """Persist one authorized QA correction in Firestore and the local SQLite cache."""
     import hmac
+
     from flask import current_app, flash
+
     from ..services.db import query_sample, update_coords_sqlite
     from ..services.firebase import update_coords_by_user_sample
     from ..utils.coords import parse_coord
@@ -1240,9 +1209,11 @@ def coordinate_issues_fix_coords():
     raw_back = str(request.form.get("return_url") or "")
     back_url = url_for("web.coordinate_issues")
     # Retain the QA filters/page, but never permit arbitrary redirect destinations.
-    if (raw_back == "/coordinate-issues" or raw_back.startswith("/coordinate-issues?")) and not any(
-        char in raw_back for char in "\r\n\x00"
-    ) and len(raw_back) <= 2048:
+    if (
+        (raw_back == "/coordinate-issues" or raw_back.startswith("/coordinate-issues?"))
+        and not any(char in raw_back for char in "\r\n\x00")
+        and len(raw_back) <= 2048
+    ):
         back_url = raw_back
 
     sample_id = str(request.form.get("sampleId") or "").strip()
@@ -1253,8 +1224,12 @@ def coordinate_issues_fix_coords():
 
     lat = parse_coord(str(request.form.get("lat_input") or "").strip(), is_lon=False)
     lon = parse_coord(str(request.form.get("lon_input") or "").strip(), is_lon=True)
-    if (lat is None or lon is None or not (math.isfinite(lat) and math.isfinite(lon))
-            or not (-90 <= lat <= 90 and -180 <= lon <= 180)):
+    if (
+        lat is None
+        or lon is None
+        or not (math.isfinite(lat) and math.isfinite(lon))
+        or not (-90 <= lat <= 90 and -180 <= lon <= 180)
+    ):
         flash("Invalid latitude/longitude; use decimal or DMS coordinates.", "danger")
         return redirect(back_url)
 
@@ -1266,7 +1241,12 @@ def coordinate_issues_fix_coords():
         current_app.logger.exception("QA coordinate save: local sample lookup failed")
         flash("Could not verify the sample in the local database.", "danger")
         return redirect(back_url)
-    if found is None or found.empty or "sampleId" not in found.columns or "userId" not in found.columns:
+    if (
+        found is None
+        or found.empty
+        or "sampleId" not in found.columns
+        or "userId" not in found.columns
+    ):
         flash("Sample ID not found in the local database; nothing was changed.", "danger")
         return redirect(back_url)
     matches = found.loc[
@@ -1284,6 +1264,7 @@ def coordinate_issues_fix_coords():
     # A private PostgreSQL QA override may be fresher than the SQLite cache.
     try:
         from ..services.coordinate_qa_exact_overrides import read_exact_overrides
+
         override = read_exact_overrides([sample_id]).get(sample_id)
         if override and override[0] == form_uid:
             old_lat, old_lon = float(override[1]), float(override[2])
@@ -1291,29 +1272,45 @@ def coordinate_issues_fix_coords():
         current_app.logger.exception("QA coordinate read: private PostgreSQL lookup failed")
         flash("Cannot verify current QA coordinates; nothing changed.", "danger")
         return redirect(back_url)
-    coordinates_changed = (old_lat is None or old_lon is None or
-                           abs(lat - old_lat) > 1e-9 or abs(lon - old_lon) > 1e-9)
+    coordinates_changed = (
+        old_lat is None or old_lon is None or abs(lat - old_lat) > 1e-9 or abs(lon - old_lon) > 1e-9
+    )
     confirm_country = request.form.get("confirm_actual_country") == "1"
     if confirm_country and coordinates_changed:
-        flash("Save the new GPS coordinates first, then review the recalculated actual country before confirming it.", "warning")
+        flash(
+            "Save the new GPS coordinates first, then review the recalculated actual country before confirming it.",
+            "warning",
+        )
         return redirect(back_url)
 
     if confirm_country:
         from contextlib import closing
-        from ..services.planned_pg import norm_qr, change_country, PlannedCountryError
+
+        from ..services.planned_pg import PlannedCountryError, change_country, norm_qr
+
         if os.getenv("PLANNED_COUNTRY_SOURCE", "xlsx").strip().lower() != "postgres":
             flash("Country corrections require PLANNED_COUNTRY_SOURCE=postgres.", "danger")
             return redirect(back_url)
         qr = norm_qr(request.form.get("qr_code"))
         qa = pd.read_csv(_coordinate_wrong_csv_path(), dtype=str, keep_default_na=False)
-        required = {"sampleId", "userId", "QR_qrCode", "actual_cc", "planned_iso2", "coordinate_check_reason"}
+        required = {
+            "sampleId",
+            "userId",
+            "QR_qrCode",
+            "actual_cc",
+            "planned_iso2",
+            "coordinate_check_reason",
+        }
         if not required.issubset(qa.columns):
             flash("QA snapshot lacks the fields needed to verify the country.", "danger")
             return redirect(back_url)
         matching_qr = qa["QR_qrCode"].map(norm_qr) == qr
-        match = qa.loc[matching_qr & (qa["sampleId"].str.strip() == sample_id)
-                       & (qa["userId"].str.strip() == form_uid)
-                       & (qa["coordinate_check_reason"].str.strip() == "country_mismatch")]
+        match = qa.loc[
+            matching_qr
+            & (qa["sampleId"].str.strip() == sample_id)
+            & (qa["userId"].str.strip() == form_uid)
+            & (qa["coordinate_check_reason"].str.strip() == "country_mismatch")
+        ]
         if len(match) != 1:
             flash("Cannot uniquely verify this country mismatch.", "danger")
             return redirect(back_url)
@@ -1321,14 +1318,22 @@ def coordinate_issues_fix_coords():
         if actual != str(request.form.get("actual_country") or "").strip().upper():
             flash("Actual country changed; refresh the page.", "danger")
             return redirect(back_url)
-        other_actuals = {str(v).strip().upper() for v in qa.loc[matching_qr, "actual_cc"] if str(v).strip()}
+        other_actuals = {
+            str(v).strip().upper() for v in qa.loc[matching_qr, "actual_cc"] if str(v).strip()
+        }
         if other_actuals != {actual}:
             flash("QR has conflicting actual countries; country was not changed.", "danger")
             return redirect(back_url)
         try:
             with closing(get_pg_conn()) as conn:
                 with conn:
-                    change_country(conn, qr, actual, expected_planned=str(match.iloc[0]["planned_iso2"]).strip().upper(), actor=actor)
+                    change_country(
+                        conn,
+                        qr,
+                        actual,
+                        expected_planned=str(match.iloc[0]["planned_iso2"]).strip().upper(),
+                        actor=actor,
+                    )
         except (PlannedCountryError, ValueError) as exc:
             flash(f"Planned country unchanged: {exc}", "danger")
             return redirect(back_url)
@@ -1337,7 +1342,10 @@ def coordinate_issues_fix_coords():
             flash("Country update failed; see server logs.", "danger")
             return redirect(back_url)
         # There is no need to rewrite an unchanged Firestore GPS record.
-        flash(f"Planned country updated to {actual} for {qr}. QA flags refresh on enrichment.", "success")
+        flash(
+            f"Planned country updated to {actual} for {qr}. QA flags refresh on enrichment.",
+            "success",
+        )
         return redirect(back_url)
 
     if not coordinates_changed:
@@ -1347,7 +1355,9 @@ def coordinate_issues_fix_coords():
     try:
         ok, info = update_coords_by_user_sample(form_uid, sample_id, lat, lon)
     except Exception:
-        current_app.logger.exception("QA coordinate save: Firebase exception for sample %s", sample_id)
+        current_app.logger.exception(
+            "QA coordinate save: Firebase exception for sample %s", sample_id
+        )
         flash("Firebase update failed; nothing was saved in the local cache.", "danger")
         return redirect(back_url)
     if not ok:
@@ -1373,10 +1383,16 @@ def coordinate_issues_fix_coords():
     # immediately; public PostgreSQL coordinate columns must remain jittered.
     try:
         from ..services.coordinate_qa_exact_overrides import save_exact_override
+
         save_exact_override(sample_id, form_uid, lat, lon, actor)
     except Exception:
-        current_app.logger.exception("QA coordinate saved upstream but PostgreSQL override failed: %s", sample_id)
-        flash("GPS saved in Firebase and SQLite, but instant QA display failed. Check logs.", "warning")
+        current_app.logger.exception(
+            "QA coordinate saved upstream but PostgreSQL override failed: %s", sample_id
+        )
+        flash(
+            "GPS saved in Firebase and SQLite, but instant QA display failed. Check logs.",
+            "warning",
+        )
         return redirect(back_url)
 
     current_app.logger.info("QA coordinate save succeeded: sample=%s editor=%s", sample_id, actor)
@@ -1387,17 +1403,23 @@ def coordinate_issues_fix_coords():
     )
     return redirect(back_url)
 
+
 @web_bp.post("/coordinate-issues/accept-country", endpoint="coordinate_issues_accept_country")
 @login_required
 def coordinate_issues_accept_country():
     """An editor confirms actual ISO2 country; fix one PostgreSQL QR row."""
     import hmac
+    from contextlib import closing
+
     from flask import current_app, flash
+
     from ..services.planned_pg import (
         PlannedCountryError as PlannedCountryCorrectionError,
-        norm_qr, change_country,
     )
-    from contextlib import closing
+    from ..services.planned_pg import (
+        change_country,
+        norm_qr,
+    )
 
     if not _coordinate_qa_can_edit():
         abort(403, description="Not authorized to edit global coordinate issues")
@@ -1411,9 +1433,11 @@ def coordinate_issues_accept_country():
 
     raw_back = str(request.form.get("return_url") or "")
     back_url = url_for("web.coordinate_issues")
-    if (raw_back == "/coordinate-issues" or raw_back.startswith("/coordinate-issues?")) and not any(
-        char in raw_back for char in "\r\n\x00"
-    ) and len(raw_back) <= 2048:
+    if (
+        (raw_back == "/coordinate-issues" or raw_back.startswith("/coordinate-issues?"))
+        and not any(char in raw_back for char in "\r\n\x00")
+        and len(raw_back) <= 2048
+    ):
         back_url = raw_back
 
     if request.form.get("confirm_actual_country") != "1":
@@ -1433,7 +1457,14 @@ def coordinate_issues_accept_country():
     try:
         csv_path = _coordinate_wrong_csv_path()
         qa = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
-        required = {"sampleId", "userId", "QR_qrCode", "actual_cc", "planned_iso2", "coordinate_check_reason"}
+        required = {
+            "sampleId",
+            "userId",
+            "QR_qrCode",
+            "actual_cc",
+            "planned_iso2",
+            "coordinate_check_reason",
+        }
         if not required.issubset(qa.columns):
             raise PlannedCountryCorrectionError("Coordinate QA CSV is missing required columns")
         matching_qr = qa["QR_qrCode"].map(norm_qr) == qr
@@ -1444,16 +1475,16 @@ def coordinate_issues_accept_country():
             & (qa["coordinate_check_reason"].str.strip() == "country_mismatch")
         ]
         if len(match) != 1:
-            raise PlannedCountryCorrectionError("The selected country mismatch cannot be verified uniquely")
+            raise PlannedCountryCorrectionError(
+                "The selected country mismatch cannot be verified uniquely"
+            )
         actual = str(match.iloc[0]["actual_cc"]).strip().upper()
         if actual != country:
             raise PlannedCountryCorrectionError("Actual country changed since page was loaded")
         # A QR can be duplicated across users. Never silently change its planned
         # country if the QA records disagree about the physical location.
         other_actuals = {
-            str(v).strip().upper()
-            for v in qa.loc[matching_qr, "actual_cc"]
-            if str(v).strip()
+            str(v).strip().upper() for v in qa.loc[matching_qr, "actual_cc"] if str(v).strip()
         }
         if other_actuals != {actual}:
             raise PlannedCountryCorrectionError(
@@ -1474,7 +1505,11 @@ def coordinate_issues_accept_country():
 
     current_app.logger.warning(
         "Planned-country QA corrected in PostgreSQL: qr=%s from=%s to=%s sample=%s actor=%s",
-        qr, old, actual, sample_id, actor,
+        qr,
+        old,
+        actual,
+        sample_id,
+        actor,
     )
     flash(
         f"Updated planned country in PostgreSQL: {qr}: {old or '(empty)'} -> {actual}. "
@@ -1484,21 +1519,25 @@ def coordinate_issues_accept_country():
     return redirect(back_url)
 
 
-
 @web_bp.get("/coordinate-issues/planned/download", endpoint="coordinate_issues_planned_download")
 @login_required
 def coordinate_issues_planned_download():
     """Download current PostgreSQL planned table as the original five-column XLSX."""
     from contextlib import closing
+
     from ..services.planned_pg import export_xlsx
+
     if not _coordinate_qa_can_manage_planned_xlsx():
         abort(403)
     with closing(get_pg_conn()) as conn:
         with conn:
             payload = export_xlsx(conn)
-    return send_file(BytesIO(payload), as_attachment=True,
-                     download_name="planned.xlsx",
-                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    return send_file(
+        BytesIO(payload),
+        as_attachment=True,
+        download_name="planned.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @web_bp.post("/coordinate-issues/planned/upload", endpoint="coordinate_issues_planned_upload")
@@ -1507,8 +1546,11 @@ def coordinate_issues_planned_upload():
     """Explicitly replace all planned rows in one transaction (prior rows archived)."""
     import hmac
     from contextlib import closing
-    from flask import flash, current_app
+
+    from flask import current_app, flash
+
     from ..services.planned_pg import MAX_XLSX_BYTES, PlannedCountryError, read_xlsx, replace_all
+
     if not _coordinate_qa_can_manage_planned_xlsx():
         abort(403)
     expected = str(session.get("_coordinate_fix_csrf") or "")
@@ -1538,10 +1580,14 @@ def coordinate_issues_planned_upload():
         flash("Import failed; database transaction rolled back. Check logs.", "danger")
         return redirect(url_for("web.coordinate_issues"))
     current_app.logger.warning("Planned-country full import by %s: %s", actor, result)
-    flash(f"Imported {result['rows']} planned rows; duplicate QRs: {result['duplicate_qrs']}; "
-          f"unrecognized country values: {result['unrecognized_countries']}. "
-          "Previous rows are archived in planned_country_imports.", "success")
+    flash(
+        f"Imported {result['rows']} planned rows; duplicate QRs: {result['duplicate_qrs']}; "
+        f"unrecognized country values: {result['unrecognized_countries']}. "
+        "Previous rows are archived in planned_country_imports.",
+        "success",
+    )
     return redirect(url_for("web.coordinate_issues"))
+
 
 @web_bp.route("/coordinate-issues", endpoint="coordinate_issues", methods=["GET"])
 @login_required
@@ -1553,6 +1599,7 @@ def coordinate_issues():
     QR codes and user IDs.
     """
     import secrets
+
     if not session.get("_coordinate_fix_csrf"):
         session["_coordinate_fix_csrf"] = secrets.token_urlsafe(32)
 
@@ -1622,38 +1669,20 @@ def coordinate_issues():
             df["uid_display"] = ""
 
     if "lat_display" not in df.columns:
-        df["lat_display"] = (
-            df["GPS_lat"]
-            if "GPS_lat" in df.columns
-            else ""
-        )
+        df["lat_display"] = df["GPS_lat"] if "GPS_lat" in df.columns else ""
 
     if "lon_display" not in df.columns:
-        df["lon_display"] = (
-            df["GPS_long"]
-            if "GPS_long" in df.columns
-            else ""
-        )
+        df["lon_display"] = df["GPS_long"] if "GPS_long" in df.columns else ""
 
     if "actual_country_display" not in df.columns:
-        df["actual_country_display"] = (
-            df["actual_cc"]
-            if "actual_cc" in df.columns
-            else ""
-        )
+        df["actual_country_display"] = df["actual_cc"] if "actual_cc" in df.columns else ""
 
     if "planned_country_display" not in df.columns:
-        df["planned_country_display"] = (
-            df["planned_iso2"]
-            if "planned_iso2" in df.columns
-            else ""
-        )
+        df["planned_country_display"] = df["planned_iso2"] if "planned_iso2" in df.columns else ""
 
     if "reason_display" not in df.columns:
         df["reason_display"] = (
-            df["coordinate_check_reason"]
-            if "coordinate_check_reason" in df.columns
-            else ""
+            df["coordinate_check_reason"] if "coordinate_check_reason" in df.columns else ""
         )
 
     # Normalize display strings a little.
@@ -1676,22 +1705,23 @@ def coordinate_issues():
     # BEFORE applying the user's search filters.
     # ----------------------------------------------------------
 
-    reasons = sorted(
-        x
-        for x in df["reason_display"].unique().tolist()
-        if x
-    )
+    reasons = sorted(x for x in df["reason_display"].unique().tolist() if x)
 
     # ----------------------------------------------------------
     # Apply filters
     # ----------------------------------------------------------
 
     if criteria["sample_id"]:
-        terms = list(dict.fromkeys(x.casefold() for x in
-                  re.split(r"[,;\s]+", criteria["sample_id"].strip()) if x))
+        terms = list(
+            dict.fromkeys(
+                x.casefold() for x in re.split(r"[,;\s]+", criteria["sample_id"].strip()) if x
+            )
+        )
         if len(terms) > 200:
             abort(400, description="A maximum of 200 Sample/QR terms is allowed")
-        search_cols = [c for c in ("sample_display", "sampleId", "sample_id", "QR_qrCode") if c in df.columns]
+        search_cols = [
+            c for c in ("sample_display", "sampleId", "sample_id", "QR_qrCode") if c in df.columns
+        ]
         mask = pd.Series(False, index=df.index)
         for term in terms:
             for col in search_cols:
@@ -1707,16 +1737,10 @@ def coordinate_issues():
         ].copy()
 
     if criteria["reason"]:
-        df = df.loc[
-            df["reason_display"] == criteria["reason"]
-        ].copy()
+        df = df.loc[df["reason_display"] == criteria["reason"]].copy()
 
     if criteria["actual_country"]:
-        df = df.loc[
-            df["actual_country_display"]
-            .str.upper()
-            == criteria["actual_country"]
-        ].copy()
+        df = df.loc[df["actual_country_display"].str.upper() == criteria["actual_country"]].copy()
 
     if criteria["planned_country"]:
         df = df.loc[
@@ -1759,11 +1783,7 @@ def coordinate_issues():
             "coordinate_check_reason",
         ]
 
-        cols = [
-            c
-            for c in preferred_cols
-            if c in df.columns
-        ]
+        cols = [c for c in preferred_cols if c in df.columns]
 
         if not cols:
             cols = list(df.columns)
@@ -1801,15 +1821,13 @@ def coordinate_issues():
     start = (page - 1) * per_page
     end = start + per_page
 
-    rows = df.iloc[start:end].to_dict(
-        orient="records"
-    )
-
+    rows = df.iloc[start:end].to_dict(orient="records")
 
     # Load exact GPS values previously saved through this QA page. The public
     # PostgreSQL lat/lon columns are jittered and are deliberately NOT used.
     try:
         from ..services.coordinate_qa_exact_overrides import read_exact_overrides
+
         current_coords = read_exact_overrides({str(r.get("sampleId") or "").strip() for r in rows})
         for row in rows:
             sid = str(row.get("sampleId") or "").strip()
@@ -1849,9 +1867,11 @@ def coordinate_issues():
         r["planned_country_ambiguous"] = False
         r["country_already_corrected"] = False
     try:
-        from ..services.planned_pg import norm_qr, count_rows
-        from ..services.planned import _split_planned
         from contextlib import closing
+
+        from ..services.planned import _split_planned
+        from ..services.planned_pg import count_rows, norm_qr
+
         qr_keys = {norm_qr(r.get("QR_qrCode")) for r in rows if r.get("QR_qrCode")}
         with closing(get_pg_conn()) as conn:
             with conn:
@@ -1876,7 +1896,9 @@ def coordinate_issues():
                 # ISO2 display only; keep raw text in PostgreSQL and export XLSX.
                 r["planned_country_iso2"] = ",".join(sorted(_split_planned(values[0])))
                 actual = str(r.get("actual_country_display") or "").strip().upper()
-                r["country_already_corrected"] = bool(actual and actual in _split_planned(values[0]))
+                r["country_already_corrected"] = bool(
+                    actual and actual in _split_planned(values[0])
+                )
     except Exception:
         logging.getLogger(__name__).exception("Cannot query planned-country PostgreSQL table")
 
@@ -1896,7 +1918,7 @@ def coordinate_issues():
         planned_country_source=os.getenv("PLANNED_COUNTRY_SOURCE", "xlsx"),
     )
 
-    
+
 @web_bp.post("/coordinate-issues/approve", endpoint="coordinate_issues_approve")
 @login_required
 def coordinate_issues_approve():
@@ -1963,11 +1985,7 @@ def search_samples():
 
     # ----- read filters from querystring -----
     criteria = {
-        "sample_id": (
-            req.get("sample_ids")
-            or req.get("sample_id")
-            or ""
-        ).strip(),
+        "sample_id": (req.get("sample_ids") or req.get("sample_id") or "").strip(),
         "sample_ids_exact": bool(req.get("sample_ids")),
         "country_code": (req.get("country_code") or req.get("country") or "").strip().upper(),
         "ph_min": (req.get("ph_min") or "").strip(),
@@ -2032,17 +2050,9 @@ def search_samples():
         # 3. pH filtering
         # --------------------------------------------------
         try:
-            ph_min = (
-                float(criteria["ph_min"])
-                if criteria["ph_min"]
-                else None
-            )
+            ph_min = float(criteria["ph_min"]) if criteria["ph_min"] else None
 
-            ph_max = (
-                float(criteria["ph_max"])
-                if criteria["ph_max"]
-                else None
-            )
+            ph_max = float(criteria["ph_max"]) if criteria["ph_max"] else None
 
         except (ValueError, TypeError):
             abort(400, description="Invalid pH value.")
@@ -2055,15 +2065,8 @@ def search_samples():
             abort(400, description="Invalid maximum pH.")
 
         # Check that the range makes sense.
-        if (
-            ph_min is not None
-            and ph_max is not None
-            and ph_min > ph_max
-        ):
-            abort(
-                400,
-                description="Minimum pH cannot exceed maximum pH."
-            )
+        if ph_min is not None and ph_max is not None and ph_min > ph_max:
+            abort(400, description="Minimum pH cannot exceed maximum pH.")
 
         if ph_min is not None:
             where.append("ph >= %s")
@@ -2077,31 +2080,16 @@ def search_samples():
         # 4. Date filtering
         # --------------------------------------------------
         try:
-            date_from = (
-                date.fromisoformat(criteria["date_from"])
-                if criteria["date_from"]
-                else None
-            )
+            date_from = date.fromisoformat(criteria["date_from"]) if criteria["date_from"] else None
 
-            date_to = (
-                date.fromisoformat(criteria["date_to"])
-                if criteria["date_to"]
-                else None
-            )
+            date_to = date.fromisoformat(criteria["date_to"]) if criteria["date_to"] else None
 
         except (ValueError, TypeError):
             abort(400, description="Invalid date format.")
 
         # Ensure the requested date range is valid.
-        if (
-            date_from is not None
-            and date_to is not None
-            and date_from > date_to
-        ):
-            abort(
-                400,
-                description="Start date cannot exceed end date."
-            )
+        if date_from is not None and date_to is not None and date_from > date_to:
+            abort(400, description="Start date cannot exceed end date.")
 
         if date_from is not None:
             where.append("timestamp_utc >= %s")
@@ -2120,7 +2108,7 @@ def search_samples():
             params.append(end_exclusive.isoformat())
 
         # --------------------------------------------------
-        # 5. Return criteria based on Biogeo Region  
+        # 5. Return criteria based on Biogeo Region
         # --------------------------------------------------
 
         if criteria["biogeo_region"]:
@@ -2152,20 +2140,11 @@ def search_samples():
             ORDER BY br.region_name
         """)
 
-        available_regions = [
-            row[0]
-            for row in cur.fetchall()
-        ]
+        available_regions = [row[0] for row in cur.fetchall()]
 
     # Reject unknown biogeographical regions.
-    if (
-        criteria["biogeo_region"]
-        and criteria["biogeo_region"] not in available_regions
-    ):
-        abort(
-            400,
-            description="Invalid biogeographical region."
-        )
+    if criteria["biogeo_region"] and criteria["biogeo_region"] not in available_regions:
+        abort(400, description="Invalid biogeographical region.")
 
     where_sql, params = _build_where(criteria)
 
@@ -2182,11 +2161,7 @@ def search_samples():
     # Preserve the distinction between exact map selection
     # and normal partial sample-ID search.
     if criteria["sample_id"]:
-        key = (
-            "sample_ids"
-            if criteria["sample_ids_exact"]
-            else "sample_id"
-        )
+        key = "sample_ids" if criteria["sample_ids_exact"] else "sample_id"
         link_filters[key] = criteria["sample_id"]
 
     def _is_logged_in() -> bool:
@@ -2205,14 +2180,8 @@ def search_samples():
 
         base_url = request.url_root.rstrip("/")
         snapshot_date = latest_canonical_snapshot_date()
-        version_date = (
-            snapshot_date
-            or date.today().isoformat()
-        )
-        snapshot_url = (
-            f"{base_url}/download/canonical/"
-            f"{version_date}/all.zip"
-        )
+        version_date = snapshot_date or date.today().isoformat()
+        snapshot_url = f"{base_url}/download/canonical/{version_date}/all.zip"
 
         # Determine only which samples match the search criteria.
         # The canonical export service fetches and formats all four datasets.
@@ -2225,11 +2194,7 @@ def search_samples():
 
         with get_pg_conn() as conn, conn.cursor() as cur:
             cur.execute(sql_ids, params)
-            sample_ids = [
-                row[0]
-                for row in cur.fetchall()
-                if row and row[0]
-            ]
+            sample_ids = [row[0] for row in cur.fetchall() if row and row[0]]
 
         bundle = build_filtered_bundle(
             sample_ids=sample_ids,
@@ -2262,10 +2227,7 @@ def search_samples():
             (list(allowed_country_codes),),
         )
 
-        available_country_codes = [
-            row["code"]
-            for row in cur.fetchall()
-        ]
+        available_country_codes = [row["code"] for row in cur.fetchall()]
 
         # count
         cur.execute(f"SELECT COUNT(*) FROM samples WHERE {where_sql}", params)
@@ -2319,7 +2281,6 @@ def search_samples():
         available_regions=available_regions,
         link_filters=link_filters,
     )
-    
 
 
 @web_bp.route("/admin/usage")
@@ -2474,9 +2435,7 @@ def explore():
             ORDER BY br.region_name
         """)
 
-        available_regions = [
-            row[0] for row in cur.fetchall()
-        ]
+        available_regions = [row[0] for row in cur.fetchall()]
 
     return render_template(
         "explore.html",
@@ -2555,7 +2514,11 @@ def public_others_geojson():
                     "location_accuracy_m": r.get("location_accuracy_m"),
                     "qa_status": r.get("qa_status"),
                     "wrong_coordinates": bool(
-                        str(r.get("qa_status") or "").strip().lower().startswith("wrong_coordinates"))
+                        str(r.get("qa_status") or "")
+                        .strip()
+                        .lower()
+                        .startswith("wrong_coordinates")
+                    ),
                 },
             }
         )
@@ -2594,22 +2557,15 @@ def _process_lab_upload_file(
 
     Returns a small result dictionary for logging and analytics.
     """
-    filename = (
-        uploaded_file.filename
-        or ""
-    ).strip()
+    filename = (uploaded_file.filename or "").strip()
 
     if not filename:
-        raise InvalidLabUpload(
-            "Uploaded file has no filename"
-        )
+        raise InvalidLabUpload("Uploaded file has no filename")
 
     data = uploaded_file.read()
 
     if not data:
-        raise InvalidLabUpload(
-            f"{filename}: uploaded file is empty"
-        )
+        raise InvalidLabUpload(f"{filename}: uploaded file is empty")
 
     if _looks_like_biodiversity_file(
         data,
@@ -2643,12 +2599,7 @@ def _process_lab_upload_file(
 @web_bp.post("/lab-import-auto")
 @login_required
 def lab_import_auto():
-    user_key = (
-        session.get("user")
-        or session.get("kc", {})
-        .get("profile", {})
-        .get("email")
-    )
+    user_key = session.get("user") or session.get("kc", {}).get("profile", {}).get("email")
 
     if not can_upload_lab_data(user_key):
         abort(
@@ -2658,10 +2609,8 @@ def lab_import_auto():
 
     uploaded_files = [
         uploaded_file
-        for uploaded_file
-        in request.files.getlist("file")
-        if uploaded_file
-        and (uploaded_file.filename or "").strip()
+        for uploaded_file in request.files.getlist("file")
+        if uploaded_file and (uploaded_file.filename or "").strip()
     ]
 
     if not uploaded_files:
@@ -2670,25 +2619,14 @@ def lab_import_auto():
             description="No files uploaded",
         )
 
-    kc_profile = (
-        session.get("kc")
-        or {}
-    ).get("profile") or {}
+    kc_profile = (session.get("kc") or {}).get("profile") or {}
 
-    uploader_id = (
-        kc_profile.get("id")
-        or kc_profile.get("sub")
-        or session.get("user")
-        or "unknown"
-    )
+    uploader_id = kc_profile.get("id") or kc_profile.get("sub") or session.get("user") or "unknown"
 
     results = []
 
     for uploaded_file in uploaded_files:
-        filename = (
-            uploaded_file.filename
-            or ""
-        ).strip()
+        filename = (uploaded_file.filename or "").strip()
 
         logging.getLogger(__name__).warning(
             "LABUPLOAD: processing file %s",
@@ -2727,45 +2665,20 @@ def lab_import_auto():
         )
 
     g._analytics_extra = {
-        "upload_type": (
-            "multiple_lab_files"
-            if len(results) > 1
-            else "single_lab_file"
-        ),
-
+        "upload_type": ("multiple_lab_files" if len(results) > 1 else "single_lab_file"),
         "file_count": len(results),
-        
-        "biodiversity_file_count": sum(
-            result["type"] == "biodiversity"
-            for result in results
-        ),
-        
-        "metals_file_count": sum(
-            result["type"] == "metals"
-            for result in results
-        ),
-        
+        "biodiversity_file_count": sum(result["type"] == "biodiversity" for result in results),
+        "metals_file_count": sum(result["type"] == "metals" for result in results),
         "metals_values_upserted": sum(
-            result["rows_inserted"] or 0
-            for result in results
-            if result["type"] == "metals"
+            result["rows_inserted"] or 0 for result in results if result["type"] == "metals"
         ),
-        
-        "files": [
-            result["filename"]
-            for result in results
-        ],
-        
+        "files": [result["filename"] for result in results],
         "biodiversity_rows_inserted": sum(
-            result["rows_inserted"] or 0
-            for result in results
-            if result["type"] == "biodiversity"
+            result["rows_inserted"] or 0 for result in results if result["type"] == "biodiversity"
         ),
     }
 
-    return redirect(
-        url_for("web.home")
-    )
+    return redirect(url_for("web.home"))
 
 
 @web_bp.get("/public/sample_piechart/<sample_id>")
@@ -2792,10 +2705,7 @@ def public_sample_piechart(sample_id: str):
     level = level_aliases.get(level_raw, "Phylum")
 
     # The taxonomic pie chart always depends on the imported data.
-    object_name = (
-        f"biodiversity/piecharts/"
-        f"{marker}/{level}/{sample_id}.png"
-    )
+    object_name = f"biodiversity/piecharts/{marker}/{level}/{sample_id}.png"
 
     try:
         chart_exists = object_exists(object_name)
@@ -2835,9 +2745,7 @@ def _read_zenodo_publications(log_path: str) -> list[dict]:
                     continue
                 rows.append(row)
     except (OSError, UnicodeError, csv.Error) as exc:
-        logging.getLogger(__name__).warning(
-            "Could not read Zenodo publication log %s: %s", p, exc
-        )
+        logging.getLogger(__name__).warning("Could not read Zenodo publication log %s: %s", p, exc)
         return []
 
     # newest first

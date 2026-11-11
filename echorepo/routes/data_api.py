@@ -1,7 +1,6 @@
 # echorepo/routes/data_api.py
 from __future__ import annotations
 
-
 import csv
 import hmac
 import io
@@ -16,7 +15,6 @@ import time
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
-
 
 import jwt
 import pandas as pd
@@ -33,7 +31,6 @@ from flask import (
 )
 from psycopg2.extras import RealDictCursor
 
-
 from echorepo.services.biodiversity_raw_exports import (
     build_biodiversity_raw_bundle,
 )
@@ -48,7 +45,6 @@ from echorepo.services.canonical_exports import (
 )
 from echorepo.services.db import _ensure_lab_enrichment, get_pg_conn
 from echorepo.services.storage.minio import upload_canonical_zip
-
 
 log = logging.getLogger(__name__)
 data_api = Blueprint("data_api", __name__)
@@ -74,13 +70,9 @@ DEFAULT_PAGE_SIZE = 100
 DEFAULT_MAP_PAGE_SIZE = 2_000
 
 
-
-
 # -----------------------------------------------------------------------------
 # Generic configuration and validation helpers
 # -----------------------------------------------------------------------------
-
-
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -92,8 +84,6 @@ def _env_bool(name: str, default: bool = False) -> bool:
     if isinstance(value, bool):
         return value
     return str(value).strip().lower() in {"1", "true", "yes", "on", "y", "t"}
-
-
 
 
 def _parse_int_arg(
@@ -112,14 +102,11 @@ def _parse_int_arg(
         except (TypeError, ValueError):
             abort(400, description=f"{name} must be an integer")
 
-
     if value < minimum:
         abort(400, description=f"{name} must be at least {minimum}")
     if maximum is not None and value > maximum:
         value = maximum
     return value
-
-
 
 
 def _canonical_pagination(fmt: str) -> tuple[int | None, int]:
@@ -150,8 +137,6 @@ def _parse_float_arg(name: str) -> float | None:
     return value
 
 
-
-
 def _parse_format(*allowed: str, default: str = "json") -> str:
     value = (request.args.get("format") or default).strip().lower()
     if value not in allowed:
@@ -162,16 +147,12 @@ def _parse_format(*allowed: str, default: str = "json") -> str:
     return value
 
 
-
-
 def _parse_fields(raw: str, allowed: list[str]) -> list[str]:
     requested = [part.strip() for part in raw.split(",") if part.strip()]
     if not requested:
         return allowed[:]
     selected = [field for field in requested if field in allowed]
     return selected or allowed[:]
-
-
 
 
 def _parse_date_or_datetime(raw: str, *, end_bound: bool = False) -> tuple[str, str]:
@@ -186,19 +167,15 @@ def _parse_date_or_datetime(raw: str, *, end_bound: bool = False) -> tuple[str, 
     if not value:
         raise ValueError("empty date")
 
-
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         parsed_date = date.fromisoformat(value)
         if end_bound:
             return ((parsed_date + timedelta(days=1)).isoformat(), "<")
         return (parsed_date.isoformat(), ">=")
 
-
     candidate = value[:-1] + "+00:00" if value.endswith("Z") else value
     parsed = datetime.fromisoformat(candidate)
     return (parsed.isoformat(), "<=" if end_bound else ">=")
-
-
 
 
 def parse_iso8601(value: str) -> str | None:
@@ -209,8 +186,6 @@ def parse_iso8601(value: str) -> str | None:
     return normalized
 
 
-
-
 def _time_window_from_request(
     *,
     from_name: str = "from",
@@ -219,11 +194,9 @@ def _time_window_from_request(
     raw_from = (request.args.get(from_name) or "").strip()
     raw_to = (request.args.get(to_name) or "").strip()
 
-
     from_value: str | None = None
     to_value: str | None = None
     to_operator = "<="
-
 
     try:
         if raw_from:
@@ -235,7 +208,6 @@ def _time_window_from_request(
             400,
             description=("Invalid date/time filter; use YYYY-MM-DD or an ISO-8601 datetime"),
         )
-
 
     if from_value is not None and to_value is not None:
         start = datetime.fromisoformat(from_value)
@@ -251,8 +223,6 @@ def _time_window_from_request(
     return from_value, to_value, to_operator
 
 
-
-
 def parse_bbox(value: str) -> tuple[float, float, float, float] | None:
     if not value:
         return None
@@ -262,7 +232,6 @@ def parse_bbox(value: str) -> tuple[float, float, float, float] | None:
         raise ValueError("bbox must contain four numbers") from exc
     if len(parts) != 4:
         raise ValueError("bbox must contain west,south,east,north")
-
 
     west, south, east, north = parts
     if not all(math.isfinite(part) for part in parts):
@@ -276,8 +245,6 @@ def parse_bbox(value: str) -> tuple[float, float, float, float] | None:
     return west, south, east, north
 
 
-
-
 def parse_within(value: str) -> tuple[float, float, float] | None:
     if not value:
         return None
@@ -287,7 +254,6 @@ def parse_within(value: str) -> tuple[float, float, float] | None:
         raise ValueError("within must contain three numbers") from exc
     if len(parts) != 3:
         raise ValueError("within must contain lat,lon,radius_km")
-
 
     lat, lon, radius_km = parts
     if not all(math.isfinite(part) for part in parts):
@@ -299,18 +265,12 @@ def parse_within(value: str) -> tuple[float, float, float] | None:
     return lat, lon, radius_km
 
 
-
-
 def approx_deg_for_km_lat(km: float) -> float:
     return km / 111.32
 
 
-
-
 def approx_deg_for_km_lon(km: float, at_lat: float) -> float:
     return km / (111.32 * max(0.1, math.cos(math.radians(at_lat))))
-
-
 
 
 def _is_blank(value: Any) -> bool:
@@ -324,8 +284,6 @@ def _is_blank(value: Any) -> bool:
         return False
 
 
-
-
 def _dataframe_records(df: pd.DataFrame) -> list[dict[str, Any]]:
     if df.empty:
         return []
@@ -333,13 +291,9 @@ def _dataframe_records(df: pd.DataFrame) -> list[dict[str, Any]]:
     return cleaned.to_dict(orient="records")
 
 
-
-
 # -----------------------------------------------------------------------------
 # Legacy SQLite access
 # -----------------------------------------------------------------------------
-
-
 
 
 def get_db_path() -> str:
@@ -350,12 +304,8 @@ def get_db_path() -> str:
     )
 
 
-
-
 def quote_ident(name: str) -> str:
     return '"' + str(name).replace('"', '""') + '"'
-
-
 
 
 def get_sample_table(conn: sqlite3.Connection) -> str:
@@ -363,14 +313,11 @@ def get_sample_table(conn: sqlite3.Connection) -> str:
     if explicit:
         return str(explicit)
 
-
     tables = [row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")]
-
 
     for candidate in ("samples", "sample", "data", "records"):
         if candidate in tables:
             return candidate
-
 
     for table in tables:
         try:
@@ -383,12 +330,9 @@ def get_sample_table(conn: sqlite3.Connection) -> str:
         except sqlite3.Error:
             continue
 
-
     if tables:
         return tables[0]
     raise RuntimeError("No tables found in SQLite database")
-
-
 
 
 def get_conn() -> sqlite3.Connection:
@@ -407,8 +351,6 @@ def get_conn() -> sqlite3.Connection:
     return g.sqlite_conn
 
 
-
-
 @data_api.teardown_app_request
 def _close_conn(_exc):
     conn = g.pop("sqlite_conn", None)
@@ -416,19 +358,13 @@ def _close_conn(_exc):
         conn.close()
 
 
-
-
 # -----------------------------------------------------------------------------
 # OIDC and API authentication
 # -----------------------------------------------------------------------------
 
 
-
-
 _OIDC_CACHE: dict[tuple[str, str, str], dict[str, Any]] = {}
 _OIDC_CACHE_LOCK = threading.Lock()
-
-
 
 
 def oidc_cfg(*, force_refresh: bool = False) -> dict[str, Any]:
@@ -443,10 +379,8 @@ def oidc_cfg(*, force_refresh: bool = False) -> dict[str, Any]:
         current_app.config.get("OIDC_CLIENT_ID") or os.environ.get("OIDC_CLIENT_ID") or ""
     ).strip()
 
-
     if not issuer_url:
         return {"enabled": False}
-
 
     cache_key = (issuer_url, audience, client_id)
     now = time.time()
@@ -455,22 +389,18 @@ def oidc_cfg(*, force_refresh: bool = False) -> dict[str, Any]:
         if not force_refresh and cached and cached["expires_at"] > now:
             return cached
 
-
     well_url = issuer_url.rstrip("/") + "/.well-known/openid-configuration"
     well_response = requests.get(well_url, timeout=5)
     well_response.raise_for_status()
     well = well_response.json()
 
-
     jwks_uri = str(well.get("jwks_uri") or "").strip()
     if not jwks_uri:
         raise RuntimeError("OIDC discovery document has no jwks_uri")
 
-
     jwks_response = requests.get(jwks_uri, timeout=5)
     jwks_response.raise_for_status()
     jwks = jwks_response.json()
-
 
     cfg = {
         "enabled": True,
@@ -485,8 +415,6 @@ def oidc_cfg(*, force_refresh: bool = False) -> dict[str, Any]:
     return cfg
 
 
-
-
 def verify_bearer() -> dict[str, Any] | None:
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
@@ -495,25 +423,21 @@ def verify_bearer() -> dict[str, Any] | None:
     if not token:
         return None
 
-
     try:
         cfg = oidc_cfg()
         if not cfg.get("enabled"):
             return None
-
 
         header = jwt.get_unverified_header(token)
         algorithm = str(header.get("alg") or "")
         if algorithm not in {"RS256", "PS256", "ES256"}:
             return None
 
-
         kid = header.get("kid")
         jwk_data = next(
             (item for item in cfg.get("jwks", {}).get("keys", []) if item.get("kid") == kid),
             None,
         )
-
 
         if jwk_data is None:
             cfg = oidc_cfg(force_refresh=True)
@@ -523,7 +447,6 @@ def verify_bearer() -> dict[str, Any] | None:
             )
         if jwk_data is None:
             return None
-
 
         key = jwt.PyJWK.from_dict(jwk_data).key
         audience = cfg.get("aud")
@@ -539,7 +462,6 @@ def verify_bearer() -> dict[str, Any] | None:
             },
         )
 
-
         client_id = cfg.get("client_id")
         if client_id:
             aud_claim = claims.get("aud")
@@ -549,9 +471,7 @@ def verify_bearer() -> dict[str, Any] | None:
             if claims.get("azp") != client_id and client_id not in audiences:
                 return None
 
-
         return claims
-
 
     except requests.RequestException as exc:
         current_app.logger.warning("OIDC metadata/JWKS request failed: %s", exc)
@@ -561,12 +481,9 @@ def verify_bearer() -> dict[str, Any] | None:
         return None
 
 
-
-
 def require_api_auth() -> dict[str, Any] | None:
     """Require API key, Keycloak bearer token, or logged-in web session."""
     required_key = (current_app.config.get("API_KEY") or os.environ.get("API_KEY") or "").strip()
-
 
     if required_key:
         authz = request.headers.get("Authorization", "")
@@ -582,22 +499,18 @@ def require_api_auth() -> dict[str, Any] | None:
             g.api_auth_method = "api_key"
             return None
 
-
     claims = verify_bearer()
     if claims:
         g.api_auth_method = "bearer"
         g.api_claims = claims
         return claims
 
-
     if session.get("user") or (session.get("kc") or {}).get("profile"):
         g.api_auth_method = "session"
         return None
 
-
     try:
         from flask_login import current_user
-
 
         if getattr(current_user, "is_authenticated", False):
             g.api_auth_method = "session"
@@ -605,27 +518,20 @@ def require_api_auth() -> dict[str, Any] | None:
     except Exception:
         pass
 
-
     response = jsonify({"ok": False, "error": "Missing or invalid credentials"})
     response.status_code = 401
     response.headers["WWW-Authenticate"] = "Bearer"
     abort(response)
 
 
-
-
 def _canonical_public_enabled() -> bool:
     return _env_bool("CANONICAL_PUBLIC", False)
-
-
 
 
 def _require_canonical_access(*, public_allowed: bool = False) -> None:
     if public_allowed and _canonical_public_enabled():
         return
     require_api_auth()
-
-
 
 
 def _require_canonical_map_access() -> None:
@@ -653,13 +559,9 @@ def _current_uploader_id() -> str:
     )
 
 
-
-
 # -----------------------------------------------------------------------------
 # Response helpers
 # -----------------------------------------------------------------------------
-
-
 
 
 def to_geojson(rows: Iterable[Mapping[str, Any]], lon_col: str, lat_col: str) -> Response:
@@ -684,8 +586,6 @@ def to_geojson(rows: Iterable[Mapping[str, Any]], lon_col: str, lat_col: str) ->
     return jsonify({"type": "FeatureCollection", "features": features})
 
 
-
-
 def stream_csv(
     rows_iter: Iterable[Mapping[str, Any]],
     fields: list[str],
@@ -705,20 +605,16 @@ def stream_csv(
         output.seek(0)
         output.truncate(0)
 
-
         for row in rows_iter:
             writer.writerow(dict(row))
             yield output.getvalue()
             output.seek(0)
             output.truncate(0)
 
-
     headers = {}
     if filename:
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     return Response(generate(), mimetype="text/csv", headers=headers)
-
-
 
 
 def _zip_response(data: bytes, filename: str) -> Response:
@@ -729,13 +625,9 @@ def _zip_response(data: bytes, filename: str) -> Response:
     )
 
 
-
-
 # -----------------------------------------------------------------------------
 # Legacy field policy
 # -----------------------------------------------------------------------------
-
-
 
 
 PII_FIELDS = {
@@ -749,12 +641,16 @@ PII_FIELDS = {
 EXCLUDED_SUFFIXES = ("_state",)
 # Never expose alternate original-coordinate columns through the legacy API.
 PRIVATE_COORD_FIELDS = {
-    "gps_lat_orig", "gps_long_orig", "lat_orig", "lon_orig",
-    "gps_lat_original", "gps_long_original", "lat_original", "lon_original",
+    "gps_lat_orig",
+    "gps_long_orig",
+    "lat_orig",
+    "lon_orig",
+    "gps_lat_original",
+    "gps_long_original",
+    "lat_original",
+    "lon_original",
 }
 OXIDE_TOKEN_RE = re.compile(r"[A-Z][a-z]?\d*")
-
-
 
 
 def _looks_like_oxide(label: str) -> bool:
@@ -763,8 +659,6 @@ def _looks_like_oxide(label: str) -> bool:
     text = re.sub(r"\(.*?\)", "", str(label))
     tokens = OXIDE_TOKEN_RE.findall(text)
     return len(tokens) >= 2 and any(token.startswith("O") for token in tokens)
-
-
 
 
 def _is_oxide_field(name: str) -> bool:
@@ -776,8 +670,6 @@ def _is_oxide_field(name: str) -> bool:
     return _looks_like_oxide(last)
 
 
-
-
 def is_excluded_field(name: str) -> bool:
     normalized = str(name).casefold()
     return (
@@ -786,8 +678,6 @@ def is_excluded_field(name: str) -> bool:
         or any(normalized.endswith(suffix) for suffix in EXCLUDED_SUFFIXES)
         or _is_oxide_field(str(name))
     )
-
-
 
 
 DEFAULT_FIELDS = [
@@ -803,13 +693,9 @@ DEFAULT_FIELDS = [
 ]
 
 
-
-
 # -----------------------------------------------------------------------------
 # Canonical filtering helpers
 # -----------------------------------------------------------------------------
-
-
 
 
 def _canonical_where_from_request(
@@ -819,7 +705,6 @@ def _canonical_where_from_request(
     where: list[str] = []
     params: list[Any] = []
 
-
     from_value, to_value, to_operator = _time_window_from_request()
     if from_value:
         where.append(f"{prefix}timestamp_utc >= %s")
@@ -828,17 +713,14 @@ def _canonical_where_from_request(
         where.append(f"{prefix}timestamp_utc {to_operator} %s")
         params.append(to_value)
 
-
     raw_country = (request.args.get("country") or request.args.get("country_code") or "").strip()
     country = raw_country.upper() if raw_country else None
     if country:
         where.append(f"{prefix}country_code = %s")
         params.append(country)
 
-
     raw_bbox = (request.args.get("bbox") or "").strip()
     raw_within = (request.args.get("within") or "").strip()
-
 
     try:
         bbox = parse_bbox(raw_bbox)
@@ -846,12 +728,10 @@ def _canonical_where_from_request(
     except ValueError as exc:
         abort(400, description=str(exc))
 
-
     if bbox:
         west, south, east, north = bbox
         where.append(f"({prefix}lon BETWEEN %s AND %s AND {prefix}lat BETWEEN %s AND %s)")
         params.extend([west, east, south, north])
-
 
     if within:
         lat0, lon0, radius_km = within
@@ -859,7 +739,6 @@ def _canonical_where_from_request(
         dlon = approx_deg_for_km_lon(radius_km, lat0)
         where.append(f"({prefix}lat BETWEEN %s AND %s AND {prefix}lon BETWEEN %s AND %s)")
         params.extend([lat0 - dlat, lat0 + dlat, lon0 - dlon, lon0 + dlon])
-
 
     return (
         "WHERE " + " AND ".join(where) if where else "",
@@ -874,15 +753,12 @@ def _canonical_where_from_request(
     )
 
 
-
-
 def _canonical_matching_sample_ids(
     where_sql: str,
     params: list[Any],
 ) -> list[str] | None:
     if not where_sql.strip():
         return None
-
 
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
@@ -897,8 +773,6 @@ def _canonical_matching_sample_ids(
         return [str(row["sample_id"]).strip() for row in cur.fetchall() if row.get("sample_id")]
 
 
-
-
 def _sample_ids_for_resource_filters(
     *,
     sample_id: str | None,
@@ -909,7 +783,6 @@ def _sample_ids_for_resource_filters(
     if not sample_id and not country:
         return None
 
-
     where: list[str] = []
     params: list[Any] = []
     if sample_id:
@@ -919,15 +792,12 @@ def _sample_ids_for_resource_filters(
         where.append("country_code = %s")
         params.append(country)
 
-
     with get_pg_conn() as conn, conn.cursor() as cur:
         cur.execute(
             "SELECT sample_id FROM samples WHERE " + " AND ".join(where),
             params,
         )
         return [str(row[0]).strip() for row in cur.fetchall() if row and row[0]]
-
-
 
 
 def _add_analytics(api_name: str, **extra: Any) -> None:
@@ -937,20 +807,14 @@ def _add_analytics(api_name: str, **extra: Any) -> None:
     }
 
 
-
-
 # -----------------------------------------------------------------------------
 # Basic and legacy endpoints
 # -----------------------------------------------------------------------------
 
 
-
-
 @data_api.get("/ping")
 def ping():
     return jsonify({"ok": True})
-
-
 
 
 @data_api.get("/samples")
@@ -960,7 +824,6 @@ def samples():
     fmt = _parse_format("json", "csv", "geojson")
     limit, offset = _canonical_pagination(fmt)
 
-
     from_value, to_value, to_operator = _time_window_from_request()
     try:
         bbox = parse_bbox((request.args.get("bbox") or "").strip())
@@ -968,13 +831,11 @@ def samples():
     except ValueError as exc:
         abort(400, description=str(exc))
 
-
     conn = get_conn()
     table = get_sample_table(conn)
     columns = {
         row[1] for row in conn.execute(f"PRAGMA table_info({quote_ident(table)})").fetchall()
     }
-
 
     raw_fields = request.args.get("fields", "")
     requested = (
@@ -984,7 +845,6 @@ def samples():
     )
     if requested == ["*"]:
         requested = sorted(column for column in columns if not is_excluded_field(column))
-
 
     fields = [field for field in requested if field in columns and not is_excluded_field(field)]
     if not fields:
@@ -998,7 +858,8 @@ def samples():
     # names for legacy clients, but serve the deterministic jittered lat/lon.
     coordinate_fields = {"GPS_lat", "GPS_long", "lat", "lon"}
     if (set(fields) & coordinate_fields or fmt == "geojson" or bbox or within) and not {
-        "lat", "lon"
+        "lat",
+        "lon",
     }.issubset(columns):
         abort(503, description="Public jittered coordinates are unavailable")
     if fmt == "geojson":
@@ -1008,9 +869,9 @@ def samples():
 
     def _public_legacy_projection(field: str) -> str:
         if field == "GPS_lat":
-            return f'{quote_ident("lat")} AS {quote_ident("GPS_lat")}'
+            return f"{quote_ident('lat')} AS {quote_ident('GPS_lat')}"
         if field == "GPS_long":
-            return f'{quote_ident("lon")} AS {quote_ident("GPS_long")}'
+            return f"{quote_ident('lon')} AS {quote_ident('GPS_long')}"
         return quote_ident(field)
 
     order = (request.args.get("order") or "collectedAt").strip()
@@ -1023,7 +884,6 @@ def samples():
     direction = (request.args.get("dir") or "desc").strip().lower()
     if direction not in {"asc", "desc"}:
         abort(400, description="dir must be asc or desc")
-
 
     where: list[str] = []
     params: list[Any] = []
@@ -1044,7 +904,6 @@ def samples():
         where.append('("lat" BETWEEN ? AND ? AND "lon" BETWEEN ? AND ?)')
         params.extend([lat0 - dlat, lat0 + dlat, lon0 - dlon, lon0 + dlon])
 
-
     where_sql = "WHERE " + " AND ".join(where) if where else ""
     selected = ", ".join(_public_legacy_projection(field) for field in fields)
     sql = f"""
@@ -1062,7 +921,6 @@ def samples():
         f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}",
         params,
     ).fetchone()[0]
-
 
     _add_analytics("legacy_samples", format=fmt)
     if fmt == "csv":
@@ -1084,17 +942,13 @@ def samples():
     )
 
 
-
-
 @data_api.get("/samples/count")
 def samples_count():
     require_api_auth()
     conn = get_conn()
     table = get_sample_table(conn)
     from_value, to_value, to_operator = _time_window_from_request()
-    available_columns = {
-        row[1] for row in conn.execute(f"PRAGMA table_info({quote_ident(table)})")
-    }
+    available_columns = {row[1] for row in conn.execute(f"PRAGMA table_info({quote_ident(table)})")}
     if (from_value or to_value) and "collectedAt" not in available_columns:
         abort(400, description="Legacy sample table has no collectedAt column")
 
@@ -1107,7 +961,6 @@ def samples_count():
         where.append(f"{quote_ident('collectedAt')} {to_operator} ?")
         params.append(to_value)
 
-
     where_sql = "WHERE " + " AND ".join(where) if where else ""
     count = conn.execute(
         f"SELECT COUNT(*) FROM {quote_ident(table)} {where_sql}",
@@ -1117,13 +970,9 @@ def samples_count():
     return jsonify({"count": count})
 
 
-
-
 # -----------------------------------------------------------------------------
 # Laboratory enrichment API
 # -----------------------------------------------------------------------------
-
-
 
 
 OXIDE_TO_METAL: dict[str, tuple[str, float]] = {
@@ -1140,8 +989,6 @@ OXIDE_TO_METAL: dict[str, tuple[str, float]] = {
 }
 
 
-
-
 def _oxide_to_metal(param: str, value: Any) -> tuple[str, float] | None:
     if _is_blank(value):
         return None
@@ -1156,8 +1003,6 @@ def _oxide_to_metal(param: str, value: Any) -> tuple[str, float] | None:
     return metal, numeric_value * factor
 
 
-
-
 def _normalize_qr(raw: Any) -> str:
     if _is_blank(raw):
         return ""
@@ -1169,8 +1014,6 @@ def _normalize_qr(raw: Any) -> str:
     return value.upper()
 
 
-
-
 def _csv_rows_from_bytes(data: bytes, *, delimiter: str | None = None) -> list[dict[str, Any]]:
     text = data.decode("utf-8-sig")
     if delimiter is None:
@@ -1180,22 +1023,19 @@ def _csv_rows_from_bytes(data: bytes, *, delimiter: str | None = None) -> list[d
             dialect = csv.get_dialect("excel")
     else:
 
-
         class ExplicitDialect(csv.excel):
             pass
-
 
         ExplicitDialect.delimiter = delimiter
         dialect = ExplicitDialect
     return list(csv.DictReader(io.StringIO(text), dialect=dialect))
 
 
-
-
 def _parse_lab_upload_rows() -> tuple[list[dict[str, Any]], str | None]:
-    max_bytes = int(current_app.config.get("LAB_UPLOAD_MAX_BYTES") or os.getenv(
-        "LAB_UPLOAD_MAX_BYTES", str(20 * 1024 * 1024)
-    ))
+    max_bytes = int(
+        current_app.config.get("LAB_UPLOAD_MAX_BYTES")
+        or os.getenv("LAB_UPLOAD_MAX_BYTES", str(20 * 1024 * 1024))
+    )
     if request.content_length is not None and request.content_length > max_bytes:
         abort(413, description="Lab upload exceeds the configured size limit")
 
@@ -1210,7 +1050,6 @@ def _parse_lab_upload_rows() -> tuple[list[dict[str, Any]], str | None]:
         if not data:
             abort(400, description=f"{filename}: uploaded file is empty")
 
-
         suffix = os.path.splitext(filename)[1].lower()
         try:
             if suffix == ".xlsx":
@@ -1223,9 +1062,7 @@ def _parse_lab_upload_rows() -> tuple[list[dict[str, Any]], str | None]:
         except (UnicodeDecodeError, csv.Error, ValueError) as exc:
             abort(400, description=f"Cannot parse {filename}: {exc}")
 
-
         abort(400, description="Expected an XLSX, CSV, TSV, or TXT file")
-
 
     content_type = (request.content_type or "").split(";", 1)[0].strip().lower()
     raw_data = request.get_data()
@@ -1241,7 +1078,6 @@ def _parse_lab_upload_rows() -> tuple[list[dict[str, Any]], str | None]:
         except (UnicodeDecodeError, csv.Error, ValueError) as exc:
             abort(400, description=f"Cannot parse tabular request body: {exc}")
 
-
     if content_type.startswith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
         if not raw_data:
             abort(400, description="Request body is empty")
@@ -1249,7 +1085,6 @@ def _parse_lab_upload_rows() -> tuple[list[dict[str, Any]], str | None]:
             return _dataframe_records(pd.read_excel(io.BytesIO(raw_data))), None
         except Exception as exc:
             abort(400, description=f"Cannot parse XLSX request body: {exc}")
-
 
     payload = request.get_json(silent=True)
     if payload is None:
@@ -1263,8 +1098,6 @@ def _parse_lab_upload_rows() -> tuple[list[dict[str, Any]], str | None]:
     return rows, None
 
 
-
-
 def _unit_for_parameter(row: Mapping[str, Any], key: str, ordered_keys: list[str]) -> str:
     direct_candidates = [f"{key}_unit", f"unit_{key}"]
     casefold_map = {str(column).casefold(): column for column in row}
@@ -1272,7 +1105,6 @@ def _unit_for_parameter(row: Mapping[str, Any], key: str, ordered_keys: list[str
         real_key = casefold_map.get(candidate.casefold())
         if real_key is not None and not _is_blank(row.get(real_key)):
             return str(row.get(real_key)).strip()
-
 
     try:
         position = ordered_keys.index(key)
@@ -1283,13 +1115,10 @@ def _unit_for_parameter(row: Mapping[str, Any], key: str, ordered_keys: list[str
         if str(next_key).casefold().startswith("unit") and not _is_blank(row.get(next_key)):
             return str(row.get(next_key)).strip()
 
-
     generic_unit = casefold_map.get("unit")
     if generic_unit is not None and not _is_blank(row.get(generic_unit)):
         return str(row.get(generic_unit)).strip()
     return ""
-
-
 
 
 def _upsert_lab_value(
@@ -1319,8 +1148,6 @@ def _upsert_lab_value(
     )
 
 
-
-
 @data_api.post("/lab-enrichment")
 def lab_enrichment_upload():
     """Upsert elementary-concentration rows without deleting unrelated data."""
@@ -1332,21 +1159,17 @@ def lab_enrichment_upload():
         abort(403, description="Lab uploads require an API key")
     rows, filename = _parse_lab_upload_rows()
 
-
     max_rows = int(current_app.config.get("LAB_UPLOAD_MAX_ROWS") or 50_000)
     if len(rows) > max_rows:
         abort(413, description=f"Upload contains more than {max_rows} rows")
-
 
     uploader_id = _current_uploader_id()
     inserted_values = 0
     processed_rows = 0
     skipped_rows = 0
 
-
     conn = get_conn()
     _ensure_lab_enrichment(conn)
-
 
     try:
         with conn:
@@ -1355,7 +1178,6 @@ def lab_enrichment_upload():
                 if not isinstance(raw_row, Mapping):
                     skipped_rows += 1
                     continue
-
 
                 qr = _normalize_qr(
                     raw_row.get("qr_code")
@@ -1369,11 +1191,9 @@ def lab_enrichment_upload():
                     skipped_rows += 1
                     continue
 
-
                 ordered_keys = [str(key) for key in raw_row.keys()]
                 raw_json = json.dumps(raw_row, ensure_ascii=False, default=str)
                 row_values = 0
-
 
                 for original_key, value in raw_row.items():
                     key = str(original_key).strip()
@@ -1393,7 +1213,6 @@ def lab_enrichment_upload():
                     if not key:
                         continue
 
-
                     unit = _unit_for_parameter(raw_row, key, ordered_keys)
                     _upsert_lab_value(
                         cursor,
@@ -1406,7 +1225,6 @@ def lab_enrichment_upload():
                     )
                     inserted_values += 1
                     row_values += 1
-
 
                     converted = _oxide_to_metal(key, value)
                     if converted is not None:
@@ -1423,17 +1241,14 @@ def lab_enrichment_upload():
                         inserted_values += 1
                         row_values += 1
 
-
                 if row_values:
                     processed_rows += 1
                 else:
                     skipped_rows += 1
 
-
     except sqlite3.Error:
         current_app.logger.exception("Lab-enrichment API import failed")
         abort(500, description="Laboratory import failed")
-
 
     g._analytics_extra = {
         "upload_type": "lab_enrichment_api",
@@ -1454,13 +1269,9 @@ def lab_enrichment_upload():
     )
 
 
-
-
 # -----------------------------------------------------------------------------
 # Canonical tabular endpoints
 # -----------------------------------------------------------------------------
-
-
 
 
 @data_api.get("/canonical/samples")
@@ -1485,7 +1296,6 @@ def canonical_samples():
     if direction not in {"asc", "desc"}:
         abort(400, description="dir must be asc or desc")
 
-
     where_sql, params, filter_meta = _canonical_where_from_request()
     columns_sql = ", ".join(fields)
     stable_order_suffix = "" if order == "sample_id" else ", sample_id ASC"
@@ -1505,7 +1315,6 @@ def canonical_samples():
         rows = cur.fetchall()
         cur.execute(f"SELECT COUNT(*) AS c FROM samples {where_sql}", params)
         total = cur.fetchone()["c"]
-
 
     _add_analytics("canonical_samples", format=fmt, **filter_meta)
     if fmt == "csv":
@@ -1527,8 +1336,6 @@ def canonical_samples():
     )
 
 
-
-
 @data_api.get("/canonical/samples/count")
 def canonical_samples_count():
     _require_canonical_access(public_allowed=True)
@@ -1540,15 +1347,12 @@ def canonical_samples_count():
     return jsonify({"count": count})
 
 
-
-
 @data_api.get("/canonical/sample_images")
 def canonical_sample_images():
     _require_canonical_access(public_allowed=True)
     fmt = _parse_format("json", "csv")
     limit, offset = _canonical_pagination(fmt)
     fields = _parse_fields((request.args.get("fields") or "").strip(), CANONICAL_IMAGE_COLS)
-
 
     where: list[str] = []
     params: list[Any] = []
@@ -1563,7 +1367,6 @@ def canonical_sample_images():
         where.append("country_code = %s")
         params.append(country)
 
-
     from_value, to_value, to_operator = _time_window_from_request()
     if from_value:
         where.append("timestamp_utc >= %s")
@@ -1571,7 +1374,6 @@ def canonical_sample_images():
     if to_value:
         where.append(f"timestamp_utc {to_operator} %s")
         params.append(to_value)
-
 
     where_sql = "WHERE " + " AND ".join(where) if where else ""
     columns_sql = ", ".join(fields)
@@ -1591,7 +1393,6 @@ def canonical_sample_images():
         cur.execute(f"SELECT COUNT(*) AS c FROM sample_images {where_sql}", params)
         total = cur.fetchone()["c"]
 
-
     _add_analytics("canonical_sample_images", format=fmt)
     if fmt == "csv":
         return stream_csv(rows, fields, filename="sample_images.csv")
@@ -1608,8 +1409,6 @@ def canonical_sample_images():
     )
 
 
-
-
 @data_api.get("/canonical/sample_parameters")
 def canonical_sample_parameters():
     _require_canonical_access(public_allowed=True)
@@ -1617,12 +1416,10 @@ def canonical_sample_parameters():
     limit, offset = _canonical_pagination(fmt)
     fields = _parse_fields((request.args.get("fields") or "").strip(), CANONICAL_PARAM_COLS)
 
-
     sample_id = request.args.get("sample_id")
     country = request.args.get("country") or request.args.get("country_code")
     sample_ids = _sample_ids_for_resource_filters(sample_id=sample_id, country=country)
     dataframe = get_parameters_df(sample_ids)
-
 
     parameter_code = (request.args.get("parameter_code") or "").strip()
     if parameter_code:
@@ -1631,12 +1428,10 @@ def canonical_sample_parameters():
             == parameter_code.casefold()
         ].copy()
 
-
     total = len(dataframe)
     if limit is not None:
         dataframe = dataframe.iloc[offset : offset + limit]
     rows = _dataframe_records(dataframe[fields])
-
 
     _add_analytics("canonical_sample_parameters", format=fmt)
     if fmt == "csv":
@@ -1658,15 +1453,12 @@ def canonical_sample_parameters():
     )
 
 
-
-
 @data_api.get("/canonical/sample_biodiversity")
 def canonical_sample_biodiversity():
     _require_canonical_access(public_allowed=True)
     fmt = _parse_format("json", "csv")
     limit, offset = _canonical_pagination(fmt)
     fields = _parse_fields((request.args.get("fields") or "").strip(), CANONICAL_BIODIV_COLS)
-
 
     if request.args.get("otu_id"):
         abort(
@@ -1676,7 +1468,6 @@ def canonical_sample_biodiversity():
                 "publishes compact taxonomic-abundance statistics"
             ),
         )
-
 
     field_sql = {
         "sample_id": "sta.sample_id",
@@ -1691,9 +1482,7 @@ def canonical_sample_biodiversity():
         "licence": "COALESCE(NULLIF(s.licence, ''), 'CC-BY-4.0')",
     }
 
-
     selected_sql = ", ".join(f"{field_sql[field]} AS {field}" for field in fields)
-
 
     where: list[str] = []
     params: list[Any] = []
@@ -1720,13 +1509,11 @@ def canonical_sample_biodiversity():
         where.append("s.country_code = %s")
         params.append(country)
 
-
     where_sql = "WHERE " + " AND ".join(where) if where else ""
     from_sql = """
         FROM sample_taxon_abundance AS sta
         INNER JOIN samples AS s ON s.sample_id = sta.sample_id
     """
-
 
     with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql = f"""
@@ -1745,7 +1532,6 @@ def canonical_sample_biodiversity():
         cur.execute(f"SELECT COUNT(*) AS c {from_sql} {where_sql}", params)
         total = cur.fetchone()["c"]
 
-
     _add_analytics("canonical_sample_biodiversity", format=fmt)
     if fmt == "csv":
         return stream_csv(rows, fields, filename="sample_biodiversity.csv")
@@ -1763,13 +1549,9 @@ def canonical_sample_biodiversity():
     )
 
 
-
-
 # -----------------------------------------------------------------------------
 # Canonical map endpoints
 # -----------------------------------------------------------------------------
-
-
 
 
 def _canonical_map_filters() -> tuple[str, list[Any], dict[str, Any]]:
@@ -1802,7 +1584,9 @@ def _canonical_map_filters() -> tuple[str, list[Any], dict[str, Any]]:
     except (ValueError, OverflowError):
         abort(400, description="Invalid date/time filter")
 
-    country = (request.args.get("country_code") or request.args.get("country") or "").strip().upper()
+    country = (
+        (request.args.get("country_code") or request.args.get("country") or "").strip().upper()
+    )
     if country:
         where.append("s.country_code = %s")
         params.append(country)
@@ -1854,24 +1638,29 @@ def _canonical_map_filters() -> tuple[str, list[Any], dict[str, Any]]:
         params.append(biogeo_region)
 
     include_wrong = (request.args.get("include_wrong") or "").strip().lower() in {
-        "1", "true", "yes", "on",
+        "1",
+        "true",
+        "yes",
+        "on",
     }
     if not include_wrong:
         where.append("(s.qa_status IS NULL OR s.qa_status NOT LIKE %s)")
         params.append("wrong_coordinates%")
 
-    metadata.update({
-        "country_code": country or None,
-        "from": time_from or None,
-        "to": time_to or None,
-        "ph_min": ph_min,
-        "ph_max": ph_max,
-        "biogeo_region": biogeo_region or None,
-        "sample_id": sample_id or None,
-        "bbox": request.args.get("bbox") or None,
-        "within": request.args.get("within") or None,
-        "include_wrong": include_wrong,
-    })
+    metadata.update(
+        {
+            "country_code": country or None,
+            "from": time_from or None,
+            "to": time_to or None,
+            "ph_min": ph_min,
+            "ph_max": ph_max,
+            "biogeo_region": biogeo_region or None,
+            "sample_id": sample_id or None,
+            "bbox": request.args.get("bbox") or None,
+            "within": request.args.get("within") or None,
+            "include_wrong": include_wrong,
+        }
+    )
     return ("WHERE " + " AND ".join(where) if where else ""), params, metadata
 
 
@@ -1882,8 +1671,6 @@ def _usable_metals_value(value: Any) -> str:
     if text.casefold() in {"", "0", "0.0", "0,0", "nan", "none", "null", "-", "—"}:
         return ""
     return text
-
-
 
 
 @data_api.get("/canonical/map.geojson")
@@ -1898,7 +1685,10 @@ def canonical_map_geojson():
     # sample_parameters for every pan/zoom request.  Existing clients that
     # omit compact=1 keep the original complete GeoJSON response.
     compact = (request.args.get("compact") or "").strip().lower() in {
-        "1", "true", "yes", "on",
+        "1",
+        "true",
+        "yes",
+        "on",
     }
     if compact:
         with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -1924,35 +1714,39 @@ def canonical_map_geojson():
             if not math.isfinite(lon) or not math.isfinite(lat):
                 continue
             sample_id = row["sample_id"]
-            features.append({
-                "type": "Feature",
-                "geometry": {"type": "Point", "coordinates": [lon, lat]},
-                "properties": {
-                    "sample_id": sample_id,
-                    "sampleId": sample_id,
-                    "QR_qrCode": sample_id,
-                    "ph": row.get("ph"),
-                    "country_code": row.get("country_code"),
-                    "timestamp_utc": row.get("timestamp_utc"),
-                    "qa_status": row.get("qa_status"),
-                    "__compact": True,
-                },
-            })
+            features.append(
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                    "properties": {
+                        "sample_id": sample_id,
+                        "sampleId": sample_id,
+                        "QR_qrCode": sample_id,
+                        "ph": row.get("ph"),
+                        "country_code": row.get("country_code"),
+                        "timestamp_utc": row.get("timestamp_utc"),
+                        "qa_status": row.get("qa_status"),
+                        "__compact": True,
+                    },
+                }
+            )
 
         # The map uses /canonical/map.count separately for global counts.
         # Do not run another COUNT(*) on every bbox/zoom request.
         _add_analytics("canonical_map_geojson", compact=True, **filter_meta)
-        return jsonify({
-            "type": "FeatureCollection",
-            "features": features,
-            "meta": {
-                "count": None,
-                "returned": len(features),
-                "limit": limit,
-                "offset": offset,
-                "compact": True,
-            },
-        })
+        return jsonify(
+            {
+                "type": "FeatureCollection",
+                "features": features,
+                "meta": {
+                    "count": None,
+                    "returned": len(features),
+                    "limit": limit,
+                    "offset": offset,
+                    "compact": True,
+                },
+            }
+        )
 
     fields = [field for field in CANONICAL_SAMPLE_COLS if field != "collected_by"]
     columns_sql = ", ".join(f"s.{field}" for field in fields)
@@ -1997,7 +1791,6 @@ def canonical_map_geojson():
         cur.execute(f"SELECT COUNT(*) AS c FROM samples AS s {where_sql}", params)
         total = cur.fetchone()["c"]
 
-
     features: list[dict[str, Any]] = []
     for row in rows:
         try:
@@ -2007,7 +1800,6 @@ def canonical_map_geojson():
             continue
         if not math.isfinite(lon) or not math.isfinite(lat):
             continue
-
 
         properties = dict(row)
         properties.update(
@@ -2041,7 +1833,6 @@ def canonical_map_geojson():
         qa_status = str(properties.get("qa_status") or "").strip().casefold()
         properties["wrong_coordinates"] = qa_status.startswith("wrong_coordinates")
 
-
         features.append(
             {
                 "type": "Feature",
@@ -2049,7 +1840,6 @@ def canonical_map_geojson():
                 "properties": properties,
             }
         )
-
 
     _add_analytics("canonical_map_geojson", **filter_meta)
     return jsonify(
@@ -2066,8 +1856,6 @@ def canonical_map_geojson():
     )
 
 
-
-
 @data_api.get("/canonical/map.count")
 def canonical_map_count():
     _require_canonical_map_access()
@@ -2080,13 +1868,9 @@ def canonical_map_count():
     return jsonify({"count": count, "filters": filter_meta})
 
 
-
-
 # -----------------------------------------------------------------------------
 # Canonical machine bundles and explicit snapshot creation
 # -----------------------------------------------------------------------------
-
-
 
 
 def build_canonical_all_zip_bytes(
@@ -2098,16 +1882,12 @@ def build_canonical_all_zip_bytes(
     return build_machine_bundle(sample_ids=sample_ids).zip_bytes
 
 
-
-
 def build_canonical_zenodo_bundle_zip_bytes(
     where_sql: str = "",
     params: list[Any] | None = None,
 ) -> bytes:
     """Deprecated compatibility alias for build_canonical_all_zip_bytes()."""
     return build_canonical_all_zip_bytes(where_sql, params)
-
-
 
 
 def _canonical_machine_bundle_response(
@@ -2128,8 +1908,6 @@ def _canonical_machine_bundle_response(
     return _zip_response(bundle.zip_bytes, download_name)
 
 
-
-
 @data_api.get("/canonical/zenodo_bundle.zip")
 def canonical_zenodo_bundle_zip():
     return _canonical_machine_bundle_response(
@@ -2137,8 +1915,6 @@ def canonical_zenodo_bundle_zip():
         dataset="canonical_zenodo_bundle",
         api_name="canonical_zenodo_bundle_zip",
     )
-
-
 
 
 @data_api.get("/canonical/all.zip")
@@ -2150,8 +1926,6 @@ def canonical_all_zip():
     )
 
 
-
-
 @data_api.get("/canonical/snapshot/all.zip")
 def canonical_snapshot_all_zip():
     """Create and persist an explicit unfiltered canonical machine snapshot."""
@@ -2159,7 +1933,6 @@ def canonical_snapshot_all_zip():
     bundle = build_machine_bundle(sample_ids=None)
     version_date = datetime.now(timezone.utc).date().isoformat()
     upload_canonical_zip(bundle.zip_bytes, version_date)
-
 
     g._analytics_extra = {
         "dataset": "canonical_all",
@@ -2169,22 +1942,17 @@ def canonical_snapshot_all_zip():
     return _zip_response(bundle.zip_bytes, f"canonical_{version_date}.zip")
 
 
-
-
 @data_api.get("/biodiversity/raw/all.zip")
 def biodiversity_raw_all_zip():
     require_api_auth()
 
-
     bundle = build_biodiversity_raw_bundle()
-
 
     g._analytics_extra = {
         "dataset": "biodiversity_raw",
         "api_name": "biodiversity_raw_all_zip",
         "resource_counts": bundle.row_counts,
     }
-
 
     return _zip_response(
         bundle.zip_bytes,

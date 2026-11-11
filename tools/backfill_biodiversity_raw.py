@@ -7,10 +7,11 @@ import json
 import re
 import sys
 import zipfile
+from collections.abc import Iterator
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from psycopg2.extras import Json, RealDictCursor, execute_values
 
@@ -29,7 +30,6 @@ from echorepo.services.storage.minio import (  # noqa: E402
     bucket_name,
     get_client,
 )
-
 
 SUPPORTED_SOURCE_SUFFIXES = {".csv", ".tsv", ".txt", ".xlsx"}
 FEATURE_BATCH_SIZE = 5_000
@@ -86,9 +86,7 @@ def clean_taxonomy_rank(value: Any, expected_prefix: str) -> str | None:
     if value is None:
         return None
     raw = str(value).strip()
-    if not raw or raw.lower() in {
-        "nan", "none", "null", "na", "n/a", "unassigned", "unknown"
-    }:
+    if not raw or raw.lower() in {"nan", "none", "null", "na", "n/a", "unassigned", "unknown"}:
         return None
 
     wanted = expected_prefix.lower() + "__"
@@ -207,8 +205,7 @@ def prepare_source(file_bytes: bytes, filename: str) -> PreparedSource:
         normalize_header(column_name): idx for idx, column_name in taxonomy_cols
     }
     legacy_taxonomy_layout = (
-        "taxonomy" in normalized_taxonomy_headers
-        and "a" in normalized_taxonomy_headers
+        "taxonomy" in normalized_taxonomy_headers and "a" in normalized_taxonomy_headers
     )
 
     if legacy_taxonomy_layout:
@@ -437,8 +434,7 @@ def extract_original_source(
         supported_members = [
             info
             for info in zf.infolist()
-            if not info.is_dir()
-            and Path(info.filename).suffix.lower() in SUPPORTED_SOURCE_SUFFIXES
+            if not info.is_dir() and Path(info.filename).suffix.lower() in SUPPORTED_SOURCE_SUFFIXES
         ]
         if not supported_members:
             raise ValueError("Archive contains no CSV/TSV/TXT/XLSX biodiversity source.")
@@ -463,8 +459,7 @@ def extract_original_source(
         if selected is None:
             available = ", ".join(info.filename for info in supported_members)
             raise ValueError(
-                "Could not unambiguously identify original source file. "
-                f"Candidates: {available}"
+                f"Could not unambiguously identify original source file. Candidates: {available}"
             )
 
         return Path(selected.filename).name, zf.read(selected), manifest
@@ -493,9 +488,7 @@ def verify_source_hash(
 
     for label, expected in expected_values:
         if expected != actual:
-            raise ValueError(
-                f"SHA-256 mismatch: {label}={expected}, actual={actual}"
-            )
+            raise ValueError(f"SHA-256 mismatch: {label}={expected}, actual={actual}")
     return actual
 
 
@@ -511,13 +504,9 @@ def _stats_from_prepared(
     feature_count: int,
     nonzero_value_count: int,
 ) -> ScanStats:
-    markers = tuple(
-        sorted({str(item["marker"]).strip().upper() for item in prepared.sample_cols})
-    )
+    markers = tuple(sorted({str(item["marker"]).strip().upper() for item in prepared.sample_cols}))
     return ScanStats(
-        sample_count=len(
-            {str(item["sample_id"]).strip().upper() for item in prepared.sample_cols}
-        ),
+        sample_count=len({str(item["sample_id"]).strip().upper() for item in prepared.sample_cols}),
         marker_count=len(markers),
         feature_count=feature_count,
         nonzero_value_count=nonzero_value_count,
@@ -650,9 +639,7 @@ def execute_backfill(*, upload_id: str, prepared: PreparedSource) -> ScanStats:
                     flush_features()
 
                 for sample_index, count in abundances:
-                    abundance_batch.append(
-                        (upload_id, feature_index, sample_index, count)
-                    )
+                    abundance_batch.append((upload_id, feature_index, sample_index, count))
                     nonzero_value_count += 1
                     if len(abundance_batch) >= ABUNDANCE_BATCH_SIZE:
                         flush_abundances()
@@ -728,10 +715,7 @@ def print_coverage(title: str) -> None:
     print(title)
     print("-" * len(title))
     for marker, (canonical, raw, missing) in global_coverage().items():
-        print(
-            f"{marker}: canonical={canonical}, "
-            f"structured_raw={raw}, missing_current={missing}"
-        )
+        print(f"{marker}: canonical={canonical}, structured_raw={raw}, missing_current={missing}")
 
 
 def main() -> int:
@@ -831,9 +815,7 @@ def main() -> int:
                 source_bytes=source_bytes,
                 manifest=manifest,
             )
-            print(
-                f"  extracted: {extracted_filename} ({len(source_bytes):,} bytes)"
-            )
+            print(f"  extracted: {extracted_filename} ({len(source_bytes):,} bytes)")
             print(f"  SHA-256:   OK ({source_sha[:16]}...)")
 
             prepared = prepare_source(source_bytes, extracted_filename)
@@ -845,14 +827,12 @@ def main() -> int:
             print(f"  parsed sample-marker pairs: {len(parsed_pairs)}")
             if missing_from_archive:
                 preview = ", ".join(
-                    f"{sample}/{marker}"
-                    for sample, marker in sorted(missing_from_archive)[:10]
+                    f"{sample}/{marker}" for sample, marker in sorted(missing_from_archive)[:10]
                 )
                 prepared.close_source()
                 raise ValueError(
                     "Current database pairs are absent from archived source: "
-                    f"{preview}"
-                    + (" ..." if len(missing_from_archive) > 10 else "")
+                    f"{preview}" + (" ..." if len(missing_from_archive) > 10 else "")
                 )
 
             if extra_in_archive:
@@ -872,18 +852,12 @@ def main() -> int:
 
             expected_features = upload.get("source_row_count")
             expected_nonzero = upload.get("nonzero_value_count")
-            if (
-                expected_features is not None
-                and int(expected_features) != stats.feature_count
-            ):
+            if expected_features is not None and int(expected_features) != stats.feature_count:
                 print(
                     "  WARNING: source_row_count differs: "
                     f"DB={expected_features}, parsed={stats.feature_count}"
                 )
-            if (
-                expected_nonzero is not None
-                and int(expected_nonzero) != stats.nonzero_value_count
-            ):
+            if expected_nonzero is not None and int(expected_nonzero) != stats.nonzero_value_count:
                 print(
                     "  WARNING: nonzero_value_count differs: "
                     f"DB={expected_nonzero}, parsed={stats.nonzero_value_count}"

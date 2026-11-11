@@ -3,6 +3,7 @@
 The web route validates permissions and the QA record before calling this function.
 Only an unambiguous matching QR is allowed; all workbook edits are serialized.
 """
+
 from __future__ import annotations
 
 import fcntl
@@ -45,7 +46,9 @@ def planned_workbook_path() -> Path:
 def _columns(ws):
     headers = {str(c.value).strip().casefold(): c.column for c in ws[1] if c.value is not None}
     if "qr code" not in headers or "country planned" not in headers:
-        raise PlannedCountryCorrectionError("Missing 'QR Code' or 'Country Planned' column in the first worksheet")
+        raise PlannedCountryCorrectionError(
+            "Missing 'QR Code' or 'Country Planned' column in the first worksheet"
+        )
     return headers["qr code"], headers["country planned"]
 
 
@@ -73,7 +76,9 @@ def read_planned_country_matches(path: Path, qrs: set[str]) -> dict[str, set[str
         book.close()
 
 
-def update_planned_country(path: Path, qr: str, actual_country: str, *, expected_planned: str) -> tuple[str, Path]:
+def update_planned_country(
+    path: Path, qr: str, actual_country: str, *, expected_planned: str
+) -> tuple[str, Path]:
     """Update exactly one QR, atomically, with backup and a file lock.
 
     expected_planned comes from the trusted QA CSV, not a user-supplied field.
@@ -124,7 +129,9 @@ def update_planned_country(path: Path, qr: str, actual_country: str, *, expected
             shutil.copy2(path, backup)
             tmp_path = None
             try:
-                fd, tmp_name = tempfile.mkstemp(prefix=".planned-country-", suffix=".xlsx", dir=path.parent)
+                fd, tmp_name = tempfile.mkstemp(
+                    prefix=".planned-country-", suffix=".xlsx", dir=path.parent
+                )
                 tmp_path = Path(tmp_name)
                 os.close(fd)
                 book.save(tmp_path)

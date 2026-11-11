@@ -17,6 +17,7 @@ Examples:
   python3 tools/delete_firestore_samples_by_qr.py --restore-from data/maintenance/qr_deletions/backup_....jsonl
   python3 tools/delete_firestore_samples_by_qr.py --restore-from ... --apply --confirm-project echosoil
 """
+
 from __future__ import annotations
 
 import argparse
@@ -58,6 +59,7 @@ def read_codes(path: Path, sheet: str | None = None):
     values = []
     if suffix in {".xlsx", ".xlsm"}:
         from openpyxl import load_workbook
+
         wb = load_workbook(path, read_only=True, data_only=True)
         try:
             if sheet:
@@ -78,7 +80,9 @@ def read_codes(path: Path, sheet: str | None = None):
                     col = 0
                     values.append((1, header[0]))
                 elif len(header) == 1:
-                    raise ValueError(f"Unrecognized QR header {header[0]!r}; use one of {QR_COLUMNS}")
+                    raise ValueError(
+                        f"Unrecognized QR header {header[0]!r}; use one of {QR_COLUMNS}"
+                    )
                 else:
                     raise ValueError(f"No QR column found: {header}")
             for i, row in enumerate(rows, start=2):
@@ -107,7 +111,9 @@ def read_codes(path: Path, sheet: str | None = None):
                         col = 0
                         values.append((1, header[0]))
                     else:
-                        raise ValueError(f"No QR column found; expected one of {QR_COLUMNS}; got {header}")
+                        raise ValueError(
+                            f"No QR column found; expected one of {QR_COLUMNS}; got {header}"
+                        )
                 for i, row in enumerate(reader, start=2):
                     values.append((i, row[col] if col < len(row) else None))
     else:
@@ -156,7 +162,13 @@ def sample_qrs(doc_data):
 
 def allowed_path(path):
     pieces = str(path).split("/")
-    return len(pieces) == 4 and pieces[0] == "users" and pieces[2] == "samples" and bool(pieces[1]) and bool(pieces[3])
+    return (
+        len(pieces) == 4
+        and pieces[0] == "users"
+        and pieces[2] == "samples"
+        and bool(pieces[1])
+        and bool(pieces[3])
+    )
 
 
 def secure_write(path: Path, records):
@@ -167,7 +179,9 @@ def secure_write(path: Path, records):
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
             for record in records:
-                f.write(json.dumps(record, ensure_ascii=False, allow_nan=False, sort_keys=True) + "\n")
+                f.write(
+                    json.dumps(record, ensure_ascii=False, allow_nan=False, sort_keys=True) + "\n"
+                )
             f.flush()
             os.fsync(f.fileno())
     except Exception:
@@ -184,6 +198,7 @@ def serialize_snapshot(snap):
     """
     from google.cloud.firestore_v1 import _helpers
     from google.cloud.firestore_v1.types import Document
+
     pb = _helpers.document_snapshot_to_protobuf(snap)
     if pb is None:
         raise ValueError(f"Document disappeared during backup: {snap.reference.path}")
@@ -194,6 +209,7 @@ def serialize_snapshot(snap):
 def deserialize_snapshot(blob, expected_sha, client):
     from google.cloud.firestore_v1 import _helpers
     from google.cloud.firestore_v1.types import Document
+
     raw = base64.b64decode(blob, validate=True)
     if hashlib.sha256(raw).hexdigest() != expected_sha:
         raise ValueError("Backup entry checksum mismatch")
@@ -203,8 +219,8 @@ def deserialize_snapshot(blob, expected_sha, client):
 
 def firebase_connection(service_account: str | None):
     import firebase_admin
-    from firebase_admin import credentials, firestore
     from dotenv import load_dotenv
+    from firebase_admin import credentials, firestore
 
     load_dotenv(ROOT / ".env")
     paths = []
@@ -214,9 +230,13 @@ def firebase_connection(service_account: str | None):
         paths.append(Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).expanduser())
     else:
         # Mirror pull_and_enrich_samples.py, with a fallback for host execution.
-        paths.extend([Path("/opt/echorepo/keys/firebase-sa.json"),
-                      ROOT / "opt/echorepo/keys/firebase-sa.json",
-                      ROOT / "../../../keys/firebase-sa.json"])
+        paths.extend(
+            [
+                Path("/opt/echorepo/keys/firebase-sa.json"),
+                ROOT / "opt/echorepo/keys/firebase-sa.json",
+                ROOT / "../../../keys/firebase-sa.json",
+            ]
+        )
     resolved_paths = []
     for candidate in paths:
         if candidate.is_absolute():
@@ -228,7 +248,9 @@ def firebase_connection(service_account: str | None):
             resolved_paths.append(ROOT / candidate)
     credential_path = next((p for p in resolved_paths if p.is_file()), None)
     if credential_path is None:
-        raise FileNotFoundError("Service account not found. Set GOOGLE_APPLICATION_CREDENTIALS in .env or pass --service-account")
+        raise FileNotFoundError(
+            "Service account not found. Set GOOGLE_APPLICATION_CREDENTIALS in .env or pass --service-account"
+        )
     sa = json.loads(credential_path.read_text(encoding="utf-8"))
     project_sa = str(sa.get("project_id") or "")
     project_env = str(os.getenv("FIREBASE_PROJECT_ID") or "")
@@ -242,7 +264,9 @@ def firebase_connection(service_account: str | None):
         if app.project_id != project:
             raise RuntimeError("Existing Firebase app belongs to a different project")
     except ValueError:
-        app = firebase_admin.initialize_app(credentials.Certificate(str(credential_path)), {"projectId": project})
+        app = firebase_admin.initialize_app(
+            credentials.Certificate(str(credential_path)), {"projectId": project}
+        )
     return firestore.client(app), project
 
 
@@ -265,7 +289,7 @@ def discover(db, codes, only_user=None):
                 hits[code].append(snap)
         if scanned % 1000 == 0:
             print(f"  scanned {scanned} documents...", flush=True)
-    print(f"Scanned {scanned} documents; found {sum(map(len,hits.values()))} matching documents")
+    print(f"Scanned {scanned} documents; found {sum(map(len, hits.values()))} matching documents")
     return hits, scanned
 
 
@@ -294,17 +318,24 @@ def prepare_records(project, codes, found):
             if not snap.exists:
                 raise RuntimeError(f"Document vanished while preparing plan: {path}")
             encoded, digest = serialize_snapshot(snap)
-            backup.append({
-                "schema_version": 1,
-                "firebase_project": project,
-                "qr": qr,
-                "document_path": path,
-                "scanned_update_time": str(snap.update_time),
-                "firestore_document_proto_b64": encoded,
-                "sha256": digest,
-            })
-            plan.append({"qr": qr, "status": "MULTIPLE_MATCHES" if len(matches) > 1 else "FOUND",
-                         "document_path": path})
+            backup.append(
+                {
+                    "schema_version": 1,
+                    "firebase_project": project,
+                    "qr": qr,
+                    "document_path": path,
+                    "scanned_update_time": str(snap.update_time),
+                    "firestore_document_proto_b64": encoded,
+                    "sha256": digest,
+                }
+            )
+            plan.append(
+                {
+                    "qr": qr,
+                    "status": "MULTIPLE_MATCHES" if len(matches) > 1 else "FOUND",
+                    "document_path": path,
+                }
+            )
     return backup, plan
 
 
@@ -321,7 +352,9 @@ def apply_deletions(db, codes, found, allow_duplicates=False):
             print(f"NOT FOUND {qr}")
             continue
         if len(snaps) > 1 and not allow_duplicates:
-            print(f"SKIP {qr}: {len(snaps)} matching documents; use --allow-duplicate-qrs after checking the plan")
+            print(
+                f"SKIP {qr}: {len(snaps)} matching documents; use --allow-duplicate-qrs after checking the plan"
+            )
             skipped += len(snaps)
             continue
         for scanned in snaps:
@@ -352,7 +385,9 @@ def apply_deletions(db, codes, found, allow_duplicates=False):
                 # A concurrent change/deletion was rejected by Firestore.
                 # No Firestore document was changed by this script.
                 changed += 1
-                print(f"  SKIP: Firestore rejected a changed/deleted document ({type(exc).__name__})")
+                print(
+                    f"  SKIP: Firestore rejected a changed/deleted document ({type(exc).__name__})"
+                )
             except Exception as exc:
                 failed += 1
                 print(f"  ERROR {path}: {type(exc).__name__}: {exc}", file=sys.stderr)
@@ -369,15 +404,19 @@ def restore_deletions(db, project, backup_path: Path, apply: bool):
                 entry = json.loads(line)
                 if entry.get("firebase_project") != project:
                     raise ValueError("Backup belongs to another Firebase project")
-                if entry.get("schema_version") != 1 or not allowed_path(entry.get("document_path", "")):
+                if entry.get("schema_version") != 1 or not allowed_path(
+                    entry.get("document_path", "")
+                ):
                     raise ValueError("Unrecognized backup record")
                 records.append(entry)
     if not records:
         print("Backup is empty")
         return 0
     # Verify ALL backups before any restore begins.
-    decoded = [(rec, deserialize_snapshot(rec["firestore_document_proto_b64"], rec["sha256"], db))
-               for rec in records]
+    decoded = [
+        (rec, deserialize_snapshot(rec["firestore_document_proto_b64"], rec["sha256"], db))
+        for rec in records
+    ]
     print(f"Restore candidates: {len(decoded)} documents; project={project}")
     for rec, data in decoded:
         path = rec["document_path"]
@@ -400,17 +439,33 @@ def restore_deletions(db, project, backup_path: Path, apply: bool):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     p.add_argument("input_file", type=Path, nargs="?", help="CSV/XLSX/TXT with QR codes")
     p.add_argument("--sheet", help="Excel sheet (default: first sheet except ignoreme)")
     p.add_argument("--user-id", help="Restrict to samples owned by one Firebase UID")
     p.add_argument("--service-account", help="Firebase service-account JSON (otherwise .env)")
-    p.add_argument("--apply", action="store_true", help="Actually delete documents; default is dry run")
+    p.add_argument(
+        "--apply", action="store_true", help="Actually delete documents; default is dry run"
+    )
     p.add_argument("--confirm-project", help="Must match project ID for --apply")
-    p.add_argument("--allow-duplicate-qrs", action="store_true", help="Allow deletion of ambiguous QRs, still one confirmation per document")
-    p.add_argument("--report-dir", type=Path, default=ROOT / "data/maintenance/qr_deletions",
-                   help="Directory for private full-document backup and plan")
-    p.add_argument("--restore-from", type=Path, help="Restore missing documents from a previous backup (dry run by default)")
+    p.add_argument(
+        "--allow-duplicate-qrs",
+        action="store_true",
+        help="Allow deletion of ambiguous QRs, still one confirmation per document",
+    )
+    p.add_argument(
+        "--report-dir",
+        type=Path,
+        default=ROOT / "data/maintenance/qr_deletions",
+        help="Directory for private full-document backup and plan",
+    )
+    p.add_argument(
+        "--restore-from",
+        type=Path,
+        help="Restore missing documents from a previous backup (dry run by default)",
+    )
     args = p.parse_args(argv)
     if bool(args.input_file) == bool(args.restore_from):
         p.error("Provide an input file OR --restore-from, not both")

@@ -30,9 +30,8 @@ import json
 import re
 import sys
 from collections import Counter
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
-
 
 SAMPLE_RE = re.compile(
     r"^[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}-(16S|ITS)$",
@@ -60,8 +59,6 @@ OUTPUT_TAXONOMY_COLUMNS = [
 ]
 
 
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -87,10 +84,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--marker",
         choices=("16S", "ITS"),
-        help=(
-            "Expected marker. If omitted, infer it from canonical ECHOREPO "
-            "sample column names."
-        ),
+        help=("Expected marker. If omitted, infer it from canonical ECHOREPO sample column names."),
     )
     parser.add_argument(
         "--max-output-mb",
@@ -200,11 +194,7 @@ def parse_taxonomy_annotation(annotation: str) -> dict[str, str]:
     # Pick the pipe-delimited chunk that looks like a taxonomic lineage.
     # Incomplete lower ranks are allowed; missing positions remain blank.
     # --------------------------------------------------------------
-    candidate_chunks = [
-        chunk.strip()
-        for chunk in annotation.split("|")
-        if chunk.count(";") >= 1
-    ]
+    candidate_chunks = [chunk.strip() for chunk in annotation.split("|") if chunk.count(";") >= 1]
 
     if not candidate_chunks:
         return result
@@ -215,10 +205,7 @@ def parse_taxonomy_annotation(annotation: str) -> dict[str, str]:
         key=lambda value: len(value.split(";")),
     )
 
-    ranks = [
-        clean_taxon_value(value)
-        for value in candidate.split(";")
-    ]
+    ranks = [clean_taxon_value(value) for value in candidate.split(";")]
 
     # A positional taxonomy should have at least Kingdom and Phylum.
     if len(ranks) < 2:
@@ -228,7 +215,6 @@ def parse_taxonomy_annotation(annotation: str) -> dict[str, str]:
         result[column] = value
 
     return result
-
 
 
 def load_taxonomy_file(
@@ -317,9 +303,7 @@ def find_table_header(
             header[0] = "OTU ID"
             return line_number, header
 
-    raise ValueError(
-        f"{path}: could not find a TSV header beginning with #OTU ID / OTU ID"
-    )
+    raise ValueError(f"{path}: could not find a TSV header beginning with #OTU ID / OTU ID")
 
 
 def canonical_sample_columns(
@@ -424,9 +408,7 @@ def _row_taxonomy(
         return taxonomy, False
 
     if fail_on_missing_taxonomy:
-        raise ValueError(
-            f"OTU {otu_id!r} has no entry in {taxonomy_path.name}"
-        )
+        raise ValueError(f"OTU {otu_id!r} has no entry in {taxonomy_path.name}")
 
     return (
         {column: "" for column in OUTPUT_TAXONOMY_COLUMNS},
@@ -475,11 +457,7 @@ def convert(
     )
 
     taxonomy_header_index = next(
-        (
-            index
-            for index, name in enumerate(header)
-            if name.strip().lower() == "taxonomy"
-        ),
+        (index for index, name in enumerate(header) if name.strip().lower() == "taxonomy"),
         None,
     )
 
@@ -542,9 +520,7 @@ def convert(
             input_otu_rows += 1
 
             expected_without_taxonomy = (
-                len(header) - 1
-                if taxonomy_header_index is not None
-                else len(header)
+                len(header) - 1 if taxonomy_header_index is not None else len(header)
             )
             valid_lengths = {expected_without_taxonomy}
             if taxonomy_header_index is not None:
@@ -558,9 +534,7 @@ def convert(
 
             otu_id = row[0].strip()
             if not otu_id:
-                raise ValueError(
-                    f"{table_path}: line {line_number} has an empty OTU ID"
-                )
+                raise ValueError(f"{table_path}: line {line_number} has an empty OTU ID")
 
             taxonomy, missing = _row_taxonomy(
                 otu_id,
@@ -622,9 +596,7 @@ def convert(
                 otu_id,
                 *[taxonomy[column] for column in OUTPUT_TAXONOMY_COLUMNS],
             ]
-            fixed_data_field_bytes += sum(
-                _csv_field_size(value) for value in fixed_values
-            )
+            fixed_data_field_bytes += sum(_csv_field_size(value) for value in fixed_values)
 
     if input_otu_rows == 0:
         raise ValueError(f"{table_path}: no OTU rows were found")
@@ -657,9 +629,7 @@ def convert(
 
         k = len(sample_positions)
         data_size = fixed_data_field_bytes
-        data_size += sum(
-            sample_field_bytes[pos] for pos in sample_positions
-        )
+        data_size += sum(sample_field_bytes[pos] for pos in sample_positions)
 
         # For every data row:
         #   fields-1 commas + one newline == number_of_fields bytes.
@@ -766,14 +736,8 @@ def convert(
                 for _path, handle, group in part_handles:
                     output_row = [
                         otu_id,
-                        *[
-                            all_sample_values[pos]
-                            for pos in group
-                        ],
-                        *[
-                            taxonomy[column]
-                            for column in OUTPUT_TAXONOMY_COLUMNS
-                        ],
+                        *[all_sample_values[pos] for pos in group],
+                        *[taxonomy[column] for column in OUTPUT_TAXONOMY_COLUMNS],
                     ]
                     handle.write(_csv_row_bytes(output_row))
 
@@ -791,8 +755,7 @@ def convert(
 
         if size_bytes > max_output_bytes:
             raise RuntimeError(
-                f"{path} is {size_bytes} bytes, above the requested "
-                f"{max_output_bytes}-byte limit"
+                f"{path} is {size_bytes} bytes, above the requested {max_output_bytes}-byte limit"
             )
 
         output_parts.append(
@@ -808,9 +771,7 @@ def convert(
             }
         )
 
-    taxonomy_not_in_table = len(
-        set(taxonomy_by_otu) - taxonomy_otus_used
-    )
+    taxonomy_not_in_table = len(set(taxonomy_by_otu) - taxonomy_otus_used)
 
     return {
         "table": str(table_path),
@@ -833,6 +794,7 @@ def convert(
         **taxonomy_stats,
     }
 
+
 def main() -> int:
     args = parse_args()
 
@@ -852,38 +814,14 @@ def main() -> int:
 
     print("Conversion complete.")
     print(f"  Marker:                    {report['marker']}")
-    print(
-        "  Canonical samples kept:    "
-        f"{report['canonical_sample_columns_kept']}"
-    )
-    print(
-        "  Input OTU rows:             "
-        f"{report['input_otu_rows']}"
-    )
-    print(
-        "  Removed total < threshold:  "
-        f"{report['excluded_below_min_total']}"
-    )
-    print(
-        "  Retained OTU rows:          "
-        f"{report['retained_otu_rows']}"
-    )
-    print(
-        "  OTUs missing taxonomy:     "
-        f"{report['table_otus_missing_taxonomy']}"
-    )
-    print(
-        "  Taxonomy-only OTUs:        "
-        f"{report['taxonomy_otus_not_present_in_table']}"
-    )
-    print(
-        "  Taxonomy rows with K+P:    "
-        f"{report['taxonomy_rows_with_kingdom_and_phylum']}"
-    )
-    print(
-        "  Taxonomy rows unparsed:    "
-        f"{report['taxonomy_rows_without_rank_information']}"
-    )
+    print(f"  Canonical samples kept:    {report['canonical_sample_columns_kept']}")
+    print(f"  Input OTU rows:             {report['input_otu_rows']}")
+    print(f"  Removed total < threshold:  {report['excluded_below_min_total']}")
+    print(f"  Retained OTU rows:          {report['retained_otu_rows']}")
+    print(f"  OTUs missing taxonomy:     {report['table_otus_missing_taxonomy']}")
+    print(f"  Taxonomy-only OTUs:        {report['taxonomy_otus_not_present_in_table']}")
+    print(f"  Taxonomy rows with K+P:    {report['taxonomy_rows_with_kingdom_and_phylum']}")
+    print(f"  Taxonomy rows unparsed:    {report['taxonomy_rows_without_rank_information']}")
 
     print("  OTU total-read distribution:")
     for label, count in report["abundance_total_distribution"].items():
@@ -891,15 +829,9 @@ def main() -> int:
 
     dropped = report["noncanonical_columns_dropped"]
     if dropped:
-        print(
-            "  Non-canonical columns dropped: "
-            + ", ".join(str(value) for value in dropped)
-        )
+        print("  Non-canonical columns dropped: " + ", ".join(str(value) for value in dropped))
 
-    print(
-        "  Output parts:               "
-        f"{len(report['output_parts'])}"
-    )
+    print(f"  Output parts:               {len(report['output_parts'])}")
     for part in report["output_parts"]:
         print(
             f"    {part['path']}  "

@@ -41,7 +41,6 @@ def main():
         texture_orig,
         structure_orig,
     ) in rows:
-
         texture_en = canonical_soil_value(
             texture_orig,
             "soil_texture",
@@ -53,14 +52,10 @@ def main():
         )
 
         if texture_orig and texture_en is None:
-            unknown_texture[
-                str(texture_orig)
-            ] += 1
+            unknown_texture[str(texture_orig)] += 1
 
         if structure_orig and structure_en is None:
-            unknown_structure[
-                str(structure_orig)
-            ] += 1
+            unknown_structure[str(structure_orig)] += 1
 
         updates.append(
             (
@@ -70,21 +65,15 @@ def main():
             )
         )
 
-    print(
-        f"Samples inspected: {len(updates)}"
-    )
+    print(f"Samples inspected: {len(updates)}")
 
     print("\nUnknown soil textures:")
     for value, count in unknown_texture.most_common():
-        print(
-            f"{count:6d}  {value}"
-        )
+        print(f"{count:6d}  {value}")
 
     print("\nUnknown soil structures:")
     for value, count in unknown_structure.most_common():
-        print(
-            f"{count:6d}  {value}"
-        )
+        print(f"{count:6d}  {value}")
 
 
 if __name__ == "__main__":

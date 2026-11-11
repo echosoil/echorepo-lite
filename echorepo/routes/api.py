@@ -54,15 +54,13 @@ def _add_coordinate_qa_columns(df):
     df["wrong_coordinates"] = df.apply(
         lambda row: (
             _truthy_flag(row.get("wrong_coordinates"))
-            or str(row.get("qa_status") or "")
-            .strip()
-            .lower()
-            .startswith("wrong_coordinates")
+            or str(row.get("qa_status") or "").strip().lower().startswith("wrong_coordinates")
         ),
         axis=1,
     )
 
     return df
+
 
 def _feature_sample_id(props):
     """
@@ -143,10 +141,9 @@ def _inject_pg_qa_status(gj):
             )
         else:
             existing_qa = str(props.get("qa_status") or "").strip().lower()
-            props["wrong_coordinates"] = (
-                _truthy_flag(props.get("wrong_coordinates"))
-                or existing_qa.startswith("wrong_coordinates")
-            )
+            props["wrong_coordinates"] = _truthy_flag(
+                props.get("wrong_coordinates")
+            ) or existing_qa.startswith("wrong_coordinates")
 
     return gj
 
@@ -173,7 +170,9 @@ def user_geojson_debug():
     user_key = session.get("user")
     df = query_user_df(user_key)
 
-    lat_col, lon_col = pick_lat_lon_cols(df.columns) if df is not None and not df.empty else (None, None)
+    lat_col, lon_col = (
+        pick_lat_lon_cols(df.columns) if df is not None and not df.empty else (None, None)
+    )
 
     info = {
         "session_user": user_key,
@@ -191,8 +190,7 @@ def user_geojson_debug():
             feats = sum(
                 1
                 for _, r in df.iterrows()
-                if r.get(lat_col) not in (None, "")
-                and r.get(lon_col) not in (None, "")
+                if r.get(lat_col) not in (None, "") and r.get(lon_col) not in (None, "")
             )
             info["feature_count_if_converted"] = feats
         except Exception:
@@ -220,7 +218,7 @@ def others_geojson():
             f["properties"].pop("userId", None)
 
     return jsonify(gj)
-    
+
 
 @api_bp.get("/download/sample_csv")
 @login_required
