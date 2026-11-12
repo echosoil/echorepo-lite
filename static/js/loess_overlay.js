@@ -34,6 +34,20 @@
     container.appendChild(row);
   }
 
+  // Next.js optimizer URLs are small thumbnails (often w=256). Use a larger
+  // optimized variant when opening the photo, without loading it in the popup.
+  // Non-LOESS and local mirror URLs are left unchanged.
+  function enlargedPhotoUrl(url) {
+    if (url.protocol === 'https:' &&
+        (url.hostname === 'www.loess-soil-map.eu' || url.hostname === 'loess-soil-map.eu') &&
+        url.pathname === '/_next/image' && url.searchParams.has('url')) {
+      const larger = new URL(url.href);
+      larger.searchParams.set('w', '1080');
+      return larger.href;
+    }
+    return url.href;
+  }
+
   // The remote URL is used only when a popup is opened. Do not inject data
   // into HTML: create DOM nodes and allow only credential-free HTTPS URLs.
   function addPhoto(container, rawUrl) {
@@ -53,11 +67,11 @@
     const figure = document.createElement('figure');
     figure.className = 'loess-popup-image';
     const link = document.createElement('a');
-    link.href = url.href;
+    link.href = enlargedPhotoUrl(url);
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.referrerPolicy = 'no-referrer';
-    link.title = 'Open LOESS photograph';
+    link.title = 'Open larger LOESS photograph';
     const img = document.createElement('img');
     img.src = url.href;
     img.alt = 'Photograph supplied with the LOESS soil observation';
@@ -67,8 +81,8 @@
     img.addEventListener('error', () => figure.remove(), { once: true });
     const caption = document.createElement('figcaption');
     caption.textContent = 'Photograph from LOESS · Click to enlarge';
-    link.appendChild(img);
-    figure.append(link, caption);
+    link.append(img, caption);
+    figure.appendChild(link);
     container.appendChild(figure);
   }
 
@@ -119,6 +133,7 @@
       .loess-popup-row { margin:0 0 7px;overflow-wrap:anywhere;white-space:pre-wrap; }
       .loess-popup-source { display:block;border-top:1px solid #ddd;padding-top:6px;color:#555; }
       .loess-popup-image { margin:8px 0; }
+      .loess-popup-image a { display:block; }
       .loess-popup-image img { display:block;max-width:100%;width:100%;height:auto;max-height:220px;object-fit:contain;border-radius:6px; }
       .loess-popup-image figcaption {font-size:11px;color:#555;margin-top:3px;}
       .loess-filter {background:#fff;padding:8px 10px;border-radius:8px;
