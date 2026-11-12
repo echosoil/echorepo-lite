@@ -354,6 +354,9 @@ def jupyter_auth():
         ).split(",")
         if value.strip()
     }
+    # Special value: allow all authenticated ECHOREPO users.
+    if allowed == {"all"}:
+        return "", 204
 
     # Fail closed.
     if not allowed or email not in allowed:
