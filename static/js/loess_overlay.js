@@ -34,6 +34,44 @@
     container.appendChild(row);
   }
 
+  // The remote URL is used only when a popup is opened. Do not inject data
+  // into HTML: create DOM nodes and allow only credential-free HTTPS URLs.
+  function addPhoto(container, rawUrl) {
+    if (typeof rawUrl !== 'string' || !rawUrl.trim()) return;
+    let url;
+    try {
+      url = new URL(rawUrl, window.location.origin);
+    } catch {
+      return;
+    }
+    // Remote photos must use HTTPS. A later, opt-in local mirror can use
+    // same-origin /static/geo/loess_photos/... URLs, even in HTTP dev setups.
+    const isLocalMirror = url.origin === window.location.origin &&
+      url.pathname.startsWith('/static/geo/loess_photos/');
+    if ((!isLocalMirror && url.protocol !== 'https:') || url.username || url.password) return;
+
+    const figure = document.createElement('figure');
+    figure.className = 'loess-popup-image';
+    const link = document.createElement('a');
+    link.href = url.href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.referrerPolicy = 'no-referrer';
+    link.title = 'Open LOESS photograph';
+    const img = document.createElement('img');
+    img.src = url.href;
+    img.alt = 'Photograph supplied with the LOESS soil observation';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.referrerPolicy = 'no-referrer';
+    img.addEventListener('error', () => figure.remove(), { once: true });
+    const caption = document.createElement('figcaption');
+    caption.textContent = 'Photograph from LOESS · Click to enlarge';
+    link.appendChild(img);
+    figure.append(link, caption);
+    container.appendChild(figure);
+  }
+
   function popupFor(props, category) {
     const el = document.createElement('div');
     el.className = 'loess-popup';
@@ -52,6 +90,7 @@
     addRow(el, 'Category (original)', props.category_original);
     addRow(el, 'Review status', props.status);
     addRow(el, 'LOESS observation ID', props.source_id);
+    addPhoto(el, props.image_url);
     const foot = document.createElement('small');
     foot.className = 'loess-popup-source';
     foot.textContent = 'Citizen-reported soil condition · Source: ';
@@ -79,6 +118,9 @@
       .loess-popup-heading { font-weight:700;border-left:5px solid;padding-left:8px;margin:0 0 8px; }
       .loess-popup-row { margin:0 0 7px;overflow-wrap:anywhere;white-space:pre-wrap; }
       .loess-popup-source { display:block;border-top:1px solid #ddd;padding-top:6px;color:#555; }
+      .loess-popup-image { margin:8px 0; }
+      .loess-popup-image img { display:block;max-width:100%;width:100%;height:auto;max-height:220px;object-fit:contain;border-radius:6px; }
+      .loess-popup-image figcaption {font-size:11px;color:#555;margin-top:3px;}
       .loess-filter {background:#fff;padding:8px 10px;border-radius:8px;
         box-shadow:0 1px 5px #0004;max-height:260px;overflow:auto;
         font-size:12px;max-width:205px;}
