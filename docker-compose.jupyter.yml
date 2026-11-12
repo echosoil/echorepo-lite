@@ -41,6 +41,8 @@ services:
       - --ServerApp.trust_xheaders=True
       - --ServerApp.allow_remote_access=True
       - --custom-css
-
+      - --IdentityProvider.token=
+      - --PasswordIdentityProvider.hashed_password=
+      
     networks:
       - default
