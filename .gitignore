@@ -130,3 +130,7 @@ notebooks/**/.ipynb_checkpoints/
 # Generated exports
 notebooks/exports/*
 !notebooks/exports/.gitkeep
+notebooks/analyses/*
+!notebooks/analyses/.gitkeep
+notebooks/templates/*
+!notebooks/templates/.gitkeep
