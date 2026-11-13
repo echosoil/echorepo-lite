@@ -1,4 +1,5 @@
 import os
+import re
 from urllib.parse import urlsplit
 
 import requests
@@ -363,3 +364,26 @@ def jupyter_auth():
         return "", 403
 
     return "", 204
+
+
+@auth_bp.get("/internal/jupyterhub-auth")
+def jupyterhub_auth():
+    """Nginx auth_request endpoint for JupyterHub trusted-header login.
+
+    Return a verified Keycloak subject only AFTER the existing ECHOREPO
+    authorization check. Never accept identity headers from the client.
+    """
+    _, status = jupyter_auth()
+    if status != 204:
+        return "", status
+
+    kc = session.get("kc") or {}
+    profile = kc.get("profile") or {}
+    subject = str(profile.get("sub") or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", subject):
+        return "", 403
+
+    return "", 204, {
+        "X-ECHOREPO-User": subject,
+        "Cache-Control": "no-store",
+    }

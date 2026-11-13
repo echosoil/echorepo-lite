@@ -1,0 +1,41 @@
+name: Research JupyterHub checks
+
+on:
+  pull_request:
+    paths:
+      - "docker-compose.jupyterhub.yml"
+      - "jupyterhub/**"
+      - "echorepo/auth/routes.py"
+      - "tests/test_jupyterhub_auth.py"
+      - ".env.example"
+      - ".github/workflows/research-jupyterhub.yml"
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python syntax
+        run: |
+          python -m compileall -q jupyterhub echorepo/auth/routes.py tests/test_jupyterhub_auth.py
+      - name: Validate Compose model without production secrets
+        env:
+          LOCAL_IP: "127.0.0.1"
+          ECHOREPO_LIBRARY_HOST_DIR: "/tmp/echorepo-notebook-library"
+          COMPOSE_PROJECT_NAME: echorepo_prod
+        run: |
+          touch .env
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+            -f docker-compose.jupyterhub.yml config --quiet
+      - name: Check temporary-workspace policy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("jupyterhub/jupyterhub_config.py").read_text()
+          assert "c.DockerSpawner.remove = True" in text
+          assert "c.DockerSpawner.read_only_volumes" in text
+          assert "c.JupyterHub.active_server_limit" in text
+          assert "c.DockerSpawner.volumes" not in text
+          assert "c.DockerSpawner.use_internal_ip = True" in text
+          print("JupyterHub temporary-workspace invariants verified")
+          PY
