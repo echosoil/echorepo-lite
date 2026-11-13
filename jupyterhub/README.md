@@ -57,11 +57,18 @@ and is readable by the single-user container's UID. The `LOCAL_IP` in
 
 ## Stage and build without touching the current service
 
+**Do not switch branches in the live production checkout.** Some ECHOREPO
+resources are bind-mounted from that checkout. Use a separate worktree:
+
 ```bash
 cd ~/ECHO-STORE/echorepo-lite
+git status --short
 git fetch origin
-git switch feature/research-jupyterhub-phase1
-git pull --ff-only
+git worktree add --track -b feature/research-jupyterhub-phase1 \
+    ../echorepo-jupyterhub-pilot origin/feature/research-jupyterhub-phase1
+cp -p .env ../echorepo-jupyterhub-pilot/.env
+cd ../echorepo-jupyterhub-pilot
+# Edit this PILOT .env: add ECHOREPO_LIBRARY_HOST_DIR and the RESEARCH_* limits.
 
 # Build the isolated notebook image (needed before DockerSpawner can spawn).
 docker build -f jupyterhub/singleuser.Dockerfile \
@@ -76,6 +83,17 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml \
     -f docker-compose.jupyterhub.yml up -d --no-deps --build \
     jupyterhub research-api
 ```
+
+**SSO prerequisite:** `/internal/jupyterhub-auth` is a *new Flask route* on
+this feature branch. The existing production Flask container will not have
+it until that small route change is reviewed and deployed through the usual
+dev-to-production workflow. Until then, the pilot Hub can be built and
+started but the Nginx `auth_request` handshake will fail. Do not use a
+forged identity header to bypass this requirement, and do not rebuild Flask
+from the pilot worktree as part of `up jupyterhub research-api`.
+
+If a local branch with the same name already exists, use a different local
+worktree branch name while tracking the same remote branch.
 
 Ask the external proxy administrator to apply
 `jupyterhub/nginx-research-hub.conf.example` at
