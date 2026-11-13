@@ -16,6 +16,8 @@ location @jupyterhub_login {
     return 302 /login?next=$uri;
 }
 
+location = /research/hub { return 301 /research/hub/; }
+
 location ^~ /research/hub/ {
     auth_request /__jupyterhub_auth;
     auth_request_set $echorepo_hub_user $upstream_http_x_echorepo_user;
