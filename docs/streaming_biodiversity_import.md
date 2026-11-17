@@ -132,6 +132,93 @@ Existing MinIO objects are **not** deleted automatically. Cleaning older
 `biodiversity/raw/` archives should be a separate, reviewed, backup-aware
 operation.
 
+## Sequential import from ~2 GB parts (for small server disks)
+
+**Use sample-column splitting, not OTU-row splitting.** The existing
+ECHOREPO current-source model keeps only one source upload per sample and
+marker; importing multiple OTU-row slices for the same sample would replace
+earlier slices. In contrast, each sample-column part contains **every retained
+OTU** but a **disjoint set of sample IDs**. These files can be imported in
+sequence without replacing earlier samples.
+
+The original table can be 25 GB while each *transferred* file is <=2 GB.
+
+### On the local computer (original files live here)
+
+With the original BIOM-style TSV and taxonomy text file, calculate the
+deterministic part plan without creating any files:
+
+```sh
+python tools/prepare_split_biodiversity_for_echorepo_premin10.py \
+  --table table_16S_97.tsv \
+  --taxonomy taxa_16S_97.txt \
+  --output biodiversity_16S_import.csv \
+  --marker 16S \
+  --max-output-mb 2000 \
+  --fail-on-missing-taxonomy \
+  --list-parts \
+  --report-json biodiversity_16S_parts_plan.json
+```
+
+The result lists the required `_part001.csv`, `_part002.csv`, ... files.
+Here 2,000 MB is **decimal** 2 GB, not 2 GiB; each part is bounded by
+2,000,000,000 bytes. The size limit applies to full CSV-encoded data,
+including the repeated OTU IDs and taxonomy.
+
+Generate just one part:
+
+```sh
+python tools/prepare_split_biodiversity_for_echorepo_premin10.py \
+  --table table_16S_97.tsv \
+  --taxonomy taxa_16S_97.txt \
+  --output biodiversity_16S_import.csv \
+  --marker 16S \
+  --max-output-mb 2000 \
+  --fail-on-missing-taxonomy \
+  --only-part 1
+```
+
+**No other part is generated or deleted.** Re-run with `--only-part 2`,
+then `--only-part 3`, etc., transferring each generated part to the server
+before creating the next one if local disk is also tight.
+
+For every invocation, the preprocessor rescans the full original input
+to apply the **global OTU >=10 total reads filter before splitting**.
+This is computationally expensive but avoids creating or keeping a large
+intermediate matrix. The scientific filter is identical across all parts.
+
+### On the server: transfer/import/delete one part
+
+Example for part 001, assuming it has been transferred to a path visible to
+the Python process (paths are examples; use the real destination):
+
+```sh
+# Run from your development repo with the appropriate .env.
+python3 -u tools/import_biodiversity_large.py \
+  --file /mnt/lab/biodiversity_16S_import_part001.csv
+
+# Check the plan and database connection configuration, then:
+python3 -u tools/import_biodiversity_large.py \
+  --file /mnt/lab/biodiversity_16S_import_part001.csv \
+  --apply
+
+# Only after the importer reports success, remove the transferred input:
+rm -- /mnt/lab/biodiversity_16S_import_part001.csv
+```
+
+Then repeat for part 002, etc. **Do not use `--post-min10` with these
+parts**: filtering was already done against all samples before the split.
+
+The importer does **not** send original input files to MinIO; PostgreSQL
+stores the structured raw positive abundances and the current Phylum-level
+summaries. The absolute database footprint depends on retained nonzero read
+counts and indexes. It can still be substantial; verify disk capacity and
+backups before the first import.
+
+Do not run the FAPROTAX/R analysis and image regeneration until all required
+parts have been imported successfully, because intermediate imports only
+represent part of the sample collection.
+
 ## Safety and resource requirements
 
 1. The command is **plan-only** unless `--apply` is supplied; plan mode checks
