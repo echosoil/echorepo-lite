@@ -354,6 +354,20 @@ def canonical_sample_columns(
     if not canonical:
         raise ValueError("No canonical ECHOREPO sample columns were found")
 
+    # Each QR+marker may occur only once in the source matrix. Repeated
+    # columns could otherwise land in different sample-split parts and cause
+    # a later import to replace an earlier part for the same QR.
+    labels_upper = [label.upper() for _index, label in canonical]
+    if len(labels_upper) != len(set(labels_upper)):
+        duplicates = sorted(
+            label for label in set(labels_upper)
+            if labels_upper.count(label) > 1
+        )
+        raise ValueError(
+            "Duplicate canonical QR+marker columns in source: "
+            + ", ".join(duplicates[:20])
+        )
+
     if marker:
         expected_marker = marker.upper()
         wrong = [
