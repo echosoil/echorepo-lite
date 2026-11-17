@@ -111,6 +111,23 @@ def parse_args() -> argparse.Namespace:
         help="Optional path for a machine-readable conversion report",
     )
     parser.add_argument(
+        "--only-part",
+        type=int,
+        help=(
+            "Generate only numbered output part N, computed from a full "
+            "source scan. Use for one-at-a-time transfer/import without "
+            "holding all output parts at once."
+        ),
+    )
+    parser.add_argument(
+        "--list-parts",
+        action="store_true",
+        help=(
+            "Calculate the deterministic sample-column groups and "
+            "estimated per-part sizes; write no CSV files."
+        ),
+    )
+    parser.add_argument(
         "--fail-on-missing-taxonomy",
         action="store_true",
         help=(
@@ -424,6 +441,9 @@ def convert(
     fail_on_missing_taxonomy: bool,
     max_output_bytes: int,
     min_total_reads: float,
+    *,
+    only_part: int | None = None,
+    list_parts: bool = False,
 ) -> dict[str, object]:
     """
     Convert the split laboratory format to ECHOREPO CSV files.
@@ -447,6 +467,10 @@ def convert(
         raise ValueError("--max-output-mb must be greater than zero")
     if min_total_reads < 0:
         raise ValueError("--min-total-reads must be >= 0")
+    if only_part is not None and only_part < 1:
+        raise ValueError("--only-part must be >= 1")
+    if list_parts and only_part is not None:
+        raise ValueError("--list-parts and --only-part cannot be combined")
 
     taxonomy_by_otu, taxonomy_stats = load_taxonomy_file(taxonomy_path)
     header_line, header = find_table_header(table_path)
@@ -461,8 +485,8 @@ def convert(
         None,
     )
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    _remove_old_parts(output_path)
+    # No output is touched until PASS 1 completes and part grouping is
+    # validated. In --only-part mode existing parts are never removed.
 
     # ------------------------------------------------------------------
     # PASS 1
@@ -661,113 +685,149 @@ def convert(
         groups.append(current)
 
     # ------------------------------------------------------------------
-    # PASS 2
+    # PASS 2 (optional)
     #
-    # Re-read the source, repeat the same full-matrix threshold decision,
-    # and write only retained OTUs. Every part has all retained OTUs but a
-    # disjoint subset of sample columns.
+    # Each part contains the entire retained OTU universe but an exclusive
+    # subset of sample columns. Uploading these files sequentially is safe:
+    # no later part replaces earlier samples.
+    #
+    # --only-part generates a single part; the complete source must still
+    # be scanned to apply the global >=10 rule. --list-parts skips PASS 2.
     # ------------------------------------------------------------------
-    part_handles: list[tuple[Path, object, list[int]]] = []
+    if only_part is not None and only_part > len(groups):
+        raise ValueError(
+            f"--only-part {only_part} is out of range; "
+            f"this source has {len(groups)} parts"
+        )
 
-    try:
-        for part_number, group in enumerate(groups, start=1):
-            path = _part_path(output_path, part_number)
-            handle = path.open("wb")
-            part_handles.append((path, handle, group))
+    selected_parts = (
+        []
+        if list_parts
+        else (
+            [(only_part, groups[only_part - 1])]
+            if only_part is not None
+            else list(enumerate(groups, start=1))
+        )
+    )
 
-            header_values = [
-                "OTU ID",
-                *[samples[pos][1] for pos in group],
-                *OUTPUT_TAXONOMY_COLUMNS,
-            ]
-            handle.write(_csv_row_bytes(header_values))
+    part_handles: list[tuple[int, Path, object, list[int]]] = []
+    if selected_parts:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        # Only the original full-output mode clears old part files.
+        if only_part is None:
+            _remove_old_parts(output_path)
 
-        with table_path.open("r", encoding="utf-8-sig", newline="") as source:
-            reader = csv.reader(source, delimiter="\t")
-            for _ in range(header_line):
-                next(reader)
-
-            for line_number, row in enumerate(
-                reader,
-                start=header_line + 1,
-            ):
-                if not row or all(not value.strip() for value in row):
-                    continue
-                if row[0].lstrip().startswith("#"):
-                    continue
-
-                otu_id = row[0].strip()
-
-                taxonomy, _missing = _row_taxonomy(
-                    otu_id,
-                    taxonomy_by_otu,
-                    fail_on_missing_taxonomy,
-                    taxonomy_path,
+        try:
+            for part_number, group in selected_parts:
+                path = _part_path(output_path, part_number)
+                # Write to a temporary file and publish only once complete.
+                temporary = path.with_name(path.name + ".tmp")
+                handle = temporary.open("wb")
+                part_handles.append((part_number, path, handle, group))
+                handle.write(
+                    _csv_row_bytes(
+                        [
+                            "OTU ID",
+                            *[samples[pos][1] for pos in group],
+                            *OUTPUT_TAXONOMY_COLUMNS,
+                        ]
+                    )
                 )
 
-                full_total = 0.0
-                all_sample_values: list[str] = []
+            with table_path.open("r", encoding="utf-8-sig", newline="") as source:
+                reader = csv.reader(source, delimiter="\t")
+                for _ in range(header_line):
+                    next(reader)
 
-                for index, column in samples:
-                    value = row[index].strip()
+                for line_number, row in enumerate(
+                    reader,
+                    start=header_line + 1,
+                ):
+                    if not row or all(not value.strip() for value in row):
+                        continue
+                    if row[0].lstrip().startswith("#"):
+                        continue
 
-                    if value:
-                        try:
-                            numeric = float(value)
-                        except ValueError as exc:
-                            raise ValueError(
-                                f"{table_path}: line {line_number}, sample "
-                                f"{column!r} has non-numeric value {value!r}"
-                            ) from exc
-
-                        if numeric < 0:
-                            raise ValueError(
-                                f"{table_path}: line {line_number}, sample "
-                                f"{column!r} has negative value {value!r}"
-                            )
-
-                        full_total += numeric
-
-                    all_sample_values.append(value)
-
-                if full_total < min_total_reads:
-                    continue
-
-                for _path, handle, group in part_handles:
-                    output_row = [
+                    otu_id = row[0].strip()
+                    taxonomy, _missing = _row_taxonomy(
                         otu_id,
-                        *[all_sample_values[pos] for pos in group],
-                        *[taxonomy[column] for column in OUTPUT_TAXONOMY_COLUMNS],
-                    ]
-                    handle.write(_csv_row_bytes(output_row))
+                        taxonomy_by_otu,
+                        fail_on_missing_taxonomy,
+                        taxonomy_path,
+                    )
 
-    finally:
-        for _path, handle, _group in part_handles:
-            handle.close()
+                    full_total = 0.0
+                    all_sample_values: list[str] = []
+                    for index, column in samples:
+                        value = row[index].strip()
+                        if value:
+                            try:
+                                numeric = float(value)
+                            except ValueError as exc:
+                                raise ValueError(
+                                    f"{table_path}: line {line_number}, sample "
+                                    f"{column!r} has non-numeric value {value!r}"
+                                ) from exc
+                            if numeric < 0:
+                                raise ValueError(
+                                    f"{table_path}: line {line_number}, sample "
+                                    f"{column!r} has negative value {value!r}"
+                                )
+                            full_total += numeric
+                        all_sample_values.append(value)
+
+                    if full_total < min_total_reads:
+                        continue
+
+                    taxonomy_values = [
+                        taxonomy[column] for column in OUTPUT_TAXONOMY_COLUMNS
+                    ]
+                    for _number, _path, handle, group in part_handles:
+                        handle.write(
+                            _csv_row_bytes(
+                                [
+                                    otu_id,
+                                    *[all_sample_values[pos] for pos in group],
+                                    *taxonomy_values,
+                                ]
+                            )
+                        )
+        except BaseException:
+            for _number, path, handle, _group in part_handles:
+                handle.close()
+                path.with_name(path.name + ".tmp").unlink(missing_ok=True)
+            raise
+        else:
+            for part_number, path, handle, group in part_handles:
+                handle.close()
+                temporary = path.with_name(path.name + ".tmp")
+                size_bytes = temporary.stat().st_size
+                if size_bytes > max_output_bytes:
+                    temporary.unlink(missing_ok=True)
+                    raise RuntimeError(
+                        f"{path} is {size_bytes} bytes, above the "
+                        f"requested {max_output_bytes}-byte limit"
+                    )
+                temporary.replace(path)
 
     output_parts: list[dict[str, object]] = []
-
-    for part_number, (path, _handle, group) in enumerate(
-        part_handles,
-        start=1,
-    ):
-        size_bytes = path.stat().st_size
-
-        if size_bytes > max_output_bytes:
-            raise RuntimeError(
-                f"{path} is {size_bytes} bytes, above the requested {max_output_bytes}-byte limit"
-            )
-
+    written_parts = {number for number, _group in selected_parts}
+    for part_number, group in enumerate(groups, start=1):
+        path = _part_path(output_path, part_number)
+        written = part_number in written_parts
+        size_bytes = path.stat().st_size if written else estimated_part_size(group)
         output_parts.append(
             {
                 "part": part_number,
                 "path": str(path),
                 "size_bytes": size_bytes,
+                "estimated": not written,
                 "size_mb": round(size_bytes / 1_000_000, 3),
                 "sample_count": len(group),
                 "first_sample": samples[group[0]][1],
                 "last_sample": samples[group[-1]][1],
                 "otu_rows": retained_otu_rows,
+                "written": written,
             }
         )
 
@@ -807,12 +867,14 @@ def main() -> int:
             args.fail_on_missing_taxonomy,
             int(args.max_output_mb * 1_000_000),
             args.min_total_reads,
+            only_part=args.only_part,
+            list_parts=args.list_parts,
         )
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    print("Conversion complete.")
+    print("Part plan complete." if args.list_parts else "Conversion complete.")
     print(f"  Marker:                    {report['marker']}")
     print(f"  Canonical samples kept:    {report['canonical_sample_columns_kept']}")
     print(f"  Input OTU rows:             {report['input_otu_rows']}")
@@ -834,7 +896,8 @@ def main() -> int:
     print(f"  Output parts:               {len(report['output_parts'])}")
     for part in report["output_parts"]:
         print(
-            f"    {part['path']}  "
+            f"    {'[WROTE]' if part['written'] else '[PLAN]'} "
+            f"{part['path']}  "
             f"({part['size_mb']:.3f} MB, "
             f"{part['sample_count']} samples, "
             f"{part['otu_rows']} OTUs)"

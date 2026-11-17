@@ -920,12 +920,65 @@ def _read_fungal_rows_from_source(
         return _aggregate_fungal_rows(header, reader, target_samples)
 
 
+def _fungal_from_structured_raw(current_mapping: pd.DataFrame) -> pd.DataFrame:
+    """
+    Reconstruct genus-level ITS abundances from PostgreSQL for archive-free
+    sources. Pair sample IDs with their *current* upload IDs: an upload can
+    contain other samples that were superseded by later uploads.
+    """
+    samples = current_mapping["sample_id"].astype(str).str.upper().tolist()
+    uploads = current_mapping["source_upload_id"].astype(str).tolist()
+    if not samples:
+        return pd.DataFrame(columns=["sample_id", "otu_id", "count", "taxa"])
+
+    sql = """
+        WITH current_pairs AS (
+            SELECT *
+            FROM unnest(%s::text[], %s::text[])
+                 AS p(sample_id, upload_id)
+        )
+        SELECT
+            cp.sample_id,
+            COALESCE(f.genus, '') AS genus,
+            SUM(a.read_count)::double precision AS count
+        FROM current_pairs AS cp
+        JOIN biodiversity_raw_samples AS rs
+          ON rs.upload_id = cp.upload_id
+         AND UPPER(rs.sample_id) = cp.sample_id
+         AND UPPER(rs.marker) = 'ITS'
+        JOIN biodiversity_raw_abundance AS a
+          ON a.upload_id = rs.upload_id
+         AND a.sample_index = rs.sample_index
+        JOIN biodiversity_raw_features AS f
+          ON f.upload_id = a.upload_id
+         AND f.feature_index = a.feature_index
+        GROUP BY cp.sample_id, COALESCE(f.genus, '')
+    """
+    with get_pg_conn() as conn:
+        df = pd.read_sql(sql, conn, params=[samples, uploads])
+
+    if df.empty:
+        return pd.DataFrame(columns=["sample_id", "otu_id", "count", "taxa"])
+    df["genus"] = df["genus"].map(clean_taxon_value)
+    df = (
+        df.groupby(["sample_id", "genus"], dropna=False, as_index=False)["count"]
+        .sum()
+    )
+    df["otu_id"] = df["genus"].map(
+        lambda g: f"raw-genus:{g or 'unclassified'}"
+    )
+    df["taxa"] = df["genus"].map(
+        lambda g: {"Genus": g} if g else {}
+    )
+    return df[["sample_id", "otu_id", "count", "taxa"]]
+
+
 def fetch_current_fungal_data_from_archives(
     mclient,
     sample_ids: set[str] | None = None,
 ) -> tuple[pd.DataFrame, set[str], set[str]]:
     """
-    Reconstruct current ITS genus/count data from raw MinIO archives.
+    Reconstruct current ITS genus/count data from archives or structured raw SQL.
 
     Returns: dataframe, all current sample IDs, successfully reconstructed IDs.
     """
@@ -950,27 +1003,33 @@ def fetch_current_fungal_data_from_archives(
             object_name = str(object_name or "").strip()
             archive_samples = set(group["sample_id"].astype(str).str.upper())
 
-            if not object_name:
-                print(
-                    "[WARN] Current ITS samples have no archive object: "
-                    f"{sorted(archive_samples)}"
-                )
-                continue
-
-            archive_path = tmp_dir / f"archive-{archive_number}.zip"
-            extract_dir = tmp_dir / f"archive-{archive_number}"
-            extract_dir.mkdir(parents=True, exist_ok=True)
-
             try:
-                print(
-                    f"[INFO] Reading raw ITS archive {object_name} "
-                    f"for {len(archive_samples)} samples"
-                )
-                _download_minio_object(mclient, object_name, archive_path)
-                source_path = _extract_biodiversity_source(archive_path, extract_dir)
-                frame = _read_fungal_rows_from_source(source_path, archive_samples)
+                if not object_name or object_name.lower() == "none":
+                    print(
+                        "[INFO] Reading current ITS genus counts from PostgreSQL "
+                        f"for {len(archive_samples)} archive-free samples"
+                    )
+                    frame = _fungal_from_structured_raw(group)
+                else:
+                    archive_path = tmp_dir / f"archive-{archive_number}.zip"
+                    extract_dir = tmp_dir / f"archive-{archive_number}"
+                    extract_dir.mkdir(parents=True, exist_ok=True)
+                    print(
+                        f"[INFO] Reading raw ITS archive {object_name} "
+                        f"for {len(archive_samples)} samples"
+                    )
+                    _download_minio_object(mclient, object_name, archive_path)
+                    source_path = _extract_biodiversity_source(
+                        archive_path, extract_dir
+                    )
+                    frame = _read_fungal_rows_from_source(
+                        source_path, archive_samples
+                    )
             except Exception as exc:
-                print(f"[WARN] Could not reconstruct {object_name}: {exc}")
+                print(
+                    "[WARN] Could not reconstruct ITS guild source "
+                    f"{object_name or '[PostgreSQL]'}: {exc}"
+                )
                 continue
 
             if frame.empty:
