@@ -1,4 +1,5 @@
 import csv
+import gzip
 import hashlib
 import io
 import logging
@@ -137,11 +138,18 @@ def _open_biodiversity_rows(
     if callable(custom_opener):
         return custom_opener()
 
-    suffix = Path(filename or "").suffix.lower()
+    suffixes = [part.lower() for part in Path(filename or "").suffixes]
+    compressed = bool(suffixes and suffixes[-1] == ".gz")
+    # The logical type is determined by the extension underneath .gz.
+    suffix = suffixes[-2] if compressed and len(suffixes) >= 2 else (
+        suffixes[-1] if suffixes else ""
+    )
 
     # --------------------------------------------------------------
     # XLSX
     # --------------------------------------------------------------
+    if suffix == ".xlsx" and compressed:
+        raise ValueError("Only delimited text (.csv.gz/.tsv.gz/.txt.gz) may be gzip compressed")
     if suffix == ".xlsx":
         try:
             wb = load_workbook(
@@ -206,9 +214,20 @@ def _open_biodiversity_rows(
     # CSV / TSV / TXT
     # --------------------------------------------------------------
     if suffix not in {".csv", ".tsv", ".txt"}:
-        raise ValueError("Unsupported biodiversity file type. Use .xlsx, .csv or .tsv.")
+        raise ValueError(
+            "Unsupported biodiversity file type. Use .xlsx, .csv, .tsv, "
+            ".csv.gz, or .tsv.gz."
+        )
 
-    byte_stream = source.open('rb') if isinstance(source, Path) else BytesIO(source)
+    original_bytes = source.open("rb") if isinstance(source, Path) else BytesIO(source)
+    try:
+        byte_stream = (
+            gzip.GzipFile(fileobj=original_bytes, mode="rb")
+            if compressed else original_bytes
+        )
+    except BaseException:
+        original_bytes.close()
+        raise
 
     try:
         text_stream = io.TextIOWrapper(
@@ -220,10 +239,12 @@ def _open_biodiversity_rows(
         probe = text_stream.read(65536)
         text_stream.seek(0)
 
-    except UnicodeDecodeError as e:
+    except (UnicodeDecodeError, EOFError, gzip.BadGzipFile) as e:
         byte_stream.close()
-
-        raise ValueError("Cannot decode biodiversity text file as UTF-8") from e
+        original_bytes.close()
+        raise ValueError(
+            "Cannot decode biodiversity text file (invalid UTF-8 or gzip)"
+        ) from e
 
     if suffix == ".tsv":
         dialect = csv.excel_tab
@@ -251,11 +272,18 @@ def _open_biodiversity_rows(
         text_stream.close()
         raise ValueError("Biodiversity CSV/TSV is empty") from None
 
+    def close_stream() -> None:
+        try:
+            text_stream.close()
+        finally:
+            original_bytes.close()
+
     return (
         header,
         reader,
-        text_stream.close,
-        f"delimited text, delimiter={delimiter_name}",
+        close_stream,
+        f"delimited text, delimiter={delimiter_name}"
+        + (", gzip compressed" if compressed else ""),
     )
 
 
