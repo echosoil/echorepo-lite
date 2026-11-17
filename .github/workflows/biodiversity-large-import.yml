@@ -10,6 +10,11 @@ on:
       - ".github/workflows/biodiversity-large-import.yml"
   workflow_dispatch:
 
+env:
+  PROJECT_ROOT: .
+  CSV_PATH: data/samples.csv
+  SQLITE_PATH: data/legacy.sqlite
+
 jobs:
   streaming-import:
     runs-on: ubuntu-latest
