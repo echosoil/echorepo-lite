@@ -7,7 +7,7 @@ Modes:
             Join an original wide BIOM-style TSV and taxa_*.txt on the fly.
             A temporary SQLite index stores only taxonomy, not the giant matrix.
 
-Run --plan first; --apply is required for database mutations.
+Run without --apply to see the plan; --apply is required for mutations.
 """
 from __future__ import annotations
 
