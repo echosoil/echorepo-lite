@@ -2,7 +2,9 @@
 
 This workflow uses the current ECHOREPO importer without sending multi-gigabyte
 files through the browser. The new API endpoint requires an API key and accepts
-**one already-preprocessed sample-column part per request**. It does not accept
+**one already-preprocessed sample-column part per request**. The recommended
+transfer format is `.csv.gz`: compressed on the local machine and decompressed
+in the worker as a stream. Plain CSV is still supported. It does not accept
 multipart/form-data. The actual database import runs in the dedicated
 `biodiversity-worker` container, so the upload request can return immediately
 after transfer without waiting for a long PostgreSQL transaction.
@@ -26,6 +28,80 @@ The splitter has `--list-parts` and `--only-part N` modes. In one-part mode
 it scans the original TSV on every invocation to preserve the correct global
 filter; this minimizes local output storage but performs extra work.
 
+### Fast preparation for integer-valued 16S/ITS matrices
+
+For large BIOM-derived abundance tables containing nonnegative integral
+values such as `0.0`, `12.0`, and `853.0`, the splitter now avoids
+per-cell CSV writers during size planning, skips parsing common zero values,
+and handles `XYZ.0` counts as integers when calculating the global
+minimum-reads filter. It **preserves the original values** (including their
+.0 suffixes) in output CSV parts. Other valid numeric representations
+(e.g. `1e2`, `2.5`) still work with the generic numeric fallback.
+
+Add `--fast-tsv` to use direct tab splitting rather than the general CSV
+parser, **only for unquoted TSV inputs**:
+
+```bash
+python -u tools/prepare_split_biodiversity_for_echorepo_premin10.py \
+  --table table_16S_97.tsv --taxonomy taxa_16S_97.txt \
+  --output biodiversity_16S_import.csv --marker 16S \
+  --max-output-mb 2000 --compression gzip \
+  --fail-on-missing-taxonomy --list-parts --fast-tsv
+```
+
+The optimized scanner rejects lines with double quotes rather than
+silently misreading them. Omit `--fast-tsv` to retain general quoted-TSV
+compatibility. The default parser remains unchanged. Numeric fast paths and
+CSV-size improvements apply to **both** parser modes.
+
+For a repeatable CPU/memory benchmark on a modest synthetic sparse matrix:
+
+```bash
+python -m tools.benchmark_biodiversity_split --rows 2000 --samples 1000
+```
+
+It prints elapsed time, rows/s, MiB/s, and filter counts for both parsers.
+Synthetic results are not predictions for a 25 GiB table: real-dataset disk
+speed, column count, sparsity, and compression all affect throughput.
+For an actual dataset, `--list-parts --progress-seconds 10` provides the
+real first-pass scan rate without creating output parts.
+
+As before, `--only-part N` scans the original TSV on each invocation.
+This change does not implement a cached intermediate matrix or change import
+semantics, part boundaries, progress output, or deterministic gzip behavior.
+
+
+### Progress during long-running preparation
+
+The splitter reports progress **by default every 15 seconds** to stderr,
+including taxonomy loading, the global OTU scan/filter (pass 1), and
+writing the selected compressed part(s) (pass 2). It prints immediately
+when each stage starts and when it finishes; `--list-parts` stops after
+pass 1. The output reports approximate input-byte percentage, OTU rows
+processed, retained/written OTUs, elapsed time, effective MiB/s, and ETA.
+
+To print every 10 seconds, optionally save the progress into a log:
+
+```bash
+python -u tools/prepare_split_biodiversity_for_echorepo_premin10.py \
+  --table table_16S_97.tsv --taxonomy taxa_16S_97.txt \
+  --output biodiversity_16S_import.csv --marker 16S \
+  --max-output-mb 2000 --compression gzip --only-part 1 \
+  --fail-on-missing-taxonomy --progress-seconds 10 \
+  2> >(tee biodiversity_split_progress.log >&2)
+```
+
+The ETA uses the number of bytes read from the original TSV (the Python
+buffer can read ahead slightly), and includes work done on each row. It
+is an **estimate**, especially early in a pass or when gzip throughput
+changes; it is not a promise of completion time.
+
+For uninterrupted stdout and stderr in Bash, `python -u` is useful.
+Use `--progress-seconds 0` to suppress all progress messages (the
+final conversion report is still printed). This option affects output
+only; it does not change filtering, sample-column grouping, gzip bytes,
+or the database import format.
+
 ### Prepare on the local computer
 
 For `table_16S_97.tsv` + `taxa_16S_97.txt`, using the *develop PR version*:
@@ -37,6 +113,7 @@ python tools/prepare_split_biodiversity_for_echorepo_premin10.py \
   --output biodiversity_16S_import.csv \
   --marker 16S \
   --max-output-mb 2000 \
+  --compression gzip \
   --fail-on-missing-taxonomy \
   --list-parts \
   --report-json biodiversity_16S_parts_plan.json
@@ -51,12 +128,24 @@ python tools/prepare_split_biodiversity_for_echorepo_premin10.py \
   --output biodiversity_16S_import.csv \
   --marker 16S \
   --max-output-mb 2000 \
+  --compression gzip \
   --fail-on-missing-taxonomy \
   --only-part 1
 ```
 
-This creates `biodiversity_16S_import_part001.csv`, at most
-**2,000,000,000 bytes** (decimal 2 GB), including taxonomy and headers.
+This creates **`biodiversity_16S_import_part001.csv.gz`**, compressed directly
+in a streaming writer—no uncompressed intermediate file on disk. The
+**2,000,000,000-byte cap is calculated on the uncompressed CSV** before
+compression, so the transferred gzip file is normally considerably smaller.
+`--list-parts` reports *uncompressed upper-bound estimates*; the actual
+compressed byte count is only known when a part is generated. For very small
+or incompressible files, gzip can add a little overhead; the splitter also
+checks the actual resulting file against `--max-output-mb`.
+
+Gzip uses a deterministic timestamp and no embedded source filename, so
+re-running `--only-part 1` on unchanged source data produces exactly the same
+compressed bytes and SHA-256. To retain the original plain CSV workflow,
+omit `--compression gzip`.
 
 ## Upload directly from the local computer
 
@@ -80,14 +169,14 @@ Using Bash or Git Bash:
 read -rsp "ECHOREPO biodiversity upload key: " BIODIV_KEY
 echo
 
-FILE=biodiversity_16S_import_part001.csv
+FILE=biodiversity_16S_import_part001.csv.gz
 BASE_URL=https://YOUR-DEV-HOST
 
 curl --fail-with-body --show-error \
   -X POST "$BASE_URL/api/v1/biodiversity/uploads" \
   -H "X-API-Key: $BIODIV_KEY" \
   -H "X-Filename: $FILE" \
-  -H "Content-Type: text/csv" \
+  -H "Content-Type: application/gzip" \
   --data-binary "@$FILE"
 ```
 
@@ -98,7 +187,7 @@ A successful upload returns HTTP **202**:
   "ok": true,
   "job_id": "uuid-from-server",
   "status": "queued",
-  "filename": "biodiversity_16S_import_part001.csv",
+  "filename": "biodiversity_16S_import_part001.csv.gz",
   "size_bytes": 123456789,
   "sha256": "64-character-hex-value",
   "status_url": "/api/v1/biodiversity/uploads/uuid-from-server"
@@ -118,9 +207,11 @@ the next part after **succeeded**. The server's staging file is deleted after
 import success or failure. A failed job retains its error text in PostgreSQL;
 you can correct the issue and reupload the local part.
 
-The endpoint accepts raw `.csv`, `.tsv` or `.txt`, not XLSX and not
+The endpoint accepts raw `.csv`, `.tsv`, `.txt`, `.csv.gz`, `.tsv.gz` or
+`.txt.gz`, but not XLSX and not
 `curl -F file=@...`. It requires an explicit `Content-Length` and imposes
-an upload size limit (default 2.2 GB). Files larger than the limit are
+an upload size limit (default 2.2 GB, on **compressed transfer bytes**). Files
+larger than the limit are
 rejected without being queued.
 
 ### Deployment configuration and disk
@@ -129,6 +220,8 @@ The application and worker must share the **same writable** staging volume:
 
 ```dotenv
 BIODIVERSITY_API_MAX_UPLOAD_BYTES=2200000000
+# Expansion limit for gzip parts while importing, not an additional disk copy.
+BIODIVERSITY_MAX_UNCOMPRESSED_BYTES=8000000000
 BIODIVERSITY_UPLOAD_STAGING_DIR=/data/biodiversity/incoming
 # Strongly recommended if API_KEY is distributed:
 BIODIVERSITY_UPLOAD_API_KEY=YOUR_SEPARATE_UPLOAD_SECRET
@@ -153,10 +246,10 @@ The new `20261117_001_biodiversity_import_jobs.sql` migration is applied
 by the normal application startup migration runner. The worker waits for
 this table to become available.
 
-For a 2 GB part, the staging disk needs room for **one uploaded part**
+For a gzip part, the staging disk needs room for **one compressed upload**
 plus normal filesystem overhead. The database has its own storage, WAL and
 indexes; it may need **much more space** than the staged CSV. No 25 GB
-intermediate matrix or original-file MinIO ZIP is created. Keep the
+intermediate matrix, decompressed CSV, or original-file MinIO ZIP is created. Keep the
 original files backed up on your local system.
 
 ### Reverse proxy requirements

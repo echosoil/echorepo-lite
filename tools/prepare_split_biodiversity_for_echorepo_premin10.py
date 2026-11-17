@@ -25,10 +25,12 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import io
 import json
 import re
 import sys
+import time
 from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
@@ -57,6 +59,71 @@ OUTPUT_TAXONOMY_COLUMNS = [
     "Genus",
     "Species",
 ]
+
+
+def _format_duration(seconds: float) -> str:
+    """Short human-readable elapsed or remaining time."""
+    total = max(0, int(seconds))
+    hours, remainder = divmod(total, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:d}:{minutes:02d}:{seconds:02d}"
+
+
+class FileProgress:
+    """Approximate file progress without buffering or pre-counting input rows.
+
+    For a large TSV the buffered reader's position is a good approximation
+    of bytes consumed. It can read a few KiB ahead; percentages and ETA are
+    therefore approximate. We count actual parsed OTUs separately.
+    """
+
+    def __init__(self, label: str, path: Path, interval: float):
+        self.label = label
+        self.size = path.stat().st_size
+        self.interval = interval
+        self.start = time.monotonic()
+        self.last_report = self.start
+        if interval > 0:
+            print(
+                f"[progress] {label}: started; file={path.name}, "
+                f"size={self.size / (1024 ** 3):.2f} GiB",
+                file=sys.stderr, flush=True,
+            )
+
+    def update(self, rows: int, handle, *, detail: str = "") -> None:
+        if self.interval <= 0 or rows % 64 != 0:
+            return
+        now = time.monotonic()
+        if now - self.last_report < self.interval:
+            return
+        position = min(self.size, max(0, handle.buffer.tell()))
+        elapsed = max(now - self.start, 0.001)
+        fraction = position / self.size if self.size else 1.0
+        rate_mib_s = position / (1024 ** 2) / elapsed
+        eta_seconds = (
+            elapsed * (1 - fraction) / fraction if fraction > 0 else 0
+        )
+        eta = _format_duration(eta_seconds) if fraction > 0 else "unknown"
+        suffix = f"; {detail}" if detail else ""
+        print(
+            f"[progress] {self.label}: {fraction * 100:5.1f}% "
+            f"({position / (1024 ** 3):.2f}/{self.size / (1024 ** 3):.2f} GiB); "
+            f"rows={rows:,}; elapsed={_format_duration(elapsed)}; "
+            f"rate={rate_mib_s:.1f} MiB/s; ETA~{eta}{suffix}",
+            file=sys.stderr, flush=True,
+        )
+        self.last_report = now
+
+    def finish(self, rows: int, *, detail: str = "") -> None:
+        if self.interval <= 0:
+            return
+        elapsed = max(0.0, time.monotonic() - self.start)
+        suffix = f"; {detail}" if detail else ""
+        print(
+            f"[progress] {self.label}: 100.0% complete; "
+            f"rows={rows:,}; elapsed={_format_duration(elapsed)}{suffix}",
+            file=sys.stderr, flush=True,
+        )
 
 
 def parse_args() -> argparse.Namespace:
@@ -97,6 +164,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--compression",
+        choices=("none", "gzip"),
+        default="none",
+        help=(
+            "Use 'gzip' to produce deterministic .csv.gz parts directly. "
+            "The --max-output-mb planning cap is on uncompressed CSV bytes; "
+            "the actual compressed files are measured."
+        ),
+    )
+    parser.add_argument(
         "--min-total-reads",
         type=float,
         default=10.0,
@@ -104,6 +181,26 @@ def parse_args() -> argparse.Namespace:
             "Remove an OTU before splitting when its total abundance across all "
             "canonical ECHOREPO sample columns is below this value. Default: 10. "
             "Use 0 to disable this preprocessing filter."
+        ),
+    )
+    parser.add_argument(
+        "--progress-seconds",
+        type=float,
+        default=15.0,
+        metavar="SECONDS",
+        help=(
+            "Print progress to stderr at roughly this interval during "
+            "taxonomy loading and both table passes. Default: 15 seconds. "
+            "Use 0 to disable progress messages."
+        ),
+    )
+    parser.add_argument(
+        "--fast-tsv",
+        action="store_true",
+        help=(
+            "Use direct tab splitting for unquoted laboratory TSV files. "
+            "Reject quoted fields instead of interpreting them incorrectly. "
+            "The default preserves general quoted-TSV support."
         ),
     )
     parser.add_argument(
@@ -236,6 +333,8 @@ def parse_taxonomy_annotation(annotation: str) -> dict[str, str]:
 
 def load_taxonomy_file(
     path: Path,
+    *,
+    progress_seconds: float = 0.0,
 ) -> tuple[dict[str, dict[str, str]], dict[str, int]]:
     """
     taxa_*.txt is expected to be tab-separated and headerless.
@@ -251,6 +350,7 @@ def load_taxonomy_file(
     with_kingdom_and_phylum = 0
     rows = 0
 
+    progress = FileProgress("Taxonomy", path, progress_seconds)
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle, delimiter="\t")
 
@@ -289,7 +389,9 @@ def load_taxonomy_file(
                 continue
 
             taxonomy_by_otu[otu_id] = taxonomy
+            progress.update(rows, handle, detail=f"unique={len(taxonomy_by_otu):,}")
 
+    progress.finish(rows, detail=f"unique={len(taxonomy_by_otu):,}")
     if not taxonomy_by_otu:
         raise ValueError(f"{path}: no taxonomy rows were found")
 
@@ -393,12 +495,25 @@ def canonical_sample_columns(
 
 
 def _csv_field_size(value: str) -> int:
-    """Exact UTF-8 byte size of one CSV-encoded field, excluding newline."""
+    """Exact CSV field size, with a cheap path for ordinary ASCII fields.
+
+    Empty values intentionally use csv.writer's single-field encoding to
+    preserve the existing split planning behavior.
+    """
+    if (
+        value
+        and value.isascii()
+        and '"' not in value
+        and "," not in value
+        and "\r" not in value
+        and "\n" not in value
+    ):
+        return len(value)
+
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow([value])
-    encoded = buffer.getvalue().encode("utf-8")
-    return len(encoded) - 1  # remove final newline
+    return len(buffer.getvalue().encode("utf-8")) - 1
 
 
 def _csv_row_bytes(values: list[str]) -> bytes:
@@ -408,22 +523,63 @@ def _csv_row_bytes(values: list[str]) -> bytes:
     return buffer.getvalue().encode("utf-8")
 
 
+def _parse_abundance(value: str) -> int | float:
+    """Read exact XYZ.0 integers cheaply, retaining other numeric formats.
+
+    Zero is overwhelmingly common in sparse OTU matrices. Preserve the
+    original string for output; this is used for summation/validation only.
+    """
+    if value == "0.0" or value == "0":
+        return 0
+    if value.endswith(".0"):
+        try:
+            return int(value[:-2])
+        except ValueError:
+            pass
+    return float(value)
+
+
+def _validated_abundance_field_size(value: str) -> int:
+    """CSV byte count after numeric validation in pass 1.
+
+    A nonempty value accepted by float()/integer parsing cannot contain
+    delimiters, quotes or line breaks, so no CSV quoting is needed.
+    Preserve the old sizing behavior for an empty field.
+    """
+    if not value:
+        return _csv_field_size(value)
+    return len(value) if value.isascii() else len(value.encode("utf-8"))
+
+
 def _compact_number(value: float) -> str:
     if value.is_integer():
         return str(int(value))
     return format(value, ".15g")
 
 
-def _part_path(base_output: Path, part_number: int) -> Path:
-    suffix = base_output.suffix or ".csv"
-    stem = base_output.stem if base_output.suffix else base_output.name
+def _part_path(
+    base_output: Path, part_number: int, compression: str = "none"
+) -> Path:
+    if compression not in {"none", "gzip"}:
+        raise ValueError("Unknown output compression setting")
+    name = base_output.name
+    if name.lower().endswith(".csv.gz"):
+        if compression != "gzip":
+            raise ValueError(".csv.gz output requires --compression gzip")
+        stem = name[:-len(".csv.gz")]
+    elif name.lower().endswith(".csv"):
+        stem = name[:-len(".csv")]
+    else:
+        raise ValueError("--output must end with .csv or .csv.gz")
+    suffix = ".csv.gz" if compression == "gzip" else ".csv"
     return base_output.with_name(f"{stem}_part{part_number:03d}{suffix}")
 
 
-def _remove_old_parts(base_output: Path) -> None:
-    suffix = base_output.suffix or ".csv"
-    stem = base_output.stem if base_output.suffix else base_output.name
-    pattern = f"{stem}_part[0-9][0-9][0-9]{suffix}"
+def _remove_old_parts(base_output: Path, compression: str = "none") -> None:
+    first = _part_path(base_output, 1, compression)
+    prefix = first.name.split("_part001", 1)[0]
+    suffix = ".csv.gz" if compression == "gzip" else ".csv"
+    pattern = f"{prefix}_part[0-9][0-9][0-9]{suffix}"
     for path in base_output.parent.glob(pattern):
         path.unlink()
 
@@ -447,6 +603,21 @@ def _row_taxonomy(
     )
 
 
+def _iter_plain_tsv(lines: Iterable[str]) -> Iterable[list[str]]:
+    """Fast, strict parsing for unquoted laboratory abundance TSV files.
+
+    Quoted TSV fields (including multiline fields) require the normal CSV
+    reader; reject them rather than silently changing column boundaries.
+    """
+    for line in lines:
+        if '"' in line:
+            raise ValueError(
+                "--fast-tsv requires unquoted TSV fields; "
+                "rerun without --fast-tsv for quoted inputs"
+            )
+        yield line.rstrip("\r\n").split("\t")
+
+
 def convert(
     table_path: Path,
     taxonomy_path: Path,
@@ -458,6 +629,9 @@ def convert(
     *,
     only_part: int | None = None,
     list_parts: bool = False,
+    compression: str = "none",
+    progress_seconds: float = 0.0,
+    fast_tsv: bool = False,
 ) -> dict[str, object]:
     """
     Convert the split laboratory format to ECHOREPO CSV files.
@@ -479,14 +653,21 @@ def convert(
     """
     if max_output_bytes <= 0:
         raise ValueError("--max-output-mb must be greater than zero")
+    if compression not in {"none", "gzip"}:
+        raise ValueError("--compression must be one of none/gzip")
+    _part_path(output_path, 1, compression)
     if min_total_reads < 0:
         raise ValueError("--min-total-reads must be >= 0")
+    if progress_seconds < 0:
+        raise ValueError("--progress-seconds must be >= 0")
     if only_part is not None and only_part < 1:
         raise ValueError("--only-part must be >= 1")
     if list_parts and only_part is not None:
         raise ValueError("--list-parts and --only-part cannot be combined")
 
-    taxonomy_by_otu, taxonomy_stats = load_taxonomy_file(taxonomy_path)
+    taxonomy_by_otu, taxonomy_stats = load_taxonomy_file(
+        taxonomy_path, progress_seconds=progress_seconds
+    )
     header_line, header = find_table_header(table_path)
 
     samples, dropped_columns, inferred_marker = canonical_sample_columns(
@@ -544,8 +725,14 @@ def convert(
         else:
             abundance_total_distribution[">=1000"] += 1
 
+    scan_progress = FileProgress(
+        "Pass 1/2 (scan/filter)", table_path, progress_seconds
+    )
     with table_path.open("r", encoding="utf-8-sig", newline="") as source:
-        reader = csv.reader(source, delimiter="\t")
+        reader = (
+            _iter_plain_tsv(source) if fast_tsv
+            else csv.reader(source, delimiter="\t")
+        )
         for _ in range(header_line):
             next(reader)
 
@@ -556,6 +743,10 @@ def convert(
                 continue
 
             input_otu_rows += 1
+            scan_progress.update(
+                input_otu_rows, source,
+                detail=f"kept={retained_otu_rows:,}; filtered={excluded_below_min_total:,}",
+            )
 
             expected_without_taxonomy = (
                 len(header) - 1 if taxonomy_header_index is not None else len(header)
@@ -585,8 +776,7 @@ def convert(
             else:
                 taxonomy_otus_used.add(otu_id)
 
-            full_total = 0.0
-            sample_values: list[str] = []
+            full_total = 0
 
             for index, column in samples:
                 if index >= len(row):
@@ -598,7 +788,7 @@ def convert(
                 value = row[index].strip()
                 if value:
                     try:
-                        numeric = float(value)
+                        numeric = _parse_abundance(value)
                     except ValueError as exc:
                         raise ValueError(
                             f"{table_path}: line {line_number}, sample "
@@ -613,7 +803,6 @@ def convert(
 
                     full_total += numeric
 
-                sample_values.append(value)
 
             record_abundance_total(full_total)
 
@@ -627,8 +816,10 @@ def convert(
             if missing:
                 retained_missing_taxonomy += 1
 
-            for sample_pos, value in enumerate(sample_values):
-                sample_field_bytes[sample_pos] += _csv_field_size(value)
+            for sample_pos, (index, _column) in enumerate(samples):
+                sample_field_bytes[sample_pos] += _validated_abundance_field_size(
+                    row[index].strip()
+                )
 
             fixed_values = [
                 otu_id,
@@ -636,6 +827,10 @@ def convert(
             ]
             fixed_data_field_bytes += sum(_csv_field_size(value) for value in fixed_values)
 
+    scan_progress.finish(
+        input_otu_rows,
+        detail=f"kept={retained_otu_rows:,}; filtered={excluded_below_min_total:,}",
+    )
     if input_otu_rows == 0:
         raise ValueError(f"{table_path}: no OTU rows were found")
 
@@ -698,6 +893,15 @@ def convert(
     if current:
         groups.append(current)
 
+    if progress_seconds > 0:
+        print(
+            f"[progress] Split plan: {len(groups):,} part(s); "
+            f"{len(samples):,} QR columns; "
+            f"{retained_otu_rows:,} retained OTUs; "
+            f"mode={'plan only' if list_parts else 'write output'}",
+            file=sys.stderr, flush=True,
+        )
+
     # ------------------------------------------------------------------
     # PASS 2 (optional)
     #
@@ -724,20 +928,33 @@ def convert(
         )
     )
 
-    part_handles: list[tuple[int, Path, object, list[int]]] = []
+    # gzip writers need their underlying file descriptor closed separately.
+    part_handles: list[tuple[int, Path, object, object, list[int]]] = []
     if selected_parts:
+        write_progress = FileProgress(
+            "Pass 2/2 (write parts)", table_path, progress_seconds
+        )
+        scanned_rows = 0
+        written_rows = 0
         output_path.parent.mkdir(parents=True, exist_ok=True)
         # Only the original full-output mode clears old part files.
         if only_part is None:
-            _remove_old_parts(output_path)
+            _remove_old_parts(output_path, compression)
 
         try:
             for part_number, group in selected_parts:
-                path = _part_path(output_path, part_number)
-                # Write to a temporary file and publish only once complete.
+                path = _part_path(output_path, part_number, compression)
+                # Write gzip directly without any temporary uncompressed CSV.
                 temporary = path.with_name(path.name + ".tmp")
-                handle = temporary.open("wb")
-                part_handles.append((part_number, path, handle, group))
+                raw = temporary.open("xb")
+                if compression == "gzip":
+                    handle = gzip.GzipFile(
+                        filename="", mode="wb", fileobj=raw,
+                        compresslevel=6, mtime=0,
+                    )
+                else:
+                    handle = raw
+                part_handles.append((part_number, path, handle, raw, group))
                 handle.write(
                     _csv_row_bytes(
                         [
@@ -749,7 +966,10 @@ def convert(
                 )
 
             with table_path.open("r", encoding="utf-8-sig", newline="") as source:
-                reader = csv.reader(source, delimiter="\t")
+                reader = (
+                    _iter_plain_tsv(source) if fast_tsv
+                    else csv.reader(source, delimiter="\t")
+                )
                 for _ in range(header_line):
                     next(reader)
 
@@ -762,6 +982,11 @@ def convert(
                     if row[0].lstrip().startswith("#"):
                         continue
 
+                    scanned_rows += 1
+                    write_progress.update(
+                        scanned_rows, source, detail=f"OTUs written={written_rows:,}"
+                    )
+
                     otu_id = row[0].strip()
                     taxonomy, _missing = _row_taxonomy(
                         otu_id,
@@ -770,13 +995,13 @@ def convert(
                         taxonomy_path,
                     )
 
-                    full_total = 0.0
-                    all_sample_values: list[str] = []
+                    full_total = 0
+
                     for index, column in samples:
                         value = row[index].strip()
                         if value:
                             try:
-                                numeric = float(value)
+                                numeric = _parse_abundance(value)
                             except ValueError as exc:
                                 raise ValueError(
                                     f"{table_path}: line {line_number}, sample "
@@ -788,32 +1013,38 @@ def convert(
                                     f"{column!r} has negative value {value!r}"
                                 )
                             full_total += numeric
-                        all_sample_values.append(value)
 
                     if full_total < min_total_reads:
                         continue
 
+                    written_rows += 1
                     taxonomy_values = [
                         taxonomy[column] for column in OUTPUT_TAXONOMY_COLUMNS
                     ]
-                    for _number, _path, handle, group in part_handles:
+                    for _number, _path, handle, _raw, group in part_handles:
                         handle.write(
                             _csv_row_bytes(
                                 [
                                     otu_id,
-                                    *[all_sample_values[pos] for pos in group],
+                                    *[row[samples[pos][0]].strip() for pos in group],
                                     *taxonomy_values,
                                 ]
                             )
                         )
         except BaseException:
-            for _number, path, handle, _group in part_handles:
-                handle.close()
+            for _number, path, handle, raw, _group in part_handles:
+                try:
+                    handle.close()
+                finally:
+                    raw.close()
                 path.with_name(path.name + ".tmp").unlink(missing_ok=True)
             raise
         else:
-            for part_number, path, handle, group in part_handles:
-                handle.close()
+            for part_number, path, handle, raw, group in part_handles:
+                try:
+                    handle.close()
+                finally:
+                    raw.close()
                 temporary = path.with_name(path.name + ".tmp")
                 size_bytes = temporary.stat().st_size
                 if size_bytes > max_output_bytes:
@@ -824,18 +1055,27 @@ def convert(
                     )
                 temporary.replace(path)
 
+        write_progress.finish(
+            scanned_rows,
+            detail=f"OTUs written={written_rows:,}; output parts={len(selected_parts):,}",
+        )
+
     output_parts: list[dict[str, object]] = []
     written_parts = {number for number, _group in selected_parts}
     for part_number, group in enumerate(groups, start=1):
-        path = _part_path(output_path, part_number)
+        path = _part_path(output_path, part_number, compression)
         written = part_number in written_parts
-        size_bytes = path.stat().st_size if written else estimated_part_size(group)
+        uncompressed_bytes = estimated_part_size(group)
+        # Planning cannot predict gzip size: estimates are uncompressed.
+        size_bytes = path.stat().st_size if written else uncompressed_bytes
         output_parts.append(
             {
                 "part": part_number,
                 "path": str(path),
                 "size_bytes": size_bytes,
                 "estimated": not written,
+                "compression": compression,
+                "uncompressed_size_bytes": uncompressed_bytes,
                 "size_mb": round(size_bytes / 1_000_000, 3),
                 "sample_count": len(group),
                 "first_sample": samples[group[0]][1],
@@ -851,6 +1091,7 @@ def convert(
         "table": str(table_path),
         "taxonomy": str(taxonomy_path),
         "output_base": str(output_path),
+        "compression": compression,
         "output_parts": output_parts,
         "max_output_bytes": max_output_bytes,
         "marker": inferred_marker,
@@ -883,6 +1124,9 @@ def main() -> int:
             args.min_total_reads,
             only_part=args.only_part,
             list_parts=args.list_parts,
+            compression=args.compression,
+            progress_seconds=args.progress_seconds,
+            fast_tsv=args.fast_tsv,
         )
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

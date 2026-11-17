@@ -597,10 +597,13 @@ def biodiversity_upload_enqueue():
     """
     _require_biodiversity_upload_key()
     if request.mimetype not in {
-        "application/octet-stream", "text/csv", "text/tab-separated-values",
-        "text/plain",
+        "application/octet-stream", "application/gzip", "application/x-gzip",
+        "text/csv", "text/tab-separated-values", "text/plain",
     }:
-        abort(415, description="Expected a raw CSV/TSV body, not multipart/form-data")
+        abort(
+            415,
+            description="Expected a raw CSV/TSV or gzip body, not multipart/form-data",
+        )
 
     try:
         filename = validate_filename(request.headers.get("X-Filename"))
