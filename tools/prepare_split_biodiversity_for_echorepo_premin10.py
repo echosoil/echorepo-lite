@@ -30,6 +30,7 @@ import io
 import json
 import re
 import sys
+import time
 from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
@@ -58,6 +59,71 @@ OUTPUT_TAXONOMY_COLUMNS = [
     "Genus",
     "Species",
 ]
+
+
+def _format_duration(seconds: float) -> str:
+    """Short human-readable elapsed or remaining time."""
+    total = max(0, int(seconds))
+    hours, remainder = divmod(total, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:d}:{minutes:02d}:{seconds:02d}"
+
+
+class FileProgress:
+    """Approximate file progress without buffering or pre-counting input rows.
+
+    For a large TSV the buffered reader's position is a good approximation
+    of bytes consumed. It can read a few KiB ahead; percentages and ETA are
+    therefore approximate. We count actual parsed OTUs separately.
+    """
+
+    def __init__(self, label: str, path: Path, interval: float):
+        self.label = label
+        self.size = path.stat().st_size
+        self.interval = interval
+        self.start = time.monotonic()
+        self.last_report = self.start
+        if interval > 0:
+            print(
+                f"[progress] {label}: started; file={path.name}, "
+                f"size={self.size / (1024 ** 3):.2f} GiB",
+                file=sys.stderr, flush=True,
+            )
+
+    def update(self, rows: int, handle, *, detail: str = "") -> None:
+        if self.interval <= 0 or rows % 64 != 0:
+            return
+        now = time.monotonic()
+        if now - self.last_report < self.interval:
+            return
+        position = min(self.size, max(0, handle.buffer.tell()))
+        elapsed = max(now - self.start, 0.001)
+        fraction = position / self.size if self.size else 1.0
+        rate_mib_s = position / (1024 ** 2) / elapsed
+        eta_seconds = (
+            elapsed * (1 - fraction) / fraction if fraction > 0 else 0
+        )
+        eta = _format_duration(eta_seconds) if fraction > 0 else "unknown"
+        suffix = f"; {detail}" if detail else ""
+        print(
+            f"[progress] {self.label}: {fraction * 100:5.1f}% "
+            f"({position / (1024 ** 3):.2f}/{self.size / (1024 ** 3):.2f} GiB); "
+            f"rows={rows:,}; elapsed={_format_duration(elapsed)}; "
+            f"rate={rate_mib_s:.1f} MiB/s; ETA~{eta}{suffix}",
+            file=sys.stderr, flush=True,
+        )
+        self.last_report = now
+
+    def finish(self, rows: int, *, detail: str = "") -> None:
+        if self.interval <= 0:
+            return
+        elapsed = max(0.0, time.monotonic() - self.start)
+        suffix = f"; {detail}" if detail else ""
+        print(
+            f"[progress] {self.label}: 100.0% complete; "
+            f"rows={rows:,}; elapsed={_format_duration(elapsed)}{suffix}",
+            file=sys.stderr, flush=True,
+        )
 
 
 def parse_args() -> argparse.Namespace:
@@ -115,6 +181,17 @@ def parse_args() -> argparse.Namespace:
             "Remove an OTU before splitting when its total abundance across all "
             "canonical ECHOREPO sample columns is below this value. Default: 10. "
             "Use 0 to disable this preprocessing filter."
+        ),
+    )
+    parser.add_argument(
+        "--progress-seconds",
+        type=float,
+        default=15.0,
+        metavar="SECONDS",
+        help=(
+            "Print progress to stderr at roughly this interval during "
+            "taxonomy loading and both table passes. Default: 15 seconds. "
+            "Use 0 to disable progress messages."
         ),
     )
     parser.add_argument(
@@ -247,6 +324,8 @@ def parse_taxonomy_annotation(annotation: str) -> dict[str, str]:
 
 def load_taxonomy_file(
     path: Path,
+    *,
+    progress_seconds: float = 0.0,
 ) -> tuple[dict[str, dict[str, str]], dict[str, int]]:
     """
     taxa_*.txt is expected to be tab-separated and headerless.
@@ -262,6 +341,7 @@ def load_taxonomy_file(
     with_kingdom_and_phylum = 0
     rows = 0
 
+    progress = FileProgress("Taxonomy", path, progress_seconds)
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle, delimiter="\t")
 
@@ -300,7 +380,9 @@ def load_taxonomy_file(
                 continue
 
             taxonomy_by_otu[otu_id] = taxonomy
+            progress.update(rows, handle, detail=f"unique={len(taxonomy_by_otu):,}")
 
+    progress.finish(rows, detail=f"unique={len(taxonomy_by_otu):,}")
     if not taxonomy_by_otu:
         raise ValueError(f"{path}: no taxonomy rows were found")
 
@@ -483,6 +565,7 @@ def convert(
     only_part: int | None = None,
     list_parts: bool = False,
     compression: str = "none",
+    progress_seconds: float = 0.0,
 ) -> dict[str, object]:
     """
     Convert the split laboratory format to ECHOREPO CSV files.
@@ -509,12 +592,16 @@ def convert(
     _part_path(output_path, 1, compression)
     if min_total_reads < 0:
         raise ValueError("--min-total-reads must be >= 0")
+    if progress_seconds < 0:
+        raise ValueError("--progress-seconds must be >= 0")
     if only_part is not None and only_part < 1:
         raise ValueError("--only-part must be >= 1")
     if list_parts and only_part is not None:
         raise ValueError("--list-parts and --only-part cannot be combined")
 
-    taxonomy_by_otu, taxonomy_stats = load_taxonomy_file(taxonomy_path)
+    taxonomy_by_otu, taxonomy_stats = load_taxonomy_file(
+        taxonomy_path, progress_seconds=progress_seconds
+    )
     header_line, header = find_table_header(table_path)
 
     samples, dropped_columns, inferred_marker = canonical_sample_columns(
@@ -931,6 +1018,7 @@ def main() -> int:
             only_part=args.only_part,
             list_parts=args.list_parts,
             compression=args.compression,
+            progress_seconds=args.progress_seconds,
         )
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
