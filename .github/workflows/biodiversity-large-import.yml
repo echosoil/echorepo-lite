@@ -9,6 +9,8 @@ on:
       - "tools/generate_biodiversity_piecharts.py"
       - "tests/test_biodiversity_large_import.py"
       - "tests/test_biodiversity_split_parts.py"
+      - "tests/test_biodiversity_split_optimizations.py"
+      - "tools/benchmark_biodiversity_split.py"
       - ".github/workflows/biodiversity-large-import.yml"
   workflow_dispatch:
 
@@ -36,8 +38,11 @@ jobs:
           python -m py_compile tools/generate_biodiversity_piecharts.py
           python -m py_compile tests/test_biodiversity_large_import.py
           python -m py_compile tools/prepare_split_biodiversity_for_echorepo_premin10.py
+          python -m py_compile tools/benchmark_biodiversity_split.py
+          python -m py_compile tests/test_biodiversity_split_optimizations.py
           python -m py_compile tests/test_biodiversity_split_parts.py
       - name: Unit tests without PostgreSQL
         run: |
           python -m unittest discover -s tests -p "test_biodiversity_*import.py" -v
           python -m unittest discover -s tests -p "test_biodiversity_split_parts.py" -v
+          python -m unittest discover -s tests -p "test_biodiversity_split_optimizations.py" -v

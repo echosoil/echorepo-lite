@@ -28,6 +28,49 @@ The splitter has `--list-parts` and `--only-part N` modes. In one-part mode
 it scans the original TSV on every invocation to preserve the correct global
 filter; this minimizes local output storage but performs extra work.
 
+### Fast preparation for integer-valued 16S/ITS matrices
+
+For large BIOM-derived abundance tables containing nonnegative integral
+values such as `0.0`, `12.0`, and `853.0`, the splitter now avoids
+per-cell CSV writers during size planning, skips parsing common zero values,
+and handles `XYZ.0` counts as integers when calculating the global
+minimum-reads filter. It **preserves the original values** (including their
+.0 suffixes) in output CSV parts. Other valid numeric representations
+(e.g. `1e2`, `2.5`) still work with the generic numeric fallback.
+
+Add `--fast-tsv` to use direct tab splitting rather than the general CSV
+parser, **only for unquoted TSV inputs**:
+
+```bash
+python -u tools/prepare_split_biodiversity_for_echorepo_premin10.py \
+  --table table_16S_97.tsv --taxonomy taxa_16S_97.txt \
+  --output biodiversity_16S_import.csv --marker 16S \
+  --max-output-mb 2000 --compression gzip \
+  --fail-on-missing-taxonomy --list-parts --fast-tsv
+```
+
+The optimized scanner rejects lines with double quotes rather than
+silently misreading them. Omit `--fast-tsv` to retain general quoted-TSV
+compatibility. The default parser remains unchanged. Numeric fast paths and
+CSV-size improvements apply to **both** parser modes.
+
+For a repeatable CPU/memory benchmark on a modest synthetic sparse matrix:
+
+```bash
+python -m tools.benchmark_biodiversity_split --rows 2000 --samples 1000
+```
+
+It prints elapsed time, rows/s, MiB/s, and filter counts for both parsers.
+Synthetic results are not predictions for a 25 GiB table: real-dataset disk
+speed, column count, sparsity, and compression all affect throughput.
+For an actual dataset, `--list-parts --progress-seconds 10` provides the
+real first-pass scan rate without creating output parts.
+
+As before, `--only-part N` scans the original TSV on each invocation.
+This change does not implement a cached intermediate matrix or change import
+semantics, part boundaries, progress output, or deterministic gzip behavior.
+
+
 ### Progress during long-running preparation
 
 The splitter reports progress **by default every 15 seconds** to stderr,
