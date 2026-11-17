@@ -4,6 +4,7 @@ Enabled in CI via BIODIV_DB_TEST=1. Uses disposable PostgreSQL service.
 """
 from __future__ import annotations
 
+import gzip
 import os
 import tempfile
 import unittest
@@ -63,13 +64,21 @@ class BiodiversityQueueIntegrationTests(unittest.TestCase):
                     f"otu1,{10 + i},Bacteria,Acidobacteriota,C,O,F,G,S\n"
                     f"otu2,{4 + i},Bacteria,Bacillota,C,O,F,G,S\n"
                 ).encode()
+                # Each QR column stays exclusive to one file, including gzip.
+                compressed = i == 1
+                payload = gzip.compress(csv_data, mtime=0) if compressed else csv_data
                 response = client.post(
                     "/api/v1/biodiversity/uploads",
-                    data=csv_data,
+                    data=payload,
                     headers={
                         "X-API-Key": "test-key",
-                        "X-Filename": f"biodiv_part{i:03d}.csv",
-                        "Content-Type": "text/csv",
+                        "X-Filename": (
+                            f"biodiv_part{i:03d}.csv.gz"
+                            if compressed else f"biodiv_part{i:03d}.csv"
+                        ),
+                        "Content-Type": (
+                            "application/gzip" if compressed else "text/csv"
+                        ),
                     },
                 )
                 self.assertEqual(response.status_code, 202, response.data)
