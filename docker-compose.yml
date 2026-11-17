@@ -30,6 +30,30 @@ services:
     depends_on:
       - postgres   # <--- make sure postgres is up first
 
+  biodiversity-worker:
+    build: .
+    image: echorepo-lite:latest
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: echorepo
+      DB_USER: echorepo
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-echorepo-pass}
+      DB_HOST_INSIDE: postgres
+      DB_PORT_INSIDE: "5432"
+    command: ["python", "-u", "tools/consume_biodiversity_jobs.py", "--poll-seconds", "5"]
+    volumes:
+      - ./data:/data
+      - ./tools:/app/tools:ro
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - default
+      - echorepo-shared
+
   postgres:
     image: postgres:16
     # 👇 important: no container_name here
