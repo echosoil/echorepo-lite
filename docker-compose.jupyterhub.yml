@@ -1,0 +1,47 @@
+# Phase 1: side-by-side JupyterHub pilot. Does not replace docker-compose.jupyter.yml.
+# Use with docker-compose.yml + docker-compose.prod.yml in the existing project.
+services:
+  jupyterhub:
+    build:
+      context: ./jupyterhub
+    image: echorepo-jupyterhub:phase1
+    hostname: jupyterhub
+    restart: unless-stopped
+    ports:
+      # Only the external reverse proxy must be able to reach this PRIVATE IP.
+      - "${LOCAL_IP:?set LOCAL_IP}:8890:8000"
+    environment:
+      DOCKER_NETWORK_NAME: echorepo-research-users
+      ECHOREPO_LIBRARY_HOST_DIR: "${ECHOREPO_LIBRARY_HOST_DIR:?absolute host directory required}"
+      ECHOREPO_SINGLEUSER_IMAGE: "echorepo-research-singleuser:phase1"
+      RESEARCH_MAX_SERVERS: "${RESEARCH_MAX_SERVERS:-5}"
+      RESEARCH_USER_MEM_LIMIT: "${RESEARCH_USER_MEM_LIMIT:-2G}"
+      RESEARCH_USER_CPU_LIMIT: "${RESEARCH_USER_CPU_LIMIT:-1.0}"
+      RESEARCH_IDLE_TIMEOUT: "${RESEARCH_IDLE_TIMEOUT:-1800}"
+    volumes:
+      # DockerSpawner needs daemon access; NEVER mount the socket in user containers.
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jupyterhub-state:/srv/jupyterhub/state
+    networks:
+      - research-users
+      - research-edge
+
+  research-api:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    volumes:
+      - ./jupyterhub/research-api.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      # Reach Flask, but do not put user notebooks on the DB's network.
+      - default
+      - research-users
+
+networks:
+  research-users:
+    name: echorepo-research-users
+    internal: true
+  research-edge:
+    name: echorepo-research-edge
+
+volumes:
+  jupyterhub-state:
