@@ -575,7 +575,11 @@ def _current_uploader_id() -> str:
 def _require_biodiversity_upload_key() -> None:
     """Require the configured API_KEY; no session/bearer/query-string fallback."""
     configured = (
-        current_app.config.get("API_KEY") or os.getenv("API_KEY") or ""
+        current_app.config.get("BIODIVERSITY_UPLOAD_API_KEY")
+        or os.getenv("BIODIVERSITY_UPLOAD_API_KEY")
+        or current_app.config.get("API_KEY")
+        or os.getenv("API_KEY")
+        or ""
     ).strip()
     supplied = (request.headers.get("X-API-Key") or "").strip()
     if not configured:
