@@ -515,6 +515,7 @@ def _csv_field_size(value: str) -> int:
     writer.writerow([value])
     return len(buffer.getvalue().encode("utf-8")) - 1
 
+
 def _csv_row_bytes(values: list[str]) -> bytes:
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer, lineterminator="\n")
@@ -728,7 +729,10 @@ def convert(
         "Pass 1/2 (scan/filter)", table_path, progress_seconds
     )
     with table_path.open("r", encoding="utf-8-sig", newline="") as source:
-        reader = _iter_plain_tsv(source) if fast_tsv else csv.reader(source, delimiter="\t")
+        reader = (
+            _iter_plain_tsv(source) if fast_tsv
+            else csv.reader(source, delimiter="\t")
+        )
         for _ in range(header_line):
             next(reader)
 
@@ -772,8 +776,7 @@ def convert(
             else:
                 taxonomy_otus_used.add(otu_id)
 
-            full_total = 0.0
-
+            full_total = 0
 
             for index, column in samples:
                 if index >= len(row):
@@ -799,7 +802,6 @@ def convert(
                         )
 
                     full_total += numeric
-
 
 
             record_abundance_total(full_total)
@@ -964,7 +966,10 @@ def convert(
                 )
 
             with table_path.open("r", encoding="utf-8-sig", newline="") as source:
-                reader = _iter_plain_tsv(source) if fast_tsv else csv.reader(source, delimiter="\t")
+                reader = (
+                    _iter_plain_tsv(source) if fast_tsv
+                    else csv.reader(source, delimiter="\t")
+                )
                 for _ in range(header_line):
                     next(reader)
 
@@ -990,7 +995,7 @@ def convert(
                         taxonomy_path,
                     )
 
-                    full_total = 0.0
+                    full_total = 0
 
                     for index, column in samples:
                         value = row[index].strip()
@@ -1008,7 +1013,6 @@ def convert(
                                     f"{column!r} has negative value {value!r}"
                                 )
                             full_total += numeric
-
 
                     if full_total < min_total_reads:
                         continue
