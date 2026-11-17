@@ -62,6 +62,9 @@ services:
       retries: 10
       start_period: 30s
 
+  biodiversity-worker:
+    user: "1001:1001"
+
   postgres:
     # PostgreSQL does not need a public host port for communication
     # with echorepo-lite. Bind locally only if host-side tools need it.
