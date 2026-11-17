@@ -12,6 +12,7 @@ on:
       - "tools/generate_biodiversity_piecharts.py"
       - "tests/test_biodiversity_api_upload.py"
       - "tests/test_biodiversity_split_parts.py"
+      - "tests/test_biodiversity_queue_integration.py"
       - ".github/workflows/biodiversity-api-upload.yml"
   workflow_dispatch:
 
@@ -19,10 +20,29 @@ env:
   PROJECT_ROOT: .
   CSV_PATH: data/samples.csv
   SQLITE_PATH: data/legacy.sqlite
+  DB_HOST_INSIDE: 127.0.0.1
+  DB_PORT_INSIDE: "5432"
+  DB_NAME: echorepo
+  DB_USER: echorepo
+  DB_PASSWORD: echorepo-pass
 
 jobs:
   tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: echorepo
+          POSTGRES_PASSWORD: echorepo-pass
+          POSTGRES_DB: echorepo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U echorepo -d echorepo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,7 +61,13 @@ jobs:
           python -m py_compile tools/generate_biodiversity_piecharts.py
           python -m py_compile tests/test_biodiversity_api_upload.py
           python -m py_compile tests/test_biodiversity_split_parts.py
+          python -m py_compile tests/test_biodiversity_queue_integration.py
       - name: Test upload and splitting
         run: |
           python -m unittest discover -s tests -p "test_biodiversity_api_upload.py" -v
           python -m unittest discover -s tests -p "test_biodiversity_split_parts.py" -v
+      - name: Integration test against temporary PostgreSQL
+        env:
+          BIODIV_DB_TEST: "1"
+        run: |
+          python -m unittest discover -s tests -p "test_biodiversity_queue_integration.py" -v
