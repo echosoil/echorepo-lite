@@ -37,7 +37,7 @@ class SamplePartTests(unittest.TestCase):
                 output_path=output,
                 marker="16S",
                 fail_on_missing_taxonomy=True,
-                max_output_bytes=650,
+                max_output_bytes=950,
                 min_total_reads=10,
             )
             plan = convert(**kwargs, list_parts=True)
@@ -52,7 +52,7 @@ class SamplePartTests(unittest.TestCase):
                 present = [p for p in result["output_parts"] if p["written"]]
                 self.assertEqual([p["part"] for p in present], [number])
                 path = Path(present[0]["path"])
-                self.assertLessEqual(path.stat().st_size, 650)
+                self.assertLessEqual(path.stat().st_size, 950)
                 with path.open(newline="") as stream:
                     reader = csv.reader(stream)
                     header = next(reader)
