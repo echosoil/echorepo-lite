@@ -10,6 +10,7 @@ import math
 import os
 import re
 import sqlite3
+from pathlib import Path
 import threading
 import time
 from collections.abc import Iterable, Mapping
@@ -31,6 +32,12 @@ from flask import (
 )
 from psycopg2.extras import RealDictCursor
 
+from echorepo.services.biodiversity_api_jobs import (
+    BiodiversityUploadTooLarge,
+    InvalidBiodiversityUpload,
+    stage_biodiversity_stream,
+    validate_filename,
+)
 from echorepo.services.biodiversity_raw_exports import (
     build_biodiversity_raw_bundle,
 )
@@ -556,6 +563,162 @@ def _current_uploader_id() -> str:
         or profile.get("email")
         or session.get("user")
         or "api"
+    )
+
+
+# -----------------------------------------------------------------------------
+# Biodiversity: API-key-only, disk-backed, asynchronous raw-file upload.
+# This is intentionally separate from the session-based /lab-import-auto.
+# -----------------------------------------------------------------------------
+
+
+def _require_biodiversity_upload_key() -> None:
+    """Require the configured API_KEY; no session/bearer/query-string fallback."""
+    configured = (
+        current_app.config.get("BIODIVERSITY_UPLOAD_API_KEY")
+        or os.getenv("BIODIVERSITY_UPLOAD_API_KEY")
+        or current_app.config.get("API_KEY")
+        or os.getenv("API_KEY")
+        or ""
+    ).strip()
+    supplied = (request.headers.get("X-API-Key") or "").strip()
+    if not configured:
+        abort(503, description="Biodiversity upload API is not configured")
+    if not supplied or not hmac.compare_digest(supplied, configured):
+        abort(401, description="Invalid X-API-Key")
+
+
+@data_api.post("/biodiversity/uploads")
+def biodiversity_upload_enqueue():
+    """Stream a single sample-column-part CSV/TSV onto a bounded local volume.
+
+    Importing is performed by a separate worker after returning the job ID.
+    The client must use --data-binary and X-Filename, not multipart encoding.
+    """
+    _require_biodiversity_upload_key()
+    if request.mimetype not in {
+        "application/octet-stream", "text/csv", "text/tab-separated-values",
+        "text/plain",
+    }:
+        abort(415, description="Expected a raw CSV/TSV body, not multipart/form-data")
+
+    try:
+        filename = validate_filename(request.headers.get("X-Filename"))
+        max_bytes = int(
+            current_app.config.get("BIODIVERSITY_API_MAX_UPLOAD_BYTES")
+            or os.getenv("BIODIVERSITY_API_MAX_UPLOAD_BYTES", "2200000000")
+        )
+        if max_bytes < 1:
+            raise ValueError("Invalid BIODIVERSITY_API_MAX_UPLOAD_BYTES")
+        directory = Path(
+            current_app.config.get("BIODIVERSITY_UPLOAD_STAGING_DIR")
+            or os.getenv(
+                "BIODIVERSITY_UPLOAD_STAGING_DIR",
+                "/data/biodiversity/incoming",
+            )
+        )
+        receipt = stage_biodiversity_stream(
+            request.stream,
+            directory,
+            filename,
+            max_bytes=max_bytes,
+            content_length=request.content_length,
+        )
+    except BiodiversityUploadTooLarge as exc:
+        abort(413, description=str(exc))
+    except InvalidBiodiversityUpload as exc:
+        abort(400, description=str(exc))
+    except (OSError, ValueError):
+        current_app.logger.exception("Cannot stage biodiversity upload")
+        abort(500, description="Biodiversity upload staging failed")
+
+    try:
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO biodiversity_import_jobs (
+                    job_id, original_filename, source_sha256,
+                    size_bytes, uploaded_by, status
+                )
+                VALUES (%s::uuid, %s, %s, %s, %s, 'queued')
+                """,
+                (
+                    receipt.job_id,
+                    receipt.filename,
+                    receipt.sha256,
+                    receipt.size_bytes,
+                    "api_key",
+                ),
+            )
+            conn.commit()
+    except Exception:
+        receipt.path.unlink(missing_ok=True)
+        current_app.logger.exception("Could not enqueue biodiversity upload")
+        abort(503, description="Database queue is unavailable")
+
+    g._analytics_extra = {
+        "upload_type": "biodiversity_api_queued",
+        "file_name": receipt.filename,
+        "size_bytes": receipt.size_bytes,
+    }
+    response = jsonify(
+        {
+            "ok": True,
+            "job_id": receipt.job_id,
+            "status": "queued",
+            "filename": receipt.filename,
+            "size_bytes": receipt.size_bytes,
+            "sha256": receipt.sha256,
+            "status_url": f"/api/v1/biodiversity/uploads/{receipt.job_id}",
+        }
+    )
+    response.status_code = 202
+    response.headers["Location"] = f"/api/v1/biodiversity/uploads/{receipt.job_id}"
+    response.headers["Retry-After"] = "5"
+    return response
+
+
+@data_api.get("/biodiversity/uploads/<uuid:job_id>")
+def biodiversity_upload_status(job_id):
+    """Report queued/running/succeeded/failed status (API key required)."""
+    _require_biodiversity_upload_key()
+    with get_pg_conn() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT original_filename, source_sha256, size_bytes, status,
+                   queued_at, started_at, completed_at,
+                   inserted_rows, error_message
+            FROM biodiversity_import_jobs
+            WHERE job_id = %s::uuid
+            """,
+            (str(job_id),),
+        )
+        row = cur.fetchone()
+    if row is None:
+        abort(404, description="Unknown biodiversity import job")
+
+    (
+        filename, digest, size_bytes, status, queued_at, started_at,
+        completed_at, inserted_rows, error_message,
+    ) = row
+
+    def iso(t):
+        return t.isoformat() if t is not None else None
+
+    return jsonify(
+        {
+            "ok": status == "succeeded",
+            "job_id": str(job_id),
+            "filename": filename,
+            "sha256": digest,
+            "size_bytes": size_bytes,
+            "status": status,
+            "queued_at": iso(queued_at),
+            "started_at": iso(started_at),
+            "completed_at": iso(completed_at),
+            "rows_inserted": inserted_rows,
+            "error": error_message,
+        }
     )
 
 
