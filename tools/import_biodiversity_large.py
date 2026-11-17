@@ -348,7 +348,7 @@ def main() -> int:
             args.min_total_reads, args.fail_on_missing_taxonomy,
             args.scratch_dir,
         )
-        filename = args.table.name
+        filename = f"{args.table.name} + {args.taxonomy.name}"
         print(
             f"[PLAN] Join {args.table} + {args.taxonomy}, marker={args.marker}, "
             f"min-total-reads={args.min_total_reads:g}; no output matrix or "
