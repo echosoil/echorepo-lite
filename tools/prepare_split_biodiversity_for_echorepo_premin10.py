@@ -195,6 +195,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--fast-tsv",
+        action="store_true",
+        help=(
+            "Use direct tab splitting for unquoted laboratory TSV files. "
+            "Reject quoted fields instead of interpreting them incorrectly. "
+            "The default preserves general quoted-TSV support."
+        ),
+    )
+    parser.add_argument(
         "--report-json",
         help="Optional path for a machine-readable conversion report",
     )
@@ -486,19 +495,59 @@ def canonical_sample_columns(
 
 
 def _csv_field_size(value: str) -> int:
-    """Exact UTF-8 byte size of one CSV-encoded field, excluding newline."""
+    """Exact CSV field size, with a cheap path for ordinary ASCII fields.
+
+    Empty values intentionally use csv.writer's single-field encoding to
+    preserve the existing split planning behavior.
+    """
+    if (
+        value
+        and value.isascii()
+        and '"' not in value
+        and "," not in value
+        and "\r" not in value
+        and "\n" not in value
+    ):
+        return len(value)
+
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow([value])
-    encoded = buffer.getvalue().encode("utf-8")
-    return len(encoded) - 1  # remove final newline
-
+    return len(buffer.getvalue().encode("utf-8")) - 1
 
 def _csv_row_bytes(values: list[str]) -> bytes:
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow(values)
     return buffer.getvalue().encode("utf-8")
+
+
+def _parse_abundance(value: str) -> int | float:
+    """Read exact XYZ.0 integers cheaply, retaining other numeric formats.
+
+    Zero is overwhelmingly common in sparse OTU matrices. Preserve the
+    original string for output; this is used for summation/validation only.
+    """
+    if value == "0.0" or value == "0":
+        return 0
+    if value.endswith(".0"):
+        try:
+            return int(value[:-2])
+        except ValueError:
+            pass
+    return float(value)
+
+
+def _validated_abundance_field_size(value: str) -> int:
+    """CSV byte count after numeric validation in pass 1.
+
+    A nonempty value accepted by float()/integer parsing cannot contain
+    delimiters, quotes or line breaks, so no CSV quoting is needed.
+    Preserve the old sizing behavior for an empty field.
+    """
+    if not value:
+        return _csv_field_size(value)
+    return len(value) if value.isascii() else len(value.encode("utf-8"))
 
 
 def _compact_number(value: float) -> str:
@@ -553,6 +602,21 @@ def _row_taxonomy(
     )
 
 
+def _iter_plain_tsv(lines: Iterable[str]) -> Iterable[list[str]]:
+    """Fast, strict parsing for unquoted laboratory abundance TSV files.
+
+    Quoted TSV fields (including multiline fields) require the normal CSV
+    reader; reject them rather than silently changing column boundaries.
+    """
+    for line in lines:
+        if '"' in line:
+            raise ValueError(
+                "--fast-tsv requires unquoted TSV fields; "
+                "rerun without --fast-tsv for quoted inputs"
+            )
+        yield line.rstrip("\r\n").split("\t")
+
+
 def convert(
     table_path: Path,
     taxonomy_path: Path,
@@ -566,6 +630,7 @@ def convert(
     list_parts: bool = False,
     compression: str = "none",
     progress_seconds: float = 0.0,
+    fast_tsv: bool = False,
 ) -> dict[str, object]:
     """
     Convert the split laboratory format to ECHOREPO CSV files.
@@ -663,7 +728,7 @@ def convert(
         "Pass 1/2 (scan/filter)", table_path, progress_seconds
     )
     with table_path.open("r", encoding="utf-8-sig", newline="") as source:
-        reader = csv.reader(source, delimiter="\t")
+        reader = _iter_plain_tsv(source) if fast_tsv else csv.reader(source, delimiter="\t")
         for _ in range(header_line):
             next(reader)
 
@@ -708,7 +773,7 @@ def convert(
                 taxonomy_otus_used.add(otu_id)
 
             full_total = 0.0
-            sample_values: list[str] = []
+
 
             for index, column in samples:
                 if index >= len(row):
@@ -720,7 +785,7 @@ def convert(
                 value = row[index].strip()
                 if value:
                     try:
-                        numeric = float(value)
+                        numeric = _parse_abundance(value)
                     except ValueError as exc:
                         raise ValueError(
                             f"{table_path}: line {line_number}, sample "
@@ -735,7 +800,7 @@ def convert(
 
                     full_total += numeric
 
-                sample_values.append(value)
+
 
             record_abundance_total(full_total)
 
@@ -749,8 +814,10 @@ def convert(
             if missing:
                 retained_missing_taxonomy += 1
 
-            for sample_pos, value in enumerate(sample_values):
-                sample_field_bytes[sample_pos] += _csv_field_size(value)
+            for sample_pos, (index, _column) in enumerate(samples):
+                sample_field_bytes[sample_pos] += _validated_abundance_field_size(
+                    row[index].strip()
+                )
 
             fixed_values = [
                 otu_id,
@@ -897,7 +964,7 @@ def convert(
                 )
 
             with table_path.open("r", encoding="utf-8-sig", newline="") as source:
-                reader = csv.reader(source, delimiter="\t")
+                reader = _iter_plain_tsv(source) if fast_tsv else csv.reader(source, delimiter="\t")
                 for _ in range(header_line):
                     next(reader)
 
@@ -924,12 +991,12 @@ def convert(
                     )
 
                     full_total = 0.0
-                    all_sample_values: list[str] = []
+
                     for index, column in samples:
                         value = row[index].strip()
                         if value:
                             try:
-                                numeric = float(value)
+                                numeric = _parse_abundance(value)
                             except ValueError as exc:
                                 raise ValueError(
                                     f"{table_path}: line {line_number}, sample "
@@ -941,7 +1008,7 @@ def convert(
                                     f"{column!r} has negative value {value!r}"
                                 )
                             full_total += numeric
-                        all_sample_values.append(value)
+
 
                     if full_total < min_total_reads:
                         continue
@@ -955,7 +1022,7 @@ def convert(
                             _csv_row_bytes(
                                 [
                                     otu_id,
-                                    *[all_sample_values[pos] for pos in group],
+                                    *[row[samples[pos][0]].strip() for pos in group],
                                     *taxonomy_values,
                                 ]
                             )
@@ -1055,6 +1122,7 @@ def main() -> int:
             list_parts=args.list_parts,
             compression=args.compression,
             progress_seconds=args.progress_seconds,
+            fast_tsv=args.fast_tsv,
         )
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
