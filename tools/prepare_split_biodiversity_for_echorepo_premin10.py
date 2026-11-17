@@ -659,6 +659,9 @@ def convert(
         else:
             abundance_total_distribution[">=1000"] += 1
 
+    scan_progress = FileProgress(
+        "Pass 1/2 (scan/filter)", table_path, progress_seconds
+    )
     with table_path.open("r", encoding="utf-8-sig", newline="") as source:
         reader = csv.reader(source, delimiter="\t")
         for _ in range(header_line):
@@ -671,6 +674,10 @@ def convert(
                 continue
 
             input_otu_rows += 1
+            scan_progress.update(
+                input_otu_rows, source,
+                detail=f"kept={retained_otu_rows:,}; filtered={excluded_below_min_total:,}",
+            )
 
             expected_without_taxonomy = (
                 len(header) - 1 if taxonomy_header_index is not None else len(header)
@@ -751,6 +758,10 @@ def convert(
             ]
             fixed_data_field_bytes += sum(_csv_field_size(value) for value in fixed_values)
 
+    scan_progress.finish(
+        input_otu_rows,
+        detail=f"kept={retained_otu_rows:,}; filtered={excluded_below_min_total:,}",
+    )
     if input_otu_rows == 0:
         raise ValueError(f"{table_path}: no OTU rows were found")
 
@@ -813,6 +824,15 @@ def convert(
     if current:
         groups.append(current)
 
+    if progress_seconds > 0:
+        print(
+            f"[progress] Split plan: {len(groups):,} part(s); "
+            f"{len(samples):,} QR columns; "
+            f"{retained_otu_rows:,} retained OTUs; "
+            f"mode={'plan only' if list_parts else 'write output'}",
+            file=sys.stderr, flush=True,
+        )
+
     # ------------------------------------------------------------------
     # PASS 2 (optional)
     #
@@ -842,6 +862,11 @@ def convert(
     # gzip writers need their underlying file descriptor closed separately.
     part_handles: list[tuple[int, Path, object, object, list[int]]] = []
     if selected_parts:
+        write_progress = FileProgress(
+            "Pass 2/2 (write parts)", table_path, progress_seconds
+        )
+        scanned_rows = 0
+        written_rows = 0
         output_path.parent.mkdir(parents=True, exist_ok=True)
         # Only the original full-output mode clears old part files.
         if only_part is None:
@@ -885,6 +910,11 @@ def convert(
                     if row[0].lstrip().startswith("#"):
                         continue
 
+                    scanned_rows += 1
+                    write_progress.update(
+                        scanned_rows, source, detail=f"OTUs written={written_rows:,}"
+                    )
+
                     otu_id = row[0].strip()
                     taxonomy, _missing = _row_taxonomy(
                         otu_id,
@@ -916,6 +946,7 @@ def convert(
                     if full_total < min_total_reads:
                         continue
 
+                    written_rows += 1
                     taxonomy_values = [
                         taxonomy[column] for column in OUTPUT_TAXONOMY_COLUMNS
                     ]
@@ -952,6 +983,11 @@ def convert(
                         f"requested {max_output_bytes}-byte limit"
                     )
                 temporary.replace(path)
+
+        write_progress.finish(
+            scanned_rows,
+            detail=f"OTUs written={written_rows:,}; output parts={len(selected_parts):,}",
+        )
 
     output_parts: list[dict[str, object]] = []
     written_parts = {number for number, _group in selected_parts}
