@@ -1,0 +1,33 @@
+name: Large biodiversity importer checks
+
+on:
+  pull_request:
+    paths:
+      - "echorepo/services/biodiversity_import.py"
+      - "tools/import_biodiversity_large.py"
+      - "tools/generate_biodiversity_piecharts.py"
+      - "tests/test_biodiversity_large_import.py"
+      - ".github/workflows/biodiversity-large-import.yml"
+  workflow_dispatch:
+
+jobs:
+  streaming-import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install flask python-dotenv openpyxl psycopg2-binary minio
+      - name: Compile changed Python modules
+        run: |
+          python -m py_compile echorepo/services/biodiversity_import.py
+          python -m py_compile tools/import_biodiversity_large.py
+          python -m py_compile tools/generate_biodiversity_piecharts.py
+          python -m py_compile tests/test_biodiversity_large_import.py
+      - name: Unit tests without PostgreSQL
+        run: |
+          python -m unittest tests/test_biodiversity_large_import.py -v
