@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import io
 import logging
 import re
@@ -116,7 +117,7 @@ def _is_biodiversity_header(header) -> bool:
 
 
 def _open_biodiversity_rows(
-    file_bytes: bytes,
+    source: bytes | Path | object,
     filename: str,
 ):
     """
@@ -130,6 +131,12 @@ def _open_biodiversity_rows(
 
         header, rows_iterator, close_function, source_description
     """
+    # A joined abundance+taxonomy source can expose a lazy row iterator.
+    # The 25+ GB table is never copied into a bytes object or temporary CSV.
+    custom_opener = getattr(source, "open_biodiversity_rows", None)
+    if callable(custom_opener):
+        return custom_opener()
+
     suffix = Path(filename or "").suffix.lower()
 
     # --------------------------------------------------------------
@@ -138,7 +145,7 @@ def _open_biodiversity_rows(
     if suffix == ".xlsx":
         try:
             wb = load_workbook(
-                BytesIO(file_bytes),
+                source if isinstance(source, Path) else BytesIO(source),
                 read_only=True,
                 data_only=True,
             )
@@ -201,7 +208,7 @@ def _open_biodiversity_rows(
     if suffix not in {".csv", ".tsv", ".txt"}:
         raise ValueError("Unsupported biodiversity file type. Use .xlsx, .csv or .tsv.")
 
-    byte_stream = BytesIO(file_bytes)
+    byte_stream = source.open('rb') if isinstance(source, Path) else BytesIO(source)
 
     try:
         text_stream = io.TextIOWrapper(
@@ -283,9 +290,14 @@ def _looks_like_biodiversity_file(
 
 
 def _import_biodiversity_streaming(
-    file_bytes: bytes,
+    source: bytes | Path | object,
     filename: str,
     uploader_id: str,
+    *,
+    archive_raw: bool = True,
+    source_sha256: str | None = None,
+    progress_every: int = 50_000,
+    post_min10: bool | None = None,
 ):
     """
     Import XLSX, CSV or TSV biodiversity data while preserving both:
@@ -293,14 +305,20 @@ def _import_biodiversity_streaming(
       1. raw feature/OTU-level taxonomy and sparse non-zero abundances;
       2. the existing compact Phylum-level statistics.
 
-    The original upload is also archived unchanged in MinIO. The SHA-256
-    of that source file is used as the content-addressed upload_id.
+    Legacy web uploads are archived unchanged in MinIO. A server-side Path or
+    joined streaming source may instead omit the archive and supply a stable
+    SHA-256 content identity. In both cases the structured raw OTUs and
+    abundances are preserved in PostgreSQL.
     """
     log = logging.getLogger(__name__)
 
     level = "Phylum"
+    original_source_stat = source.stat() if isinstance(source, Path) else None
 
-    apply_min10_postfilter = _apply_min10_postfilter_for_filename(filename)
+    apply_min10_postfilter = (
+        _apply_min10_postfilter_for_filename(filename)
+        if post_min10 is None else bool(post_min10)
+    )
 
     # Never apply a second <10 calculation to a sample-split part: such a
     # part contains only a subset of the original sample columns.
@@ -454,7 +472,7 @@ def _import_biodiversity_streaming(
             close_source,
             source_description,
         ) = _open_biodiversity_rows(
-            file_bytes,
+            source,
             filename,
         )
 
@@ -528,7 +546,9 @@ def _import_biodiversity_streaming(
                 # Python row index, zero-based.
                 "idx": idx,
                 # Original CSV/XLSX column number, one-based.
-                "source_column_number": idx + 1,
+                "source_column_number": getattr(
+                    source, "source_sample_column_numbers", {}
+                ).get(column_name.upper(), idx + 1),
                 # Preserve exactly what the laboratory file called it.
                 "column_name": column_name,
                 "source_sample_label": column_name,
@@ -942,28 +962,46 @@ def _import_biodiversity_streaming(
     # We do this before streaming the OTU rows because upload_id is the
     # SHA-256 of the original source file and is needed by all raw child rows.
     #
-    try:
-        raw_archive = archive_raw_biodiversity_upload(
-            file_bytes=file_bytes,
-            filename=filename,
-            uploader_id=uploader_id,
-            aggregation_level=level,
-        )
-    except StorageNotConfigured as exc:
-        close_source()
-        abort(
-            503,
-            description=str(exc),
-        )
-    except StorageError as exc:
-        close_source()
-        abort(
-            503,
-            description=str(exc),
-        )
+    if archive_raw:
+        if not isinstance(source, bytes):
+            close_source()
+            raise ValueError(
+                "MinIO archiving supports the legacy bytes upload path only. "
+                "Use archive_raw=False with a local file or a streaming source."
+            )
+        try:
+            raw_archive = archive_raw_biodiversity_upload(
+                file_bytes=source,
+                filename=filename,
+                uploader_id=uploader_id,
+                aggregation_level=level,
+            )
+        except (StorageNotConfigured, StorageError) as exc:
+            close_source()
+            abort(503, description=str(exc))
+        raw_archive_object = raw_archive.object_name
+        source_sha256 = raw_archive.sha256
+    else:
+        # No copy of the source is stored in MinIO. The structured raw
+        # PostgreSQL tables remain available for downstream exports.
+        raw_archive_object = ""
+        if source_sha256 is None:
+            if isinstance(source, Path):
+                digest = hashlib.sha256()
+                with source.open("rb") as handle:
+                    for chunk in iter(lambda: handle.read(8 * 1024 * 1024), b""):
+                        digest.update(chunk)
+                source_sha256 = digest.hexdigest()
+            else:
+                close_source()
+                raise ValueError(
+                    "A custom streaming source must supply source_sha256 "
+                    "when archive_raw=False."
+                )
+        if not re.fullmatch(r"[0-9a-f]{64}", source_sha256):
+            close_source()
+            raise ValueError("source_sha256 must be a lowercase SHA-256 hex digest")
 
-    raw_archive_object = raw_archive.object_name
-    source_sha256 = raw_archive.sha256
     upload_id = source_sha256
 
     # ------------------------------------------------------------------
@@ -1067,7 +1105,7 @@ def _import_biodiversity_streaming(
                     original_filename =
                         EXCLUDED.original_filename,
                     archive_object_name =
-                        EXCLUDED.archive_object_name,
+                        COALESCE(NULLIF(EXCLUDED.archive_object_name, ''), biodiversity_uploads.archive_object_name),
                     aggregation_level =
                         EXCLUDED.aggregation_level,
                     sample_count =
@@ -1210,16 +1248,26 @@ def _import_biodiversity_streaming(
             # ----------------------------------------------------------
             # 4. Stream every OTU / feature row once
             # ----------------------------------------------------------
-            for source_row_number, row in enumerate(
+            for stream_row_number, row in enumerate(
                 rows_iter,
                 start=2,
             ):
+                source_row_number = getattr(
+                    row, "source_row_number", stream_row_number
+                )
                 otu_id = "" if row[otu_col_idx] is None else str(row[otu_col_idx]).strip()
 
                 if not otu_id:
                     continue
 
                 source_rows += 1
+                if progress_every and source_rows % progress_every == 0:
+                    log.warning(
+                        "BIOUPLOAD: processed %s OTU rows (%s retained; %s nonzero entries)",
+                        f"{source_rows:,}",
+                        f"{feature_index:,}",
+                        f"{nonzero_values:,}",
+                    )
 
                 taxonomy = taxonomy_for_row(row)
 
@@ -1338,6 +1386,19 @@ def _import_biodiversity_streaming(
                         )
                         + count
                     )
+
+            # Ensure the backing input did not change during the long import.
+            if isinstance(source, Path):
+                current_stat = source.stat()
+                if (
+                    current_stat.st_size != original_source_stat.st_size
+                    or current_stat.st_mtime_ns != original_source_stat.st_mtime_ns
+                ):
+                    raise RuntimeError(
+                        "Source file changed while being imported; refusing to commit"
+                    )
+            elif callable(getattr(source, "assert_unchanged", None)):
+                source.assert_unchanged()
 
             # Flush whatever remains after the final source row.
             flush_features()
