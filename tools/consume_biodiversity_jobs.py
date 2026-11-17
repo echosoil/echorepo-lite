@@ -88,7 +88,8 @@ def finish(conn, job_id: str, *, rows: int | None, error: str | None):
 def run(*, staging_dir: Path, poll_seconds: int, once: bool) -> None:
     # A session-level PostgreSQL advisory lock prevents concurrent workers
     # from importing overlapping sample-column parts.
-    with get_pg_conn() as conn:
+    conn = get_pg_conn()
+    try:
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute("SELECT pg_try_advisory_lock(%s)", (ADVISORY_LOCK,))
@@ -163,6 +164,8 @@ def run(*, staging_dir: Path, poll_seconds: int, once: bool) -> None:
                     cur.execute("SELECT pg_advisory_unlock(%s)", (ADVISORY_LOCK,))
             except Exception:
                 LOG.exception("Could not release advisory lock")
+    finally:
+        conn.close()
 
 
 def main() -> None:
