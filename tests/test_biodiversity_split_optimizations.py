@@ -95,7 +95,7 @@ class SplitterEquivalenceTests(unittest.TestCase):
             output_path=output,
             marker="16S",
             fail_on_missing_taxonomy=True,
-            max_output_bytes=1800,
+            max_output_bytes=2800,
             min_total_reads=10,
             compression=compression,
             fast_tsv=fast,
