@@ -1,0 +1,47 @@
+name: Biodiversity API upload and column-split checks
+
+on:
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "echorepo/services/biodiversity_api_jobs.py"
+      - "echorepo/services/biodiversity_import.py"
+      - "echorepo/routes/data_api.py"
+      - "tools/prepare_split_biodiversity_for_echorepo_premin10.py"
+      - "tools/consume_biodiversity_jobs.py"
+      - "tools/generate_biodiversity_piecharts.py"
+      - "tests/test_biodiversity_api_upload.py"
+      - "tests/test_biodiversity_split_parts.py"
+      - ".github/workflows/biodiversity-api-upload.yml"
+  workflow_dispatch:
+
+env:
+  PROJECT_ROOT: .
+  CSV_PATH: data/samples.csv
+  SQLITE_PATH: data/legacy.sqlite
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+      - name: Compile changed modules
+        run: |
+          python -m py_compile echorepo/services/biodiversity_import.py
+          python -m py_compile echorepo/services/biodiversity_api_jobs.py
+          python -m py_compile echorepo/routes/data_api.py
+          python -m py_compile tools/consume_biodiversity_jobs.py
+          python -m py_compile tools/prepare_split_biodiversity_for_echorepo_premin10.py
+          python -m py_compile tools/generate_biodiversity_piecharts.py
+          python -m py_compile tests/test_biodiversity_api_upload.py
+          python -m py_compile tests/test_biodiversity_split_parts.py
+      - name: Test upload and splitting
+        run: |
+          python -m unittest discover -s tests -p "test_biodiversity_api_upload.py" -v
+          python -m unittest discover -s tests -p "test_biodiversity_split_parts.py" -v
