@@ -69,6 +69,14 @@ def joined_identity(
     return digest.hexdigest()
 
 
+class SourcedRow(list):
+    """List-like virtual row retaining its original TSV line number."""
+
+    def __init__(self, fields, line_number: int):
+        super().__init__(fields)
+        self.source_row_number = line_number
+
+
 class JoinedTsvSource:
     """Lazy OTU + taxonomy rows; only the taxonomy index uses scratch space."""
 
@@ -87,6 +95,20 @@ class JoinedTsvSource:
         self.min_total_reads = min_total_reads
         self.fail_on_missing_taxonomy = fail_on_missing_taxonomy
         self.scratch_dir = scratch_dir
+        self.source_sample_column_numbers = {}
+        self._table_stat = table.stat()
+        self._taxonomy_stat = taxonomy.stat()
+
+    def assert_unchanged(self):
+        for path, original in (
+            (self.table, self._table_stat),
+            (self.taxonomy, self._taxonomy_stat),
+        ):
+            now = path.stat()
+            if (now.st_size, now.st_mtime_ns) != (
+                original.st_size, original.st_mtime_ns
+            ):
+                raise RuntimeError(f"Input changed during import: {path}")
 
     def _build_taxonomy_index(self, connection: sqlite3.Connection) -> None:
         connection.execute(
@@ -171,6 +193,9 @@ class JoinedTsvSource:
             if actual_marker != self.marker:
                 raise ValueError("Molecular-marker mismatch")
             labels = [label.upper() for _, label in selected]
+            self.source_sample_column_numbers = {
+                label.upper(): idx + 1 for idx, label in selected
+            }
             if len(labels) != len(set(labels)):
                 raise ValueError("Duplicate normalized sample columns in source TSV")
             expected_lengths = {len(header)}
@@ -228,7 +253,9 @@ class JoinedTsvSource:
                             f"{stats['rows']:,}",
                             f"{stats['below_min']:,}",
                         )
-                    yield [otu, *sample_values, *taxonomy]
+                    yield SourcedRow(
+                        [otu, *sample_values, *taxonomy], reader.line_num
+                    )
 
             def close():
                 try:
