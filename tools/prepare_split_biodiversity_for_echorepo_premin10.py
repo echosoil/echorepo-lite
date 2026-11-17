@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import io
 import json
 import re
@@ -94,6 +95,16 @@ def parse_args() -> argparse.Namespace:
             "Maximum size of each output CSV in decimal MB. Default: 150. "
             "Files are split by sample columns, while every OTU row is kept "
             "in every part."
+        ),
+    )
+    parser.add_argument(
+        "--compression",
+        choices=("none", "gzip"),
+        default="none",
+        help=(
+            "Use 'gzip' to produce deterministic .csv.gz parts directly. "
+            "The --max-output-mb planning cap is on uncompressed CSV bytes; "
+            "the actual compressed files are measured."
         ),
     )
     parser.add_argument(
@@ -414,16 +425,29 @@ def _compact_number(value: float) -> str:
     return format(value, ".15g")
 
 
-def _part_path(base_output: Path, part_number: int) -> Path:
-    suffix = base_output.suffix or ".csv"
-    stem = base_output.stem if base_output.suffix else base_output.name
+def _part_path(
+    base_output: Path, part_number: int, compression: str = "none"
+) -> Path:
+    if compression not in {"none", "gzip"}:
+        raise ValueError("Unknown output compression setting")
+    name = base_output.name
+    if name.lower().endswith(".csv.gz"):
+        if compression != "gzip":
+            raise ValueError(".csv.gz output requires --compression gzip")
+        stem = name[:-len(".csv.gz")]
+    elif name.lower().endswith(".csv"):
+        stem = name[:-len(".csv")]
+    else:
+        raise ValueError("--output must end with .csv or .csv.gz")
+    suffix = ".csv.gz" if compression == "gzip" else ".csv"
     return base_output.with_name(f"{stem}_part{part_number:03d}{suffix}")
 
 
-def _remove_old_parts(base_output: Path) -> None:
-    suffix = base_output.suffix or ".csv"
-    stem = base_output.stem if base_output.suffix else base_output.name
-    pattern = f"{stem}_part[0-9][0-9][0-9]{suffix}"
+def _remove_old_parts(base_output: Path, compression: str = "none") -> None:
+    first = _part_path(base_output, 1, compression)
+    prefix = first.name.split("_part001", 1)[0]
+    suffix = ".csv.gz" if compression == "gzip" else ".csv"
+    pattern = f"{prefix}_part[0-9][0-9][0-9]{suffix}"
     for path in base_output.parent.glob(pattern):
         path.unlink()
 
@@ -458,6 +482,7 @@ def convert(
     *,
     only_part: int | None = None,
     list_parts: bool = False,
+    compression: str = "none",
 ) -> dict[str, object]:
     """
     Convert the split laboratory format to ECHOREPO CSV files.
@@ -479,6 +504,9 @@ def convert(
     """
     if max_output_bytes <= 0:
         raise ValueError("--max-output-mb must be greater than zero")
+    if compression not in {"none", "gzip"}:
+        raise ValueError("--compression must be one of none/gzip")
+    _part_path(output_path, 1, compression)
     if min_total_reads < 0:
         raise ValueError("--min-total-reads must be >= 0")
     if only_part is not None and only_part < 1:
@@ -724,20 +752,28 @@ def convert(
         )
     )
 
-    part_handles: list[tuple[int, Path, object, list[int]]] = []
+    # gzip writers need their underlying file descriptor closed separately.
+    part_handles: list[tuple[int, Path, object, object, list[int]]] = []
     if selected_parts:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         # Only the original full-output mode clears old part files.
         if only_part is None:
-            _remove_old_parts(output_path)
+            _remove_old_parts(output_path, compression)
 
         try:
             for part_number, group in selected_parts:
-                path = _part_path(output_path, part_number)
-                # Write to a temporary file and publish only once complete.
+                path = _part_path(output_path, part_number, compression)
+                # Write gzip directly without any temporary uncompressed CSV.
                 temporary = path.with_name(path.name + ".tmp")
-                handle = temporary.open("wb")
-                part_handles.append((part_number, path, handle, group))
+                raw = temporary.open("xb")
+                if compression == "gzip":
+                    handle = gzip.GzipFile(
+                        filename="", mode="wb", fileobj=raw,
+                        compresslevel=6, mtime=0,
+                    )
+                else:
+                    handle = raw
+                part_handles.append((part_number, path, handle, raw, group))
                 handle.write(
                     _csv_row_bytes(
                         [
@@ -796,7 +832,7 @@ def convert(
                     taxonomy_values = [
                         taxonomy[column] for column in OUTPUT_TAXONOMY_COLUMNS
                     ]
-                    for _number, _path, handle, group in part_handles:
+                    for _number, _path, handle, _raw, group in part_handles:
                         handle.write(
                             _csv_row_bytes(
                                 [
@@ -807,13 +843,19 @@ def convert(
                             )
                         )
         except BaseException:
-            for _number, path, handle, _group in part_handles:
-                handle.close()
+            for _number, path, handle, raw, _group in part_handles:
+                try:
+                    handle.close()
+                finally:
+                    raw.close()
                 path.with_name(path.name + ".tmp").unlink(missing_ok=True)
             raise
         else:
-            for part_number, path, handle, group in part_handles:
-                handle.close()
+            for part_number, path, handle, raw, group in part_handles:
+                try:
+                    handle.close()
+                finally:
+                    raw.close()
                 temporary = path.with_name(path.name + ".tmp")
                 size_bytes = temporary.stat().st_size
                 if size_bytes > max_output_bytes:
@@ -827,15 +869,19 @@ def convert(
     output_parts: list[dict[str, object]] = []
     written_parts = {number for number, _group in selected_parts}
     for part_number, group in enumerate(groups, start=1):
-        path = _part_path(output_path, part_number)
+        path = _part_path(output_path, part_number, compression)
         written = part_number in written_parts
-        size_bytes = path.stat().st_size if written else estimated_part_size(group)
+        uncompressed_bytes = estimated_part_size(group)
+        # Planning cannot predict gzip size: estimates are uncompressed.
+        size_bytes = path.stat().st_size if written else uncompressed_bytes
         output_parts.append(
             {
                 "part": part_number,
                 "path": str(path),
                 "size_bytes": size_bytes,
                 "estimated": not written,
+                "compression": compression,
+                "uncompressed_size_bytes": uncompressed_bytes,
                 "size_mb": round(size_bytes / 1_000_000, 3),
                 "sample_count": len(group),
                 "first_sample": samples[group[0]][1],
@@ -851,6 +897,7 @@ def convert(
         "table": str(table_path),
         "taxonomy": str(taxonomy_path),
         "output_base": str(output_path),
+        "compression": compression,
         "output_parts": output_parts,
         "max_output_bytes": max_output_bytes,
         "marker": inferred_marker,
@@ -883,6 +930,7 @@ def main() -> int:
             args.min_total_reads,
             only_part=args.only_part,
             list_parts=args.list_parts,
+            compression=args.compression,
         )
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

@@ -1,5 +1,6 @@
 """Test sample-column splitting for sequential archive-free imports."""
 import csv
+import gzip
 import tempfile
 import unittest
 from pathlib import Path
@@ -71,6 +72,47 @@ class SamplePartTests(unittest.TestCase):
             self.assertEqual(
                 len(list(root.glob("joined_part*.csv"))), len(parts)
             )
+
+    def test_compressed_part_matches_plain_csv_and_is_reproducible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            table = root / "input.tsv"
+            taxonomy = root / "taxa.txt"
+            output = root / "joined.csv"
+            table.write_text(
+                "# Constructed from biom file\n"
+                "#OTU ID\tABCD-1234-16S\tEFGH-5678-16S\n"
+                "otu1\t11\t5\notu2\t0\t8\n",
+                encoding="utf-8",
+            )
+            taxonomy.write_text(
+                "otu1\tZ1|Bacteria;Acidobacteriota\n"
+                "otu2\tZ1|Bacteria;Bacillota\n",
+                encoding="utf-8",
+            )
+            kwargs = dict(
+                table_path=table, taxonomy_path=taxonomy,
+                output_path=output, marker="16S",
+                fail_on_missing_taxonomy=True,
+                max_output_bytes=10000, min_total_reads=10,
+            )
+            plan = convert(**kwargs, compression="gzip", list_parts=True)
+            self.assertEqual(plan["compression"], "gzip")
+            self.assertFalse(list(root.glob("*.csv.gz")))
+
+            plain = convert(**kwargs, only_part=1)
+            plain_bytes = Path(plain["output_parts"][0]["path"]).read_bytes()
+            compressed = convert(**kwargs, only_part=1, compression="gzip")
+            part = Path(compressed["output_parts"][0]["path"])
+            self.assertTrue(part.name.endswith("_part001.csv.gz"))
+            self.assertTrue(compressed["output_parts"][0]["written"])
+            self.assertEqual(compressed["output_parts"][0]["compression"], "gzip")
+            with gzip.open(part, "rb") as stream:
+                self.assertEqual(stream.read(), plain_bytes)
+            first_bytes = part.read_bytes()
+            convert(**kwargs, only_part=1, compression="gzip")
+            self.assertEqual(part.read_bytes(), first_bytes)
+            self.assertEqual(list(root.glob("*.tmp")), [])
 
     def test_invalid_part_does_not_delete_existing_part(self):
         with tempfile.TemporaryDirectory() as tmp:
