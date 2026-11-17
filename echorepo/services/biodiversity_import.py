@@ -297,6 +297,7 @@ def _import_biodiversity_streaming(
     archive_raw: bool = True,
     source_sha256: str | None = None,
     progress_every: int = 50_000,
+    post_min10: bool | None = None,
 ):
     """
     Import XLSX, CSV or TSV biodiversity data while preserving both:
@@ -313,7 +314,10 @@ def _import_biodiversity_streaming(
 
     level = "Phylum"
 
-    apply_min10_postfilter = _apply_min10_postfilter_for_filename(filename)
+    apply_min10_postfilter = (
+        _apply_min10_postfilter_for_filename(filename)
+        if post_min10 is None else bool(post_min10)
+    )
 
     # Never apply a second <10 calculation to a sample-split part: such a
     # part contains only a subset of the original sample columns.
