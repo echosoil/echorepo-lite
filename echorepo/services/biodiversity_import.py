@@ -313,6 +313,7 @@ def _import_biodiversity_streaming(
     log = logging.getLogger(__name__)
 
     level = "Phylum"
+    original_source_stat = source.stat() if isinstance(source, Path) else None
 
     apply_min10_postfilter = (
         _apply_min10_postfilter_for_filename(filename)
@@ -545,7 +546,9 @@ def _import_biodiversity_streaming(
                 # Python row index, zero-based.
                 "idx": idx,
                 # Original CSV/XLSX column number, one-based.
-                "source_column_number": idx + 1,
+                "source_column_number": getattr(
+                    source, "source_sample_column_numbers", {}
+                ).get(column_name.upper(), idx + 1),
                 # Preserve exactly what the laboratory file called it.
                 "column_name": column_name,
                 "source_sample_label": column_name,
@@ -1245,10 +1248,13 @@ def _import_biodiversity_streaming(
             # ----------------------------------------------------------
             # 4. Stream every OTU / feature row once
             # ----------------------------------------------------------
-            for source_row_number, row in enumerate(
+            for stream_row_number, row in enumerate(
                 rows_iter,
                 start=2,
             ):
+                source_row_number = getattr(
+                    row, "source_row_number", stream_row_number
+                )
                 otu_id = "" if row[otu_col_idx] is None else str(row[otu_col_idx]).strip()
 
                 if not otu_id:
@@ -1380,6 +1386,19 @@ def _import_biodiversity_streaming(
                         )
                         + count
                     )
+
+            # Ensure the backing input did not change during the long import.
+            if isinstance(source, Path):
+                current_stat = source.stat()
+                if (
+                    current_stat.st_size != original_source_stat.st_size
+                    or current_stat.st_mtime_ns != original_source_stat.st_mtime_ns
+                ):
+                    raise RuntimeError(
+                        "Source file changed while being imported; refusing to commit"
+                    )
+            elif callable(getattr(source, "assert_unchanged", None)):
+                source.assert_unchanged()
 
             # Flush whatever remains after the final source row.
             flush_features()
