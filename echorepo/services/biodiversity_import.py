@@ -3,6 +3,7 @@ import gzip
 import hashlib
 import io
 import logging
+import os
 import re
 from datetime import date, datetime
 from io import BytesIO
@@ -261,8 +262,24 @@ def _open_biodiversity_rows(
             dialect = csv.excel
             delimiter_name = "comma"
 
+    # Gzip expands on demand, never into a second file. Bound the total
+    # decompressed bytes too, so an accidentally oversized/bomb input cannot
+    # bypass the HTTP limit based on compressed bytes alone.
+    def bounded_lines():
+        limit = int(os.getenv("BIODIVERSITY_MAX_UNCOMPRESSED_BYTES", "8000000000"))
+        if limit <= 0:
+            raise ValueError("BIODIVERSITY_MAX_UNCOMPRESSED_BYTES must be positive")
+        total = 0
+        for line in text_stream:
+            total += len(line.encode("utf-8"))
+            if total > limit:
+                raise ValueError(
+                    f"Decompressed biodiversity input exceeded {limit} bytes"
+                )
+            yield line
+
     reader = csv.reader(
-        text_stream,
+        bounded_lines() if compressed else text_stream,
         dialect=dialect,
     )
 
