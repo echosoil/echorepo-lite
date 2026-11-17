@@ -37,6 +37,7 @@ from echorepo.services.biodiversity_import import (  # noqa: E402
 from tools.prepare_split_biodiversity_for_echorepo_premin10 import (  # noqa: E402
     OUTPUT_TAXONOMY_COLUMNS,
     canonical_sample_columns,
+    find_table_header,
     parse_taxonomy_annotation,
 )
 
@@ -345,6 +346,17 @@ def main() -> int:
         # This mode hashes the source in bounded chunks before import.
         kwargs = {"post_min10": args.post_min10}
     else:
+        _header_line, raw_header = find_table_header(args.table)
+        selected, dropped, _marker = canonical_sample_columns(
+            raw_header, args.marker
+        )
+        if len({label.upper() for _idx, label in selected}) != len(selected):
+            raise SystemExit("Duplicate normalized sample columns in source")
+        print(
+            f"[PLAN] {len(selected):,} sample columns and "
+            f"{len(dropped):,} ignored/noncanonical columns",
+            flush=True,
+        )
         source = JoinedTsvSource(
             args.table, args.taxonomy, args.marker,
             args.min_total_reads, args.fail_on_missing_taxonomy,
