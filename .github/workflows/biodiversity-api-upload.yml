@@ -12,6 +12,7 @@ on:
       - "tools/generate_biodiversity_piecharts.py"
       - "tests/test_biodiversity_api_upload.py"
       - "tests/test_biodiversity_split_parts.py"
+      - "tests/test_biodiversity_split_progress.py"
       - "tests/test_biodiversity_queue_integration.py"
       - ".github/workflows/biodiversity-api-upload.yml"
   workflow_dispatch:
@@ -61,11 +62,13 @@ jobs:
           python -m py_compile tools/generate_biodiversity_piecharts.py
           python -m py_compile tests/test_biodiversity_api_upload.py
           python -m py_compile tests/test_biodiversity_split_parts.py
+          python -m py_compile tests/test_biodiversity_split_progress.py
           python -m py_compile tests/test_biodiversity_queue_integration.py
       - name: Test upload and splitting
         run: |
           python -m unittest discover -s tests -p "test_biodiversity_api_upload.py" -v
           python -m unittest discover -s tests -p "test_biodiversity_split_parts.py" -v
+          python -m unittest discover -s tests -p "test_biodiversity_split_progress.py" -v
       - name: Integration test against temporary PostgreSQL
         env:
           BIODIV_DB_TEST: "1"
