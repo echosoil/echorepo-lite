@@ -113,17 +113,19 @@ class JoinedTsvSource:
     def _build_taxonomy_index(self, connection: sqlite3.Connection) -> None:
         connection.execute(
             "CREATE TABLE tax (otu TEXT PRIMARY KEY, "
-            + ", ".join(f"{col.lower()} TEXT" for col in OUTPUT_TAXONOMY_COLUMNS)
+            + ", ".join(f'"{col.lower()}" TEXT' for col in OUTPUT_TAXONOMY_COLUMNS)
             + ")"
         )
         connection.execute("PRAGMA synchronous=OFF")
         connection.execute("PRAGMA journal_mode=OFF")
         connection.execute("PRAGMA cache_size=-65536")
-        columns = ", ".join(["otu", *(col.lower() for col in OUTPUT_TAXONOMY_COLUMNS)])
+        columns = ", ".join(
+            ["otu", *(f'"{col.lower()}"' for col in OUTPUT_TAXONOMY_COLUMNS)]
+        )
         placeholders = ", ".join("?" for _ in range(8))
         insert = f"INSERT OR IGNORE INTO tax ({columns}) VALUES ({placeholders})"
         select = "SELECT " + ", ".join(
-            col.lower() for col in OUTPUT_TAXONOMY_COLUMNS
+            f'"{col.lower()}"' for col in OUTPUT_TAXONOMY_COLUMNS
         ) + " FROM tax WHERE otu = ?"
         batch = []
         n = 0
@@ -203,7 +205,7 @@ class JoinedTsvSource:
             if taxonomy_field:
                 expected_lengths.add(len(header) - 1)
             lookup = "SELECT " + ", ".join(
-                col.lower() for col in OUTPUT_TAXONOMY_COLUMNS
+                f'"{col.lower()}"' for col in OUTPUT_TAXONOMY_COLUMNS
             ) + " FROM tax WHERE otu = ?"
             db_cursor = connection.cursor()
             stats = {"rows": 0, "below_min": 0, "missing_taxonomy": 0}
