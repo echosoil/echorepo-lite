@@ -14,8 +14,10 @@ from typing import BinaryIO
 from uuid import UUID, uuid4
 
 
-VALID_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,198}\.(?:csv|tsv|txt)$", re.I)
-ALLOWED_SUFFIXES = {".csv", ".tsv", ".txt"}
+VALID_NAME = re.compile(
+    r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,198}\.(?:csv|tsv|txt)(?:\.gz)?$",
+    re.I,
+)
 READ_SIZE = 4 * 1024 * 1024
 
 
@@ -40,7 +42,7 @@ def validate_filename(filename: str) -> str:
     name = str(filename or "").strip()
     if not VALID_NAME.fullmatch(name):
         raise InvalidBiodiversityUpload(
-            "X-Filename must be a plain CSV/TSV/TXT filename "
+            "X-Filename must end in CSV/TSV/TXT, optionally .gz, "
             "(letters, digits, underscores, periods or hyphens; no paths)."
         )
     return name
