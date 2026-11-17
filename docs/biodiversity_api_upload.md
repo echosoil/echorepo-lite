@@ -28,6 +28,37 @@ The splitter has `--list-parts` and `--only-part N` modes. In one-part mode
 it scans the original TSV on every invocation to preserve the correct global
 filter; this minimizes local output storage but performs extra work.
 
+### Progress during long-running preparation
+
+The splitter reports progress **by default every 15 seconds** to stderr,
+including taxonomy loading, the global OTU scan/filter (pass 1), and
+writing the selected compressed part(s) (pass 2). It prints immediately
+when each stage starts and when it finishes; `--list-parts` stops after
+pass 1. The output reports approximate input-byte percentage, OTU rows
+processed, retained/written OTUs, elapsed time, effective MiB/s, and ETA.
+
+To print every 10 seconds, optionally save the progress into a log:
+
+```bash
+python -u tools/prepare_split_biodiversity_for_echorepo_premin10.py \
+  --table table_16S_97.tsv --taxonomy taxa_16S_97.txt \
+  --output biodiversity_16S_import.csv --marker 16S \
+  --max-output-mb 2000 --compression gzip --only-part 1 \
+  --fail-on-missing-taxonomy --progress-seconds 10 \
+  2> >(tee biodiversity_split_progress.log >&2)
+```
+
+The ETA uses the number of bytes read from the original TSV (the Python
+buffer can read ahead slightly), and includes work done on each row. It
+is an **estimate**, especially early in a pass or when gzip throughput
+changes; it is not a promise of completion time.
+
+For uninterrupted stdout and stderr in Bash, `python -u` is useful.
+Use `--progress-seconds 0` to suppress all progress messages (the
+final conversion report is still printed). This option affects output
+only; it does not change filtering, sample-column grouping, gzip bytes,
+or the database import format.
+
 ### Prepare on the local computer
 
 For `table_16S_97.tsv` + `taxa_16S_97.txt`, using the *develop PR version*:
