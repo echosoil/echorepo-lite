@@ -1,0 +1,29 @@
+name: FAPROTAX streaming CSV checks
+
+on:
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "tools/faprotax_streaming.py"
+      - "tools/generate_biodiversity_piecharts.py"
+      - "tests/test_faprotax_streaming.py"
+      - ".github/workflows/faprotax-streaming.yml"
+  workflow_dispatch:
+
+jobs:
+  faprotax-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install pandas
+      - name: Compile changed modules
+        run: |
+          python -m py_compile tools/faprotax_streaming.py
+          python -m py_compile tools/generate_biodiversity_piecharts.py
+          python -m py_compile tests/test_faprotax_streaming.py
+      - name: Test sparse-to-dense streaming compatibility and memory
+        run: python -m unittest discover -s tests -p "test_faprotax_streaming.py" -v
