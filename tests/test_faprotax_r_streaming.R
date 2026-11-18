@@ -2,6 +2,18 @@
 # End-to-end R tests for the bounded-memory FAPROTAX reducer.
 source("tools/faprotax_16S_functional_profile.R")
 
+# Regression for older installations: keep Matrix only namespace-loaded.
+# The reducer must work without library(Matrix), and it must perform
+# numeric—not Boolean—sparse matrix multiplication.
+stopifnot(!"package:Matrix" %in% search())
+test_mat <- Matrix::Matrix(matrix(c(1, 0, 1, 1), nrow = 2),
+                           sparse = TRUE)
+stopifnot(
+  inherits(test_mat, "dgCMatrix"),
+  identical(as.matrix(Matrix::crossprod(test_mat, test_mat)),
+            crossprod(as.matrix(test_mat), as.matrix(test_mat)))
+)
+
 tmp <- tempfile("faprotax-r-test-")
 dir.create(tmp)
 on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
