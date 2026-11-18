@@ -140,6 +140,37 @@ class BiodiversityQueueIntegrationTests(unittest.TestCase):
                     [("succeeded", 2), ("succeeded", 2)],
                 )
 
+            # Validate real PostgreSQL FAPROTAX preparation after uploading
+            # disjoint sample-column parts. No huge pandas pivot is allowed.
+            from tools.generate_biodiversity_piecharts import (
+                build_clean_otu_and_taxonomy_files,
+            )
+
+            otu_path, tax_path = build_clean_otu_and_taxonomy_files(
+                marker="16S",
+                out_dir=Path(tmp) / "faprotax",
+                min_prev=1,
+                min_total=1,
+            )
+            import csv
+
+            with otu_path.open(newline="", encoding="utf-8") as stream:
+                otu_rows = list(csv.reader(stream))
+            self.assertEqual(
+                otu_rows,
+                [
+                    ["otu_id", "ABCD-1234", "EFGH-5678"],
+                    ["otu1", "11.0", "12.0"],
+                    ["otu2", "5.0", "6.0"],
+                ],
+            )
+            with tax_path.open(newline="", encoding="utf-8") as stream:
+                taxonomy_rows = list(csv.reader(stream, delimiter=";"))
+            self.assertEqual(
+                [row[0] for row in taxonomy_rows],
+                ["OTU_ID", "otu1", "otu2"],
+            )
+
             for job in jobs:
                 result = client.get(
                     f"/api/v1/biodiversity/uploads/{job}",
