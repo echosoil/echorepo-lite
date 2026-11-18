@@ -2267,7 +2267,8 @@ def build_clean_otu_and_taxonomy_files(
                   ON e.otu_id = f.source_feature_id
                 WHERE a.read_count > 0
                 GROUP BY BTRIM(f.source_feature_id), cs.sample_id
-                ORDER BY otu_id COLLATE "C", cs.sample_id COLLATE "C"
+                ORDER BY BTRIM(f.source_feature_id) COLLATE "C",
+                         cs.sample_id COLLATE "C"
             """
             print(
                 f"[INFO] OTUs before filtering: {otu_before:,}",
