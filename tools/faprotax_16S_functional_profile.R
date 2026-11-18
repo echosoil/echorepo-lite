@@ -141,10 +141,18 @@ aggregate_faprotax_stream <- function(otu_file, feature_ids, func_binary,
     # Sparse multiplication computes functional PRESENCE counts:
     # function_taxa[sample, func] += number of present OTUs matching func.
     # Matrix::Matrix only sees a bounded number of OTU rows at a time.
-    ann <- Matrix::Matrix(annotation_present[selected, , drop = FALSE],
-                          sparse = TRUE)
+    # Matrix::Matrix(logical_matrix) yields an lgCMatrix. base::crossprod()
+    # may not dispatch its Matrix methods when Matrix is namespace-loaded
+    # but not attached, as on production R. Explicitly construct NUMERIC
+    # sparse dgCMatrix operands and use Matrix::crossprod().
+    # The dense temporary conversions remain bounded by chunk_rows.
+    annotation_block <- annotation_present[selected, , drop = FALSE]
+    storage.mode(annotation_block) <- "double"
+    storage.mode(present) <- "double"
+    ann <- Matrix::Matrix(annotation_block, sparse = TRUE)
     pres <- Matrix::Matrix(present, sparse = TRUE)
-    function_taxa <- function_taxa + t(as.matrix(crossprod(ann, pres)))
+    function_taxa <- function_taxa +
+      t(as.matrix(Matrix::crossprod(ann, pres)))
 
     consumed <- next_end
     if (progress_rows > 0L &&
