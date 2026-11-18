@@ -76,7 +76,8 @@ for (chunk_rows in c(1L, 2L, 3L, 100L)) {
   stopifnot(
     isTRUE(all.equal(as.matrix(check8), reference, check.attributes = FALSE)),
     identical(check9$Sample, samples),
-    isTRUE(all.equal(check9$Annotated_frac, round(expected_coverage, 4)))
+    isTRUE(all.equal(unname(check9$Annotated_frac),
+                     unname(round(expected_coverage, 4))))
   )
 }
 
