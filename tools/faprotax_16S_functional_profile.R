@@ -178,7 +178,7 @@ aggregate_faprotax_stream <- function(otu_file, feature_ids, func_binary,
   # abundance_weighted = FALSE; fraction, not percentage; 6 decimals.
   divisor <- pmax(present_taxa, 1)
   fractions <- round(function_taxa / divisor, digits = 6L)
-  fractions[, colSums(fractions) == 0] <- NULL
+  fractions <- fractions[, colSums(fractions) != 0, drop = FALSE]
 
   # File 9 used a different quantity in the original script: the fraction of
   # READS associated with at least one annotated function.
