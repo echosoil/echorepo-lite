@@ -23,3 +23,7 @@ jobs:
         run: Rscript -e 'parse("tools/faprotax_16S_functional_profile.R"); parse("tests/test_faprotax_r_streaming.R")' > /dev/null
       - name: Run bounded-memory FAPROTAX streaming tests
         run: Rscript tests/test_faprotax_r_streaming.R
+      - name: Install microeco for reference-method comparisons
+        run: Rscript -e 'install.packages("microeco", Ncpus=2L)'
+      - name: Verify new fractions and annotations against microeco
+        run: Rscript tests/test_faprotax_r_streaming.R
