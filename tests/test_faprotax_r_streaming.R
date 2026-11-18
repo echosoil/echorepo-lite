@@ -97,6 +97,8 @@ stopifnot(bad)
 # If the real microeco package is present, compare against its legacy
 # cal_spe_func_perc() output, using the SAME FAPROTAX annotations.
 if (requireNamespace("microeco", quietly = TRUE)) {
+  # The legacy code attached microeco; set that context for baseline parity.
+  suppressPackageStartupMessages(library("microeco", character.only = TRUE))
   bacterial_tax <- data.frame(
     Kingdom = rep("Bacteria", 4),
     Phylum = c("Proteobacteria", "Nitrospirota", "Proteobacteria", "Firmicutes"),
@@ -135,8 +137,12 @@ if (requireNamespace("microeco", quietly = TRUE)) {
       unname(result$fractions), unname(legacy), tolerance = 1e-6
     ))
   )
-  # The taxonomy-only dummy sample must generate the SAME annotation.
+  # Reproduce the production failure: the module is loaded as a namespace,
+  # but NOT attached. The helper must attach microeco before data() lookup.
+  detach("package:microeco", unload = FALSE, character.only = TRUE)
+  stopifnot(!"package:microeco" %in% search())
   dummy_map <- annotate_faprotax_once(bacterial_tax)
+  stopifnot("package:microeco" %in% search())
   stopifnot(identical(
     unname(dummy_map[otus[1:4], , drop = FALSE]),
     unname(ref_annotation[otus[1:4], , drop = FALSE])
