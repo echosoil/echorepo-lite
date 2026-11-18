@@ -1,288 +1,372 @@
-# ============================================================
-# GUIDE VERSION — FAPROTAX functional profiling
-# ============================================================
-# WHAT THIS SCRIPT DOES
-# ---------------------
-# Starting from a cleaned bacterial count table and an aligned taxonomy table,
-# this script runs FAPROTAX functional annotation using the `microeco` package.
+#!/usr/bin/env Rscript
+# Memory-bounded FAPROTAX functional profiling for ECHOREPO.
 #
-# It produces:
-#   1. a RAW FAPROTAX functional matrix
-#      -> functional abundance relative to the whole bacterial community
-#   2. an annotation-coverage table
-#      -> fraction of each sample's community represented by FAPROTAX-annotated taxa
+# Uses microeco ONCE to annotate taxonomy (one artificial reference sample),
+# then reads file 6 in bounded OTU-row chunks. The dense OTU x sample matrix
+# is never created. Output files and the scientific calculation remain
+# compatible with the original microeco cal_spe_func_perc() defaults:
+#   unweighted OTU prevalence, 0..1 fractions, rounded to 6 decimal places.
 #
-# ECHOREPO uses the RAW matrix for bacterial guild plots.
+# IMPORTANT SCIENTIFIC NOTE: unweighted prevalence is NOT read-weighted
+# functional abundance. To request read-weighted fractions explicitly, set
+# FAPROTAX_ABUNDANCE_WEIGHTED=1. Do not mix the two methods silently.
 #
-# WHY THERE ARE TWO OUTPUTS
-# -------------------------
-# FAPROTAX typically annotates only a subset of taxa. In soil datasets that
-# subset can be far below 100%. Therefore:
-# - RAW values answer: "what % of the whole community is assigned to function X?"
-# - RENORMALISED values answer: "within the annotated fraction, how is function X distributed?"
+# Usage: Rscript tools/faprotax_16S_functional_profile.R \
+#     6_otu_clean_counts_no_blanks.csv 7_taxonomy_clean.csv output_directory
 #
-# WHICH OUTPUT TO USE
-# -------------------
-# Use RAW if you want strict proportions relative to the full community.
-# Use RENORM if you want easier comparison with published FAPROTAX summaries
-# and with other samples that differ in annotation coverage.
-# ============================================================
+# FAPROTAX_CHUNK_ROWS controls input rows per read (default 128).
+# A .tmp file is used for each output, so failed jobs preserve old results.
 
-# ------------------------------------------------------------
-# USER SETTINGS — command-line arguments
-# ------------------------------------------------------------
+read_integer_env <- function(name, default, min_value = 1L) {
+  value <- Sys.getenv(name, unset = as.character(default))
+  parsed <- suppressWarnings(as.integer(value))
+  if (length(parsed) != 1L || is.na(parsed) || parsed < min_value) {
+    stop(name, " must be an integer >= ", min_value, ", got ", shQuote(value))
+  }
+  parsed
+}
 
-args <- commandArgs(trailingOnly = TRUE)
+# This function is deliberately independent of microeco, so it can be tested
+# with an artificial OTU->function mapping and known expected results.
+stream_faprotax_counts <- function(otu_file, otu_ids, function_map,
+                                   chunk_rows = 128L, abundance_weighted = FALSE,
+                                   fraction_scale = 1, decimals = 6L,
+                                   progress_rows = 5000L) {
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    stop("The 'Matrix' R package is required for sparse FAPROTAX aggregation")
+  }
+  if (!is.matrix(function_map) && !inherits(function_map, "Matrix")) {
+    stop("function_map must be a matrix or sparse Matrix")
+  }
+  if (anyDuplicated(otu_ids) || anyNA(otu_ids)) {
+    stop("OTU IDs must be unique and non-missing")
+  }
+  if (is.null(rownames(function_map)) ||
+      !identical(rownames(function_map), otu_ids)) {
+    stop("Function annotation IDs must match taxonomy OTU IDs in order")
+  }
+  if (is.null(colnames(function_map)) || anyDuplicated(colnames(function_map))) {
+    stop("Function annotations must have unique named function columns")
+  }
+  if (chunk_rows < 1L || progress_rows < 1L) {
+    stop("FAPROTAX chunk and progress row counts must be positive")
+  }
 
-if (length(args) != 3) {
-  stop(
-    paste(
-      "Usage:",
-      "Rscript tools/faprotax_16S_functional_profile.R",
-      "<otu_counts.csv>",
-      "<taxonomy.csv>",
-      "<output_dir>"
+  header <- names(utils::read.csv(
+    otu_file, nrows = 0L, check.names = FALSE, stringsAsFactors = FALSE
+  ))
+  if (length(header) < 2L) {
+    stop("File 6 must have an OTU ID column and at least one sample column")
+  }
+  sample_ids <- header[-1L]
+  if (anyNA(sample_ids) || anyDuplicated(sample_ids) || any(!nzchar(sample_ids))) {
+    stop("File 6 contains empty or duplicated sample names")
+  }
+
+  sample_n <- length(sample_ids)
+  function_names <- colnames(function_map)
+  n_functions <- length(function_names)
+  sample_totals <- numeric(sample_n)
+  sample_otu_totals <- numeric(sample_n)
+  annotated_reads <- numeric(sample_n)
+  function_numerators <- matrix(
+    0, nrow = n_functions, ncol = sample_n,
+    dimnames = list(function_names, sample_ids)
+  )
+  function_otu_counts <- Matrix::rowSums(function_map != 0)
+  if (length(function_otu_counts) != length(otu_ids)) {
+    stop("Invalid OTU->function annotation dimensions")
+  }
+
+  # Preserve source order and parse only one small block of wide CSV rows at
+  # a time. Base read.csv() handles quoted OTU IDs and decimal abundances.
+  source <- file(otu_file, open = "rt", encoding = "UTF-8")
+  on.exit(close(source), add = TRUE)
+  readLines(source, n = 1L, warn = FALSE)  # consume CSV header
+  processed <- 0L
+  next_progress <- as.integer(progress_rows)
+  column_types <- c("character", rep("numeric", sample_n))
+
+  repeat {
+    block <- utils::read.csv(
+      source, header = FALSE, col.names = header, nrows = as.integer(chunk_rows),
+      check.names = FALSE, row.names = NULL, stringsAsFactors = FALSE,
+      colClasses = column_types, comment.char = "", blank.lines.skip = FALSE,
+      na.strings = c("NA")
     )
+    rows <- nrow(block)
+    if (rows == 0L) break
+
+    positions <- seq.int(processed + 1L, processed + rows)
+    if (max(positions) > length(otu_ids)) {
+      stop("File 6 contains more OTU rows than taxonomy file 7")
+    }
+    if (!identical(as.character(block[[1L]]), otu_ids[positions])) {
+      stop(
+        "File 6 and file 7 have different OTU IDs or order at row ",
+        processed + 1L,
+        ". Regenerate both from the same PostgreSQL snapshot."
+      )
+    }
+
+    # Only chunk_rows x sample_n doubles are materialized.
+    counts <- as.matrix(block[-1L])
+    storage.mode(counts) <- "double"
+    if (anyNA(counts) || any(!is.finite(counts)) || any(counts < 0)) {
+      stop("File 6 contains missing, infinite or negative read counts")
+    }
+
+    present <- counts > 0
+    sample_totals <- sample_totals + colSums(counts)
+    sample_otu_totals <- sample_otu_totals + colSums(present)
+    annotated_rows <- function_otu_counts[positions] > 0
+    if (any(annotated_rows)) {
+      annotated_reads <- annotated_reads + colSums(
+        counts[annotated_rows, , drop = FALSE]
+      )
+    }
+
+    # The binary taxonomy->function table is sparse. This multiplication
+    # accumulates per-function counts without creating an OTU x sample x
+    # function array, or iterating over all functions in R for each OTU.
+    feature_functions <- function_map[positions, , drop = FALSE]
+    features <- if (abundance_weighted) counts else present * 1.0
+    function_numerators <- function_numerators + as.matrix(
+      Matrix::crossprod(feature_functions, features)
+    )
+    processed <- processed + rows
+
+    if (processed >= next_progress) {
+      cat(sprintf(
+        "[progress] Processed %s/%s OTU rows (%.1f%%)\n",
+        format(processed, big.mark = ","),
+        format(length(otu_ids), big.mark = ","),
+        100 * processed / length(otu_ids)
+      ))
+      flush.console()
+      next_progress <- processed + as.integer(progress_rows)
+    }
+    rm(block, counts, present, feature_functions, features)
+  }
+
+  if (processed != length(otu_ids)) {
+    stop(
+      "File 6 ended after ", processed,
+      " OTUs; taxonomy file 7 contains ", length(otu_ids)
+    )
+  }
+
+  denominators <- if (abundance_weighted) sample_totals else sample_otu_totals
+  zero_samples <- which(denominators == 0)
+  if (length(zero_samples)) {
+    warning(length(zero_samples), " samples have no retained OTU counts; ",
+            "their functional fractions are set to zero")
+    denominators[zero_samples] <- 1
+  }
+  fractions <- sweep(function_numerators, 2L, denominators, "/")
+  fractions <- round(fractions * fraction_scale, digits = decimals)
+  if (length(zero_samples)) fractions[, zero_samples] <- 0
+  # microeco::cal_func_FR() defaults to remove_zero=TRUE, AFTER rounding.
+  keep_functions <- rowSums(fractions) != 0
+  fractions <- fractions[keep_functions, , drop = FALSE]
+
+  # Store sample x function, matching the existing R output's orientation.
+  output <- t(fractions)
+  coverage <- ifelse(sample_totals > 0, annotated_reads / sample_totals, 0)
+  names(coverage) <- sample_ids
+
+  list(
+    functions = output,
+    annotated_fraction = coverage,
+    samples = sample_ids,
+    otu_count = processed,
+    kept_function_count = ncol(output)
   )
 }
 
-otu_file <- normalizePath(args[1], mustWork = TRUE)
-tax_raw_file <- normalizePath(args[2], mustWork = TRUE)
-
-if (!file.exists(otu_file)) {
-  stop("OTU file does not exist: ", otu_file)
-}
-
-if (!file.exists(tax_raw_file)) {
-  stop("Taxonomy file does not exist: ", tax_raw_file)
-}
-
-outdir <- args[3]
-dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
-outdir <- normalizePath(outdir, mustWork = TRUE)
-
-cat("--------------------------------------------------\n")
-cat("FAPROTAX functional profiling\n")
-cat("OTU file:      ", otu_file, "\n")
-cat("Taxonomy file: ", tax_raw_file, "\n")
-cat("Output dir:    ", outdir, "\n")
-cat("--------------------------------------------------\n")
-
-# ------------------------------------------------------------
-# 0) PACKAGES
-# ------------------------------------------------------------
-# microeco provides the FAPROTAX wrapper and stores results in object slots.
-# data.table is not essential in this exact script, but is often useful for
-# large tables and is kept here for compatibility with related workflows.
-library(microeco)
-library(data.table)
-
-# ------------------------------------------------------------
-# 1) LOAD CLEAN OTU COUNTS
-# ------------------------------------------------------------
-# INPUT EXPECTATION:
-#   rows = taxa/features
-#   columns = samples
-#
-# OUTPUT:
-#   `otu` = cleaned count matrix/data frame used for functional annotation
-otu <- read.csv(otu_file, sep = ",", row.names = 1, check.names = FALSE)
-
-# ------------------------------------------------------------
-# 2) LOAD TAXONOMY AND ALIGN IT TO THE OTU TABLE
-# ------------------------------------------------------------
-# GOAL:
-#   Ensure that the taxonomy table contains the same features and in the same
-#   order as the OTU table.
-#
-# WHY THIS MATTERS:
-#   Misalignment between abundance and taxonomy is one of the most common causes
-#   of silent errors in downstream annotation.
-tax_df  <- read.csv(tax_raw_file, sep = ";", row.names = 1, check.names = FALSE)
-
-stopifnot(nrow(tax_df) == nrow(otu))
-stopifnot(identical(rownames(tax_df), rownames(otu)))
-
-# FAPROTAX through microeco expects standard ranked columns.
-# Species is intentionally set to NA because 97% OTU-level species names are
-# usually too uncertain to trust in a functional annotation framework.
-tax2 <- data.frame(
-  Kingdom = if ("Kingdom" %in% colnames(tax_df)) tax_df$Kingdom else NA,
-  Phylum  = if ("Phylum" %in% colnames(tax_df)) tax_df$Phylum else NA,
-  Class   = if ("Class"  %in% colnames(tax_df)) tax_df$Class  else NA,
-  Order   = if ("Order"  %in% colnames(tax_df)) tax_df$Order  else NA,
-  Family  = if ("Family" %in% colnames(tax_df)) tax_df$Family else NA,
-  Genus   = if ("Genus"  %in% colnames(tax_df)) tax_df$Genus  else NA,
-  Species = NA
-)
-
-# Clean common "unknown" labels so they become proper NA values.
-# This prevents false pseudo-labels such as "uncultured_bacterium" from being
-# treated as meaningful taxonomy.
-clean_unknown <- function(x) {
+clean_unknown_taxonomy <- function(x) {
   x <- as.character(x)
   x[x %in% c("", "NA", "Na", "N/A", "unclassified", "uncultured",
               "uncultured_bacterium", "uncultured_archaeon",
-              "Incertae_Sedis", "Incertae Sedis")] <- NA
+              "Incertae_Sedis", "Incertae Sedis")] <- NA_character_
   x
 }
-tax2[] <- lapply(tax2, clean_unknown)
-rownames(tax2) <- rownames(tax_df)
 
-# Save the aligned and cleaned taxonomy used by this script.
-# This is useful for reproducibility and for downstream plotting scripts.
-write.table(tax2,
-            file.path(outdir, "7_taxonomy_NA.csv"),
-            quote = FALSE, sep = ";", row.names = TRUE, col.names = TRUE)
+clean_faprotax_taxonomy <- function(tax_df) {
+  ranks <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")
+  tax2 <- data.frame(row.names = rownames(tax_df))
+  for (rank in ranks) {
+    tax2[[rank]] <- if (rank %in% names(tax_df)) {
+      clean_unknown_taxonomy(tax_df[[rank]])
+    } else {
+      rep(NA_character_, nrow(tax_df))
+    }
+  }
+  # 97% OTU taxonomy is not reliable enough for Species assignments.
+  tax2[["Species"]] <- rep(NA_character_, nrow(tax_df))
+  tax2
+}
 
-# ------------------------------------------------------------
-# 3) BUILD THE MICROECO OBJECT
-# ------------------------------------------------------------
-# GOAL:
-#   Combine abundance and taxonomy into the object structure expected by microeco.
-#
-# OUTPUT:
-#   `micro` object that can be passed to trans_func()
-micro <- microtable$new(
-  otu_table = otu,
-  tax_table = tax2
-)
-# Check rownames correspondance between otu and tax2
-micro$tidy_dataset()
+annotate_faprotax_once <- function(tax2) {
+  # A single all-one reference column prevents microeco's tidy_dataset()
+  # from dropping OTUs that are absent from any particular real sample.
+  # This sample is NEVER used for the final per-sample fractions.
+  dummy <- data.frame(
+    .reference = rep(1, nrow(tax2)), row.names = rownames(tax2),
+    check.names = FALSE
+  )
+  micro <- microeco::microtable$new(otu_table = dummy, tax_table = tax2)
+  micro$tidy_dataset()
+  tf <- microeco::trans_func$new(dataset = micro)
+  if (is.function(tf$cal_func)) {
+    tf$cal_func(prok_database = "FAPROTAX")
+    mapping <- tf$res_func
+  } else {
+    tf$cal_spe_func()
+    mapping <- tf$res_spe_func
+  }
+  if (is.null(mapping) || nrow(mapping) != nrow(tax2)) {
+    stop("microeco FAPROTAX annotation failed or lost OTUs")
+  }
+  if (!identical(rownames(mapping), rownames(tax2))) {
+    stop("microeco FAPROTAX annotation changed OTU order")
+  }
+  # A dense annotation frame would be a fraction of the size of file 6,
+  # but keep it sparse for the chunked matrix multiplications.
+  binary <- as.matrix(mapping) != 0
+  dimnames(binary) <- dimnames(mapping)
+  sparse <- Matrix::Matrix(binary * 1.0, sparse = TRUE)
+  rm(micro, tf, dummy, mapping, binary)
+  gc(verbose = FALSE)
+  sparse
+}
 
-# ------------------------------------------------------------
-# 4) RUN FAPROTAX ANNOTATION
-# ------------------------------------------------------------
-# GOAL:
-#   Assign putative ecological functions to taxa based on taxonomy.
-#
-# IMPORTANT LIMITATION:
-#   FAPROTAX is an inference tool. It does NOT measure genes or metabolism
-#   directly; it infers functions from known taxonomy-function associations.
-tf <- trans_func$new(dataset = micro)
-tf$cal_func(prok_database = "FAPROTAX")
-
-# This creates a taxon x function table using counts / abundance information.
-tf$cal_spe_func()
-
-# This converts the annotation into per-sample percentages.
-# At this stage, percentages are relative to the WHOLE community.
-tf$cal_spe_func_perc()
-
-# Optional introspection block:
-# use this when debugging slot names across different package versions.
-res_slots <- names(tf)[grepl("^res_", names(tf))]
-for (nm in res_slots) {
-  obj <- tf[[nm]]
-  if (is.data.frame(obj) || is.matrix(obj)) {
-    cat("\n---", nm, "---\n")
-    cat("dim:", paste(dim(obj), collapse = " x "), "\n")
-    cat("first rownames:", paste(head(rownames(obj)), collapse = ", "), "\n")
-    cat("first colnames:", paste(head(colnames(obj)), collapse = ", "), "\n")
+atomic_write_csv <- function(data, final_path, ...) {
+  temporary <- paste0(final_path, ".tmp")
+  on.exit(unlink(temporary), add = TRUE)
+  utils::write.csv(data, file = temporary, ...)
+  if (!file.rename(temporary, final_path)) {
+    stop("Could not publish FAPROTAX output: ", final_path)
   }
 }
 
-# ------------------------------------------------------------
-# 4b) EXTRACT THE SAMPLE x FUNCTION MATRIX
-# ------------------------------------------------------------
-# microeco versions may differ in orientation, so the code checks whether the
-# object needs to be transposed.
-# ------------------------------------------------------------
-# 4b) EXTRACT THE SAMPLE x FUNCTION MATRIX
-# ------------------------------------------------------------
+main <- function(args = commandArgs(trailingOnly = TRUE)) {
+  if (length(args) != 3L) {
+    stop(paste(
+      "Usage: Rscript tools/faprotax_16S_functional_profile.R",
+      "<otu_counts.csv> <taxonomy.csv> <output_dir>"
+    ))
+  }
 
-func_mat <- as.matrix(tf$res_spe_func_perc)
+  otu_file <- normalizePath(args[[1L]], mustWork = TRUE)
+  tax_file <- normalizePath(args[[2L]], mustWork = TRUE)
+  outdir <- args[[3L]]
+  dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+  outdir <- normalizePath(outdir, mustWork = TRUE)
 
-sample_ids <- colnames(otu)
+  chunk_rows <- read_integer_env("FAPROTAX_CHUNK_ROWS", 128L)
+  decimals <- read_integer_env("FAPROTAX_DECIMALS", 6L, min_value = 0L)
+  weighted_flag <- Sys.getenv("FAPROTAX_ABUNDANCE_WEIGHTED", unset = "0")
+  if (!weighted_flag %in% c("0", "1")) {
+    stop("FAPROTAX_ABUNDANCE_WEIGHTED must be 0 or 1")
+  }
+  weighted <- weighted_flag == "1"
 
-rows_are_samples <- all(sample_ids %in% rownames(func_mat))
-cols_are_samples <- all(sample_ids %in% colnames(func_mat))
-
-if (rows_are_samples && !cols_are_samples) {
-
-  func_sxf <- func_mat
-
-} else if (cols_are_samples && !rows_are_samples) {
-
-  func_sxf <- t(func_mat)
-
-} else {
-  stop(
-    paste0(
-      "Cannot determine orientation of tf$res_spe_func_perc. ",
-      "Expected OTU-table sample IDs in exactly one matrix dimension. ",
-      "Matrix dimensions: ",
-      nrow(func_mat), " x ", ncol(func_mat)
-    )
+  cat(
+    "--------------------------------------------------\n",
+    "FAPROTAX memory-bounded functional profiling\n",
+    "OTU file:      ", otu_file, "\n",
+    "Taxonomy file: ", tax_file, "\n",
+    "Output dir:    ", outdir, "\n",
+    "Chunk rows:    ", chunk_rows, "\n",
+    "Method:        ", if (weighted) "abundance-weighted" else "unweighted OTU prevalence", "\n",
+    "Scale:         fractions (0..1)\n",
+    "--------------------------------------------------\n",
+    sep = ""
   )
+
+  # The package now annotates the taxonomy ONCE instead of carrying the
+  # complete giant OTU-by-sample count table inside an R6 object.
+  suppressPackageStartupMessages(library(microeco))
+  suppressPackageStartupMessages(library(Matrix))
+  cat("[INFO] Loading taxonomy (file 7)...\n")
+  tax_df <- utils::read.csv(
+    tax_file, sep = ";", row.names = 1L, check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+  if (!nrow(tax_df) || anyDuplicated(rownames(tax_df))) {
+    stop("Taxonomy must have unique nonempty OTU IDs")
+  }
+  tax2 <- clean_faprotax_taxonomy(tax_df)
+  rm(tax_df)
+
+  cat("[INFO] Computing OTU->FAPROTAX assignments once...\n")
+  function_map <- annotate_faprotax_once(tax2)
+  cat("[OK] Annotated ", nrow(function_map), " OTUs across ",
+      ncol(function_map), " possible functions\n", sep = "")
+
+  cat("[INFO] Processing counts by OTU blocks...\n")
+  result <- stream_faprotax_counts(
+    otu_file, rownames(tax2), function_map,
+    chunk_rows = chunk_rows, abundance_weighted = weighted,
+    fraction_scale = 1, decimals = decimals
+  )
+  cat("[OK] Processed ", result$otu_count, " OTUs and ",
+      length(result$samples), " samples; kept ",
+      result$kept_function_count, " non-zero functions\n", sep = "")
+
+  # Publish the same three outputs as the old script. All intermediate
+  # computation has completed successfully before any final file is changed.
+  taxonomy_path <- file.path(outdir, "7_taxonomy_NA.csv")
+  taxonomy_tmp <- paste0(taxonomy_path, ".tmp")
+  on.exit(unlink(taxonomy_tmp), add = TRUE)
+  utils::write.table(
+    tax2, taxonomy_tmp, quote = FALSE, sep = ";",
+    row.names = TRUE, col.names = TRUE
+  )
+
+  function_path <- file.path(outdir, "8_faprotax_samples_x_functions.csv")
+  coverage_path <- file.path(outdir, "9_faprotax_annotated_fraction.csv")
+  function_tmp <- paste0(function_path, ".tmp")
+  coverage_tmp <- paste0(coverage_path, ".tmp")
+  on.exit(unlink(c(function_tmp, coverage_tmp)), add = TRUE)
+
+  utils::write.csv(result$functions, function_tmp)
+  fraction <- result$annotated_fraction
+  annot_df <- data.frame(
+    Sample = names(fraction),
+    Annotated_frac = round(fraction, 4L),
+    Annotated_pct = round(fraction * 100, 2L)
+  )
+  utils::write.csv(annot_df, coverage_tmp, row.names = FALSE)
+
+  for (path in c(taxonomy_tmp, function_tmp, coverage_tmp)) {
+    if (!file.exists(path) || file.info(path)$size == 0L) {
+      stop("Missing or empty temporary FAPROTAX output: ", path)
+    }
+  }
+  for (pair in list(
+    c(taxonomy_tmp, taxonomy_path),
+    c(function_tmp, function_path),
+    c(coverage_tmp, coverage_path)
+  )) {
+    if (!file.rename(pair[[1L]], pair[[2L]])) {
+      stop("Cannot publish output ", pair[[2L]])
+    }
+  }
+
+  cat("FAPROTAX sample validation OK: ", nrow(result$functions), " samples\n", sep = "")
+  cat("Annotated fraction per sample (mean +/- sd): ",
+      round(mean(fraction) * 100, 1), "% +/- ",
+      round(stats::sd(fraction) * 100, 1), "%\n", sep = "")
+  cat("[OK] Wrote: ", function_path, "\n", sep = "")
+  cat("[OK] Wrote: ", coverage_path, "\n", sep = "")
+  cat("[OK] Wrote: ", taxonomy_path, "\n", sep = "")
+  cat("Done.\n")
+  invisible(result)
 }
 
-# Put samples in exactly the same order as the OTU table.
-func_sxf <- func_sxf[sample_ids, , drop = FALSE]
-
-cat(
-  "FAPROTAX output matrix:",
-  nrow(func_sxf), "samples x",
-  ncol(func_sxf), "functions\n"
-)
-
-# Save RAW output:
-# percentages relative to the whole community.
-write.csv(func_sxf, file.path(outdir, "8_faprotax_samples_x_functions.csv"))
-
-# Sanity check:
-# Ensure that the sample IDs in the output matrix match the OTU table.
-expected_samples <- colnames(otu)
-output_samples <- rownames(func_sxf)
-
-if (!setequal(expected_samples, output_samples)) {
-  missing_samples <- setdiff(expected_samples, output_samples)
-  extra_samples <- setdiff(output_samples, expected_samples)
-
-  stop(
-    paste0(
-      "FAPROTAX output sample mismatch. ",
-      "Missing: ", length(missing_samples),
-      "; extra: ", length(extra_samples)
-    )
-  )
+# Safe to source this file from regression tests without executing a run.
+if (sys.nframe() == 0L) {
+  main()
 }
-
-cat(
-  "Sample validation OK:",
-  length(output_samples),
-  "samples in FAPROTAX output\n"
-)
-
-# ------------------------------------------------------------
-# 5) SAVE THE OUTPUT
-# ------------------------------------------------------------
-
-# Identify taxa that received at least one function.
-annotated_features <- rownames(tf$res_spe_func)[rowSums(tf$res_spe_func > 0) > 0]
-
-# Build a relative-abundance matrix from the cleaned OTU table.
-otu_mat  <- as.matrix(otu)
-otu_rel  <- sweep(otu_mat, 2, colSums(otu_mat), "/")
-otu_rel[!is.finite(otu_rel)] <- 0
-
-# For each sample, calculate how much of the community belongs to annotated taxa.
-annot_in_otu <- intersect(annotated_features, rownames(otu_rel))
-annot_frac   <- colSums(otu_rel[annot_in_otu, , drop = FALSE])
-
-cat("Annotated fraction per sample (mean ± sd):",
-    round(mean(annot_frac) * 100, 1), "% ±",
-    round(sd(annot_frac) * 100, 1), "%\n")
-cat("Annotated fraction range:",
-    round(min(annot_frac) * 100, 1), "% –",
-    round(max(annot_frac) * 100, 1), "%\n")
-
-# Save annotation coverage per sample.
-annot_df <- data.frame(
-  Sample         = names(annot_frac),
-  Annotated_frac = round(annot_frac, 4),
-  Annotated_pct  = round(annot_frac * 100, 2)
-)
-write.csv(annot_df, file.path(outdir, "9_faprotax_annotated_fraction.csv"), row.names = FALSE)
-
-cat("Done.\n")
