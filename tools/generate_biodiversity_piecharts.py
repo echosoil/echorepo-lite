@@ -151,6 +151,10 @@ FAPROTAX_FUNCTION_CSV = os.getenv(
     "FAPROTAX_FUNCTION_CSV",
     str(PROJECT_ROOT / "data" / "biodiversity" / "8_faprotax_samples_x_functions.csv"),
 )
+FAPROTAX_COVERAGE_CSV = os.getenv(
+    "FAPROTAX_COVERAGE_CSV",
+    str(PROJECT_ROOT / "data" / "biodiversity" / "9_faprotax_annotated_fraction.csv"),
+)
 
 # ---------------------------------------------------------------------------
 # Plot styling
@@ -2724,17 +2728,56 @@ def load_funguild_best_by_genus() -> dict[str, dict]:
     return best
 
 
+def load_faprotax_read_coverage(expected_samples: set[str]) -> dict[str, float]:
+    """Read file 9: % of retained 16S reads with any FAPROTAX annotation.
+
+    Unlike the plotted functions in file 8, this coverage is read-weighted.
+    Reject out-of-sync files rather than attaching another sample's statistics.
+    """
+    path = Path(FAPROTAX_COVERAGE_CSV)
+    if not path.is_file():
+        print(f"[WARN] FAPROTAX coverage file missing: {path}; plots will omit read coverage.")
+        return {}
+
+    coverage_df = pd.read_csv(path, dtype={"Sample": str})
+    if not {"Sample", "Annotated_pct"}.issubset(coverage_df.columns):
+        raise ValueError(
+            f"FAPROTAX coverage CSV must contain Sample and Annotated_pct: {path}"
+        )
+
+    ids = coverage_df["Sample"].fillna("").astype(str).str.strip().str.upper()
+    if (ids == "").any() or ids.duplicated().any():
+        raise ValueError(f"FAPROTAX coverage CSV has blank or duplicate sample IDs: {path}")
+
+    actual = set(ids)
+    if actual != expected_samples:
+        raise RuntimeError(
+            "FAPROTAX coverage CSV (file 9) does not match current file 8: "
+            f"missing={sorted(expected_samples - actual)[:10]}, "
+            f"extra={sorted(actual - expected_samples)[:10]}. "
+            "Rerun the FAPROTAX R step to regenerate both files."
+        )
+
+    percentages = pd.to_numeric(coverage_df["Annotated_pct"], errors="coerce")
+    if percentages.isna().any() or (~percentages.between(0, 100)).any():
+        raise ValueError(f"FAPROTAX coverage percentages must be in 0..100: {path}")
+
+    print(f"[INFO] Loaded FAPROTAX read annotation coverage for {len(ids)} samples")
+    return dict(zip(ids.tolist(), percentages.astype(float).tolist(), strict=True))
+
+
 def make_bacterial_guildplot_for_sample(
     sample_id: str,
     func_row: pd.Series,
     out_path: Path,
+    read_coverage_pct: float | None = None,
 ) -> bool:
     """
     Create one citizen-friendly bacterial ecological guild plot from one
     FAPROTAX sample row.
 
-    Input values are expected to be FAPROTAX fractions, as in the R script.
-    If values look like percentages already, the function handles that too.
+    Input values are FAPROTAX fractions of present, retained OTUs, not reads.
+    Read-weighted annotation coverage is a separate quantity from file 9.
     """
     values = {}
 
@@ -2814,7 +2857,7 @@ def make_bacterial_guildplot_for_sample(
     ax.set_xticklabels([f"{t}%" for t in ticks], fontsize=10, color="#333333")
 
     ax.set_xlabel(
-        "% of bacterial community",
+        "Summed % of present, retained 16S OTUs",
         fontsize=12,
         color="#111111",
         labelpad=8,
@@ -2871,11 +2914,20 @@ def make_bacterial_guildplot_for_sample(
         color="#111111",
     )
 
+    if read_coverage_pct is None:
+        coverage_caption = "FAPROTAX read annotation coverage: unavailable (file 9 missing)."
+    else:
+        coverage_caption = (
+            f"FAPROTAX annotation coverage: {read_coverage_pct:.1f}% of retained "
+            "16S reads (any predicted function)."
+        )
+
     caption = (
-        "Values represent summed FAPROTAX-predicted functional abundance relative "
-        "to the bacterial community.\n"
-        "Functional assignments may overlap, so categories are not compositional "
-        "and do not necessarily sum to 100%."
+        coverage_caption + "\n"
+        "Bars sum % of present OTUs with each predicted function; a single OTU can "
+        "contribute to multiple functions.\n"
+        "Selected soil functions >=1% shown; sums can be below or above 100%. "
+        "Read coverage uses a different denominator."
     )
 
     fig.text(
@@ -2888,11 +2940,46 @@ def make_bacterial_guildplot_for_sample(
         color="#666666",
     )
 
-    fig.tight_layout(rect=[0.02, 0.09, 0.98, 0.92])
+    fig.tight_layout(rect=[0.02, 0.14, 0.98, 0.92])
     fig.savefig(out_path, dpi=300, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close(fig)
 
     return True
+
+
+def summarize_fungal_guilds(
+    sample_df: pd.DataFrame,
+    funguild_by_genus: dict[str, dict],
+) -> tuple[pd.DataFrame, float]:
+    """Return displayed ITS guild percentages and accepted read coverage.
+
+    Denominator: all positive reconstructed ITS reads, including unassigned.
+    Coverage is calculated before hiding individual guilds below 1%.
+    """
+    empty = pd.DataFrame(columns=["macro", "percent"])
+    plot_df = sample_df.copy()
+    plot_df["count"] = pd.to_numeric(plot_df["count"], errors="coerce").fillna(0)
+    plot_df = plot_df[plot_df["count"] > 0].copy()
+    if plot_df.empty:
+        return empty, 0.0
+
+    total = plot_df["count"].sum()
+    if total <= 0:
+        return empty, 0.0
+
+    plot_df["genus"] = plot_df.apply(extract_fungal_genus, axis=1)
+    plot_df["macro"] = plot_df["genus"].map(
+        lambda genus: funguild_by_genus.get(genus, {}).get("macro", "")
+    )
+    annotated = plot_df[plot_df["macro"].astype(str).str.strip() != ""].copy()
+    if annotated.empty:
+        return empty, 0.0
+
+    coverage_pct = float(annotated["count"].sum() / total * 100.0)
+    grouped = annotated.groupby("macro", dropna=False)["count"].sum().reset_index()
+    grouped["percent"] = grouped["count"] / total * 100.0
+    grouped = grouped[grouped["percent"] >= 1.0].copy()
+    return grouped, coverage_pct
 
 
 def make_fungal_guildplot_for_sample(
@@ -2914,30 +3001,7 @@ def make_fungal_guildplot_for_sample(
       - percentage labels at bar ends
       - explanatory caption
     """
-    plot_df = sample_df.copy()
-    plot_df["count"] = pd.to_numeric(plot_df["count"], errors="coerce").fillna(0)
-    plot_df = plot_df[plot_df["count"] > 0].copy()
-
-    if plot_df.empty:
-        return False
-
-    total = plot_df["count"].sum()
-    if total <= 0:
-        return False
-
-    # Extract genus and map to citizen-friendly guild macro-category
-    plot_df["genus"] = plot_df.apply(extract_fungal_genus, axis=1)
-    plot_df["macro"] = plot_df["genus"].map(lambda g: funguild_by_genus.get(g, {}).get("macro", ""))
-
-    annotated = plot_df[plot_df["macro"].astype(str).str.strip() != ""].copy()
-    if annotated.empty:
-        return False
-
-    grouped = annotated.groupby("macro", dropna=False)["count"].sum().reset_index()
-    grouped["percent"] = grouped["count"] / total * 100.0
-
-    # Same communication threshold as the R script
-    grouped = grouped[grouped["percent"] >= 1.0].copy()
+    grouped, coverage_pct = summarize_fungal_guilds(sample_df, funguild_by_genus)
     if grouped.empty:
         return False
 
@@ -2991,7 +3055,7 @@ def make_fungal_guildplot_for_sample(
     ax.set_xticklabels([f"{t}%" for t in ticks], fontsize=10, color="#555555")
 
     ax.set_xlabel(
-        "% of fungal community",
+        "% of reconstructed ITS sequencing reads",
         fontsize=12,
         color="#111111",
         labelpad=8,
@@ -3055,8 +3119,12 @@ def make_fungal_guildplot_for_sample(
 
     # Footer caption
     caption = (
-        "Values indicate the estimated percentage of the fungal community associated with each ecological guild.\n"
-        "Only guilds exceeding 1% are shown; absent categories may reflect low detection rather than true absence."
+        f"FUNGuild coverage: {coverage_pct:.1f}% of ITS reads have an accepted "
+        f"guild assignment; {100.0 - coverage_pct:.1f}% remain unassigned.\n"
+        "Bars are % of all reconstructed ITS reads, not % of only annotated reads. "
+        "Guilds below 1% are hidden.\n"
+        "Assignments are inferred from genus taxonomy; missing or low-confidence "
+        "annotations do not imply absence of function."
     )
     fig.text(
         0.02,
@@ -3069,7 +3137,7 @@ def make_fungal_guildplot_for_sample(
     )
 
     # Leave room for suptitle and footer
-    fig.tight_layout(rect=[0.02, 0.08, 0.98, 0.92])
+    fig.tight_layout(rect=[0.02, 0.15, 0.98, 0.92])
 
     fig.savefig(out_path, dpi=300, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close(fig)
@@ -3159,6 +3227,8 @@ def generate_bacterial_guildplots_from_faprotax(
         print("[WARN] No expected FAPROTAX soil functions found in the CSV.")
         return 0, 0
 
+    coverage_by_sample = load_faprotax_read_coverage(expected)
+
     prefix = "biodiversity/guildplots/bacteria/"
     existing_objects = set() if force else list_existing_minio_objects(mclient, prefix)
 
@@ -3196,6 +3266,7 @@ def generate_bacterial_guildplots_from_faprotax(
             sample_id=sample_id,
             func_row=row[selected],
             out_path=local_png,
+            read_coverage_pct=coverage_by_sample.get(sample_id.upper()),
         )
         if not ok:
             continue
@@ -3361,6 +3432,14 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        "--guilds-only",
+        action="store_true",
+        help=(
+            "Skip taxonomy charts. Combine with --all-images to regenerate "
+            "both guild families, or with --bacterial-guilds/--fungal-guilds."
+        ),
+    )
+    parser.add_argument(
         "--fungal-guilds",
         action="store_true",
         default=GENERATE_FUNGAL_GUILDS,
@@ -3499,6 +3578,14 @@ def main():
     level = normalize_taxonomic_level(args.level)
     sample_ids = normalize_sample_filter(args.sample_id)
 
+    if args.guilds_only and args.build_faprotax_inputs:
+        raise SystemExit("ERROR: --guilds-only cannot build FAPROTAX inputs.")
+    if args.guilds_only and not (args.all_images or args.fungal_guilds or args.bacterial_guilds):
+        raise SystemExit(
+            "ERROR: --guilds-only requires --all-images, "
+            "--bacterial-guilds or --fungal-guilds."
+        )
+
     print(
         f"[INFO] marker={marker} level={level} "
         f"all_images={args.all_images} force={args.force} dry_run={args.dry_run}"
@@ -3534,23 +3621,24 @@ def main():
     mclient = init_minio()
 
     if args.all_images:
-        # Generate both taxonomic marker families.
-        generate_taxonomic_charts(
-            marker="16S",
-            level=level,
-            mclient=mclient,
-            force=args.force,
-            sample_ids=sample_ids,
-            dry_run=args.dry_run,
-        )
-        generate_taxonomic_charts(
-            marker="ITS",
-            level=level,
-            mclient=mclient,
-            force=args.force,
-            sample_ids=sample_ids,
-            dry_run=args.dry_run,
-        )
+        if not args.guilds_only:
+            # Generate both taxonomic marker families.
+            generate_taxonomic_charts(
+                marker="16S",
+                level=level,
+                mclient=mclient,
+                force=args.force,
+                sample_ids=sample_ids,
+                dry_run=args.dry_run,
+            )
+            generate_taxonomic_charts(
+                marker="ITS",
+                level=level,
+                mclient=mclient,
+                force=args.force,
+                sample_ids=sample_ids,
+                dry_run=args.dry_run,
+            )
 
         # Then both ecological guild families.
         generate_bacterial_guildplots_from_faprotax(
@@ -3567,15 +3655,16 @@ def main():
         )
         return
 
-    # Original single-marker behavior.
-    generate_taxonomic_charts(
-        marker=marker,
-        level=level,
-        mclient=mclient,
-        force=args.force,
-        sample_ids=sample_ids,
-        dry_run=args.dry_run,
-    )
+    # Original single-marker behavior unless only guilds are requested.
+    if not args.guilds_only:
+        generate_taxonomic_charts(
+            marker=marker,
+            level=level,
+            mclient=mclient,
+            force=args.force,
+            sample_ids=sample_ids,
+            dry_run=args.dry_run,
+        )
 
     if args.fungal_guilds:
         generate_fungal_guildplots(
