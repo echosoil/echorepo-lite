@@ -70,10 +70,10 @@ class FaprotaxStreamingTests(unittest.TestCase):
         stats = write_dense_otu_csv(
             self.output,
             sample_ids=samples,
-            eligible_otu_ids=["otu,one", 'otu"two'],
+            eligible_otu_ids=['otu"two', "otu,one"],
             sorted_counts=[
-                ("otu,one", "ABCD-1234", 7.0),
                 ('otu"two', "ABCD-1234", 0.25),
+                ("otu,one", "ABCD-1234", 7.0),
             ],
         )
         with self.output.open(newline="", encoding="utf-8") as handle:
@@ -82,8 +82,8 @@ class FaprotaxStreamingTests(unittest.TestCase):
             rows,
             [
                 ["otu_id", *samples],
-                ["otu,one", "7.0", "0.0", "0.0"],
                 ['otu"two', "0.25", "0.0", "0.0"],
+                ["otu,one", "7.0", "0.0", "0.0"],
             ],
         )
         self.assertEqual(stats.zero_samples, ["EFGH-5678", "IJKL-9012"])
