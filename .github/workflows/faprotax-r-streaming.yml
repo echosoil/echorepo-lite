@@ -25,5 +25,9 @@ jobs:
         run: Rscript tests/test_faprotax_r_streaming.R
       - name: Install microeco for reference-method comparisons
         run: Rscript -e 'install.packages("microeco", Ncpus=2L)'
+      - name: Verify microeco can load (do not silently skip parity)
+        run: Rscript -e 'print(.libPaths()); print(find.package("microeco")); library(microeco); cat("microeco loaded\n")'
       - name: Verify new fractions and annotations against microeco
-        run: Rscript tests/test_faprotax_r_streaming.R
+        run: |
+          Rscript -e 'stopifnot(requireNamespace("microeco", quietly=TRUE))'
+          Rscript tests/test_faprotax_r_streaming.R
