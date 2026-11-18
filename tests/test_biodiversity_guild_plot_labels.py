@@ -108,6 +108,34 @@ class GuildPlotCoverageTests(unittest.TestCase):
         self.assertIn("61.2%", "\n".join(texts))
         self.assertIn("Bars sum % of present OTUs", "\n".join(texts))
 
+    def test_guilds_only_skips_both_taxonomy_plot_families(self):
+        from types import SimpleNamespace
+
+        args = SimpleNamespace(
+            marker="16S",
+            level="Phylum",
+            sample_id=["ABCD-1234"],
+            force=True,
+            dry_run=False,
+            all_images=True,
+            guilds_only=True,
+            bacterial_guilds=False,
+            fungal_guilds=False,
+            build_faprotax_inputs=False,
+        )
+        with (
+            patch.object(guild, "parse_args", return_value=args),
+            patch.object(guild, "init_minio", return_value=object()),
+            patch.object(guild, "generate_taxonomic_charts") as pie,
+            patch.object(guild, "generate_bacterial_guildplots_from_faprotax") as bacterial,
+            patch.object(guild, "generate_fungal_guildplots") as fungal,
+        ):
+            guild.main()
+
+        pie.assert_not_called()
+        bacterial.assert_called_once()
+        fungal.assert_called_once()
+
     def test_fungal_chart_labels_accepted_annotation_coverage(self):
         texts = []
         original = Figure.text
