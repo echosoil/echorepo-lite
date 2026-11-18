@@ -200,6 +200,13 @@ annotate_faprotax_once <- function(tax2) {
   if (!requireNamespace("microeco", quietly = TRUE)) {
     stop("Required R package 'microeco' is not installed")
   }
+  # microeco::trans_func$cal_func() calls data("prok_func_FAPROTAX")
+  # without a package= argument. With requireNamespace()/:: alone, its
+  # bundled dataset may not be visible to data() on the user's R setup.
+  # Attach microeco explicitly, matching the legacy script's library().
+  if (!"package:microeco" %in% search()) {
+    suppressPackageStartupMessages(library("microeco", character.only = TRUE))
+  }
   otu_ids <- rownames(tax2)
   dummy <- data.frame(
     .FAPROTAX_reference = rep(1, nrow(tax2)),
