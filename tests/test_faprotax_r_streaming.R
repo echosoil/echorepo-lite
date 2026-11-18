@@ -8,11 +8,16 @@ source("tools/faprotax_16S_functional_profile.R")
 stopifnot(!"package:Matrix" %in% search())
 test_mat <- Matrix::Matrix(matrix(c(1, 0, 1, 1), nrow = 2),
                            sparse = TRUE)
+# Compare NUMERICAL values, not the storage modes or attributes of
+# base and Matrix matrices, which can differ across R/Matrix versions.
+expected_product <- matrix(c(1, 1, 1, 2), nrow = 2)
+actual_product <- as.matrix(Matrix::crossprod(test_mat, test_mat))
 stopifnot(
   inherits(test_mat, "sparseMatrix"),
   is.numeric(as.matrix(test_mat)),
-  identical(as.matrix(Matrix::crossprod(test_mat, test_mat)),
-            crossprod(as.matrix(test_mat), as.matrix(test_mat)))
+  identical(dim(actual_product), dim(expected_product)),
+  isTRUE(all.equal(as.numeric(actual_product),
+                   as.numeric(expected_product), tolerance = 1e-12))
 )
 
 tmp <- tempfile("faprotax-r-test-")
