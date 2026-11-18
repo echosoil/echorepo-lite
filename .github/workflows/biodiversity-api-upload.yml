@@ -12,6 +12,7 @@ on:
       - "tools/generate_biodiversity_piecharts.py"
       - "tools/faprotax_streaming.py"
       - "tests/test_faprotax_streaming.py"
+      - "tests/test_biodiversity_guild_plot_labels.py"
       - "tests/test_biodiversity_api_upload.py"
       - "tests/test_biodiversity_split_parts.py"
       - "tests/test_biodiversity_split_progress.py"
@@ -67,6 +68,7 @@ jobs:
           python -m py_compile tools/generate_biodiversity_piecharts.py
           python -m py_compile tools/faprotax_streaming.py
           python -m py_compile tests/test_biodiversity_api_upload.py
+          python -m py_compile tests/test_biodiversity_guild_plot_labels.py
           python -m py_compile tests/test_biodiversity_split_parts.py
           python -m py_compile tests/test_biodiversity_split_progress.py
           python -m py_compile tests/test_biodiversity_split_optimizations.py
@@ -74,6 +76,7 @@ jobs:
       - name: Test upload and splitting
         run: |
           python -m unittest discover -s tests -p "test_biodiversity_api_upload.py" -v
+          python -m unittest discover -s tests -p "test_biodiversity_guild_plot_labels.py" -v
           python -m unittest discover -s tests -p "test_biodiversity_split_parts.py" -v
           python -m unittest discover -s tests -p "test_biodiversity_split_progress.py" -v
           python -m unittest discover -s tests -p "test_biodiversity_split_optimizations.py" -v
