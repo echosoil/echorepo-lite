@@ -17,6 +17,10 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
+      - name: Install system library needed by igraph/microeco
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libglpk40
       - name: Install Matrix
         run: Rscript -e 'if (!requireNamespace("Matrix", quietly=TRUE)) install.packages("Matrix", repos="https://cloud.r-project.org")'
       - name: Syntax check
