@@ -1,0 +1,25 @@
+name: FAPROTAX memory-bounded R checks
+
+on:
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "tools/faprotax_16S_functional_profile.R"
+      - "tests/test_faprotax_r_streaming.R"
+      - ".github/workflows/faprotax-r-streaming.yml"
+  workflow_dispatch:
+
+jobs:
+  faprotax-r-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: Install Matrix
+        run: Rscript -e 'if (!requireNamespace("Matrix", quietly=TRUE)) install.packages("Matrix", repos="https://cloud.r-project.org")'
+      - name: Syntax check
+        run: Rscript -e 'parse("tools/faprotax_16S_functional_profile.R"); parse("tests/test_faprotax_r_streaming.R")' > /dev/null
+      - name: Run bounded-memory FAPROTAX streaming tests
+        run: Rscript tests/test_faprotax_r_streaming.R
