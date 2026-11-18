@@ -6,7 +6,6 @@ if (!requireNamespace("Matrix", quietly = TRUE)) stop("Matrix package required")
 
 workdir <- tempfile("faprotax-r-test-")
 dir.create(workdir)
-on.exit(unlink(workdir, recursive = TRUE), add = TRUE)
 
 otu_file <- file.path(workdir, "6_otu_clean_counts_no_blanks.csv")
 sample_ids <- c("ABCD-1234", "EFGH-5678", "IJKL-9012")
@@ -107,6 +106,19 @@ if (requireNamespace("microeco", quietly = TRUE)) {
   tf <- microeco::trans_func$new(dataset = dataset)
   # Directly assign a known binary mapping to exercise the exact version's
   # microeco functional-fraction implementation, independent of FAPROTAX DB.
+  # The one-dummy-column annotation must match a conventional microeco
+  # annotation built from real counts, for every OTU retained by tidy_dataset().
+  mapped_once <- annotate_faprotax_once(tax2)
+  tf$cal_func(prok_database = "FAPROTAX")
+  baseline_mapping <- tf$res_func
+  stopifnot(
+    isTRUE(all.equal(
+      as.matrix(mapped_once[rownames(baseline_mapping),
+                            colnames(baseline_mapping), drop = FALSE]),
+      as.matrix(baseline_mapping),
+      tolerance = 0, check.attributes = FALSE
+    ))
+  )
   tf$res_func <- as.data.frame(as.matrix(function_map))
   for (is_weighted in c(FALSE, TRUE)) {
     if (is.function(tf$cal_func_FR)) {
@@ -130,4 +142,5 @@ if (requireNamespace("microeco", quietly = TRUE)) {
   cat("[SKIP] microeco package is not installed; math/unit tests passed\n")
 }
 
+unlink(workdir, recursive = TRUE)
 cat("[OK] Bounded-memory FAPROTAX streaming regression tests passed\n")
