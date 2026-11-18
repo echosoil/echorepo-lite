@@ -1,0 +1,30 @@
+name: FAPROTAX R memory-bounded workflow
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - "tools/faprotax_16S_functional_profile.R"
+      - "tests/test_faprotax_r_streaming.R"
+      - ".github/workflows/faprotax-r-streaming.yml"
+      - "docs/faprotax_r_streaming.md"
+  workflow_dispatch:
+
+jobs:
+  r-faprotax-streaming:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::microeco
+            any::Matrix
+      - name: Validate syntax
+        run: Rscript -e 'parse(file = "tools/faprotax_16S_functional_profile.R")'
+      - name: Compare streaming and legacy outputs
+        run: Rscript tests/test_faprotax_r_streaming.R
