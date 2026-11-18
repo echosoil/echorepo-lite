@@ -9,7 +9,8 @@ stopifnot(!"package:Matrix" %in% search())
 test_mat <- Matrix::Matrix(matrix(c(1, 0, 1, 1), nrow = 2),
                            sparse = TRUE)
 stopifnot(
-  inherits(test_mat, "dgCMatrix"),
+  inherits(test_mat, "sparseMatrix"),
+  is.numeric(as.matrix(test_mat)),
   identical(as.matrix(Matrix::crossprod(test_mat, test_mat)),
             crossprod(as.matrix(test_mat), as.matrix(test_mat)))
 )
