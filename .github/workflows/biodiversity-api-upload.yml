@@ -10,6 +10,8 @@ on:
       - "tools/prepare_split_biodiversity_for_echorepo_premin10.py"
       - "tools/consume_biodiversity_jobs.py"
       - "tools/generate_biodiversity_piecharts.py"
+      - "tools/faprotax_streaming.py"
+      - "tests/test_faprotax_streaming.py"
       - "tests/test_biodiversity_api_upload.py"
       - "tests/test_biodiversity_split_parts.py"
       - "tests/test_biodiversity_split_progress.py"
@@ -63,6 +65,7 @@ jobs:
           python -m py_compile tools/prepare_split_biodiversity_for_echorepo_premin10.py
           python -m py_compile tools/benchmark_biodiversity_split.py
           python -m py_compile tools/generate_biodiversity_piecharts.py
+          python -m py_compile tools/faprotax_streaming.py
           python -m py_compile tests/test_biodiversity_api_upload.py
           python -m py_compile tests/test_biodiversity_split_parts.py
           python -m py_compile tests/test_biodiversity_split_progress.py
