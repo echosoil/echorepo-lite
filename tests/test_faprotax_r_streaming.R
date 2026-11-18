@@ -2,6 +2,18 @@
 # End-to-end R tests for the bounded-memory FAPROTAX reducer.
 source("tools/faprotax_16S_functional_profile.R")
 
+# Regression for older installations: keep Matrix only namespace-loaded.
+# The reducer must work without library(Matrix), and it must perform
+# numeric—not Boolean—sparse matrix multiplication.
+stopifnot(!"package:Matrix" %in% search())
+test_mat <- Matrix::Matrix(matrix(c(1, 0, 1, 1), nrow = 2),
+                           sparse = TRUE)
+stopifnot(
+  inherits(test_mat, "dgCMatrix"),
+  identical(as.matrix(Matrix::crossprod(test_mat, test_mat)),
+            crossprod(as.matrix(test_mat), as.matrix(test_mat)))
+)
+
 tmp <- tempfile("faprotax-r-test-")
 dir.create(tmp)
 on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
@@ -97,6 +109,8 @@ stopifnot(bad)
 # If the real microeco package is present, compare against its legacy
 # cal_spe_func_perc() output, using the SAME FAPROTAX annotations.
 if (requireNamespace("microeco", quietly = TRUE)) {
+  # The legacy code attached microeco; set that context for baseline parity.
+  suppressPackageStartupMessages(library("microeco", character.only = TRUE))
   bacterial_tax <- data.frame(
     Kingdom = rep("Bacteria", 4),
     Phylum = c("Proteobacteria", "Nitrospirota", "Proteobacteria", "Firmicutes"),
@@ -135,8 +149,12 @@ if (requireNamespace("microeco", quietly = TRUE)) {
       unname(result$fractions), unname(legacy), tolerance = 1e-6
     ))
   )
-  # The taxonomy-only dummy sample must generate the SAME annotation.
+  # Reproduce the production failure: the module is loaded as a namespace,
+  # but NOT attached. The helper must attach microeco before data() lookup.
+  detach("package:microeco", unload = FALSE, character.only = TRUE)
+  stopifnot(!"package:microeco" %in% search())
   dummy_map <- annotate_faprotax_once(bacterial_tax)
+  stopifnot("package:microeco" %in% search())
   stopifnot(identical(
     unname(dummy_map[otus[1:4], , drop = FALSE]),
     unname(ref_annotation[otus[1:4], , drop = FALSE])
