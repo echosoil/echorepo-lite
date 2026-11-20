@@ -46,6 +46,9 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+{% if config.get('LOESS_OVERLAY_ENABLED', False) %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/loess_attribution.css') }}?v=1">
+{% endif %}
 
 
 
@@ -739,6 +742,9 @@
 
 <div id="map" class="mb-3"></div>
 
+{% if config.get('LOESS_OVERLAY_ENABLED', False) %}
+{% include 'partials/loess_map_attribution.html' %}
+{% endif %}
 
 
 <!-- Toolbar -->
@@ -1008,13 +1014,18 @@
 
 'biodiv_level': biodiv_level|default('Phylum'),
 'biogeo_overlay_enabled': true,
-'biogeo_overlay_url': url_for('static', filename='geo/biogeo_regions_2016.geojson')
+'biogeo_overlay_url': url_for('static', filename='geo/biogeo_regions_2016.geojson'),
+'loess_overlay_enabled': config.get('LOESS_OVERLAY_ENABLED', False),
+'loess_overlay_url': url_for('static', filename='geo/loess_surveys.geojson') + '?v=3' if config.get('LOESS_OVERLAY_ENABLED', False) else none
 
 } %}
 
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
 
-<script src="{{ url_for('static', filename='js/map.js') }}?v=44"></script>
+{% if config.get('LOESS_OVERLAY_ENABLED', False) %}
+<script src="{{ url_for('static', filename='js/loess_overlay.js') }}?v=4"></script>
+{% endif %}
+<script src="{{ url_for('static', filename='js/map.js') }}?v=46"></script>
 
 
 

@@ -1364,9 +1364,10 @@
     map.on('zoomend', refreshBiogeoLabels);
   }
 
-  // LOESS: optional, separately sourced public crowd-observation overlay.
+  // LOESS: separately sourced citizen observations for /explore and /my.
   // Never include in ECHO's ownership index, filters, QA or sample exports.
-  const loessOverlay = cfg.public_mode && cfg.loess_overlay_enabled &&
+  const loessOverlay = cfg.loess_overlay_enabled &&
+    (cfg.public_mode === true || PERSONAL_MAP) &&
     window.ECHOREPO_LOESS?.createLayer
     ? window.ECHOREPO_LOESS.createLayer(map, {
       url: cfg.loess_overlay_url || '/static/geo/loess_surveys.geojson'

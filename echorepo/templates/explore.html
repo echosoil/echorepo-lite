@@ -12,6 +12,9 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+{% if config.get('LOESS_OVERLAY_ENABLED', False) %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/loess_attribution.css') }}?v=1">
+{% endif %}
 
 <style>
   #map {
@@ -149,6 +152,9 @@
 </button>
 
 <div id="map" class="mb-3"></div>
+{% if config.get('LOESS_OVERLAY_ENABLED', False) %}
+{% include 'partials/loess_map_attribution.html' %}
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -226,7 +232,7 @@
 {% if config.get('LOESS_OVERLAY_ENABLED', False) %}
 <script src="{{ url_for('static', filename='js/loess_overlay.js') }}?v=4"></script>
 {% endif %}
-<script src="{{ url_for('static', filename='js/map.js') }}?v=45"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=46"></script>
 
 <script>
   (function setupLayoutSwitch() {
