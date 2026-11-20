@@ -152,7 +152,7 @@ msgstr "Regiões biogeográficas"
 
 #: echorepo/i18n.py:140 static/js/map.js:1395
 msgid "LOESS soil observations"
-msgstr "Observações do solo"
+msgstr "Observações do solo de LOESS"
 
 #: echorepo/i18n.py:142
 msgid "Dry soil"
@@ -189,7 +189,7 @@ msgstr "Outros/não categorizados"
 #: echorepo/i18n.py:151 static/js/loess_overlay.js:112
 #, python-brace-format
 msgid "LOESS · {category}"
-msgstr "LOSSO ·{category}"
+msgstr "LOESS ·{category}"
 
 #: echorepo/i18n.py:152 static/js/loess_overlay.js:115
 msgid "Place"
@@ -256,7 +256,7 @@ msgstr "Mapa do Solo de Perdas"
 #: echorepo/i18n.py:167 static/js/loess_overlay.js:212
 #, python-brace-format
 msgid "LOESS: {category}"
-msgstr "LOSSO:{category}"
+msgstr "LOESS: {category}"
 
 #: echorepo/i18n.py:168 static/js/loess_overlay.js:239
 #, python-brace-format
