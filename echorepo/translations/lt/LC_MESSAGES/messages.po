@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 11:01+0000\n"
+"POT-Creation-Date: 2026-11-20 12:00+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lt\n"
@@ -77,7 +77,7 @@ msgstr "Data"
 msgid "QR code"
 msgstr "QR kodas"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:104
+#: echorepo/i18n.py:122 echorepo/i18n.py:148 echorepo/templates/explore.html:104
 #: echorepo/templates/results.html:847 echorepo/templates/search.html:90
 #: static/js/map.js:1989
 msgid "pH"
@@ -151,43 +151,169 @@ msgstr "Palydovas"
 msgid "Biogeographical regions"
 msgstr "Biogeografijos regionai"
 
-#: echorepo/i18n.py:140 static/js/map.js:3946
+#: echorepo/i18n.py:140 static/js/map.js:1395
+msgid "LOESS soil observations"
+msgstr "MIŠKINTI dirvožemio stebėjimus"
+
+#: echorepo/i18n.py:142
+msgid "Dry soil"
+msgstr "Sausas dirvožemis"
+
+#: echorepo/i18n.py:143
+msgid "Wet soil"
+msgstr "Drėgnas dirvožemis"
+
+#: echorepo/i18n.py:144
+msgid "Erosion"
+msgstr "Erozija"
+
+#: echorepo/i18n.py:145
+msgid "Sealed soil"
+msgstr "Sandari žemė"
+
+#: echorepo/i18n.py:146
+msgid "Soil degradation"
+msgstr "Dirvožemio degradacija"
+
+#: echorepo/i18n.py:147
+msgid "Loss of organic matter"
+msgstr "Organinių medžiagų netekimas"
+
+#: echorepo/i18n.py:149
+msgid "Biodiversity"
+msgstr "Biologinė įvairovė"
+
+#: echorepo/i18n.py:150
+msgid "Other/uncategorized"
+msgstr "Kiti / nesuskirstyti į kategorijas"
+
+#: echorepo/i18n.py:151 static/js/loess_overlay.js:112
+#, python-brace-format
+msgid "LOESS · {category}"
+msgstr "MAIŠELIS *{category}"
+
+#: echorepo/i18n.py:152 static/js/loess_overlay.js:115
+msgid "Place"
+msgstr "Vieta"
+
+#: echorepo/i18n.py:153 echorepo/templates/explore.html:114
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:19
+#: echorepo/templates/search.html:89 static/js/loess_overlay.js:116
+msgid "Country"
+msgstr "Šalis"
+
+#: echorepo/i18n.py:154 static/js/loess_overlay.js:117
+msgid "Observed"
+msgstr "Stebima"
+
+#: echorepo/i18n.py:155 static/js/loess_overlay.js:118
+msgid "Affected radius"
+msgstr "Nuluptas spindulys"
+
+#: echorepo/i18n.py:156 static/js/loess_overlay.js:120
+msgid "Description"
+msgstr "Aprašymas"
+
+#: echorepo/i18n.py:157 static/js/loess_overlay.js:121
+msgid "Potential cause"
+msgstr "Potenciali priežastis"
+
+#: echorepo/i18n.py:158 static/js/loess_overlay.js:122
+msgid "Category (original)"
+msgstr "Kategorija (pirminė)"
+
+#: echorepo/i18n.py:159 static/js/loess_overlay.js:123
+msgid "Review status"
+msgstr "Peržiūros statusas"
+
+#: echorepo/i18n.py:160 static/js/loess_overlay.js:125
+msgid "Accepted"
+msgstr "NAME OF TRANSLATORS"
+
+#: echorepo/i18n.py:161 static/js/loess_overlay.js:126
+msgid "LOESS observation ID"
+msgstr "LAUKŲ STEBĖJIMO ID"
+
+#: echorepo/i18n.py:162 static/js/loess_overlay.js:92
+msgid "Open larger LOESS photograph"
+msgstr "Rodyti didesnę LOESS nuotrauką"
+
+#: echorepo/i18n.py:163 static/js/loess_overlay.js:95
+msgid "Photograph supplied with the LOESS soil observation"
+msgstr "Nuotrauka pateikiama su LOESS dirvožemio stebėjimu"
+
+#: echorepo/i18n.py:164 static/js/loess_overlay.js:101
+msgid "Photograph from LOESS · Click to enlarge"
+msgstr "Nuotrauka iš LOESS · Spauskite, kad padidinti"
+
+#: echorepo/i18n.py:165 static/js/loess_overlay.js:130
+msgid "Citizen-reported soil condition · Source: "
+msgstr "Environmenta- pranešė dirvožemio būklė · šaltinis:"
+
+#: echorepo/i18n.py:166 static/js/loess_overlay.js:135
+msgid "LOESS Soil Map"
+msgstr "MIŠKŲ Dirvožemio žemėlapis"
+
+#: echorepo/i18n.py:167 static/js/loess_overlay.js:212
+#, python-brace-format
+msgid "LOESS: {category}"
+msgstr "ŽALA:{category}"
+
+#: echorepo/i18n.py:168 static/js/loess_overlay.js:239
+#, python-brace-format
+msgid "LOESS observations ({n})"
+msgstr "MIŠKINYS ({n})"
+
+#: echorepo/i18n.py:169 static/js/loess_overlay.js:261
+msgid "Circle radius = reported affected area (m), not location uncertainty."
+msgstr "Rato spindulys = praneštas paveiktas plotas (m), ne vietovės neapibrėžtis."
+
+#: echorepo/i18n.py:170 static/js/loess_overlay.js:290
+msgid "No geolocated LOESS observations in the supplied GeoJSON."
+msgstr "Pateiktoje GeoJSON nėra geolokacinių LOESS stebėjimų."
+
+#: echorepo/i18n.py:171 static/js/loess_overlay.js:298
+#, python-brace-format
+msgid "LOESS unavailable: {error}"
+msgstr "ŽALIAVA neprieinama:{error}"
+
+#: echorepo/i18n.py:172 static/js/map.js:3946
 msgid "Loading samples..."
 msgstr "Pakrovimo pavyzdžiai..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3947
+#: echorepo/i18n.py:173 static/js/map.js:3947
 msgid "Fetching visible map area"
 msgstr "Rodyti žemėlapio plotą"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:174
 msgid "Selection export to a file"
 msgstr "Žymėti eksportą į failą"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:175
 msgid "Selection export"
 msgstr "Eksportas"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:176
 msgid "Use selection tool"
 msgstr "@ info: tooltip"
 
-#: echorepo/i18n.py:145
+#: echorepo/i18n.py:177
 msgid "to draw one or more areas"
 msgstr "atkreipti vieną ar kelias sritis"
 
-#: echorepo/i18n.py:146
+#: echorepo/i18n.py:178
 msgid "Export selection"
 msgstr "Eksportas"
 
-#: echorepo/i18n.py:147
+#: echorepo/i18n.py:179
 msgid "Clear selection"
 msgstr "Išvalyti žymėjimą"
 
-#: echorepo/i18n.py:148
+#: echorepo/i18n.py:180
 msgid "Loading sample details..."
 msgstr "Sumontuotas pavyzdys..."
 
-#: echorepo/i18n.py:150 static/js/map.js:1611
+#: echorepo/i18n.py:182 static/js/map.js:1611
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Procentines vertes (%) galima paversti mg / kg dauginant iš 10000."
 
@@ -620,11 +746,6 @@ msgstr "min"
 #: echorepo/templates/explore.html:112 echorepo/templates/results.html:855
 msgid "max"
 msgstr "maks"
-
-#: echorepo/templates/explore.html:114 echorepo/templates/results.html:841
-#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
-msgid "Country"
-msgstr "Šalis"
 
 #: echorepo/templates/explore.html:117 echorepo/templates/results.html:844
 #: echorepo/templates/search.html:21 static/js/map.js:354
@@ -1208,10 +1329,6 @@ msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
 msgstr "Nepavyko įkelti regiono gyventojų. III PRIEDAS."
-
-#: static/js/map.js:1395
-msgid "LOESS soil observations"
-msgstr "MIŠKINTI dirvožemio stebėjimus"
 
 #: static/js/map.js:1617
 msgid "Unit conversion help"

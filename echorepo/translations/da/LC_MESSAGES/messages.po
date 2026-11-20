@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 11:01+0000\n"
+"POT-Creation-Date: 2026-11-20 12:00+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: da\n"
@@ -76,7 +76,7 @@ msgstr "Dato"
 msgid "QR code"
 msgstr "QR-kode"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:104
+#: echorepo/i18n.py:122 echorepo/i18n.py:148 echorepo/templates/explore.html:104
 #: echorepo/templates/results.html:847 echorepo/templates/search.html:90
 #: static/js/map.js:1989
 msgid "pH"
@@ -150,43 +150,169 @@ msgstr "Satellit"
 msgid "Biogeographical regions"
 msgstr "Biogeografiske områder"
 
-#: echorepo/i18n.py:140 static/js/map.js:3946
+#: echorepo/i18n.py:140 static/js/map.js:1395
+msgid "LOESS soil observations"
+msgstr "LOESS jordobservation"
+
+#: echorepo/i18n.py:142
+msgid "Dry soil"
+msgstr "Tørret jord"
+
+#: echorepo/i18n.py:143
+msgid "Wet soil"
+msgstr "Vådjord"
+
+#: echorepo/i18n.py:144
+msgid "Erosion"
+msgstr "Erosion"
+
+#: echorepo/i18n.py:145
+msgid "Sealed soil"
+msgstr "Forseglet jord"
+
+#: echorepo/i18n.py:146
+msgid "Soil degradation"
+msgstr "Jordnedbrydning"
+
+#: echorepo/i18n.py:147
+msgid "Loss of organic matter"
+msgstr "Tab af organisk materiale"
+
+#: echorepo/i18n.py:149
+msgid "Biodiversity"
+msgstr "Biodiversitet"
+
+#: echorepo/i18n.py:150
+msgid "Other/uncategorized"
+msgstr "Andet / ikke kategoriseret"
+
+#: echorepo/i18n.py:151 static/js/loess_overlay.js:112
+#, python-brace-format
+msgid "LOESS · {category}"
+msgstr "LOESS ·{category}"
+
+#: echorepo/i18n.py:152 static/js/loess_overlay.js:115
+msgid "Place"
+msgstr "Sted"
+
+#: echorepo/i18n.py:153 echorepo/templates/explore.html:114
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:19
+#: echorepo/templates/search.html:89 static/js/loess_overlay.js:116
+msgid "Country"
+msgstr "Land"
+
+#: echorepo/i18n.py:154 static/js/loess_overlay.js:117
+msgid "Observed"
+msgstr "Observeret"
+
+#: echorepo/i18n.py:155 static/js/loess_overlay.js:118
+msgid "Affected radius"
+msgstr "Berørt radius"
+
+#: echorepo/i18n.py:156 static/js/loess_overlay.js:120
+msgid "Description"
+msgstr "Varebeskrivelse"
+
+#: echorepo/i18n.py:157 static/js/loess_overlay.js:121
+msgid "Potential cause"
+msgstr "Potentiel årsag"
+
+#: echorepo/i18n.py:158 static/js/loess_overlay.js:122
+msgid "Category (original)"
+msgstr "Kategori (original)"
+
+#: echorepo/i18n.py:159 static/js/loess_overlay.js:123
+msgid "Review status"
+msgstr "Status for gennemgang"
+
+#: echorepo/i18n.py:160 static/js/loess_overlay.js:125
+msgid "Accepted"
+msgstr "Accepteret"
+
+#: echorepo/i18n.py:161 static/js/loess_overlay.js:126
+msgid "LOESS observation ID"
+msgstr "LOESS observation ID"
+
+#: echorepo/i18n.py:162 static/js/loess_overlay.js:92
+msgid "Open larger LOESS photograph"
+msgstr "Åbn større LOESS fotografi"
+
+#: echorepo/i18n.py:163 static/js/loess_overlay.js:95
+msgid "Photograph supplied with the LOESS soil observation"
+msgstr "Fotografi leveret med LOESS jordobservation"
+
+#: echorepo/i18n.py:164 static/js/loess_overlay.js:101
+msgid "Photograph from LOESS · Click to enlarge"
+msgstr "Fotografi fra LOESS · Klik for at forstørre"
+
+#: echorepo/i18n.py:165 static/js/loess_overlay.js:130
+msgid "Citizen-reported soil condition · Source: "
+msgstr "Citizen-rapporteret jordstand · Kilde:"
+
+#: echorepo/i18n.py:166 static/js/loess_overlay.js:135
+msgid "LOESS Soil Map"
+msgstr "LOESS jordkort"
+
+#: echorepo/i18n.py:167 static/js/loess_overlay.js:212
+#, python-brace-format
+msgid "LOESS: {category}"
+msgstr "LOESS:{category}"
+
+#: echorepo/i18n.py:168 static/js/loess_overlay.js:239
+#, python-brace-format
+msgid "LOESS observations ({n})"
+msgstr "LOESS-observationer ({n})"
+
+#: echorepo/i18n.py:169 static/js/loess_overlay.js:261
+msgid "Circle radius = reported affected area (m), not location uncertainty."
+msgstr "Cirkelradius = rapporteret berørt område (m), ikke usikkerhed ved placering."
+
+#: echorepo/i18n.py:170 static/js/loess_overlay.js:290
+msgid "No geolocated LOESS observations in the supplied GeoJSON."
+msgstr "Ingen geoplacerede LOESS observationer i den leverede GeoJSON."
+
+#: echorepo/i18n.py:171 static/js/loess_overlay.js:298
+#, python-brace-format
+msgid "LOESS unavailable: {error}"
+msgstr "LOESS Utilgængelig:{error}"
+
+#: echorepo/i18n.py:172 static/js/map.js:3946
 msgid "Loading samples..."
 msgstr "Indlæser prøver..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3947
+#: echorepo/i18n.py:173 static/js/map.js:3947
 msgid "Fetching visible map area"
 msgstr "Hent synligt kortområde"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:174
 msgid "Selection export to a file"
 msgstr "Markering eksport til en fil"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:175
 msgid "Selection export"
 msgstr "Udvælgelseseksport"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:176
 msgid "Use selection tool"
 msgstr "Brug markeringsværktøj"
 
-#: echorepo/i18n.py:145
+#: echorepo/i18n.py:177
 msgid "to draw one or more areas"
 msgstr "til at tegne et eller flere områder"
 
-#: echorepo/i18n.py:146
+#: echorepo/i18n.py:178
 msgid "Export selection"
 msgstr "Eksportmarkering"
 
-#: echorepo/i18n.py:147
+#: echorepo/i18n.py:179
 msgid "Clear selection"
 msgstr "Ryd markering"
 
-#: echorepo/i18n.py:148
+#: echorepo/i18n.py:180
 msgid "Loading sample details..."
 msgstr "Indlæser stikprøveoplysninger..."
 
-#: echorepo/i18n.py:150 static/js/map.js:1611
+#: echorepo/i18n.py:182 static/js/map.js:1611
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Procentværdier (%) kan konverteres til mg / kg ved at gange med 10000."
 
@@ -615,11 +741,6 @@ msgstr "min"
 #: echorepo/templates/explore.html:112 echorepo/templates/results.html:855
 msgid "max"
 msgstr "maks"
-
-#: echorepo/templates/explore.html:114 echorepo/templates/results.html:841
-#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
-msgid "Country"
-msgstr "Land"
 
 #: echorepo/templates/explore.html:117 echorepo/templates/results.html:844
 #: echorepo/templates/search.html:21 static/js/map.js:354
@@ -1212,10 +1333,6 @@ msgid ""
 msgstr ""
 "Kunne ikke indlæse overlejret biogeographical- region. Kontroller, at / "
 "static / geo / biogeo _ regions _ 2016.geojson eksisterer."
-
-#: static/js/map.js:1395
-msgid "LOESS soil observations"
-msgstr "LOESS jordobservation"
 
 #: static/js/map.js:1617
 msgid "Unit conversion help"

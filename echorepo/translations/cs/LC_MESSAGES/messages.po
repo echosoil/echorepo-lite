@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 11:01+0000\n"
+"POT-Creation-Date: 2026-11-20 12:00+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
@@ -76,7 +76,7 @@ msgstr "Datum"
 msgid "QR code"
 msgstr "Kód QR"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:104
+#: echorepo/i18n.py:122 echorepo/i18n.py:148 echorepo/templates/explore.html:104
 #: echorepo/templates/results.html:847 echorepo/templates/search.html:90
 #: static/js/map.js:1989
 msgid "pH"
@@ -150,43 +150,169 @@ msgstr "Satelitní"
 msgid "Biogeographical regions"
 msgstr "Biogeografické oblasti"
 
-#: echorepo/i18n.py:140 static/js/map.js:3946
+#: echorepo/i18n.py:140 static/js/map.js:1395
+msgid "LOESS soil observations"
+msgstr "DODATEČNÁ ZKOUŠKA"
+
+#: echorepo/i18n.py:142
+msgid "Dry soil"
+msgstr "Suchá půda"
+
+#: echorepo/i18n.py:143
+msgid "Wet soil"
+msgstr "Mokrá půda"
+
+#: echorepo/i18n.py:144
+msgid "Erosion"
+msgstr "Eroze"
+
+#: echorepo/i18n.py:145
+msgid "Sealed soil"
+msgstr "Zapečetěná půda"
+
+#: echorepo/i18n.py:146
+msgid "Soil degradation"
+msgstr "Rozklad půdy"
+
+#: echorepo/i18n.py:147
+msgid "Loss of organic matter"
+msgstr "Ztráta organické hmoty"
+
+#: echorepo/i18n.py:149
+msgid "Biodiversity"
+msgstr "Biologická rozmanitost"
+
+#: echorepo/i18n.py:150
+msgid "Other/uncategorized"
+msgstr "Ostatní / nezařazené"
+
+#: echorepo/i18n.py:151 static/js/loess_overlay.js:112
+#, python-brace-format
+msgid "LOESS · {category}"
+msgstr "LOESS ·{category}"
+
+#: echorepo/i18n.py:152 static/js/loess_overlay.js:115
+msgid "Place"
+msgstr "Místo"
+
+#: echorepo/i18n.py:153 echorepo/templates/explore.html:114
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:19
+#: echorepo/templates/search.html:89 static/js/loess_overlay.js:116
+msgid "Country"
+msgstr "Země"
+
+#: echorepo/i18n.py:154 static/js/loess_overlay.js:117
+msgid "Observed"
+msgstr "Pozorováno"
+
+#: echorepo/i18n.py:155 static/js/loess_overlay.js:118
+msgid "Affected radius"
+msgstr "Postižený poloměr"
+
+#: echorepo/i18n.py:156 static/js/loess_overlay.js:120
+msgid "Description"
+msgstr "Popis"
+
+#: echorepo/i18n.py:157 static/js/loess_overlay.js:121
+msgid "Potential cause"
+msgstr "Potenciální příčina"
+
+#: echorepo/i18n.py:158 static/js/loess_overlay.js:122
+msgid "Category (original)"
+msgstr "Kategorie (originál)"
+
+#: echorepo/i18n.py:159 static/js/loess_overlay.js:123
+msgid "Review status"
+msgstr "Status přezkumu"
+
+#: echorepo/i18n.py:160 static/js/loess_overlay.js:125
+msgid "Accepted"
+msgstr "Přijato"
+
+#: echorepo/i18n.py:161 static/js/loess_overlay.js:126
+msgid "LOESS observation ID"
+msgstr "POLOŽKA K POSKYTOVÁNÍ SLUŽEB"
+
+#: echorepo/i18n.py:162 static/js/loess_overlay.js:92
+msgid "Open larger LOESS photograph"
+msgstr "Otevřít větší fotografii LOESS"
+
+#: echorepo/i18n.py:163 static/js/loess_overlay.js:95
+msgid "Photograph supplied with the LOESS soil observation"
+msgstr "Fotografie dodávaná s monitorováním LEESS půdy"
+
+#: echorepo/i18n.py:164 static/js/loess_overlay.js:101
+msgid "Photograph from LOESS · Click to enlarge"
+msgstr "Fotografie z LOESS · Klikněte pro zvětšení"
+
+#: echorepo/i18n.py:165 static/js/loess_overlay.js:130
+msgid "Citizen-reported soil condition · Source: "
+msgstr "Občanský stav půdy · Zdroj:"
+
+#: echorepo/i18n.py:166 static/js/loess_overlay.js:135
+msgid "LOESS Soil Map"
+msgstr "LOESS Soil Map"
+
+#: echorepo/i18n.py:167 static/js/loess_overlay.js:212
+#, python-brace-format
+msgid "LOESS: {category}"
+msgstr "{category}"
+
+#: echorepo/i18n.py:168 static/js/loess_overlay.js:239
+#, python-brace-format
+msgid "LOESS observations ({n})"
+msgstr "Pozorování LOESS ({n})"
+
+#: echorepo/i18n.py:169 static/js/loess_overlay.js:261
+msgid "Circle radius = reported affected area (m), not location uncertainty."
+msgstr "Poloměr kruhu = ohlášená postižená oblast (m), nikoli nejistota umístění."
+
+#: echorepo/i18n.py:170 static/js/loess_overlay.js:290
+msgid "No geolocated LOESS observations in the supplied GeoJSON."
+msgstr "V dodaném GeoJSONu nejsou žádná geostacionární pozorování LOESS."
+
+#: echorepo/i18n.py:171 static/js/loess_overlay.js:298
+#, python-brace-format
+msgid "LOESS unavailable: {error}"
+msgstr "LOESS nedostupný:{error}"
+
+#: echorepo/i18n.py:172 static/js/map.js:3946
 msgid "Loading samples..."
 msgstr "Nahrávám vzorky..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3947
+#: echorepo/i18n.py:173 static/js/map.js:3947
 msgid "Fetching visible map area"
 msgstr "Upevnění viditelné oblasti mapy"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:174
 msgid "Selection export to a file"
 msgstr "Vývoz do souboru"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:175
 msgid "Selection export"
 msgstr "Výběr vývozu"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:176
 msgid "Use selection tool"
 msgstr "Použít nástroj pro výběr"
 
-#: echorepo/i18n.py:145
+#: echorepo/i18n.py:177
 msgid "to draw one or more areas"
 msgstr "k čerpání jedné nebo více oblastí"
 
-#: echorepo/i18n.py:146
+#: echorepo/i18n.py:178
 msgid "Export selection"
 msgstr "Výběr vývozu"
 
-#: echorepo/i18n.py:147
+#: echorepo/i18n.py:179
 msgid "Clear selection"
 msgstr "Vymazat výběr"
 
-#: echorepo/i18n.py:148
+#: echorepo/i18n.py:180
 msgid "Loading sample details..."
 msgstr "Načítám detaily vzorku..."
 
-#: echorepo/i18n.py:150 static/js/map.js:1611
+#: echorepo/i18n.py:182 static/js/map.js:1611
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Procentní hodnoty (%) lze převést na mg / kg vynásobením10000."
 
@@ -611,11 +737,6 @@ msgstr "min"
 #: echorepo/templates/explore.html:112 echorepo/templates/results.html:855
 msgid "max"
 msgstr "max"
-
-#: echorepo/templates/explore.html:114 echorepo/templates/results.html:841
-#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
-msgid "Country"
-msgstr "Země"
 
 #: echorepo/templates/explore.html:117 echorepo/templates/results.html:844
 #: echorepo/templates/search.html:21 static/js/map.js:354
@@ -1206,10 +1327,6 @@ msgid ""
 msgstr ""
 "Nelze načíst překrytí biogeografické oblasti. Zkontrolujte, zda / static / "
 "geo / biogeo _ regions _ 2016.geojson existuje."
-
-#: static/js/map.js:1395
-msgid "LOESS soil observations"
-msgstr "DODATEČNÁ ZKOUŠKA"
 
 #: static/js/map.js:1617
 msgid "Unit conversion help"

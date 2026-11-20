@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 11:01+0000\n"
+"POT-Creation-Date: 2026-11-20 12:00+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: et\n"
@@ -76,7 +76,7 @@ msgstr "Kuupäev"
 msgid "QR code"
 msgstr "QR-kood"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:104
+#: echorepo/i18n.py:122 echorepo/i18n.py:148 echorepo/templates/explore.html:104
 #: echorepo/templates/results.html:847 echorepo/templates/search.html:90
 #: static/js/map.js:1989
 msgid "pH"
@@ -150,43 +150,169 @@ msgstr "Satelliit"
 msgid "Biogeographical regions"
 msgstr "Biogeograafilised piirkonnad"
 
-#: echorepo/i18n.py:140 static/js/map.js:3946
+#: echorepo/i18n.py:140 static/js/map.js:1395
+msgid "LOESS soil observations"
+msgstr "KAHJU mullavaatlused"
+
+#: echorepo/i18n.py:142
+msgid "Dry soil"
+msgstr "Kuiv pinnas"
+
+#: echorepo/i18n.py:143
+msgid "Wet soil"
+msgstr "Märg pinnas"
+
+#: echorepo/i18n.py:144
+msgid "Erosion"
+msgstr "Erosioon"
+
+#: echorepo/i18n.py:145
+msgid "Sealed soil"
+msgstr "Suletud pinnas"
+
+#: echorepo/i18n.py:146
+msgid "Soil degradation"
+msgstr "Mulla degradeerumine"
+
+#: echorepo/i18n.py:147
+msgid "Loss of organic matter"
+msgstr "Orgaanilise aine kadu"
+
+#: echorepo/i18n.py:149
+msgid "Biodiversity"
+msgstr "Bioloogiline mitmekesisus"
+
+#: echorepo/i18n.py:150
+msgid "Other/uncategorized"
+msgstr "Muu/määratlemata"
+
+#: echorepo/i18n.py:151 static/js/loess_overlay.js:112
+#, python-brace-format
+msgid "LOESS · {category}"
+msgstr "KAOTUS ·{category}"
+
+#: echorepo/i18n.py:152 static/js/loess_overlay.js:115
+msgid "Place"
+msgstr "Place"
+
+#: echorepo/i18n.py:153 echorepo/templates/explore.html:114
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:19
+#: echorepo/templates/search.html:89 static/js/loess_overlay.js:116
+msgid "Country"
+msgstr "Riik"
+
+#: echorepo/i18n.py:154 static/js/loess_overlay.js:117
+msgid "Observed"
+msgstr "Jälgitud"
+
+#: echorepo/i18n.py:155 static/js/loess_overlay.js:118
+msgid "Affected radius"
+msgstr "Mõjutatud raadius"
+
+#: echorepo/i18n.py:156 static/js/loess_overlay.js:120
+msgid "Description"
+msgstr "Kirjeldus"
+
+#: echorepo/i18n.py:157 static/js/loess_overlay.js:121
+msgid "Potential cause"
+msgstr "Potentsiaalne põhjus"
+
+#: echorepo/i18n.py:158 static/js/loess_overlay.js:122
+msgid "Category (original)"
+msgstr "Kategooria (originaal)"
+
+#: echorepo/i18n.py:159 static/js/loess_overlay.js:123
+msgid "Review status"
+msgstr "Läbivaatamise staatus"
+
+#: echorepo/i18n.py:160 static/js/loess_overlay.js:125
+msgid "Accepted"
+msgstr "Vastu võetud"
+
+#: echorepo/i18n.py:161 static/js/loess_overlay.js:126
+msgid "LOESS observation ID"
+msgstr "KAHJUvaatluse ID"
+
+#: echorepo/i18n.py:162 static/js/loess_overlay.js:92
+msgid "Open larger LOESS photograph"
+msgstr "Ava suurem LOESS foto"
+
+#: echorepo/i18n.py:163 static/js/loess_overlay.js:95
+msgid "Photograph supplied with the LOESS soil observation"
+msgstr "Foto koos LOESS mullavaatlusega"
+
+#: echorepo/i18n.py:164 static/js/loess_overlay.js:101
+msgid "Photograph from LOESS · Click to enlarge"
+msgstr "Foto KADUMISEST · Klõpsa laiendamiseks"
+
+#: echorepo/i18n.py:165 static/js/loess_overlay.js:130
+msgid "Citizen-reported soil condition · Source: "
+msgstr "Kodaniku poolt teatatud mulla seisund · Allikas:"
+
+#: echorepo/i18n.py:166 static/js/loess_overlay.js:135
+msgid "LOESS Soil Map"
+msgstr "KAHJU mullakaart"
+
+#: echorepo/i18n.py:167 static/js/loess_overlay.js:212
+#, python-brace-format
+msgid "LOESS: {category}"
+msgstr "KAOTUS:{category}"
+
+#: echorepo/i18n.py:168 static/js/loess_overlay.js:239
+#, python-brace-format
+msgid "LOESS observations ({n})"
+msgstr "KAHJUvaatlused ({n})"
+
+#: echorepo/i18n.py:169 static/js/loess_overlay.js:261
+msgid "Circle radius = reported affected area (m), not location uncertainty."
+msgstr "Ringjoone raadius = teatatud mõjutatud piirkond (m), mitte asukoha määramatus."
+
+#: echorepo/i18n.py:170 static/js/loess_overlay.js:290
+msgid "No geolocated LOESS observations in the supplied GeoJSON."
+msgstr "Esitatud GeoJSONis ei ole geolokaliseeritud LOESSi vaatlusi."
+
+#: echorepo/i18n.py:171 static/js/loess_overlay.js:298
+#, python-brace-format
+msgid "LOESS unavailable: {error}"
+msgstr "KAHJUTUS puudub:{error}"
+
+#: echorepo/i18n.py:172 static/js/map.js:3946
 msgid "Loading samples..."
 msgstr "Proovide laadimine..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3947
+#: echorepo/i18n.py:173 static/js/map.js:3947
 msgid "Fetching visible map area"
 msgstr "Kaardi nähtava ala tõmbamine"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:174
 msgid "Selection export to a file"
 msgstr "Valiku eksport faili"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:175
 msgid "Selection export"
 msgstr "Valiku eksport"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:176
 msgid "Use selection tool"
 msgstr "Valimisvahendi kasutamine"
 
-#: echorepo/i18n.py:145
+#: echorepo/i18n.py:177
 msgid "to draw one or more areas"
 msgstr "ühe või mitme ala joonistamiseks"
 
-#: echorepo/i18n.py:146
+#: echorepo/i18n.py:178
 msgid "Export selection"
 msgstr "Ekspordi valik"
 
-#: echorepo/i18n.py:147
+#: echorepo/i18n.py:179
 msgid "Clear selection"
 msgstr "Puhas valik"
 
-#: echorepo/i18n.py:148
+#: echorepo/i18n.py:180
 msgid "Loading sample details..."
 msgstr "Prooviandmete laadimine..."
 
-#: echorepo/i18n.py:150 static/js/map.js:1611
+#: echorepo/i18n.py:182 static/js/map.js:1611
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Protsentide väärtused (%) saab teisendada mg/kg-ks, korrutades need 10000-ga."
 
@@ -619,11 +745,6 @@ msgstr "min"
 #: echorepo/templates/explore.html:112 echorepo/templates/results.html:855
 msgid "max"
 msgstr "maksimum"
-
-#: echorepo/templates/explore.html:114 echorepo/templates/results.html:841
-#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
-msgid "Country"
-msgstr "Riik"
 
 #: echorepo/templates/explore.html:117 echorepo/templates/results.html:844
 #: echorepo/templates/search.html:21 static/js/map.js:354
@@ -1210,10 +1331,6 @@ msgid ""
 msgstr ""
 "Biogeograafilise piirkonna katte laadimine nurjus. Kontrollige, kas "
 "/static/geo/biogeo regions 2016.geojson on olemas."
-
-#: static/js/map.js:1395
-msgid "LOESS soil observations"
-msgstr "KAHJU mullavaatlused"
 
 #: static/js/map.js:1617
 msgid "Unit conversion help"

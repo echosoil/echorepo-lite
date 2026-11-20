@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-20 11:01+0000\n"
+"POT-Creation-Date: 2026-11-20 12:00+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -76,7 +76,7 @@ msgstr "Ημερομηνία"
 msgid "QR code"
 msgstr "Κωδικός QR"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:104
+#: echorepo/i18n.py:122 echorepo/i18n.py:148 echorepo/templates/explore.html:104
 #: echorepo/templates/results.html:847 echorepo/templates/search.html:90
 #: static/js/map.js:1989
 msgid "pH"
@@ -150,43 +150,169 @@ msgstr "Δορυφόρος"
 msgid "Biogeographical regions"
 msgstr "Βιογεωγραφικές περιοχές"
 
-#: echorepo/i18n.py:140 static/js/map.js:3946
+#: echorepo/i18n.py:140 static/js/map.js:1395
+msgid "LOESS soil observations"
+msgstr "Παρατηρήσεις εδάφους LOSS"
+
+#: echorepo/i18n.py:142
+msgid "Dry soil"
+msgstr "Ξηρό έδαφος"
+
+#: echorepo/i18n.py:143
+msgid "Wet soil"
+msgstr "Υγρό έδαφος"
+
+#: echorepo/i18n.py:144
+msgid "Erosion"
+msgstr "Διάβρωση"
+
+#: echorepo/i18n.py:145
+msgid "Sealed soil"
+msgstr "Σφραγισμένο έδαφος"
+
+#: echorepo/i18n.py:146
+msgid "Soil degradation"
+msgstr "Αποικοδόμηση του εδάφους"
+
+#: echorepo/i18n.py:147
+msgid "Loss of organic matter"
+msgstr "Απώλεια οργανικής ύλης"
+
+#: echorepo/i18n.py:149
+msgid "Biodiversity"
+msgstr "Βιοποικιλότητα"
+
+#: echorepo/i18n.py:150
+msgid "Other/uncategorized"
+msgstr "Άλλα/λιπαντικά"
+
+#: echorepo/i18n.py:151 static/js/loess_overlay.js:112
+#, python-brace-format
+msgid "LOESS · {category}"
+msgstr "ΛΟΙΠΕΣ ·{category}"
+
+#: echorepo/i18n.py:152 static/js/loess_overlay.js:115
+msgid "Place"
+msgstr "Τόπος"
+
+#: echorepo/i18n.py:153 echorepo/templates/explore.html:114
+#: echorepo/templates/results.html:841 echorepo/templates/search.html:19
+#: echorepo/templates/search.html:89 static/js/loess_overlay.js:116
+msgid "Country"
+msgstr "Χώρες"
+
+#: echorepo/i18n.py:154 static/js/loess_overlay.js:117
+msgid "Observed"
+msgstr "Παρατηρήθηκε"
+
+#: echorepo/i18n.py:155 static/js/loess_overlay.js:118
+msgid "Affected radius"
+msgstr "Πληγωμένη ακτίνα"
+
+#: echorepo/i18n.py:156 static/js/loess_overlay.js:120
+msgid "Description"
+msgstr "Περιγραφή εμπορευμάτων"
+
+#: echorepo/i18n.py:157 static/js/loess_overlay.js:121
+msgid "Potential cause"
+msgstr "Πιθανή αιτία"
+
+#: echorepo/i18n.py:158 static/js/loess_overlay.js:122
+msgid "Category (original)"
+msgstr "Κατηγορία (πρωτότυπο)"
+
+#: echorepo/i18n.py:159 static/js/loess_overlay.js:123
+msgid "Review status"
+msgstr "Κατάσταση αναθεώρησης"
+
+#: echorepo/i18n.py:160 static/js/loess_overlay.js:125
+msgid "Accepted"
+msgstr "Δεκτή"
+
+#: echorepo/i18n.py:161 static/js/loess_overlay.js:126
+msgid "LOESS observation ID"
+msgstr "ID παρατήρησης LOSESS"
+
+#: echorepo/i18n.py:162 static/js/loess_overlay.js:92
+msgid "Open larger LOESS photograph"
+msgstr "Άνοιγμα μεγαλύτερης φωτογραφίας LOSS"
+
+#: echorepo/i18n.py:163 static/js/loess_overlay.js:95
+msgid "Photograph supplied with the LOESS soil observation"
+msgstr "Φωτογραφία που παρέχεται με την παρατήρηση του εδάφους LOSS"
+
+#: echorepo/i18n.py:164 static/js/loess_overlay.js:101
+msgid "Photograph from LOESS · Click to enlarge"
+msgstr "Φωτογραφία από LOSESS · Κάντε κλικ για μεγέθυνση"
+
+#: echorepo/i18n.py:165 static/js/loess_overlay.js:130
+msgid "Citizen-reported soil condition · Source: "
+msgstr "Κατάσταση εδάφους που αναφέρεται από τον πολίτη · Πηγή:"
+
+#: echorepo/i18n.py:166 static/js/loess_overlay.js:135
+msgid "LOESS Soil Map"
+msgstr "Χάρτης εδάφους LOSS"
+
+#: echorepo/i18n.py:167 static/js/loess_overlay.js:212
+#, python-brace-format
+msgid "LOESS: {category}"
+msgstr "ΛΟΙΠΗ:{category}"
+
+#: echorepo/i18n.py:168 static/js/loess_overlay.js:239
+#, python-brace-format
+msgid "LOESS observations ({n})"
+msgstr "Παρατηρήσεις LOSS ({n})"
+
+#: echorepo/i18n.py:169 static/js/loess_overlay.js:261
+msgid "Circle radius = reported affected area (m), not location uncertainty."
+msgstr "Ακτίνα κύκλου = αναφερόμενη πληγείσα περιοχή (m), όχι αβεβαιότητα θέσης."
+
+#: echorepo/i18n.py:170 static/js/loess_overlay.js:290
+msgid "No geolocated LOESS observations in the supplied GeoJSON."
+msgstr "Καμία γεωτοποθετημένη παρατήρηση LOSS στο παρεχόμενο GeoJSON."
+
+#: echorepo/i18n.py:171 static/js/loess_overlay.js:298
+#, python-brace-format
+msgid "LOESS unavailable: {error}"
+msgstr "Μη διαθέσιμο ποσό:{error}"
+
+#: echorepo/i18n.py:172 static/js/map.js:3946
 msgid "Loading samples..."
 msgstr "Φόρτωση δειγμάτων..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3947
+#: echorepo/i18n.py:173 static/js/map.js:3947
 msgid "Fetching visible map area"
 msgstr "Ανάκτηση ορατής περιοχής χάρτη"
 
-#: echorepo/i18n.py:142
+#: echorepo/i18n.py:174
 msgid "Selection export to a file"
 msgstr "Επιλογή εξαγωγής σε ένα αρχείο"
 
-#: echorepo/i18n.py:143
+#: echorepo/i18n.py:175
 msgid "Selection export"
 msgstr "Εξαγωγή επιλογής"
 
-#: echorepo/i18n.py:144
+#: echorepo/i18n.py:176
 msgid "Use selection tool"
 msgstr "Χρήση εργαλείου επιλογής"
 
-#: echorepo/i18n.py:145
+#: echorepo/i18n.py:177
 msgid "to draw one or more areas"
 msgstr "να σχεδιάσουν έναν ή περισσότερους τομείς"
 
-#: echorepo/i18n.py:146
+#: echorepo/i18n.py:178
 msgid "Export selection"
 msgstr "Επιλογή εξαγωγής"
 
-#: echorepo/i18n.py:147
+#: echorepo/i18n.py:179
 msgid "Clear selection"
 msgstr "Καθαρισμός επιλογής"
 
-#: echorepo/i18n.py:148
+#: echorepo/i18n.py:180
 msgid "Loading sample details..."
 msgstr "Φόρτωση λεπτομερειών δείγματος..."
 
-#: echorepo/i18n.py:150 static/js/map.js:1611
+#: echorepo/i18n.py:182 static/js/map.js:1611
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Οι τιμές (%) μπορούν να μετατραπούν σε mg/kg πολλαπλασιάζοντας με 10000."
 
@@ -626,11 +752,6 @@ msgstr "λεπτά"
 #: echorepo/templates/explore.html:112 echorepo/templates/results.html:855
 msgid "max"
 msgstr "max"
-
-#: echorepo/templates/explore.html:114 echorepo/templates/results.html:841
-#: echorepo/templates/search.html:19 echorepo/templates/search.html:89
-msgid "Country"
-msgstr "Χώρες"
 
 #: echorepo/templates/explore.html:117 echorepo/templates/results.html:844
 #: echorepo/templates/search.html:21 static/js/map.js:354
@@ -1227,10 +1348,6 @@ msgid ""
 msgstr ""
 "Αδυναμία φόρτωσης της επικάλυψης της βιογεωγραφικής περιοχής. Ελέγξτε ότι "
 "/static/geo/biogeo regions 2016.geojson υπάρχει."
-
-#: static/js/map.js:1395
-msgid "LOESS soil observations"
-msgstr "Παρατηρήσεις εδάφους LOSS"
 
 #: static/js/map.js:1617
 msgid "Unit conversion help"
