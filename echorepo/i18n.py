@@ -137,6 +137,7 @@ BASE_LABEL_MSGIDS = {
     "streetMap": N_("Street map"),
     "satellite": N_("Satellite"),
     "biogeographicalRegions": N_("Biogeographical regions"),
+    "loessObservations": N_("LOESS soil observations"),
     "loadingSamples": N_("Loading samples..."),
     "fetchingMapPoints": N_("Fetching visible map area"),
     "selectionExport": N_("Selection export to a file"),
