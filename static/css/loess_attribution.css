@@ -1,0 +1,130 @@
+/* Subtle LOESS source credit below /explore and /my maps.
+ * Uses ECHOREPO's Satoshi font via the global site styles; no external logos.
+ */
+.loess-attribution {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  background: linear-gradient(110deg, #f5faf6 0%, #fbfdfb 70%, #ffffff 100%);
+  border: 1px solid #dce8df;
+  border-left: 4px solid #438769;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgb(29 77 49 / 5%);
+}
+
+.loess-attribution__mark {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #dbe9df;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.loess-attribution__stratum {
+  width: 29px;
+  height: 6px;
+  border-radius: 7px 7px 3px 3px;
+}
+
+.loess-attribution__stratum--grass { background: #50aa78; }
+.loess-attribution__stratum--teal { background: #2a9996; }
+.loess-attribution__stratum--soil { background: #9b7052; }
+
+.loess-attribution__content { min-width: 0; }
+
+.loess-attribution__eyebrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+  color: #427b60;
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.loess-attribution__eyebrow-dot {
+  width: 3px;
+  height: 3px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #8faf9a;
+}
+
+.loess-attribution__title {
+  margin: 0 0 0.35rem;
+  color: #254a38;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.loess-attribution__description {
+  max-width: 82ch;
+  margin: 0;
+  color: #4d6257;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.loess-attribution__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  margin-top: 0.6rem;
+}
+
+.loess-attribution__hint {
+  margin: 0;
+  color: #5c6d63;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.loess-attribution__hint .bi { margin-right: 0.2rem; color: #427b60; }
+
+.loess-attribution__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+}
+
+.loess-attribution__links a {
+  color: #276647;
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+.loess-attribution__links a:hover,
+.loess-attribution__links a:focus-visible {
+  color: #17462e;
+  text-decoration: underline;
+}
+
+.loess-attribution__links a .bi { margin-left: 0.2rem; font-size: 0.7rem; }
+
+@media (max-width: 575.98px) {
+  .loess-attribution {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 0.7rem;
+    padding: 0.85rem;
+  }
+  .loess-attribution__mark { width: 40px; height: 40px; border-radius: 11px; }
+  .loess-attribution__stratum { width: 23px; height: 5px; }
+  .loess-attribution__eyebrow { font-size: 0.64rem; }
+  .loess-attribution__eyebrow-dot { display: none; }
+  .loess-attribution__footer { display: block; }
+  .loess-attribution__links { margin-top: 0.5rem; }
+}

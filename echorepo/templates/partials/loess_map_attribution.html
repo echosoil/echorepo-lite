@@ -1,0 +1,40 @@
+{# Shared note for pages that expose the optional LOESS Leaflet layer. #}
+<section class="loess-attribution mb-3" aria-labelledby="loess-attribution-title">
+  <div class="loess-attribution__mark" aria-hidden="true">
+    <span class="loess-attribution__stratum loess-attribution__stratum--grass"></span>
+    <span class="loess-attribution__stratum loess-attribution__stratum--teal"></span>
+    <span class="loess-attribution__stratum loess-attribution__stratum--soil"></span>
+  </div>
+  <div class="loess-attribution__content">
+    <div class="loess-attribution__eyebrow">
+      <i class="bi bi-globe-europe-africa" aria-hidden="true"></i>
+      {{ _('EU Mission “A Soil Deal for Europe”') }}
+      <span class="loess-attribution__eyebrow-dot" aria-hidden="true"></span>
+      {{ _('Independent map layer') }}
+    </div>
+    <h3 class="loess-attribution__title" id="loess-attribution-title">
+      {{ _('Soil observations from the LOESS project') }}
+    </h3>
+    <p class="loess-attribution__description">
+      {{ _('This map also offers citizen-reported soil conditions collected through the LOESS Soil Map, developed by the Horizon Europe LOESS project. These observations are displayed separately from ECHO soil samples.') }}
+    </p>
+    <div class="loess-attribution__footer">
+      <p class="loess-attribution__hint">
+        <i class="bi bi-layers" aria-hidden="true"></i>
+        {{ _('Select “LOESS soil observations” in the map layers control to explore this optional dataset.') }}
+      </p>
+      <div class="loess-attribution__links" aria-label="{{ _('LOESS external resources') }}">
+        <a href="https://loess-project.eu/" target="_blank" rel="noopener noreferrer">
+          {{ _('About the LOESS project') }}
+          <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+          <span class="visually-hidden">{{ _('Opens in a new tab') }}</span>
+        </a>
+        <a href="https://www.loess-soil-map.eu/map" target="_blank" rel="noopener noreferrer">
+          {{ _('View the original LOESS Soil Map') }}
+          <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+          <span class="visually-hidden">{{ _('Opens in a new tab') }}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
