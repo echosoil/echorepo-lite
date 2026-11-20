@@ -3,7 +3,7 @@ import re
 from urllib.parse import urlsplit
 
 import requests
-from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
 
 from ..config import settings
 from ..extensions import oauth
@@ -142,6 +142,9 @@ def login():
         }
 
         session["user"] = settings.DEMO_USER
+        # Rotate once on successful authentication, not during token refresh.
+        if hasattr(current_app.session_interface, "regenerate"):
+            current_app.session_interface.regenerate(session)
 
         return redirect(get_post_login_redirect())
 
@@ -223,6 +226,8 @@ def sso_password_login():
 
     try:
         create_session_from_tokens(response.json())
+        if hasattr(current_app.session_interface, "regenerate"):
+            current_app.session_interface.regenerate(session)
     except Exception as exc:
         return render_template(
             "login.html",
@@ -269,6 +274,8 @@ def sso_callback():
     # Prefer ID token; fallback to userinfo already happens
     # inside create_session_from_tokens().
     create_session_from_tokens(token)
+    if hasattr(current_app.session_interface, "regenerate"):
+        current_app.session_interface.regenerate(session)
 
     # Do not reuse this destination in a future login.
     session.pop(

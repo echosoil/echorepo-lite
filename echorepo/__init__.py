@@ -5,6 +5,7 @@ import os
 import re
 import time
 
+import click
 from flask import (
     Flask,
     g,
@@ -28,6 +29,7 @@ from .routes.errors import errors_bp
 from .routes.i18n_admin import bp as i18n_admin_bp
 from .routes.storage import storage_bp
 from .routes.web import web_bp
+from .server_sessions import enable_postgres_sessions, prune_expired_sessions
 from .services.db import init_db_sanity
 from .services.i18n_overrides import get_overrides, get_overrides_msgid
 
@@ -246,6 +248,15 @@ def create_app() -> Flask:
             "/data/config/lab_upload_lab_allowlist.csv",
         ),
     )
+
+    # Switch only when ECHOREPO_SESSION_STORAGE=postgres. The PostgreSQL
+    # migration runs before Gunicorn in both development and production.
+    enable_postgres_sessions(app)
+
+    @app.cli.command("prune-web-sessions")
+    def prune_web_sessions():
+        """Delete expired PostgreSQL browser sessions (safe to run daily)."""
+        click.echo(f"Expired browser sessions deleted: {prune_expired_sessions()}")
 
     # ---- i18n ----
     init_i18n(app)  # set up Babel, locale selection, etc.
@@ -544,36 +555,12 @@ def create_app() -> Flask:
 
         @app.get("/debug/whoami")
         def debug_whoami():
-            # WARNING: remove or restrict this in production
-            from flask import jsonify
-
-            # snapshot of session (but shortened so we don't print full tokens)
-            sess_snapshot = {}
-            for k in list(session.keys()):
-                v = session.get(k)
-                if isinstance(v, str | bytes):
-                    s = v.decode("utf-8", errors="ignore") if isinstance(v, bytes) else v
-                    if len(s) > 120:
-                        sess_snapshot[k] = s[:60] + "... (len=" + str(len(s)) + ")"
-                    else:
-                        sess_snapshot[k] = s
-                elif isinstance(v, dict):
-                    # show only first few keys, with repr of values
-                    small = {}
-                    for kk, vv in list(v.items())[:10]:
-                        r = repr(vv)
-                        small[kk] = r[:80] + ("..." if len(r) > 80 else "")
-                    sess_snapshot[k] = small
-                else:
-                    # for lists/objects, just show repr
-                    r = repr(v)
-                    sess_snapshot[k] = r[:120] + ("..." if len(r) > 120 else "")
-
+            # Never serialize session values: access/refresh tokens are secret.
+            # The route remains available for lightweight diagnostics only.
             return jsonify(
                 {
-                    "user_id_from_helper": _get_current_user_id(),
-                    "session_keys": list(session.keys()),
-                    "session_snapshot": sess_snapshot,
+                    "has_authenticated_session": bool(session.get("kc")),
+                    "session_keys": sorted(str(key) for key in session.keys()),
                 }
             )
 
