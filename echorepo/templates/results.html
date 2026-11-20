@@ -1023,7 +1023,7 @@
 <script> window.ECHOREPO_CFG = {{ cfg | tojson }}; </script>
 
 {% if config.get('LOESS_OVERLAY_ENABLED', False) %}
-<script src="{{ url_for('static', filename='js/loess_overlay.js') }}?v=4"></script>
+<script src="{{ url_for('static', filename='js/loess_overlay.js') }}?v=5"></script>
 {% endif %}
 <script src="{{ url_for('static', filename='js/map.js') }}?v=46"></script>
 
