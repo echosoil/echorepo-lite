@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-04 11:55+0000\n"
+"POT-Creation-Date: 2026-11-20 11:01+0000\n"
 "PO-Revision-Date: 2025-10-29 13:21+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ro\n"
@@ -69,17 +69,17 @@ msgstr "Clar"
 msgid "Export filtered ({n})"
 msgstr "Export filtrat ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1950
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:131 static/js/map.js:1979
 msgid "Date"
 msgstr "Dată"
 
-#: echorepo/i18n.py:121 static/js/map.js:1955
+#: echorepo/i18n.py:121 static/js/map.js:1984
 msgid "QR code"
 msgstr "Codul QR"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:101
-#: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1960
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:104
+#: echorepo/templates/results.html:847 echorepo/templates/search.html:90
+#: static/js/map.js:1989
 msgid "pH"
 msgstr "p H"
 
@@ -87,27 +87,27 @@ msgstr "p H"
 msgid "Colour"
 msgstr "Culoare"
 
-#: echorepo/i18n.py:124 static/js/map.js:1965
+#: echorepo/i18n.py:124 static/js/map.js:1994
 msgid "Soil organic matter"
 msgstr "Materia organică din sol"
 
-#: echorepo/i18n.py:125 static/js/map.js:1979
+#: echorepo/i18n.py:125 static/js/map.js:2008
 msgid "Structure"
 msgstr "Structura"
 
-#: echorepo/i18n.py:126 static/js/map.js:1984
+#: echorepo/i18n.py:126 static/js/map.js:2013
 msgid "Earthworms"
 msgstr "Viermi"
 
-#: echorepo/i18n.py:127 static/js/map.js:1989
+#: echorepo/i18n.py:127 static/js/map.js:2018
 msgid "Plastic"
 msgstr "Plastic"
 
-#: echorepo/i18n.py:128 static/js/map.js:1994
+#: echorepo/i18n.py:128 static/js/map.js:2023
 msgid "Debris"
 msgstr "Debris"
 
-#: echorepo/i18n.py:129 static/js/map.js:1999
+#: echorepo/i18n.py:129 static/js/map.js:2028
 msgid "Contamination"
 msgstr "Contaminarea"
 
@@ -127,35 +127,35 @@ msgstr "Desenează un dreptunghi"
 msgid "Click and drag to draw a rectangle."
 msgstr "Faceţi clic şi trageţi pentru a trage un dreptunghi."
 
-#: echorepo/i18n.py:134 static/js/map.js:3309
+#: echorepo/i18n.py:134 static/js/map.js:3338
 msgid "Cancel drawing"
 msgstr "Anulează desenul"
 
-#: echorepo/i18n.py:135 static/js/map.js:3310
+#: echorepo/i18n.py:135 static/js/map.js:3339
 msgid "Cancel"
 msgstr "Renunță"
 
-#: echorepo/i18n.py:136 static/js/map.js:3314
+#: echorepo/i18n.py:136 static/js/map.js:3343
 msgid "Delete last point"
 msgstr "Se elimină ultimul punct"
 
-#: echorepo/i18n.py:137 static/js/map.js:1363
+#: echorepo/i18n.py:137 static/js/map.js:1387
 msgid "Street map"
 msgstr "Hartă de stradă"
 
-#: echorepo/i18n.py:138 static/js/map.js:1364
+#: echorepo/i18n.py:138 static/js/map.js:1388
 msgid "Satellite"
 msgstr "Satelit"
 
-#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
+#: echorepo/i18n.py:139 static/js/map.js:1266 static/js/map.js:1392
 msgid "Biogeographical regions"
 msgstr "Regiuni biogeografice"
 
-#: echorepo/i18n.py:140 static/js/map.js:3917
+#: echorepo/i18n.py:140 static/js/map.js:3946
 msgid "Loading samples..."
 msgstr "Se încarcă mostrele..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3918
+#: echorepo/i18n.py:141 static/js/map.js:3947
 msgid "Fetching visible map area"
 msgstr "Aducerea zonei vizibile a hărții"
 
@@ -187,7 +187,7 @@ msgstr "Șterge selecția"
 msgid "Loading sample details..."
 msgstr "Se încarcă detaliile eșantionului..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1582
+#: echorepo/i18n.py:150 static/js/map.js:1611
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr ""
 "Valorile procentuale (%) pot fi convertite în mg/kg prin multiplicarea cu "
@@ -362,7 +362,7 @@ msgstr "Tipul emisiunii"
 msgid "Any issue"
 msgstr "Orice problemă"
 
-#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:85
+#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:88
 #: echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Caută"
@@ -593,63 +593,63 @@ msgstr "rezultate"
 msgid "ECHOrepo — Explore"
 msgstr "Explorează"
 
-#: echorepo/templates/explore.html:68
+#: echorepo/templates/explore.html:71
 msgid "Explore the map"
 msgstr "Explorează harta"
 
-#: echorepo/templates/explore.html:71
+#: echorepo/templates/explore.html:74
 msgid "Sign in to export data and access your personal samples."
 msgstr "Conectați-vă pentru a exporta date și accesați probele personale."
 
-#: echorepo/templates/explore.html:79
+#: echorepo/templates/explore.html:82
 msgid "Download dataset from Zenodo"
 msgstr "Descărcaţi seturile de date de la Zenodo"
 
-#: echorepo/templates/explore.html:91 echorepo/templates/results.html:544
+#: echorepo/templates/explore.html:94 echorepo/templates/results.html:547
 msgid "Mobile version"
 msgstr "Versiunea mobilă"
 
-#: echorepo/templates/explore.html:94 echorepo/templates/results.html:550
+#: echorepo/templates/explore.html:97 echorepo/templates/results.html:553
 msgid "Desktop version"
 msgstr "Versiunea biroului"
 
-#: echorepo/templates/explore.html:104 echorepo/templates/results.html:844
+#: echorepo/templates/explore.html:107 echorepo/templates/results.html:850
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/explore.html:109 echorepo/templates/results.html:849
+#: echorepo/templates/explore.html:112 echorepo/templates/results.html:855
 msgid "max"
 msgstr "max"
 
-#: echorepo/templates/explore.html:111 echorepo/templates/results.html:835
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:841
 #: echorepo/templates/search.html:19 echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Țara"
 
-#: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:339
+#: echorepo/templates/explore.html:117 echorepo/templates/results.html:844
+#: echorepo/templates/search.html:21 static/js/map.js:354
 msgid "Any country"
 msgstr "Orice țară"
 
-#: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
+#: echorepo/templates/explore.html:121 echorepo/templates/results.html:827
 #: echorepo/templates/search.html:29
 msgid "Biogeographical region"
 msgstr "Regiunea biogeografică"
 
-#: echorepo/templates/explore.html:122 echorepo/templates/results.html:824
+#: echorepo/templates/explore.html:125 echorepo/templates/results.html:830
 #: echorepo/templates/search.html:31
 msgid "Any region"
 msgstr "Orice regiune"
 
-#: echorepo/templates/explore.html:137 echorepo/templates/results.html:852
+#: echorepo/templates/explore.html:140 echorepo/templates/results.html:858
 msgid "Apply"
 msgstr "Aplicare"
 
-#: echorepo/templates/explore.html:142 echorepo/templates/results.html:857
+#: echorepo/templates/explore.html:145 echorepo/templates/results.html:863
 msgid "Export filtered (0)"
 msgstr "Export filtrat (0)"
 
-#: echorepo/templates/explore.html:148
+#: echorepo/templates/explore.html:151
 msgid "Copy view link"
 msgstr "Copiază linkul de vizualizare"
 
@@ -710,7 +710,7 @@ msgstr "Nu există neconcordanțe de țară"
 msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr "Țara reală (din coords) nu figurează pe lista planificată pentru acest QR."
 
-#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:524
+#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:527
 msgid "Upload lab data"
 msgstr "Încarcă datele laboratorului"
 
@@ -790,16 +790,16 @@ msgstr "ECHOrepo "
 msgid "Download all samples (CSV)"
 msgstr "Descărcați toate eșantioanele (CSV)"
 
-#: echorepo/templates/results.html:27 echorepo/templates/results.html:532
+#: echorepo/templates/results.html:27 echorepo/templates/results.html:535
 #: echorepo/templates/search.html:2 echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Probe de căutare"
 
-#: echorepo/templates/results.html:498
+#: echorepo/templates/results.html:501
 msgid "Your data"
 msgstr "Datele dumneavoastră"
 
-#: echorepo/templates/results.html:500
+#: echorepo/templates/results.html:503
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
@@ -807,20 +807,20 @@ msgstr ""
 "Explorați locațiile de probă de sol de pe hartă, apoi exportați sau răsfoiți "
 "tabelul."
 
-#: echorepo/templates/results.html:514
+#: echorepo/templates/results.html:517
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Fixează datele (%(n)s)"
 
-#: echorepo/templates/results.html:568 echorepo/templates/results.html:689
+#: echorepo/templates/results.html:571 echorepo/templates/results.html:692
 msgid "Final survey"
 msgstr "Sondaj final"
 
-#: echorepo/templates/results.html:572
+#: echorepo/templates/results.html:575
 msgid "We sincerely thank you for your commitment to this project!"
 msgstr "Vă mulţumim sincer pentru angajamentul dumneavoastră faţă de acest proiect!"
 
-#: echorepo/templates/results.html:578
+#: echorepo/templates/results.html:581
 msgid ""
 "This is the third and final survey in the project, following the initial ones"
 " you completed before and after\n"
@@ -840,7 +840,7 @@ msgstr ""
 "măsurarea schimbărilor în timp și înțelegerea impactului participării la "
 "proiect."
 
-#: echorepo/templates/results.html:588
+#: echorepo/templates/results.html:591
 msgid ""
 "Before you start: please only complete this survey if the lab results from "
 "your soil sample(s) have already\n"
@@ -854,23 +854,23 @@ msgstr ""
 "au fost adăugate la depozit. În cazul în care rezultatele sunt în așteptare, "
 "vă rugăm să verificați înapoi la un moment ulterior."
 
-#: echorepo/templates/results.html:600
+#: echorepo/templates/results.html:603
 msgid "Go to final survey"
 msgstr "Du-te la ultimul sondaj"
 
-#: echorepo/templates/results.html:609
+#: echorepo/templates/results.html:612
 msgid "Data use information"
 msgstr "Informații privind utilizarea datelor"
 
-#: echorepo/templates/results.html:619
+#: echorepo/templates/results.html:622
 msgid "I have already completed it"
 msgstr "Am terminat-o deja"
 
-#: echorepo/templates/results.html:629
+#: echorepo/templates/results.html:632
 msgid "Processing survey data in the ECHO project"
 msgstr "Prelucrarea datelor sondajului în proiectul ECHO"
 
-#: echorepo/templates/results.html:633
+#: echorepo/templates/results.html:636
 msgid ""
 "The objective of this survey data is to examine the impact of project "
 "participation on participant\n"
@@ -882,7 +882,7 @@ msgstr ""
 "\n"
 "atitudini şi motivaţie faţă de sol."
 
-#: echorepo/templates/results.html:641
+#: echorepo/templates/results.html:644
 msgid ""
 "Your information will only be used for scientific purposes. We do not collect"
 " names or addresses. Your\n"
@@ -902,7 +902,7 @@ msgstr ""
 "evaluat anonim. Nu este posibil să trageţi concluzii despre persoana "
 "dumneavoastră în orice moment."
 
-#: echorepo/templates/results.html:651
+#: echorepo/templates/results.html:654
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
 "crucial role in providing valuable\n"
@@ -926,7 +926,7 @@ msgstr ""
 "\n"
 "Rezultatele sunt semnificative și bine informate."
 
-#: echorepo/templates/results.html:663
+#: echorepo/templates/results.html:666
 msgid ""
 "The survey will take approximately 8–10 minutes to complete. Please find a "
 "quiet space where you won’t be\n"
@@ -939,7 +939,7 @@ msgstr ""
 "\n"
 "întreruptă. Nu există răspunsuri corecte sau greşite."
 
-#: echorepo/templates/results.html:671
+#: echorepo/templates/results.html:674
 msgid ""
 "Based on the information provided to you, please consent to participate in "
 "the survey below."
@@ -947,23 +947,23 @@ msgstr ""
 "Pe baza informaţiilor furnizate, vă rugăm să acceptaţi participarea la "
 "sondajul de mai jos."
 
-#: echorepo/templates/results.html:691
+#: echorepo/templates/results.html:694
 msgid "thank you for your participation!"
 msgstr "vă mulţumesc pentru participare!"
 
-#: echorepo/templates/results.html:699
+#: echorepo/templates/results.html:702
 msgid "Show details"
 msgstr "Arată detalii"
 
-#: echorepo/templates/results.html:706
+#: echorepo/templates/results.html:709
 msgid "Dismiss"
 msgstr "Liber"
 
-#: echorepo/templates/results.html:726
+#: echorepo/templates/results.html:729
 msgid "No data found for"
 msgstr "Nu s- au găsit date pentru"
 
-#: echorepo/templates/results.html:726
+#: echorepo/templates/results.html:729
 msgid ""
 "If you recently submitted samples, try again\n"
 "\n"
@@ -973,31 +973,31 @@ msgstr ""
 "\n"
 "Mai târziu."
 
-#: echorepo/templates/results.html:754
+#: echorepo/templates/results.html:760
 msgid "Download"
 msgstr "Descărcare"
 
-#: echorepo/templates/results.html:760
+#: echorepo/templates/results.html:766
 msgid "Canonical exports"
 msgstr "Exporturi canonice"
 
-#: echorepo/templates/results.html:806
+#: echorepo/templates/results.html:812
 msgid "All canonical (zip)"
 msgstr "Toate canonice (zip)"
 
-#: echorepo/templates/results.html:852
+#: echorepo/templates/results.html:858
 msgid "Apply map filters"
 msgstr "Aplică filtre hartă"
 
-#: echorepo/templates/results.html:855
+#: echorepo/templates/results.html:861
 msgid "Export rows matching current map filters"
 msgstr "Exportă rânduri care corespund filtrelor hărții curente"
 
-#: echorepo/templates/results.html:896
+#: echorepo/templates/results.html:902
 msgid "Privacy information"
 msgstr "Informații privind confidențialitatea"
 
-#: echorepo/templates/results.html:950
+#: echorepo/templates/results.html:956
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
@@ -1009,16 +1009,16 @@ msgstr ""
 "\n"
 "Acest proiect."
 
-#: echorepo/templates/results.html:966
+#: echorepo/templates/results.html:972
 msgid "Accept and continue"
 msgstr "Acceptă şi continuă"
 
-#: echorepo/templates/results.html:1716
+#: echorepo/templates/results.html:1728
 msgid "Show on map"
 msgstr "Arată pe hartă"
 
-#: echorepo/templates/results.html:1742 echorepo/templates/results.html:1790
-#: echorepo/templates/results.html:1808
+#: echorepo/templates/results.html:1754 echorepo/templates/results.html:1802
+#: echorepo/templates/results.html:1820
 msgid "Could not locate this sample on the map."
 msgstr "Nu am putut localiza această mostră pe hartă."
 
@@ -1143,28 +1143,73 @@ msgstr "Trimitere sugerată"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Încă nu s-au înregistrat publicaţii Zenodo."
 
-#: static/js/map.js:278
+#: echorepo/templates/partials/loess_map_attribution.html:11
+msgid "EU Mission “A Soil Deal for Europe”"
+msgstr "Misiunea UE"
+
+#: echorepo/templates/partials/loess_map_attribution.html:13
+msgid "Independent map layer"
+msgstr "Strat de hartă independent"
+
+#: echorepo/templates/partials/loess_map_attribution.html:16
+msgid "Soil observations from the LOESS project"
+msgstr "Observații privind solul din cadrul proiectului LOESS"
+
+#: echorepo/templates/partials/loess_map_attribution.html:19
+msgid ""
+"This map also offers citizen-reported soil conditions collected through the "
+"LOESS Soil Map, developed by the Horizon Europe LOESS project. These "
+"observations are displayed separately from ECHO soil samples."
+msgstr ""
+"Această hartă oferă, de asemenea, condiții de sol raportate de cetățeni "
+"colectate prin harta solului LOESS, dezvoltată de proiectul Orizont Europe "
+"LOESS. Aceste observații sunt prezentate separat de probele de sol ECHO."
+
+#: echorepo/templates/partials/loess_map_attribution.html:24
+msgid ""
+"Select “LOESS soil observations” in the map layers control to explore this "
+"optional dataset."
+msgstr "Selectaţi observaţii ale solului LOESS."
+
+#: echorepo/templates/partials/loess_map_attribution.html:26
+msgid "LOESS external resources"
+msgstr "Resurse externe LIESS"
+
+#: echorepo/templates/partials/loess_map_attribution.html:28
+msgid "About the LOESS project"
+msgstr "Despre proiectul LOESS"
+
+#: echorepo/templates/partials/loess_map_attribution.html:30
+#: echorepo/templates/partials/loess_map_attribution.html:35
+msgid "Opens in a new tab"
+msgstr "Deschide într-o filă nouă"
+
+#: echorepo/templates/partials/loess_map_attribution.html:33
+msgid "View the original LOESS Soil Map"
+msgstr "Vizualizați harta originală a solului LOESS"
+
+#: static/js/map.js:293
 msgid "Link copied to clipboard"
 msgstr "Link copiat în clipboard"
 
-#: static/js/map.js:281
+#: static/js/map.js:296
 msgid "Copy this link:"
 msgstr "Copiază acest link:"
 
-#: static/js/map.js:906 static/js/map.js:3684
+#: static/js/map.js:921 static/js/map.js:3713
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Export filtrat (${n})"
 
-#: static/js/map.js:916 static/js/map.js:3472
+#: static/js/map.js:931 static/js/map.js:3501
 msgid "Release mouse to finish drawing."
 msgstr "Eliberați mouse-ul pentru a termina desenul."
 
-#: static/js/map.js:990
+#: static/js/map.js:1005
 msgid "Not available"
 msgstr "Nu este disponibil"
 
-#: static/js/map.js:1332
+#: static/js/map.js:1347
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
@@ -1172,69 +1217,73 @@ msgstr ""
 "Nu s-a putut încărca suprapunerea regiunii biogeografică. Verificați dacă "
 "/static/geo/biogeo regions 2016.geojson există."
 
-#: static/js/map.js:1588
+#: static/js/map.js:1395
+msgid "LOESS soil observations"
+msgstr "Observații privind solul LOESS"
+
+#: static/js/map.js:1617
 msgid "Unit conversion help"
 msgstr "Ajutor de conversie unitate"
 
-#: static/js/map.js:1974
+#: static/js/map.js:2003
 msgid "Texture"
 msgstr "Textură"
 
-#: static/js/map.js:2009
+#: static/js/map.js:2038
 msgid "Observations"
 msgstr "Observații"
 
-#: static/js/map.js:2648 static/js/map.js:4034
+#: static/js/map.js:2677 static/js/map.js:4068
 msgid "Loading map data..."
 msgstr "Se încarcă datele hărții..."
 
-#: static/js/map.js:2652
+#: static/js/map.js:2681
 msgid "Please wait"
 msgstr "Vă rugăm să așteptați"
 
-#: static/js/map.js:2931
+#: static/js/map.js:2960
 msgid "Loading..."
 msgstr "Se încarcă..."
 
-#: static/js/map.js:3302
+#: static/js/map.js:3331
 msgid "Draw selection rectangle"
 msgstr "Trage dreptunghiul de selecție"
 
-#: static/js/map.js:3313
+#: static/js/map.js:3342
 msgid "Delete last point drawn"
 msgstr "Se elimină ultimul punct extras"
 
-#: static/js/map.js:3321
+#: static/js/map.js:3350
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Faceți clic și trageți pentru a desena un dreptunghi de selecție. Poţi desena"
 " mai multe."
 
-#: static/js/map.js:3327
+#: static/js/map.js:3356
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "Eliberați mouse-ul pentru a adăuga acest dreptunghi la selecție."
 
-#: static/js/map.js:3408
+#: static/js/map.js:3437
 msgid "No selected samples to export."
 msgstr "Niciun eșantion selectat de exportat."
 
-#: static/js/map.js:3754
+#: static/js/map.js:3783
 msgid "Please sign in to export data."
 msgstr "Vă rugăm să vă conectați pentru a exporta date."
 
-#: static/js/map.js:3825
+#: static/js/map.js:3854
 msgid "Loading sample..."
 msgstr "Se încarcă proba..."
 
-#: static/js/map.js:3966
+#: static/js/map.js:4000
 msgid "Rendering markers..."
 msgstr "Rendering markers..."
 
-#: static/js/map.js:3967
+#: static/js/map.js:4001
 msgid "Building clusters and popups"
 msgstr "Construirea de clustere și popup-uri"
 
-#: static/js/map.js:4035
+#: static/js/map.js:4069
 msgid "Preparing map"
 msgstr "Pregătirea hărții"
 

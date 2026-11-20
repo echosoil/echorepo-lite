@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-04 11:55+0000\n"
+"POT-Creation-Date: 2026-11-20 11:01+0000\n"
 "PO-Revision-Date: 2026-08-22 16:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: lt\n"
@@ -69,17 +69,17 @@ msgstr "Išvalyti"
 msgid "Export filtered ({n})"
 msgstr "Eksportuoti filtruotą ({n})"
 
-#: echorepo/i18n.py:120 echorepo/templates/explore.html:128 static/js/map.js:1950
+#: echorepo/i18n.py:120 echorepo/templates/explore.html:131 static/js/map.js:1979
 msgid "Date"
 msgstr "Data"
 
-#: echorepo/i18n.py:121 static/js/map.js:1955
+#: echorepo/i18n.py:121 static/js/map.js:1984
 msgid "QR code"
 msgstr "QR kodas"
 
-#: echorepo/i18n.py:122 echorepo/templates/explore.html:101
-#: echorepo/templates/results.html:841 echorepo/templates/search.html:90
-#: static/js/map.js:1960
+#: echorepo/i18n.py:122 echorepo/templates/explore.html:104
+#: echorepo/templates/results.html:847 echorepo/templates/search.html:90
+#: static/js/map.js:1989
 msgid "pH"
 msgstr "pH"
 
@@ -87,27 +87,27 @@ msgstr "pH"
 msgid "Colour"
 msgstr "Spalva"
 
-#: echorepo/i18n.py:124 static/js/map.js:1965
+#: echorepo/i18n.py:124 static/js/map.js:1994
 msgid "Soil organic matter"
 msgstr "Dirvožemio organinės medžiagos"
 
-#: echorepo/i18n.py:125 static/js/map.js:1979
+#: echorepo/i18n.py:125 static/js/map.js:2008
 msgid "Structure"
 msgstr "Struktūra"
 
-#: echorepo/i18n.py:126 static/js/map.js:1984
+#: echorepo/i18n.py:126 static/js/map.js:2013
 msgid "Earthworms"
 msgstr "Sliekai"
 
-#: echorepo/i18n.py:127 static/js/map.js:1989
+#: echorepo/i18n.py:127 static/js/map.js:2018
 msgid "Plastic"
 msgstr "Plastikiniai"
 
-#: echorepo/i18n.py:128 static/js/map.js:1994
+#: echorepo/i18n.py:128 static/js/map.js:2023
 msgid "Debris"
 msgstr "Nuolaužos"
 
-#: echorepo/i18n.py:129 static/js/map.js:1999
+#: echorepo/i18n.py:129 static/js/map.js:2028
 msgid "Contamination"
 msgstr "Teršalai"
 
@@ -127,35 +127,35 @@ msgstr "Piešti stačiakampį"
 msgid "Click and drag to draw a rectangle."
 msgstr "Spauskite ir vilkite, kad pieštumėte stačiakampį."
 
-#: echorepo/i18n.py:134 static/js/map.js:3309
+#: echorepo/i18n.py:134 static/js/map.js:3338
 msgid "Cancel drawing"
 msgstr "NAME OF TRANSLATORS"
 
-#: echorepo/i18n.py:135 static/js/map.js:3310
+#: echorepo/i18n.py:135 static/js/map.js:3339
 msgid "Cancel"
 msgstr "Atsisakyti"
 
-#: echorepo/i18n.py:136 static/js/map.js:3314
+#: echorepo/i18n.py:136 static/js/map.js:3343
 msgid "Delete last point"
 msgstr "Išbraukti paskutinį punktą:"
 
-#: echorepo/i18n.py:137 static/js/map.js:1363
+#: echorepo/i18n.py:137 static/js/map.js:1387
 msgid "Street map"
 msgstr "Gatvės žemėlapis"
 
-#: echorepo/i18n.py:138 static/js/map.js:1364
+#: echorepo/i18n.py:138 static/js/map.js:1388
 msgid "Satellite"
 msgstr "Palydovas"
 
-#: echorepo/i18n.py:139 static/js/map.js:1251 static/js/map.js:1367
+#: echorepo/i18n.py:139 static/js/map.js:1266 static/js/map.js:1392
 msgid "Biogeographical regions"
 msgstr "Biogeografijos regionai"
 
-#: echorepo/i18n.py:140 static/js/map.js:3917
+#: echorepo/i18n.py:140 static/js/map.js:3946
 msgid "Loading samples..."
 msgstr "Pakrovimo pavyzdžiai..."
 
-#: echorepo/i18n.py:141 static/js/map.js:3918
+#: echorepo/i18n.py:141 static/js/map.js:3947
 msgid "Fetching visible map area"
 msgstr "Rodyti žemėlapio plotą"
 
@@ -187,7 +187,7 @@ msgstr "Išvalyti žymėjimą"
 msgid "Loading sample details..."
 msgstr "Sumontuotas pavyzdys..."
 
-#: echorepo/i18n.py:149 static/js/map.js:1582
+#: echorepo/i18n.py:150 static/js/map.js:1611
 msgid "Percentage values (%) can be converted to mg/kg by multiplying by 10000."
 msgstr "Procentines vertes (%) galima paversti mg / kg dauginant iš 10000."
 
@@ -362,7 +362,7 @@ msgstr "Emisijos tipas"
 msgid "Any issue"
 msgstr "Nr"
 
-#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:85
+#: echorepo/templates/coordinate_issues.html:48 echorepo/templates/explore.html:88
 #: echorepo/templates/search.html:73
 msgid "Search"
 msgstr "Ieškoti"
@@ -591,65 +591,65 @@ msgstr "rezultatai"
 msgid "ECHOrepo — Explore"
 msgstr "ECHA - Narystė"
 
-#: echorepo/templates/explore.html:68
+#: echorepo/templates/explore.html:71
 msgid "Explore the map"
 msgstr "Naršyti žemėlapį"
 
-#: echorepo/templates/explore.html:71
+#: echorepo/templates/explore.html:74
 msgid "Sign in to export data and access your personal samples."
 msgstr ""
 "Prisijunkite prie eksporto duomenų ir prisijunkite prie savo asmeninių "
 "pavyzdžių."
 
-#: echorepo/templates/explore.html:79
+#: echorepo/templates/explore.html:82
 msgid "Download dataset from Zenodo"
 msgstr "Parsisiųsti duomenų rinkinį iš Zenodo"
 
-#: echorepo/templates/explore.html:91 echorepo/templates/results.html:544
+#: echorepo/templates/explore.html:94 echorepo/templates/results.html:547
 msgid "Mobile version"
 msgstr "Mobilioji versija"
 
-#: echorepo/templates/explore.html:94 echorepo/templates/results.html:550
+#: echorepo/templates/explore.html:97 echorepo/templates/results.html:553
 msgid "Desktop version"
 msgstr "Darbastalio versija"
 
-#: echorepo/templates/explore.html:104 echorepo/templates/results.html:844
+#: echorepo/templates/explore.html:107 echorepo/templates/results.html:850
 msgid "min"
 msgstr "min"
 
-#: echorepo/templates/explore.html:109 echorepo/templates/results.html:849
+#: echorepo/templates/explore.html:112 echorepo/templates/results.html:855
 msgid "max"
 msgstr "maks"
 
-#: echorepo/templates/explore.html:111 echorepo/templates/results.html:835
+#: echorepo/templates/explore.html:114 echorepo/templates/results.html:841
 #: echorepo/templates/search.html:19 echorepo/templates/search.html:89
 msgid "Country"
 msgstr "Šalis"
 
-#: echorepo/templates/explore.html:114 echorepo/templates/results.html:838
-#: echorepo/templates/search.html:21 static/js/map.js:339
+#: echorepo/templates/explore.html:117 echorepo/templates/results.html:844
+#: echorepo/templates/search.html:21 static/js/map.js:354
 msgid "Any country"
 msgstr "Šalis"
 
-#: echorepo/templates/explore.html:118 echorepo/templates/results.html:821
+#: echorepo/templates/explore.html:121 echorepo/templates/results.html:827
 #: echorepo/templates/search.html:29
 msgid "Biogeographical region"
 msgstr "Biogeografijos regionas"
 
-#: echorepo/templates/explore.html:122 echorepo/templates/results.html:824
+#: echorepo/templates/explore.html:125 echorepo/templates/results.html:830
 #: echorepo/templates/search.html:31
 msgid "Any region"
 msgstr "Regionas"
 
-#: echorepo/templates/explore.html:137 echorepo/templates/results.html:852
+#: echorepo/templates/explore.html:140 echorepo/templates/results.html:858
 msgid "Apply"
 msgstr "Pritaikyti"
 
-#: echorepo/templates/explore.html:142 echorepo/templates/results.html:857
+#: echorepo/templates/explore.html:145 echorepo/templates/results.html:863
 msgid "Export filtered (0)"
 msgstr "Eksportas filtruotas (0)"
 
-#: echorepo/templates/explore.html:148
+#: echorepo/templates/explore.html:151
 msgid "Copy view link"
 msgstr "Kopijuoti peržiūros nuorodą"
 
@@ -710,7 +710,7 @@ msgstr "Šalių neatitikimų nėra"
 msgid "Actual country (from coords) is not in the planned list for this QR."
 msgstr "Faktinė šalis (iš akordų) nėra šio KR planuojamame sąraše."
 
-#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:524
+#: echorepo/templates/lab_upload.html:3 echorepo/templates/results.html:527
 msgid "Upload lab data"
 msgstr "Nusiųsti laboratorijos duomenis"
 
@@ -790,16 +790,16 @@ msgstr "ECHORUSIJA - Jūsų duomenys"
 msgid "Download all samples (CSV)"
 msgstr "Parsisiųsti visus pavyzdžius (CSV)"
 
-#: echorepo/templates/results.html:27 echorepo/templates/results.html:532
+#: echorepo/templates/results.html:27 echorepo/templates/results.html:535
 #: echorepo/templates/search.html:2 echorepo/templates/search.html:5
 msgid "Search samples"
 msgstr "Paieškos pavyzdžiai"
 
-#: echorepo/templates/results.html:498
+#: echorepo/templates/results.html:501
 msgid "Your data"
 msgstr "Jūsų duomenys"
 
-#: echorepo/templates/results.html:500
+#: echorepo/templates/results.html:503
 msgid ""
 "Explore your soil sample locations on the map, then export or browse the "
 "table."
@@ -807,20 +807,20 @@ msgstr ""
 "Naršykite savo dirvožemio mėginio vietas žemėlapyje, tada eksportuokite arba "
 "naršykite lentelę."
 
-#: echorepo/templates/results.html:514
+#: echorepo/templates/results.html:517
 #, python-format
 msgid "Fix data issues (%(n)s)"
 msgstr "Taisyti duomenų emisijas (%(n)s)"
 
-#: echorepo/templates/results.html:568 echorepo/templates/results.html:689
+#: echorepo/templates/results.html:571 echorepo/templates/results.html:692
 msgid "Final survey"
 msgstr "III PRIEDAS"
 
-#: echorepo/templates/results.html:572
+#: echorepo/templates/results.html:575
 msgid "We sincerely thank you for your commitment to this project!"
 msgstr "Nuoširdžiai dėkojame už Jūsų atsidavimą šiam projektui!"
 
-#: echorepo/templates/results.html:578
+#: echorepo/templates/results.html:581
 msgid ""
 "This is the third and final survey in the project, following the initial ones"
 " you completed before and after\n"
@@ -839,7 +839,7 @@ msgstr ""
 "\n"
 "laikui bėgant įvertinti pokyčius ir suprasti projekto dalyvavimo poveikį."
 
-#: echorepo/templates/results.html:588
+#: echorepo/templates/results.html:591
 msgid ""
 "Before you start: please only complete this survey if the lab results from "
 "your soil sample(s) have already\n"
@@ -852,23 +852,23 @@ msgstr ""
 "\n"
 "buvo pridėtas prie saugyklos. Vos laukiama rezultatų, pasiteiraukite vėliau."
 
-#: echorepo/templates/results.html:600
+#: echorepo/templates/results.html:603
 msgid "Go to final survey"
 msgstr "Pereiti prie galutinio tyrimo"
 
-#: echorepo/templates/results.html:609
+#: echorepo/templates/results.html:612
 msgid "Data use information"
 msgstr "Duomenų naudojimo informacija"
 
-#: echorepo/templates/results.html:619
+#: echorepo/templates/results.html:622
 msgid "I have already completed it"
 msgstr "Aš jau baigiau"
 
-#: echorepo/templates/results.html:629
+#: echorepo/templates/results.html:632
 msgid "Processing survey data in the ECHO project"
 msgstr "ECHO projekto tyrimo duomenų apdorojimas"
 
-#: echorepo/templates/results.html:633
+#: echorepo/templates/results.html:636
 msgid ""
 "The objective of this survey data is to examine the impact of project "
 "participation on participant\n"
@@ -879,7 +879,7 @@ msgstr ""
 "\n"
 "požiūris ir motyvacija į dirvožemį."
 
-#: echorepo/templates/results.html:641
+#: echorepo/templates/results.html:644
 msgid ""
 "Your information will only be used for scientific purposes. We do not collect"
 " names or addresses. Your\n"
@@ -898,7 +898,7 @@ msgstr ""
 "\n"
 "įvertinti anonimiškai. Niekada negalima padaryti išvadų dėl Jūsų asmens."
 
-#: echorepo/templates/results.html:651
+#: echorepo/templates/results.html:654
 msgid ""
 "Answering each question in the survey is most appreciated as it plays a "
 "crucial role in providing valuable\n"
@@ -922,7 +922,7 @@ msgstr ""
 "\n"
 "rezultatai yra prasmingi ir gerai informuoti."
 
-#: echorepo/templates/results.html:663
+#: echorepo/templates/results.html:666
 msgid ""
 "The survey will take approximately 8–10 minutes to complete. Please find a "
 "quiet space where you won’t be\n"
@@ -934,7 +934,7 @@ msgstr ""
 "\n"
 "- Nėra teisingų ar klaidingų atsakymų - atsakymas spontaniškai."
 
-#: echorepo/templates/results.html:671
+#: echorepo/templates/results.html:674
 msgid ""
 "Based on the information provided to you, please consent to participate in "
 "the survey below."
@@ -942,23 +942,23 @@ msgstr ""
 "Prašome, remiantis Jums pateikta informacija, sutikti su toliau pateikiamu "
 "tyrimu."
 
-#: echorepo/templates/results.html:691
+#: echorepo/templates/results.html:694
 msgid "thank you for your participation!"
 msgstr "ačiū už dalyvavimą!"
 
-#: echorepo/templates/results.html:699
+#: echorepo/templates/results.html:702
 msgid "Show details"
 msgstr "Rodyti detales"
 
-#: echorepo/templates/results.html:706
+#: echorepo/templates/results.html:709
 msgid "Dismiss"
 msgstr "Naikinti"
 
-#: echorepo/templates/results.html:726
+#: echorepo/templates/results.html:729
 msgid "No data found for"
 msgstr "Duomenų apie"
 
-#: echorepo/templates/results.html:726
+#: echorepo/templates/results.html:729
 msgid ""
 "If you recently submitted samples, try again\n"
 "\n"
@@ -968,31 +968,31 @@ msgstr ""
 "\n"
 "vėliau."
 
-#: echorepo/templates/results.html:754
+#: echorepo/templates/results.html:760
 msgid "Download"
 msgstr "Atsisiųsti"
 
-#: echorepo/templates/results.html:760
+#: echorepo/templates/results.html:766
 msgid "Canonical exports"
 msgstr "Kanoninis eksportas"
 
-#: echorepo/templates/results.html:806
+#: echorepo/templates/results.html:812
 msgid "All canonical (zip)"
 msgstr "All canonical (zip)"
 
-#: echorepo/templates/results.html:852
+#: echorepo/templates/results.html:858
 msgid "Apply map filters"
 msgstr "Pritaikyti žemėlapio filtrus"
 
-#: echorepo/templates/results.html:855
+#: echorepo/templates/results.html:861
 msgid "Export rows matching current map filters"
 msgstr "Eksportuoti eilutes, atitinkančias dabartinio žemėlapio filtrus"
 
-#: echorepo/templates/results.html:896
+#: echorepo/templates/results.html:902
 msgid "Privacy information"
 msgstr "Privatumo informacija"
 
-#: echorepo/templates/results.html:950
+#: echorepo/templates/results.html:956
 msgid ""
 "I have read the privacy information above and I consent to the processing of "
 "my personal data for\n"
@@ -1004,16 +1004,16 @@ msgstr ""
 "\n"
 "šį projektą."
 
-#: echorepo/templates/results.html:966
+#: echorepo/templates/results.html:972
 msgid "Accept and continue"
 msgstr "Priimti ir tęsti"
 
-#: echorepo/templates/results.html:1716
+#: echorepo/templates/results.html:1728
 msgid "Show on map"
 msgstr "Rodyti žemėlapyje"
 
-#: echorepo/templates/results.html:1742 echorepo/templates/results.html:1790
-#: echorepo/templates/results.html:1808
+#: echorepo/templates/results.html:1754 echorepo/templates/results.html:1802
+#: echorepo/templates/results.html:1820
 msgid "Could not locate this sample on the map."
 msgstr "@ info: whatsthis."
 
@@ -1136,96 +1136,146 @@ msgstr "Siūlyta nuoroda"
 msgid "No Zenodo publications have been logged yet."
 msgstr "Zenodo publikacijų dar nėra."
 
-#: static/js/map.js:278
+#: echorepo/templates/partials/loess_map_attribution.html:11
+msgid "EU Mission “A Soil Deal for Europe”"
+msgstr "ES misija \"Europos dirvožemio planas\""
+
+#: echorepo/templates/partials/loess_map_attribution.html:13
+msgid "Independent map layer"
+msgstr "Savarankiškas žemėlapio sluoksnis"
+
+#: echorepo/templates/partials/loess_map_attribution.html:16
+msgid "Soil observations from the LOESS project"
+msgstr "LOESS projekto dirvožemio stebėjimai"
+
+#: echorepo/templates/partials/loess_map_attribution.html:19
+msgid ""
+"This map also offers citizen-reported soil conditions collected through the "
+"LOESS Soil Map, developed by the Horizon Europe LOESS project. These "
+"observations are displayed separately from ECHO soil samples."
+msgstr ""
+"Žvaigždėlapyje taip pat pateikiamos piliečių praneštos dirvožemio sąlygos, "
+"nustatytos pagal \"Horizon Europe LESS\" projektą \"LOESS\". III PRIEDAS."
+
+#: echorepo/templates/partials/loess_map_attribution.html:24
+msgid ""
+"Select “LOESS soil observations” in the map layers control to explore this "
+"optional dataset."
+msgstr ""
+"Žvaigždėlapio sluoksniuose, norėdami ištirti šį neprivalomą duomenų rinkinį, "
+"pasirinkite \"MLOESS dirvožemio stebėjimus\"."
+
+#: echorepo/templates/partials/loess_map_attribution.html:26
+msgid "LOESS external resources"
+msgstr "MIŠKŲJŲ NACIONALINIŲ LĖŠŲ"
+
+#: echorepo/templates/partials/loess_map_attribution.html:28
+msgid "About the LOESS project"
+msgstr "Apie LOESS projektą"
+
+#: echorepo/templates/partials/loess_map_attribution.html:30
+#: echorepo/templates/partials/loess_map_attribution.html:35
+msgid "Opens in a new tab"
+msgstr "Atsidaro naujoje kortelėje"
+
+#: echorepo/templates/partials/loess_map_attribution.html:33
+msgid "View the original LOESS Soil Map"
+msgstr "Rodyti originalų LOESS dirvožemio žemėlapį"
+
+#: static/js/map.js:293
 msgid "Link copied to clipboard"
 msgstr "Nuoroda nukopijuota į iškarpinę"
 
-#: static/js/map.js:281
+#: static/js/map.js:296
 msgid "Copy this link:"
 msgstr "Kopijuoti šią nuorodą:"
 
-#: static/js/map.js:906 static/js/map.js:3684
+#: static/js/map.js:921 static/js/map.js:3713
 #, python-brace-format
 msgid "Export filtered (${n})"
 msgstr "Eksportuoti filtruotą (${n})"
 
-#: static/js/map.js:916 static/js/map.js:3472
+#: static/js/map.js:931 static/js/map.js:3501
 msgid "Release mouse to finish drawing."
 msgstr "Paleisti pelę baigti piešimo."
 
-#: static/js/map.js:990
+#: static/js/map.js:1005
 msgid "Not available"
 msgstr "Netaikoma"
 
-#: static/js/map.js:1332
+#: static/js/map.js:1347
 msgid ""
 "Could not load the biogeographical-region overlay. Check that "
 "/static/geo/biogeo_regions_2016.geojson exists."
 msgstr "Nepavyko įkelti regiono gyventojų. III PRIEDAS."
 
-#: static/js/map.js:1588
+#: static/js/map.js:1395
+msgid "LOESS soil observations"
+msgstr "MIŠKINTI dirvožemio stebėjimus"
+
+#: static/js/map.js:1617
 msgid "Unit conversion help"
 msgstr "Vieneto konvertavimo pagalba"
 
-#: static/js/map.js:1974
+#: static/js/map.js:2003
 msgid "Texture"
 msgstr "Kėbulas"
 
-#: static/js/map.js:2009
+#: static/js/map.js:2038
 msgid "Observations"
 msgstr "Pastabos"
 
-#: static/js/map.js:2648 static/js/map.js:4034
+#: static/js/map.js:2677 static/js/map.js:4068
 msgid "Loading map data..."
 msgstr "Įkeliami žemėlapio duomenys..."
 
-#: static/js/map.js:2652
+#: static/js/map.js:2681
 msgid "Please wait"
 msgstr "Prašau palaukti"
 
-#: static/js/map.js:2931
+#: static/js/map.js:2960
 msgid "Loading..."
 msgstr "Įkeliama..."
 
-#: static/js/map.js:3302
+#: static/js/map.js:3331
 msgid "Draw selection rectangle"
 msgstr "Piešti pasirinkimo stačiakampį"
 
-#: static/js/map.js:3313
+#: static/js/map.js:3342
 msgid "Delete last point drawn"
 msgstr "Išbraukti paskutinį punktą"
 
-#: static/js/map.js:3321
+#: static/js/map.js:3350
 msgid "Click and drag to draw a selection rectangle. You can draw more than one."
 msgstr ""
 "Spauskite ir vilkite norėdami piešti pažymėtą stačiakampį. Jūs galite piešti "
 "daugiau nei vieną."
 
-#: static/js/map.js:3327
+#: static/js/map.js:3356
 msgid "Release mouse to add this rectangle to the selection."
 msgstr "@ info: whatsthis."
 
-#: static/js/map.js:3408
+#: static/js/map.js:3437
 msgid "No selected samples to export."
 msgstr "Eksportuoti atrinktų mėginių nėra."
 
-#: static/js/map.js:3754
+#: static/js/map.js:3783
 msgid "Please sign in to export data."
 msgstr "Prašome prisijungti prie eksporto duomenų."
 
-#: static/js/map.js:3825
+#: static/js/map.js:3854
 msgid "Loading sample..."
 msgstr "Pakrovimo pavyzdys..."
 
-#: static/js/map.js:3966
+#: static/js/map.js:4000
 msgid "Rendering markers..."
 msgstr "Žymekliai..."
 
-#: static/js/map.js:3967
+#: static/js/map.js:4001
 msgid "Building clusters and popups"
 msgstr "Kliūčių ir langų statyba"
 
-#: static/js/map.js:4035
+#: static/js/map.js:4069
 msgid "Preparing map"
 msgstr "Ruošiamas žemėlapis"
 
