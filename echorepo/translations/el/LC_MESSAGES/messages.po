@@ -152,7 +152,7 @@ msgstr "Βιογεωγραφικές περιοχές"
 
 #: echorepo/i18n.py:140 static/js/map.js:1395
 msgid "LOESS soil observations"
-msgstr "Παρατηρήσεις εδάφους LOSS"
+msgstr "Παρατηρήσεις εδάφους LOESS"
 
 #: echorepo/i18n.py:142
 msgid "Dry soil"
@@ -189,7 +189,7 @@ msgstr "Άλλα/λιπαντικά"
 #: echorepo/i18n.py:151 static/js/loess_overlay.js:112
 #, python-brace-format
 msgid "LOESS · {category}"
-msgstr "ΛΟΙΠΕΣ ·{category}"
+msgstr "LOESS ·{category}"
 
 #: echorepo/i18n.py:152 static/js/loess_overlay.js:115
 msgid "Place"
@@ -231,19 +231,19 @@ msgstr "Δεκτή"
 
 #: echorepo/i18n.py:161 static/js/loess_overlay.js:126
 msgid "LOESS observation ID"
-msgstr "ID παρατήρησης LOSESS"
+msgstr "ID παρατήρησης LOESS"
 
 #: echorepo/i18n.py:162 static/js/loess_overlay.js:92
 msgid "Open larger LOESS photograph"
-msgstr "Άνοιγμα μεγαλύτερης φωτογραφίας LOSS"
+msgstr "Άνοιγμα μεγαλύτερης φωτογραφίας LOESS"
 
 #: echorepo/i18n.py:163 static/js/loess_overlay.js:95
 msgid "Photograph supplied with the LOESS soil observation"
-msgstr "Φωτογραφία που παρέχεται με την παρατήρηση του εδάφους LOSS"
+msgstr "Φωτογραφία που παρέχεται με την παρατήρηση του εδάφους LOESS"
 
 #: echorepo/i18n.py:164 static/js/loess_overlay.js:101
 msgid "Photograph from LOESS · Click to enlarge"
-msgstr "Φωτογραφία από LOSESS · Κάντε κλικ για μεγέθυνση"
+msgstr "Φωτογραφία από LOESS · Κάντε κλικ για μεγέθυνση"
 
 #: echorepo/i18n.py:165 static/js/loess_overlay.js:130
 msgid "Citizen-reported soil condition · Source: "
@@ -251,17 +251,17 @@ msgstr "Κατάσταση εδάφους που αναφέρεται από τ�
 
 #: echorepo/i18n.py:166 static/js/loess_overlay.js:135
 msgid "LOESS Soil Map"
-msgstr "Χάρτης εδάφους LOSS"
+msgstr "Χάρτης εδάφους LOESS"
 
 #: echorepo/i18n.py:167 static/js/loess_overlay.js:212
 #, python-brace-format
 msgid "LOESS: {category}"
-msgstr "ΛΟΙΠΗ:{category}"
+msgstr "LOESS: {category}"
 
 #: echorepo/i18n.py:168 static/js/loess_overlay.js:239
 #, python-brace-format
 msgid "LOESS observations ({n})"
-msgstr "Παρατηρήσεις LOSS ({n})"
+msgstr "Παρατηρήσεις LOESS ({n})"
 
 #: echorepo/i18n.py:169 static/js/loess_overlay.js:261
 msgid "Circle radius = reported affected area (m), not location uncertainty."
@@ -269,7 +269,7 @@ msgstr "Ακτίνα κύκλου = αναφερόμενη πληγείσα πε
 
 #: echorepo/i18n.py:170 static/js/loess_overlay.js:290
 msgid "No geolocated LOESS observations in the supplied GeoJSON."
-msgstr "Καμία γεωτοποθετημένη παρατήρηση LOSS στο παρεχόμενο GeoJSON."
+msgstr "Καμία γεωτοποθετημένη παρατήρηση LOESS στο παρεχόμενο GeoJSON."
 
 #: echorepo/i18n.py:171 static/js/loess_overlay.js:298
 #, python-brace-format
@@ -1282,7 +1282,7 @@ msgstr "Ανεξάρτητο στρώμα χάρτη"
 
 #: echorepo/templates/partials/loess_map_attribution.html:16
 msgid "Soil observations from the LOESS project"
-msgstr "Παρατηρήσεις εδάφους από το έργο LOSS"
+msgstr "Παρατηρήσεις εδάφους από το έργο LOESS"
 
 #: echorepo/templates/partials/loess_map_attribution.html:19
 msgid ""
@@ -1291,8 +1291,8 @@ msgid ""
 "observations are displayed separately from ECHO soil samples."
 msgstr ""
 "Αυτός ο χάρτης προσφέρει επίσης τις αναφερόμενες από τους πολίτες εδαφικές "
-"συνθήκες που συλλέγονται μέσω του χάρτη εδάφους LOSESS, που αναπτύχθηκε από "
-"το έργο Horizon Europe LOSS. Οι παρατηρήσεις αυτές εμφανίζονται χωριστά από "
+"συνθήκες που συλλέγονται μέσω του χάρτη εδάφους LOESS, που αναπτύχθηκε από "
+"το έργο Horizon Europe LOESS. Οι παρατηρήσεις αυτές εμφανίζονται χωριστά από "
 "τα δείγματα εδάφους ECHO."
 
 #: echorepo/templates/partials/loess_map_attribution.html:24
@@ -1309,7 +1309,7 @@ msgstr "Εξωτερικοί πόροι"
 
 #: echorepo/templates/partials/loess_map_attribution.html:28
 msgid "About the LOESS project"
-msgstr "Σχετικά με το έργο LOSS"
+msgstr "Σχετικά με το έργο LOESS"
 
 #: echorepo/templates/partials/loess_map_attribution.html:30
 #: echorepo/templates/partials/loess_map_attribution.html:35
@@ -1318,7 +1318,7 @@ msgstr "Άνοιγμα σε νέα καρτέλα"
 
 #: echorepo/templates/partials/loess_map_attribution.html:33
 msgid "View the original LOESS Soil Map"
-msgstr "Προβολή του αρχικού χάρτη εδάφους LOSS"
+msgstr "Προβολή του αρχικού χάρτη εδάφους LOESS"
 
 #: static/js/map.js:293
 msgid "Link copied to clipboard"

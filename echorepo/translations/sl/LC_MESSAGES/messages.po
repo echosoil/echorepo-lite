@@ -257,7 +257,7 @@ msgstr "Zemljevid tal LOESS"
 #: echorepo/i18n.py:167 static/js/loess_overlay.js:212
 #, python-brace-format
 msgid "LOESS: {category}"
-msgstr "{category}"
+msgstr "LOESS: {category}"
 
 #: echorepo/i18n.py:168 static/js/loess_overlay.js:239
 #, python-brace-format
