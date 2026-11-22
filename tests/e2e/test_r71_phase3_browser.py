@@ -15,7 +15,13 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from tools.r71_phase3_guard import BrowserTargetError, authentication_state, browser_target, validate_target
+from tools.r71_phase3_guard import (
+    BrowserTargetError,
+    authentication_state,
+    browser_target,
+    storage_state_for_target,
+    validate_service_url,
+)
 
 
 # No Playwright import or external navigation during normal CI.
@@ -99,6 +105,10 @@ def auth_page(chromium, target):
     if state is None:
         pytest.skip("Authenticated browser checks require R71_PHASE3_STORAGE_STATE")
     _mode, base = target
+    try:
+        storage_state_for_target(state, base)
+    except BrowserTargetError as exc:
+        pytest.fail(f"Saved session does not match browser target: {exc}", pytrace=False)
     context, current = new_page(chromium, base, state=state)
     try:
         yield current
@@ -337,25 +347,23 @@ def optional_service_url(name: str, *, mode: str) -> str:
     raw = os.getenv(name, "").strip()
     if not raw:
         pytest.skip(f"{name} is not configured (optional service)")
-    parsed = urlsplit(raw)
-    assert parsed.path in {"", "/", "/jupyter/"}, "Only a service root or /jupyter/ is allowed"
-    assert not (parsed.username or parsed.password or parsed.query or parsed.fragment), (
-        "Optional service URLs may not contain credentials, tokens, queries or fragments"
-    )
     try:
-        validate_target(mode, f"{parsed.scheme}://{parsed.netloc}")
+        return validate_service_url(mode, raw)
     except BrowserTargetError as exc:
         pytest.fail(f"Optional service URL rejected: {exc}", pytrace=False)
-    return raw
 
 
 def test_r71_b17_optional_jupyter_interface_reachable(page, target):
     mode, _base = target
     url = optional_service_url("R71_PHASE3_JUPYTER_URL", mode=mode)
     response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
-    assert response is not None and response.status < 500
-    assert "jupyter" in (page.title() + " " + page.url).lower(), (
-        "The configured Jupyter endpoint did not display the research interface"
+    assert response is not None and response.status == 200, (
+        f"Jupyter browser entrypoint returned HTTP {response.status if response else 'no response'}"
+    )
+    # Only a functioning JupyterLab shell counts. A login/404 page or merely
+    # mentioning '/jupyter/' in the URL does not prove notebook availability.
+    page.locator(".jp-LabShell, #jp-main-dock-panel").first.wait_for(
+        state="attached", timeout=20000
     )
 
 
@@ -363,7 +371,10 @@ def test_r71_b18_optional_streamlit_interface_reachable(page, target):
     mode, _base = target
     url = optional_service_url("R71_PHASE3_STREAMLIT_URL", mode=mode)
     response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
-    assert response is not None and response.status < 500
-    assert "streamlit" in (page.title() + " " + page.content()[:6000]).lower(), (
-        "Configured Streamlit endpoint is not recognizable as a Streamlit interface"
+    assert response is not None and response.status == 200, (
+        f"Streamlit browser entrypoint returned HTTP {response.status if response else 'no response'}"
+    )
+    # Wait for Streamlit's actual frontend; a generic proxy page isn't evidence.
+    page.locator('[data-testid="stApp"]').wait_for(
+        state="visible", timeout=20000
     )
