@@ -371,7 +371,7 @@ def test_r71_b17_optional_jupyter_interface_reachable(auth_page, target):
 def test_r71_b18_optional_streamlit_interface_reachable(auth_page, target):
     mode, _base = target
     url = optional_service_url("R71_PHASE3_STREAMLIT_URL", mode=mode)
-    response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+    response = auth_page.goto(url, wait_until="domcontentloaded", timeout=30000)
     assert response is not None and response.status == 200, (
         f"Streamlit browser entrypoint returned HTTP {response.status if response else 'no response'}"
     )

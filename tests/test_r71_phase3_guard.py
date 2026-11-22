@@ -1,6 +1,7 @@
 """Offline tests for Phase 3 safety gates and evidence accounting."""
 from __future__ import annotations
 
+import ast
 import json
 import tempfile
 import unittest
@@ -172,6 +173,29 @@ class OptionalBrowserGuardTests(unittest.TestCase):
                 guard.storage_state_for_target(state, "http://127.0.0.1:8001")
             with self.assertRaisesRegex(guard.BrowserTargetError, "No suitable cookies"):
                 guard.storage_state_for_target(state, "https://another.example")
+
+
+class Phase3BrowserFixtureTests(unittest.TestCase):
+    def test_optional_research_checks_use_declared_browser_fixture(self):
+        """Prevent accidental references to pytest's global `page` fixture."""
+        source = (Path(__file__).resolve().parent /
+                  "e2e/test_r71_phase3_browser.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        for func in tree.body:
+            if not isinstance(func, ast.FunctionDef):
+                continue
+            if func.name not in {
+                "test_r71_b17_optional_jupyter_interface_reachable",
+                "test_r71_b18_optional_streamlit_interface_reachable",
+            }:
+                continue
+            params = {arg.arg for arg in func.args.args}
+            self.assertIn("auth_page", params)
+            self.assertNotIn(
+                "page", {node.id for node in ast.walk(func)
+                         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)},
+                f"{func.name} must navigate with auth_page, not the page fixture",
+            )
 
 
 class Phase3ReportTests(unittest.TestCase):
