@@ -179,9 +179,12 @@
     {
       "id": "R71-C17",
       "name": "Optional Streamlit research explorer",
-      "criterion": "Explore canonical sample properties from authenticated backend without exposing private data.",
-      "tests": [],
-      "additional_evidence": "Not covered by this initial R7-1 automated suite; need isolated Streamlit application and access integration tests."
+      "criterion": "Streamlit research UI country filtering and CSV export preserve data semantics.",
+      "tests": [
+        "test_r71_streamlit_01_country_list_omits_missing_and_sorts",
+        "test_r71_streamlit_02_csv_export_is_utf8_and_preserves_headers"
+      ],
+      "additional_evidence": "Only pure helper functions covered; full interactive Streamlit UI, API access, identity and deployment validation remain pending."
     },
     {
       "id": "R71-C18",
@@ -189,6 +192,17 @@
       "criterion": "Deployed PostgreSQL, Keycloak, Firebase and Zenodo interfaces work as specified.",
       "tests": [],
       "additional_evidence": "External staging/live tests with explicit authorisation and traceable logs. SoilWise/JRC/EOSC are separately scoped commitments."
+    },
+    {
+      "id": "R71-C19",
+      "name": "Jupyter notebook API client",
+      "criterion": "Notebook client sends canonical API filters correctly, parses CSV, rejects wrong media types and requests JSON pagination.",
+      "tests": [
+        "test_r71_research_01_csv_client_transmits_filters_and_parses",
+        "test_r71_research_02_unexpected_non_csv_response_rejected",
+        "test_r71_research_03_paginated_request_uses_json_contract"
+      ],
+      "additional_evidence": "Authenticate against deployed private API and verify end-to-end datasets and notebooks."
     }
   ]
 }
