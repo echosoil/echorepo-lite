@@ -46,6 +46,8 @@ jobs:
             tests/test_r71_api_web.py \
             tests/test_r71_data_contracts.py \
             tests/test_r71_storage_lab.py \
+            tests/test_r71_research.py \
+            tests/test_r71_research.py \
             tools/r71_validation_report.py
 
       - name: Execute isolated acceptance and regression tests
