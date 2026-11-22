@@ -24,7 +24,7 @@ Included core and optional modules:
 - PostgreSQL-backed sessions and JupyterHub authentication (existing tests).
 - LOESS map integration and i18n (existing tests).
 
-The optional Streamlit explorer and full external-integration environment remain *not covered*. The standalone ECHOsoil mobile app, external Keycloak, Firebase, Zenodo, SoilWise and EOSC infrastructures are **not implemented by this repository** and need separate owners and evidence. Database migrations, real imports, PDF/UI workflows, deployed reverse proxy and browser experience also need staging/manual acceptance checks.
+The optional Streamlit data helpers and notebook API client have isolated coverage; the interactive Streamlit interface and full external-integration environment remain *not fully covered*. The standalone ECHOsoil mobile app, external Keycloak, Firebase, Zenodo, SoilWise and EOSC infrastructures are **not implemented by this repository** and need separate owners and evidence. Database migrations, real imports, PDF/UI workflows, deployed reverse proxy and browser experience also need staging/manual acceptance checks.
 
 ## How to run
 
@@ -40,6 +40,7 @@ python -m pytest -q \
   tests/test_r71_api_web.py \
   tests/test_r71_data_contracts.py \
   tests/test_r71_storage_lab.py \
+  tests/test_r71_research.py \
   tests/test_biodiversity_api_upload.py \
   tests/test_server_sessions.py \
   tests/test_jupyterhub_auth.py \
