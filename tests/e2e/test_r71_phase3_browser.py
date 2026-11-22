@@ -10,7 +10,6 @@ Install: python -m pip install playwright; python -m playwright install chromium
 from __future__ import annotations
 
 import os
-import re
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
@@ -327,6 +326,9 @@ def optional_service_url(name: str, *, mode: str) -> str:
         pytest.skip(f"{name} is not configured (optional service)")
     parsed = urlsplit(raw)
     assert parsed.path in {"", "/", "/jupyter/"}, "Only a service root or /jupyter/ is allowed"
+    assert not (parsed.username or parsed.password or parsed.query or parsed.fragment), (
+        "Optional service URLs may not contain credentials, tokens, queries or fragments"
+    )
     try:
         validate_target(mode, f"{parsed.scheme}://{parsed.netloc}")
     except BrowserTargetError as exc:
