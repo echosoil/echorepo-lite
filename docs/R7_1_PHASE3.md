@@ -186,48 +186,68 @@ privacy consent automatically.
 
 ## 5. Finish B17/B18: Jupyter and Streamlit
 
-If your production containers still expose the ports reported on the Ubuntu
-server, the actual endpoints are expected to be:
+**Production routes (verified against the deployed Compose configuration):**
 
-- JupyterLab: `http://172.31.5.252:8888/jupyter/`
-- Streamlit: `http://172.31.5.252:8501/`
+- JupyterLab ServerApp.base_url: `/research/workspace/`
+- Streamlit server.baseUrlPath: `research/dashboard`
 
-First confirm that the containers are still bound to those ports and that
-the server can connect to them:
+The earlier runbook incorrectly suggested `/jupyter/` and `/` on the two
+upstream ports. Those URLs return 404 by design when the services use their
+configured base paths.
+
+**Preferred acceptance targets** — same public HTTPS origin as the saved
+Playwright login session, including edge authentication and proxy routing:
 
 ```bash
-docker ps --format 'table {{.Names}}\t{{.Ports}}' | grep -E 'jupyter|streamlit'
-curl -sS -L -o /dev/null -w 'Jupyter HTTP %{http_code}\n' \
-  --max-time 15 http://172.31.5.252:8888/jupyter/
-curl -sS -L -o /dev/null -w 'Streamlit HTTP %{http_code}\n' \
-  --max-time 15 http://172.31.5.252:8501/
+export R71_PHASE3_RUN=production-readonly
+export R71_PHASE3_PROD_ACK=yes-production-readonly
+export R71_PHASE3_BASE_URL=https://echorepo.quanta-labs.com
+export R71_PHASE3_ALLOWED_HOSTS=echorepo.quanta-labs.com
+export R71_PHASE3_STORAGE_STATE="$PWD/r71-evidence/phase3-auth-state.json"
+
+export R71_PHASE3_JUPYTER_URL="$R71_PHASE3_BASE_URL/research/workspace/"
+export R71_PHASE3_STREAMLIT_URL="$R71_PHASE3_BASE_URL/research/dashboard/"
 ```
 
-Only the optional research UI checks may use private HTTP targets, and
-only when their private IP is explicitly allowlisted **and** the separate
-opt-in flag is set. This does not enable HTTP for public production domains
-or for the main authenticated browser target:
+B17 and B18 now use **the same saved authenticated browser session** as B15
+and B16, but in fresh contexts. The suite does not submit credentials or
+consent. It checks for an actual JupyterLab shell / Streamlit app rather
+than treating a login page or a 200 response as proof of success.
+
+You can sanity-check the public routes with an interactive logged-in browser.
+An unauthenticated `curl` may redirect to `/login`, which is expected and
+not evidence of the UI being broken. A stored browser session is required
+for these acceptance checks.
+
+**Alternative: direct private Docker host endpoints**, useful for diagnosing
+the upstream services but not equivalent to testing the public proxy:
+
+```bash
+curl -sS -o /dev/null -w 'Jupyter HTTP %{http_code}\n' \
+  --max-time 15 http://172.31.5.252:8888/research/workspace/
+curl -sS -o /dev/null -w 'Streamlit HTTP %{http_code}\n' \
+  --max-time 15 http://172.31.5.252:8501/research/dashboard/
+```
+
+If you explicitly choose this fallback, keep the production base URL and
+storage-state settings above, but authorize the private IP separately:
 
 ```bash
 export R71_PHASE3_ALLOWED_HOSTS=echorepo.quanta-labs.com,172.31.5.252
 export R71_PHASE3_PRIVATE_SERVICE_ACK=yes-private-readonly-services
-export R71_PHASE3_JUPYTER_URL=http://172.31.5.252:8888/jupyter/
-export R71_PHASE3_STREAMLIT_URL=http://172.31.5.252:8501/
+export R71_PHASE3_JUPYTER_URL=http://172.31.5.252:8888/research/workspace/
+export R71_PHASE3_STREAMLIT_URL=http://172.31.5.252:8501/research/dashboard/
 ```
 
-The optional-service browser contexts are always anonymous. Jupyter must
-render the JupyterLab shell, and Streamlit must display the Streamlit app
-root. HTTP 200 or an identity-provider login page alone is not enough.
+Private endpoints are not intended for untrusted networks. They may bypass
+the edge proxy's authentication and therefore **must not be exposed publicly**.
+
+Run just the two research UI checks before regenerating full evidence:
 
 ```bash
 python -m pytest -v -rs tests/e2e/test_r71_phase3_browser.py \
   -k 'r71_b17 or r71_b18'
 ```
-
-If the Jupyter or Streamlit UI is legitimately behind authentication, these
-tests will fail until an agreed **read-only browser-based authentication**
-method is available; never paste service tokens into URLs just to bypass the
-check.
 
 ## 5A. Collect the complete Phase 3 evidence
 
