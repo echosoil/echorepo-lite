@@ -32,6 +32,12 @@ from tools.r71_phase2_guard import (
 ROOT = Path(__file__).resolve().parents[2]
 TIMEOUT = (4, 12)
 
+# Do not even attempt a live connection during ordinary CI/test discovery.
+pytestmark = pytest.mark.skipif(
+    os.getenv("R71_PHASE2_RUN") != "staging",
+    reason="Phase 2 requires R71_PHASE2_RUN=staging",
+)
+
 
 def required(name: str) -> str:
     require_opt_in()
