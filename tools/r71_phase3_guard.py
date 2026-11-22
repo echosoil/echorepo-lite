@@ -122,7 +122,10 @@ def validate_service_url(
         or parsed.password
         or parsed.query
         or parsed.fragment
-        or parsed.path not in {"", "/", "/jupyter/"}
+        or parsed.path not in {
+            "", "/", "/jupyter/", "/research/workspace/",
+            "/research/dashboard/",
+        }
     ):
         raise BrowserTargetError(
             "Optional service URL must be an HTTP(S) root or /jupyter/ without credentials or query"
@@ -156,7 +159,9 @@ def validate_service_url(
                 "R71_PHASE3_PRIVATE_SERVICE_ACK=yes-private-readonly-services"
             ) from None
 
-    return url.rstrip("/") + ("/" if parsed.path == "/jupyter/" else "")
+    # Preserve service base paths exactly: the trailing slash matters for
+    # Jupyter ServerApp.base_url and Streamlit server.baseUrlPath.
+    return url
 
 
 def storage_state_for_target(path: Path, base_url: str) -> None:

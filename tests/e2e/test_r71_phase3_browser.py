@@ -353,28 +353,30 @@ def optional_service_url(name: str, *, mode: str) -> str:
         pytest.fail(f"Optional service URL rejected: {exc}", pytrace=False)
 
 
-def test_r71_b17_optional_jupyter_interface_reachable(page, target):
+def test_r71_b17_optional_jupyter_interface_reachable(auth_page, target):
     mode, _base = target
     url = optional_service_url("R71_PHASE3_JUPYTER_URL", mode=mode)
-    response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+    response = auth_page.goto(url, wait_until="domcontentloaded", timeout=30000)
     assert response is not None and response.status == 200, (
         f"Jupyter browser entrypoint returned HTTP {response.status if response else 'no response'}"
     )
-    # Only a functioning JupyterLab shell counts. A login/404 page or merely
-    # mentioning '/jupyter/' in the URL does not prove notebook availability.
-    page.locator(".jp-LabShell, #jp-main-dock-panel").first.wait_for(
+    # Use the saved authenticated session to exercise the real reverse-proxy
+    # entry point. A login/404 page or merely mentioning Jupyter in the URL
+    # is not sufficient evidence of a functioning JupyterLab shell.
+    auth_page.locator(".jp-LabShell, #jp-main-dock-panel").first.wait_for(
         state="attached", timeout=20000
     )
 
 
-def test_r71_b18_optional_streamlit_interface_reachable(page, target):
+def test_r71_b18_optional_streamlit_interface_reachable(auth_page, target):
     mode, _base = target
     url = optional_service_url("R71_PHASE3_STREAMLIT_URL", mode=mode)
     response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
     assert response is not None and response.status == 200, (
         f"Streamlit browser entrypoint returned HTTP {response.status if response else 'no response'}"
     )
-    # Wait for Streamlit's actual frontend; a generic proxy page isn't evidence.
-    page.locator('[data-testid="stApp"]').wait_for(
+    # A generic proxy response or an authentication page is not evidence;
+    # require the actual Streamlit frontend.
+    auth_page.locator('[data-testid="stApp"]').wait_for(
         state="visible", timeout=20000
     )

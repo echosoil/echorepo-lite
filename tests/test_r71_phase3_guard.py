@@ -103,6 +103,30 @@ class OptionalBrowserGuardTests(unittest.TestCase):
         with self.assertRaises(guard.BrowserTargetError):
             guard.validate_service_url("staging", url, environ=config)
 
+    def test_actual_research_prefixes_are_approved(self):
+        approved = {
+            "R71_PHASE3_PROD_ACK": "yes-production-readonly",
+            "R71_PHASE3_ALLOWED_HOSTS": "echorepo.quanta-labs.com,172.31.5.252",
+            "R71_PHASE3_PRIVATE_SERVICE_ACK": "yes-private-readonly-services",
+        }
+        for address in (
+            "https://echorepo.quanta-labs.com/research/workspace/",
+            "https://echorepo.quanta-labs.com/research/dashboard/",
+            "http://172.31.5.252:8888/research/workspace/",
+            "http://172.31.5.252:8501/research/dashboard/",
+        ):
+            with self.subTest(address=address):
+                self.assertEqual(
+                    guard.validate_service_url("production-readonly", address, environ=approved),
+                    address,
+                )
+        with self.assertRaises(guard.BrowserTargetError):
+            guard.validate_service_url(
+                "production-readonly",
+                "https://echorepo.quanta-labs.com/research/admin/",
+                environ=approved,
+            )
+
     def test_private_http_exception_cannot_apply_to_public_host(self):
         config = {
             "R71_PHASE3_PROD_ACK": "yes-production-readonly",
