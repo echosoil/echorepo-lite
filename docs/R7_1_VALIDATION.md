@@ -34,6 +34,7 @@ In a fresh checkout of the PR branch using Python 3.11, install test dependencie
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt pytest PyJWT
+export PROJECT_ROOT=. CSV_PATH=data/samples.csv SQLITE_PATH=data/legacy.sqlite
 mkdir -p r71-evidence
 
 python -m pytest -q \
