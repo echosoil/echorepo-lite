@@ -20,6 +20,11 @@ on:
       - ".github/workflows/r7-1-validation.yml"
   workflow_dispatch:
 
+env:
+  PROJECT_ROOT: .
+  CSV_PATH: data/samples.csv
+  SQLITE_PATH: data/legacy.sqlite
+
 permissions:
   contents: read
 
