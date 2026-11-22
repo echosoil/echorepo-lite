@@ -94,3 +94,107 @@ def authentication_state() -> Path | None:
     if path.suffix.lower() != ".json":
         raise BrowserTargetError("R71_PHASE3_STORAGE_STATE must be an existing JSON file")
     return path
+
+
+RFC1918_NETWORKS = tuple(
+    ipaddress.ip_network(value)
+    for value in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
+)
+
+
+def validate_service_url(
+    mode: str, url: str, *, environ: dict | None = None
+) -> str:
+    """Validate optional unauthenticated research UI URLs.
+
+    Production primary browser origins still require HTTPS unless loopback.
+    Explicitly allowed RFC1918 HTTP services may be checked in an isolated
+    anonymous browser context, *only* with an additional opt-in flag.
+    This exception is never used for R71_PHASE3_BASE_URL or storage state.
+    """
+    env = os.environ if environ is None else environ
+    parsed = urlsplit(url)
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not host
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+        or parsed.path not in {"", "/", "/jupyter/"}
+    ):
+        raise BrowserTargetError(
+            "Optional service URL must be an HTTP(S) root or /jupyter/ without credentials or query"
+        )
+
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    try:
+        validate_target(mode, origin, environ=env)
+    except BrowserTargetError:
+        allowed = {
+            item.strip().lower().rstrip(".")
+            for item in env.get("R71_PHASE3_ALLOWED_HOSTS", "").split(",")
+            if item.strip()
+        }
+        try:
+            address = ipaddress.ip_address(host)
+        except ValueError:
+            raise BrowserTargetError("Optional HTTP service must use approved HTTPS or RFC1918 IP") from None
+
+        is_private_service = any(address in network for network in RFC1918_NETWORKS)
+        if not (
+            mode == "production-readonly"
+            and env.get("R71_PHASE3_PROD_ACK") == PROD_ACK
+            and env.get("R71_PHASE3_PRIVATE_SERVICE_ACK") == "yes-private-readonly-services"
+            and parsed.scheme == "http"
+            and host in allowed
+            and is_private_service
+        ):
+            raise BrowserTargetError(
+                "Private HTTP service requires explicit host allowlist and "
+                "R71_PHASE3_PRIVATE_SERVICE_ACK=yes-private-readonly-services"
+            ) from None
+
+    return url.rstrip("/") + ("/" if parsed.path == "/jupyter/" else "")
+
+
+def storage_state_for_target(path: Path, base_url: str) -> None:
+    """Fail clearly if a browser state cannot authenticate to the target host.
+
+    Validate the cookie domains without displaying or logging cookie contents.
+    Origin-scoped HTTPS Secure cookies cannot authenticate localhost over HTTP.
+    """
+    import json
+
+    try:
+        contents = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise BrowserTargetError("Browser state JSON is unreadable or malformed") from exc
+
+    if not isinstance(contents, dict):
+        raise BrowserTargetError("Browser state JSON must be a Playwright storage state object")
+
+    target = urlsplit(base_url)
+    hostname = (target.hostname or "").lower()
+    cookies = contents.get("cookies")
+    if not isinstance(cookies, list):
+        raise BrowserTargetError("Storage state must contain a cookies list")
+
+    matched = False
+    for cookie in cookies:
+        if not isinstance(cookie, dict):
+            continue
+        domain = str(cookie.get("domain", "")).lower().lstrip(".")
+        if domain != hostname and not (hostname.endswith("." + domain) and domain):
+            continue
+        if target.scheme == "http" and cookie.get("secure", False):
+            continue
+        matched = True
+        break
+    if not matched:
+        raise BrowserTargetError(
+            "No suitable cookies for this browser origin. "
+            "Capture the session on the same HTTPS hostname you intend to test, "
+            "then set R71_PHASE3_BASE_URL to that origin."
+        )
