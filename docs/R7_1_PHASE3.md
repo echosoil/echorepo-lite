@@ -32,10 +32,10 @@ git switch develop && git pull --ff-only
 
 # In your existing (venv) virtualenv:
 python -m pip install playwright
-python -m playwright install chromium
+python -m playwright install chromium --only-shell
 ```
 
-Chromium download uses several hundred MiB and may require additional Linux
+The headless-shell-only install saves disk compared with full Chromium but may still require Linux
 shared libraries. If launch fails, inspect the reported missing dependency;
 don't run `apt` or `sudo` blindly on a production host. Use an isolated
 workstation with a GUI, a preinstalled Chromium binary configured via
