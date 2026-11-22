@@ -5,6 +5,9 @@ on:
     branches: ["main"]
     paths:
       - "echorepo/**"
+      - "streamlit/**"
+      - "notebooks/lib/**"
+      - "scripts/run_pg_migrations.py"
       - "metadata/canonical/**"
       - "tools/validate_echorepo_bundle.py"
       - "tools/publish_api_file_to_zenodo.py"
