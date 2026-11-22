@@ -2,7 +2,7 @@ name: R7-1 component validation
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["develop"]
     paths:
       - "echorepo/**"
       - "streamlit/**"
@@ -12,6 +12,11 @@ on:
       - "tools/validate_echorepo_bundle.py"
       - "tools/publish_api_file_to_zenodo.py"
       - "tools/r71_validation_report.py"
+      - "tools/r71_phase2_guard.py"
+      - "tools/r71_phase2_report.py"
+      - "docs/R7_1_PHASE2_MATRIX.json"
+      - "docs/R7_1_PHASE2.md"
+      - "tests/integration/test_r71_phase2_live.py"
       - "tests/test_r71_*.py"
       - "tests/test_biodiversity_api_upload.py"
       - "tests/test_server_sessions.py"
@@ -55,7 +60,11 @@ jobs:
             tests/test_r71_data_contracts.py \
             tests/test_r71_storage_lab.py \
             tests/test_r71_research.py \
-            tools/r71_validation_report.py
+            tests/test_r71_phase2_guard.py \
+            tests/integration/test_r71_phase2_live.py \
+            tools/r71_validation_report.py \
+            tools/r71_phase2_guard.py \
+            tools/r71_phase2_report.py
 
       - name: Execute isolated acceptance and regression tests
         id: tests
@@ -67,6 +76,8 @@ jobs:
             tests/test_r71_data_contracts.py \
             tests/test_r71_storage_lab.py \
             tests/test_r71_research.py \
+            tests/test_r71_phase2_guard.py \
+            tests/integration/test_r71_phase2_live.py \
             tests/test_biodiversity_api_upload.py \
             tests/test_server_sessions.py \
             tests/test_jupyterhub_auth.py \

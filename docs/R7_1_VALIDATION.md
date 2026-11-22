@@ -6,6 +6,10 @@
 
 **Code baseline for this suite:** GitHub `echosoil/echorepo-lite`, branch `main`, commit `31bbac0b7bf3263c81a1f05a74d5b4702226df48` (20 November 2026). The suite was added later, on an isolated PR branch.
 
+**Development policy:** New R7-1 testing changes now target `develop`; `main` is released separately. The Phase 1 baseline was historically prepared against `main` and later merged into `develop`.
+
+**Phase 2:** For approved read-only staging integration tests, see [R7_1_PHASE2.md](R7_1_PHASE2.md) and [R7_1_PHASE2_MATRIX.json](R7_1_PHASE2_MATRIX.json).
+
 **Important reporting limitation:** A test executed after September 2026 validates the tested current code, not automatically the historical M40 release. To make an M40 claim, retrieve the actual September commit/release, its requirements, test evidence and deployment records.
 
 ## Scope and traceability
@@ -60,7 +64,7 @@ python tools/r71_validation_report.py \
 
 **Do not run destructive integration tests against production.** The tests in this set use synthetic fixtures, simulated API clients and mocks instead of changing production PostgreSQL/MinIO/Zenodo resources.
 
-The GitHub Actions workflow [r7-1-validation.yml](../.github/workflows/r7-1-validation.yml) runs the same checks on pull requests targeting main, and exposes `results.xml`, `pytest.log`, `report.json` and `report.md` in the **r7-1-validation-evidence** workflow artifact. Save the artifact and the exact commit SHA in the KPI evidence folder. A red CI run is not a validated component; inspect the failure.
+The GitHub Actions workflow [r7-1-validation.yml](../.github/workflows/r7-1-validation.yml) runs the same checks on pull requests targeting develop, and exposes `results.xml`, `pytest.log`, `report.json` and `report.md` in the **r7-1-validation-evidence** workflow artifact. Save the artifact and the exact commit SHA in the KPI evidence folder. A red CI run is not a validated component; inspect the failure.
 
 ## Interpretation
 
