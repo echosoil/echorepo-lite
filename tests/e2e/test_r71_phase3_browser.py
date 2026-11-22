@@ -300,7 +300,7 @@ def test_r71_b13_language_selection_sets_locale_cookie(page):
     goto(page, "/explore")
     switch = page.locator("nav a[href='/lang/es']")
     assert switch.count() == 1, "Spanish must be selectable from the actual navigation"
-    page.locator("nav button[aria-label='Change language']").click()
+    page.locator("nav .dropdown:has(a[href='/lang/es']) > button").click()
     switch.click()
     page.wait_for_url("**/explore")
     assert urlsplit(page.url).path == "/explore"
