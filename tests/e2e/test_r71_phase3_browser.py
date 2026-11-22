@@ -116,11 +116,16 @@ def mobile_page(chromium, target):
         context.close()
 
 
-def goto(page, path: str):
+def goto(page, path: str, *, expected_status: int = 200):
+    """Navigate and assert the *final* HTTP status, including 404 vs 403.
+
+    A 404 should never count as a successful browser acceptance check.
+    """
     assert path.startswith("/") and not path.startswith("//")
     response = page.goto(path, wait_until="domcontentloaded", timeout=30000)
-    assert response is not None and response.status < 500, (
-        f"{path} failed at HTTP level: {response.status if response else 'no response'}"
+    assert response is not None and response.status == expected_status, (
+        f"{path} returned HTTP {response.status if response else 'no response'}, "
+        f"expected HTTP {expected_status}"
     )
     return response
 
@@ -274,7 +279,7 @@ def test_r71_b10_anonymous_search_redacts_submitter_id(page):
 def test_r71_b11_anonymous_zip_export_is_forbidden(page):
     goto(page, "/search")
     assert page.locator("a[href*='format=zip']").count() == 0
-    response = goto(page, "/search?format=zip")
+    response = goto(page, "/search?format=zip", expected_status=403)
     assert response.status == 403, "Anonymous filtered ZIP exports must be forbidden"
 
 
@@ -289,7 +294,15 @@ def test_r71_b12_personal_page_requires_login_and_preserves_next(page):
 
 
 def test_r71_b13_language_selection_sets_locale_cookie(page):
-    goto(page, "/set-lang/es")
+    # Exercise the real language switcher, not the unused /set-lang blueprint.
+    # The registered route is /lang/<code>, which uses the page Referer to
+    # return to the origin and sets the locale cookie.
+    goto(page, "/explore")
+    switch = page.locator("nav a[href='/lang/es']")
+    assert switch.count() == 1, "Spanish must be selectable from the actual navigation"
+    page.locator("nav .dropdown:has(a[href='/lang/es']) > button").click()
+    switch.click()
+    page.wait_for_url("**/explore")
     assert urlsplit(page.url).path == "/explore"
     assert page.locator("html").get_attribute("lang").lower().startswith("es")
     cookies = page.context.cookies()

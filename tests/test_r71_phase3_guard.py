@@ -1,9 +1,11 @@
 """Offline tests for Phase 3 safety gates and evidence accounting."""
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools import r71_phase3_guard as guard
 from tools import r71_phase3_report as report
@@ -124,6 +126,53 @@ class Phase3ReportTests(unittest.TestCase):
         result = report.evaluate(matrix, {"same": ["PASS", "PASS"]}, mode="staging", commit="")
         self.assertEqual(result["cases"][0]["result"], "AMBIGUOUS")
         self.assertEqual(result["required_passed"], 0)
+
+
+    def test_phase3_cli_strict_modes_and_report_files(self):
+        """Exercise argparse and file writing, not only report.evaluate()."""
+        matrix = {
+            "kpi": "R7-1", "phase": "browser",
+            "cases": [
+                {"id": "B01", "component": "Map", "criterion": "loads",
+                 "test": "test_ok", "required": True},
+                {"id": "B15", "component": "Private", "criterion": "login",
+                 "test": "test_optional", "required": False},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            xml = folder / "junit.xml"
+            matrix_path = folder / "matrix.json"
+            output_json = folder / "report.json"
+            output_md = folder / "report.md"
+            xml.write_text(
+                '<testsuite tests="2"><testcase name="test_ok"/>'
+                '<testcase name="test_optional"><skipped/></testcase></testsuite>',
+                encoding="utf-8",
+            )
+            matrix_path.write_text(json.dumps(matrix), encoding="utf-8")
+            common_args = [
+                "r71_phase3_report.py",
+                "--xml", str(xml),
+                "--matrix", str(matrix_path),
+                "--json", str(output_json),
+                "--markdown", str(output_md),
+                "--commit", "verified123",
+            ]
+            env = {
+                "R71_PHASE3_RUN": "production-readonly",
+                "R71_PHASE3_BASE_URL": "http://127.0.0.1:8001",
+            }
+            with patch.dict("os.environ", env):
+                with patch("sys.argv", common_args + ["--require-core"]):
+                    self.assertEqual(report.main(), 0)
+                written = json.loads(output_json.read_text(encoding="utf-8"))
+                self.assertEqual(written["required_passed"], 1)
+                self.assertEqual(written["optional_passed"], 0)
+                self.assertEqual(written["tested_commit"], "verified123")
+                self.assertTrue(output_md.read_text(encoding="utf-8").startswith("# ECHOREPO R7-1"))
+                with patch("sys.argv", common_args + ["--require-all"]):
+                    self.assertEqual(report.main(), 1)
 
 
 if __name__ == "__main__":

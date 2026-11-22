@@ -132,7 +132,7 @@ def main() -> int:
         f"{result['required_passed']}/{result['required_total']} required and "
         f"{result['optional_passed']}/{result['optional_total']} optional checks PASSED."
     )
-    if args.require-all and not result["all_checks_complete"]:
+    if args.require_all and not result["all_checks_complete"]:
         return 1
     if args.require_core and not result["required_suite_complete"]:
         return 1
