@@ -50,7 +50,7 @@ class R71CanonicalContractTests(unittest.TestCase):
             return pd.DataFrame(columns=schemas[filename])
 
         with patch.object(exports, "get_export_df", side_effect=fake_export):
-            bundle = exports.build_machine_bundle(sample_ids=["aaaa-1234"])
+            bundle = exports.build_machine_bundle(sample_ids=["AAAA-1234"])
         with zipfile.ZipFile(io.BytesIO(bundle.zip_bytes)) as zf:
             self.assertEqual(set(zf.namelist()), set(schemas))
             for filename, columns in schemas.items():
