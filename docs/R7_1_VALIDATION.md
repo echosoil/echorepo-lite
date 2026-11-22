@@ -12,6 +12,8 @@
 
 **Phase 3:** Browser-level acceptance for the deployed portal is covered in [R7_1_PHASE3.md](R7_1_PHASE3.md) and [R7_1_PHASE3_MATRIX.json](R7_1_PHASE3_MATRIX.json). Unlike Phase 1 CI, it requires explicit target approval and Playwright Chromium, and separately labels production-readonly observations.
 
+**Phase 4:** For consolidated Phase 1–3 evidence with SHA-256 fingerprints, requirements crosswalk and explicit Zenodo/SoilWise/EUSO gaps, see [R7_1_PHASE4.md](R7_1_PHASE4.md), [R7_1_PHASE4_LINKS.json](R7_1_PHASE4_LINKS.json) and [R7_1_PHASE4_EXTERNAL.json](R7_1_PHASE4_EXTERNAL.json). Phase 4 does not automatically certify R7-1.
+
 **Important reporting limitation:** A test executed after September 2026 validates the tested current code, not automatically the historical M40 release. To make an M40 claim, retrieve the actual September commit/release, its requirements, test evidence and deployment records.
 
 ## Scope and traceability
