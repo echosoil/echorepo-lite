@@ -152,7 +152,7 @@ def collect(
             "optional_total": p3["optional_total"],
             "reported_environment": phase3_environment,
         },
-        "technical_evidence_present_and_passing": bool(p1_ok and p2_ok and p3_ok),
+        "technical_evidence_present_and_passing": bool(p1_ok and p2_ok and p3_ok and snapshot.is_file()),
         "external_evidence": registers,
         "accepted_components": accepted,
         "component_total": len(components),
