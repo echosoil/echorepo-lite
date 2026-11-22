@@ -69,7 +69,6 @@ jobs:
             tests/test_r71_phase3_guard.py \
             tests/integration/test_r71_phase2_live.py \
             tests/e2e/test_r71_phase3_browser.py \
-            tests/e2e/test_r71_phase3_browser.py \
             tools/r71_validation_report.py \
             tools/r71_phase2_guard.py \
             tools/r71_phase2_report.py \
@@ -87,7 +86,9 @@ jobs:
             tests/test_r71_storage_lab.py \
             tests/test_r71_research.py \
             tests/test_r71_phase2_guard.py \
+            tests/test_r71_phase3_guard.py \
             tests/integration/test_r71_phase2_live.py \
+            tests/e2e/test_r71_phase3_browser.py \
             tests/test_biodiversity_api_upload.py \
             tests/test_server_sessions.py \
             tests/test_jupyterhub_auth.py \
