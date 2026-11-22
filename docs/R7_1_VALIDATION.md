@@ -10,6 +10,8 @@
 
 **Phase 2:** For approved read-only staging integration tests, see [R7_1_PHASE2.md](R7_1_PHASE2.md) and [R7_1_PHASE2_MATRIX.json](R7_1_PHASE2_MATRIX.json).
 
+**Phase 3:** Browser-level acceptance for the deployed portal is covered in [R7_1_PHASE3.md](R7_1_PHASE3.md) and [R7_1_PHASE3_MATRIX.json](R7_1_PHASE3_MATRIX.json). Unlike Phase 1 CI, it requires explicit target approval and Playwright Chromium, and separately labels production-readonly observations.
+
 **Important reporting limitation:** A test executed after September 2026 validates the tested current code, not automatically the historical M40 release. To make an M40 claim, retrieve the actual September commit/release, its requirements, test evidence and deployment records.
 
 ## Scope and traceability
