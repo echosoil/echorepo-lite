@@ -82,6 +82,74 @@ class Phase3GuardTests(unittest.TestCase):
             guard.validate_target("live", "http://127.0.0.1:18080", environ={})
 
 
+
+class OptionalBrowserGuardTests(unittest.TestCase):
+    def test_private_http_services_need_extra_ack_and_allowlist(self):
+        url = "http://172.31.5.252:8888/jupyter/"
+        config = {
+            "R71_PHASE3_PROD_ACK": "yes-production-readonly",
+            "R71_PHASE3_ALLOWED_HOSTS": "172.31.5.252",
+            "R71_PHASE3_PRIVATE_SERVICE_ACK": "yes-private-readonly-services",
+        }
+        self.assertEqual(
+            guard.validate_service_url("production-readonly", url, environ=config),
+            url,
+        )
+        for key in ("R71_PHASE3_PRIVATE_SERVICE_ACK", "R71_PHASE3_ALLOWED_HOSTS",
+                    "R71_PHASE3_PROD_ACK"):
+            without = {k: v for k, v in config.items() if k != key}
+            with self.subTest(missing=key), self.assertRaises(guard.BrowserTargetError):
+                guard.validate_service_url("production-readonly", url, environ=without)
+        with self.assertRaises(guard.BrowserTargetError):
+            guard.validate_service_url("staging", url, environ=config)
+
+    def test_private_http_exception_cannot_apply_to_public_host(self):
+        config = {
+            "R71_PHASE3_PROD_ACK": "yes-production-readonly",
+            "R71_PHASE3_ALLOWED_HOSTS": "echorepo.quanta-labs.com",
+            "R71_PHASE3_PRIVATE_SERVICE_ACK": "yes-private-readonly-services",
+        }
+        with self.assertRaises(guard.BrowserTargetError):
+            guard.validate_service_url(
+                "production-readonly", "http://echorepo.quanta-labs.com/",
+                environ=config,
+            )
+
+    def test_optional_service_rejects_query_credentials_and_unapproved_paths(self):
+        config = {
+            "R71_PHASE3_PROD_ACK": "yes-production-readonly",
+            "R71_PHASE3_ALLOWED_HOSTS": "172.31.5.252",
+            "R71_PHASE3_PRIVATE_SERVICE_ACK": "yes-private-readonly-services",
+        }
+        for address in (
+            "http://172.31.5.252:8888/jupyter/?token=secret",
+            "http://user:pass@172.31.5.252:8888/jupyter/",
+            "http://172.31.5.252:8888/admin",
+            "http://172.31.5.252:8888/#token",
+        ):
+            with self.subTest(address=address), self.assertRaises(guard.BrowserTargetError):
+                guard.validate_service_url("production-readonly", address, environ=config)
+
+    def test_state_cookies_must_match_browser_origin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory) / "auth.json"
+            state.write_text(json.dumps({
+                "cookies": [{
+                    "name": "echorepo_session",
+                    "value": "never-log-this",
+                    "domain": "echorepo.quanta-labs.com",
+                    "path": "/",
+                    "secure": True,
+                }],
+                "origins": [],
+            }), encoding="utf-8")
+            guard.storage_state_for_target(state, "https://echorepo.quanta-labs.com")
+            with self.assertRaisesRegex(guard.BrowserTargetError, "No suitable cookies"):
+                guard.storage_state_for_target(state, "http://127.0.0.1:8001")
+            with self.assertRaisesRegex(guard.BrowserTargetError, "No suitable cookies"):
+                guard.storage_state_for_target(state, "https://another.example")
+
+
 class Phase3ReportTests(unittest.TestCase):
     def test_missing_and_skipped_never_count_as_pass(self):
         matrix = {"kpi": "R7-1", "phase": "browser", "cases": [
