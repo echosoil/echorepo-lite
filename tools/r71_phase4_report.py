@@ -181,7 +181,7 @@ def markdown(report: dict) -> str:
         "# ECHOREPO R7-1 — consolidated validation evidence",
         "",
         f"- Prepared UTC: {report['generated_at_utc']}",
-        f"- Repository commit (report preparation): \`{report['report_commit']}\`",
+        f"- Repository commit (report preparation): `{report['report_commit']}`",
         f"- Scope: {report['scope']}",
         "- **Overall status: NOT YET VERIFIED** — pending external evidence, requirements agreement and approval.",
         "",
