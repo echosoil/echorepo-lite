@@ -116,52 +116,143 @@ python -m pytest -v -rs tests/e2e/test_r71_phase3_browser.py \
 That subset excludes four optional tests. To produce **complete JUnit evidence**,
 always rerun the full module before generating the final report.
 
-## 4. Optional authenticated acceptance
+## 4. Finish B15/B16: authenticated browser acceptance
 
-`/my` is private and uses Keycloak, so the suite **does not** ask for your
-password or automate a login POST. To test /my and the authenticated search
-toolbar, provide a storage-state JSON from a **dedicated consenting test
-account** (preferably staging):
+These checks require an already-authenticated browser state. The automation
+**never** supplies a password or submits a login. Prefer a dedicated test
+account that is allowed to view `/my`. You must authenticate interactively
+once, with the account holder's consent.
+
+**Important hostname rule:** production login cookies are for
+`https://echorepo.quanta-labs.com`, and usually have the Secure flag. They
+cannot authenticate `http://127.0.0.1:8001`. The tests therefore need the
+public HTTPS origin when using a session captured in the public browser.
+
+On a Windows workstation with graphical Chromium support (Git Bash or
+PowerShell; `python` or `py` depending on installation):
 
 ```bash
-export R71_PHASE3_STORAGE_STATE="$PWD/r71-evidence/phase3-auth-state.json"
-```
-
-The state must have been captured from **the same browser origin** used in
-`R71_PHASE3_BASE_URL`, since cookies for a public HTTPS domain generally
-won't be sent to `127.0.0.1`. On a local workstation with a graphical
-desktop, you can capture a session interactively with:
-
-```bash
+python -m pip install playwright
+python -m playwright install chromium
+mkdir -p r71-evidence
 python -m playwright codegen \
   --save-storage=r71-evidence/phase3-auth-state.json \
   https://echorepo.quanta-labs.com/login
 ```
 
-Sign in yourself in the launched browser, verify /my, then close it. Do **not**
-share the state file; it can contain session tokens. Keep it in the ignored
-`r71-evidence/` directory, restrict filesystem permissions, and delete after
-validation. If a privacy consent dialog appears, do not automate the consent:
-resolve it manually with an authorized account outside these tests.
+Log in **manually** in the browser opened by codegen, navigate to
+`https://echorepo.quanta-labs.com/my`, confirm your dashboard is visible,
+then close codegen. The browser state JSON will be written on exit.
 
-For a production HTTPS origin, use the production-readonly mode and explicitly
-allowlist `echorepo.quanta-labs.com` as shown above.
-
-## 5. Optional research services
-
-Only if the actual services are reachable from the test browser:
+**The JSON is a live session secret** and must not be committed, printed or
+attached to issues/reports. Transfer it to the Ubuntu test host over SSH/SCP
+if running Playwright there (or run the tests on the Windows machine).
+For example, from Windows Git Bash:
 
 ```bash
-# Example when the same reverse proxy exposes Jupyter:
-export R71_PHASE3_JUPYTER_URL=http://127.0.0.1:8001/jupyter/
-
-# Streamlit: use a trusted HTTPS endpoint, or a loopback port if locally bound.
-# export R71_PHASE3_STREAMLIT_URL=http://127.0.0.1:8501
+scp -P YOUR_SSH_PORT -i /path/to/ssh-private-key \
+  r71-evidence/phase3-auth-state.json \
+  echo@YOUR_SSH_HOST:/home/echo/ECHO-STORE/echorepo-lite-dev/r71-evidence/
 ```
 
-Both are independently gated to approved origins. If the URLs are unavailable,
-the tests correctly record SKIPPED. The Jupyter/Streamlit checks verify a
-recognizable UI, **not** complete per-user isolation or analytics correctness.
+Then on Ubuntu:
+
+```bash
+cd /home/echo/ECHO-STORE/echorepo-lite-dev
+chmod 600 r71-evidence/phase3-auth-state.json
+
+export R71_PHASE3_RUN=production-readonly
+export R71_PHASE3_PROD_ACK=yes-production-readonly
+export R71_PHASE3_BASE_URL=https://echorepo.quanta-labs.com
+export R71_PHASE3_ALLOWED_HOSTS=echorepo.quanta-labs.com
+export R71_PHASE3_STORAGE_STATE="$PWD/r71-evidence/phase3-auth-state.json"
+```
+
+Test only the two authenticated cases first:
+
+```bash
+python -m pytest -v -rs tests/e2e/test_r71_phase3_browser.py \
+  -k 'r71_b15 or r71_b16'
+```
+
+The guard checks that state cookies match the target hostname and that
+Secure cookies are not used with an HTTP origin. It does not prove the account
+is authorized before the browser makes the first request; expired sessions
+will fail with a login redirect.
+
+For a full 18-test report, rerun the entire module afterwards. Avoid retaining
+the state file beyond the testing session. The test runner never submits
+privacy consent automatically.
+
+## 5. Finish B17/B18: Jupyter and Streamlit
+
+If your production containers still expose the ports reported on the Ubuntu
+server, the actual endpoints are expected to be:
+
+- JupyterLab: `http://172.31.5.252:8888/jupyter/`
+- Streamlit: `http://172.31.5.252:8501/`
+
+First confirm that the containers are still bound to those ports and that
+the server can connect to them:
+
+```bash
+docker ps --format 'table {{.Names}}\t{{.Ports}}' | grep -E 'jupyter|streamlit'
+curl -sS -L -o /dev/null -w 'Jupyter HTTP %{http_code}\n' \
+  --max-time 15 http://172.31.5.252:8888/jupyter/
+curl -sS -L -o /dev/null -w 'Streamlit HTTP %{http_code}\n' \
+  --max-time 15 http://172.31.5.252:8501/
+```
+
+Only the optional research UI checks may use private HTTP targets, and
+only when their private IP is explicitly allowlisted **and** the separate
+opt-in flag is set. This does not enable HTTP for public production domains
+or for the main authenticated browser target:
+
+```bash
+export R71_PHASE3_ALLOWED_HOSTS=echorepo.quanta-labs.com,172.31.5.252
+export R71_PHASE3_PRIVATE_SERVICE_ACK=yes-private-readonly-services
+export R71_PHASE3_JUPYTER_URL=http://172.31.5.252:8888/jupyter/
+export R71_PHASE3_STREAMLIT_URL=http://172.31.5.252:8501/
+```
+
+The optional-service browser contexts are always anonymous. Jupyter must
+render the JupyterLab shell, and Streamlit must display the Streamlit app
+root. HTTP 200 or an identity-provider login page alone is not enough.
+
+```bash
+python -m pytest -v -rs tests/e2e/test_r71_phase3_browser.py \
+  -k 'r71_b17 or r71_b18'
+```
+
+If the Jupyter or Streamlit UI is legitimately behind authentication, these
+tests will fail until an agreed **read-only browser-based authentication**
+method is available; never paste service tokens into URLs just to bypass the
+check.
+
+## 5A. Collect the complete Phase 3 evidence
+
+Only after all four optional tests have been tested, run the entire module:
+
+```bash
+mkdir -p r71-evidence
+
+python -m pytest -v -rs tests/e2e/test_r71_phase3_browser.py \
+  --junitxml=r71-evidence/phase3-results.xml
+
+python tools/r71_phase3_report.py \
+  --xml r71-evidence/phase3-results.xml \
+  --json r71-evidence/phase3-report.json \
+  --markdown r71-evidence/phase3-report.md \
+  --commit "$(git rev-parse HEAD)" \
+  --require-all
+```
+
+With the core 14 and optional 4 checks all passing, the report should show
+**14/14 required and 4/4 optional**. If a service cannot be checked, keep
+its truthful skipped/failed result rather than downgrading the acceptance
+criteria. After recording the evidence, securely remove the session file from
+both the workstation and Ubuntu (`rm r71-evidence/phase3-auth-state.json`
+on Ubuntu). Do not add the session state to the evidence package.
 
 ## 6. Interpreting R7-1 evidence
 
