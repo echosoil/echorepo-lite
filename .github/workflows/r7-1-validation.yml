@@ -1,0 +1,100 @@
+name: R7-1 component validation
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "echorepo/**"
+      - "streamlit/**"
+      - "notebooks/lib/**"
+      - "scripts/run_pg_migrations.py"
+      - "metadata/canonical/**"
+      - "tools/validate_echorepo_bundle.py"
+      - "tools/publish_api_file_to_zenodo.py"
+      - "tools/r71_validation_report.py"
+      - "tests/test_r71_*.py"
+      - "tests/test_biodiversity_api_upload.py"
+      - "tests/test_server_sessions.py"
+      - "tests/test_jupyterhub_auth.py"
+      - "tests/test_loess_i18n.py"
+      - "tests/test_loess_converter.py"
+      - "tests/test_loess_photo_urls.py"
+      - "docs/R7_1_VALIDATION_MATRIX.json"
+      - ".github/workflows/r7-1-validation.yml"
+  workflow_dispatch:
+
+env:
+  PROJECT_ROOT: .
+  CSV_PATH: data/samples.csv
+  SQLITE_PATH: data/legacy.sqlite
+
+permissions:
+  contents: read
+
+jobs:
+  r71:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install application and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest PyJWT
+
+      - name: Syntax-check validation modules
+        run: |
+          python -m py_compile \
+            tests/test_r71_api_web.py \
+            tests/test_r71_data_contracts.py \
+            tests/test_r71_storage_lab.py \
+            tests/test_r71_research.py \
+            tools/r71_validation_report.py
+
+      - name: Execute isolated acceptance and regression tests
+        id: tests
+        continue-on-error: true
+        run: |
+          mkdir -p r71-evidence
+          python -m pytest -q \
+            tests/test_r71_api_web.py \
+            tests/test_r71_data_contracts.py \
+            tests/test_r71_storage_lab.py \
+            tests/test_r71_research.py \
+            tests/test_biodiversity_api_upload.py \
+            tests/test_server_sessions.py \
+            tests/test_jupyterhub_auth.py \
+            tests/test_loess_converter.py \
+            tests/test_loess_photo_urls.py \
+            tests/test_loess_i18n.py \
+            --junitxml=r71-evidence/results.xml \
+            2>&1 | tee r71-evidence/pytest.log
+          exit "${PIPESTATUS[0]}"
+
+      - name: Build the requirement-to-test evidence report
+        if: always()
+        run: |
+          python tools/r71_validation_report.py \
+            --xml r71-evidence/results.xml \
+            --matrix docs/R7_1_VALIDATION_MATRIX.json \
+            --output r71-evidence/report.json \
+            --markdown r71-evidence/report.md \
+            --commit "$(git rev-parse HEAD)"
+
+      - name: Retain validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r7-1-validation-evidence
+          path: r71-evidence/
+          retention-days: 90
+
+      - name: Require passing tests
+        if: steps.tests.outcome != 'success'
+        run: exit 1
