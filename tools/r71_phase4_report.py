@@ -13,7 +13,15 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from tools import r71_phase2_report, r71_phase3_report, r71_validation_report
+# Support both `python -m tools.r71_phase4_report` and direct file execution.
+try:
+    from tools import r71_phase2_report, r71_phase3_report, r71_validation_report
+except ModuleNotFoundError as exc:
+    if exc.name != "tools" or __package__:
+        raise
+    import r71_phase2_report
+    import r71_phase3_report
+    import r71_validation_report
 
 
 def read_json(path: Path) -> dict:

@@ -45,8 +45,14 @@ into the evidence folder.
 
 ## 2. Generate the combined report
 
+Run the reporter as a Python module from the repository root. The module imports
+other scripts from the `tools` package; direct execution via
+`python tools/r71_phase4_report.py` does not reliably include the repository
+root on Python's import path.
+
+
 ```bash
-python tools/r71_phase4_report.py \
+python -m tools.r71_phase4_report \
   --phase1-xml r71-evidence/results.xml \
   --phase2-xml r71-evidence/phase2-results.xml \
   --phase3-xml r71-evidence/phase3-results.xml \
