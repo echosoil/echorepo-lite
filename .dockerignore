@@ -26,3 +26,12 @@ r73-evidence/
 # Local credentials and configuration
 .env
 .env.*
+
+# Nested local environment files and private evidence
+**/.env
+**/.env.*
+private-backups/
+**/r71-evidence/
+**/r73-evidence/
+**/minio-data/
+**/postgres-data/

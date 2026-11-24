@@ -41,6 +41,7 @@ services:
         python scripts/wait_for_postgres.py &&
         python scripts/run_pg_migrations.py &&
         exec gunicorn \
+          --no-control-socket \
           --workers 2 \
           --worker-class gthread \
           --threads 4 \
