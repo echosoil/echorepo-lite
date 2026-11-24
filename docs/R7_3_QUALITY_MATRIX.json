@@ -144,6 +144,26 @@
       "kind": "operator_reported_manual_verification",
       "path": "docs/R7_3_PHASE3_RESULTS.md",
       "note": "Seven operator-confirmed production manual observations; no independent execution."
+    },
+    "P4INT": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE4_RESULTS.md",
+      "note": "Phase 4 aggregate automated evidence dated 2026-11-24T12:39:26+00:00; reporting commit 2b226e53145adf8ce6d38627d0a33df70788e2e8."
+    },
+    "P4BROWSER": {
+      "kind": "operator_supplied_browser_capture",
+      "path": "docs/R7_3_PHASE4_RESULTS.md",
+      "note": "Three browser captures supplied 24 November 2026; original images held by operator; no identity-bearing image committed."
+    },
+    "P5CD": {
+      "kind": "public_user_feedback",
+      "path": "docs/R7_3_CODESIGN_REGISTER.md",
+      "note": "Public GitHub issue #4 opened 11 November 2026 and project developer response 23 November; documented consultation only."
+    },
+    "P5UX": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE5_RESULTS.md",
+      "note": "Operator-supplied 24 November 2026 technical scan and five manual pass observations; one screen-reader check not assessed."
     }
   },
   "criteria": [
@@ -275,11 +295,12 @@
         "ZPUB",
         "ZBIO",
         "BIOPUB",
-        "PUB"
+        "PUB",
+        "P4INT"
       ],
       "r71_checks": "C07; I10",
-      "assessment": "Project reports canonical and pilot publications; dry run checks preparation, not upload or record equality. Pilot files may be restricted.",
-      "next_action": "Retain public metadata/file listings and publication logs; verify links in Phase 4.",
+      "assessment": "Both pinned version-specific DOIs resolve; both records are publicly accessible with expected inventory and license metadata. Nine published files pass repository size/checksum checks; all nine CSV tables pass selected CSVW consistency checks. No claim of full CSVW conformance, scientific harmonization or equality to live snapshot.",
+      "next_action": "Retain original reports; reconcile biodiversity pilot description with observed matrix widths before reporting sample counts; repeat for new published versions.",
       "follow_up_phase": 4
     },
     {
@@ -291,11 +312,13 @@
       "evidence_refs": [
         "R71",
         "SW",
-        "EDP"
+        "EDP",
+        "P4INT",
+        "P4BROWSER"
       ],
       "r71_checks": "C18",
-      "assessment": "Project-observed catalogue links exist; downstream CSVW parsing and JRC/EUSO indexing remain unverified.",
-      "next_action": "Retain dated record captures and SoilWise reply; establish applicable requirements for JRC/EUSO.",
+      "assessment": "SoilWise capture shows the exact canonical version DOI and matching title; European Data Portal capture shows matching title and record identifier. External discovery demonstrated. EUSO record-specific indexing and downstream interpretation of CSVW remain unverified.",
+      "next_action": "Retain dated captures; seek SoilWise/JRC clarification and separately record metadata provenance or record-specific EUSO evidence.",
       "follow_up_phase": 4
     },
     {
@@ -303,15 +326,17 @@
       "characteristic": "Compatibility",
       "subject": "External data consumption",
       "criterion": "Confirm LOESS overlay behavior and provenance.",
-      "status": "PARTIAL",
+      "status": "SUPPORTED",
       "evidence_refs": [
         "R71",
         "M1",
-        "LOESS"
+        "LOESS",
+        "P4INT",
+        "P4BROWSER"
       ],
       "r71_checks": "C15,C16",
-      "assessment": "Conversion and localization tested; live refresh and end-to-end data provenance not established here.",
-      "next_action": "Collect dated refresh status, source link and screenshot of active overlay if applicable.",
+      "assessment": "Served LOESS GeoJSON passes selected structural checks (352 features, zero invalid observations and duplicate IDs). Browser capture shows enabled layer, category controls, populated popup, photograph and attribution. No proof of upstream equality, freshness or all interaction paths.",
+      "next_action": "Retain redacted browser evidence; separately verify scheduled refresh status and upstream correspondence if required.",
       "follow_up_phase": 4
     },
     {
@@ -339,11 +364,12 @@
       "evidence_refs": [
         "R71",
         "M3",
-        "UX"
+        "UX",
+        "P5UX"
       ],
       "r71_checks": "B13,B14",
-      "assessment": "Spanish locale and one mobile layout checked; not a cross-browser or accessibility audit.",
-      "next_action": "Review representative keyboard navigation, contrast and labels; test additional browser/device combinations as appropriate.",
+      "assessment": "Seven public browser cases render, expected locales and mobile navigation observed; all seven REVIEW for automated accessibility/other findings; five manual tasks PASS, screen reader not assessed. Contrast, control labels, mobile overflow and login skip link need follow-up; blocked resources limit interpretation.",
+      "next_action": "Validate targeted template changes and revised audit diagnostics; repeat scan; retain manual and assistive-technology limitations.",
       "follow_up_phase": 5
     },
     {
@@ -356,8 +382,8 @@
         "UX"
       ],
       "r71_checks": "",
-      "assessment": "No existing survey is known to project operator; no satisfaction estimate.",
-      "next_action": "Phase 5: use draft survey protocol; report denominator, recruitment, dates and response distribution.",
+      "assessment": "Operator reports survey published and collecting responses; actual instrument, privacy settings, recruitment and results not yet supplied. No satisfaction estimate.",
+      "next_action": "Retain exact published instrument, recruitment and privacy documentation; analyze actual aggregate results with predefined scoring rule.",
       "follow_up_phase": 5
     },
     {
@@ -365,13 +391,14 @@
       "characteristic": "Interaction capability",
       "subject": "Co-design feedback and improvements",
       "criterion": "Document dated workshops or task-based feedback and resulting design changes.",
-      "status": "NOT_ASSESSED",
+      "status": "PARTIAL",
       "evidence_refs": [
-        "UX"
+        "UX",
+        "P5CD"
       ],
       "r71_checks": "",
-      "assessment": "No workshop evidence supplied in this review.",
-      "next_action": "Request relevant project records or organize a new documented feedback session; do not relabel it as a historical workshop.",
+      "assessment": "Dated external participant feedback and independent prototype proposal documented in GitHub issue #4, with project response. Proposed changes remain under review; no formal workshop or validated implementation established.",
+      "next_action": "Obtain prototype/expert review and additional dated feedback or workshop records; link decisions, implementation and verification.",
       "follow_up_phase": 5
     },
     {
@@ -626,12 +653,12 @@
   "summary": {
     "total": 28,
     "status_counts": {
-      "SUPPORTED": 9,
+      "SUPPORTED": 10,
       "PARTIAL": 16,
-      "NOT_ASSESSED": 2,
+      "NOT_ASSESSED": 1,
       "SCOPE_REVIEW": 1
     },
-    "overall": "PHASE_3_SECURITY_EVIDENCE_RECORDED; FOLLOW_UP_OPEN"
+    "overall": "PHASE_5_INITIAL_UX_EVIDENCE_RECORDED; REMEDIATION_AND_SURVEY_PENDING"
   },
   "proposed_user_satisfaction_target_pct": 80,
   "target_status": "WP2 suggested target; not independently established as contractual",
@@ -640,14 +667,17 @@
     "Do not treat SUPPORTED criteria as formal acceptance; update after dated evidence is collected.",
     "Phase 1 was a desk assessment; Phase 2 adds operator-reported offline snapshot checks and bounded sequential HTTP measurements. No new vulnerability audit, survey or production load test has been performed in this update.",
     "Phase 2 results are summarized in docs/R7_3_PHASE2_RESULTS.md; retain original reports in controlled evidence storage.",
-    "Phase 3 adds operator-reported security observations before and after remediation and seven manual production checks. Final configuration evidence and contextual review remain open; original reports stay private."
+    "Phase 3 adds operator-reported security observations before and after remediation and seven manual production checks. Final configuration evidence and contextual review remain open; original reports stay private.",
+    "Phase 4 records bounded public publication and browser discovery/consumption evidence. Independent EUSO indexing and downstream semantic interpretation are not assessed; user evaluation remains pending.",
+    "Phase 5 starts with documented external feedback and an operator-reported published survey. No technical accessibility measurements or survey responses have yet been assessed.",
+    "Phase 5 initial scan and operator manual checks recorded; proposed fixes not yet verified. No change in criterion maturity counts."
   ],
   "last_updated_utc": "2026-11-24",
   "latest_assessment": {
-    "phase": 3,
+    "phase": 5,
     "date": "2026-11-24",
-    "status": "OBSERVED_SECURITY_AND_MANUAL_EVIDENCE_RECORDED",
-    "results_summary": "docs/R7_3_PHASE3_RESULTS.md",
-    "source_reporting_commit": "a16bacf556ffc35fa9b00bd9043d2ac604307e41"
+    "status": "INITIAL_TECHNICAL_AND_MANUAL_OBSERVATIONS_RECORDED",
+    "results_summary": "docs/R7_3_PHASE5_RESULTS.md",
+    "source_reporting_commit": "6d9e8ae90346f86b3fb40064482628d9bf442da9"
   }
 }

@@ -5,7 +5,7 @@
 **Baseline:** `develop` at `25d204a035d6b5b8ef10ebffa10d9bfdd374dd0d`; desk assessment dated 2026-11-24.  
 **Status:** Phase 1 baseline complete; R7-3 assessment in progress.
 
-**Historical baseline:** This document preserves the Phase 1 desk assessment and its original counts. See [Phase 2 observed results](R7_3_PHASE2_RESULTS.md), [Phase 3 security results](R7_3_PHASE3_RESULTS.md) and the updated [quality matrix](R7_3_QUALITY_MATRIX.json) for the latest evidence states.
+**Historical baseline:** This document preserves the Phase 1 desk assessment and its original counts. See [Phase 2 observed results](R7_3_PHASE2_RESULTS.md), [Phase 3 security results](R7_3_PHASE3_RESULTS.md), [Phase 4 interoperability results](R7_3_PHASE4_RESULTS.md) and the updated [quality matrix](R7_3_QUALITY_MATRIX.json) for the latest evidence states.
 
 ## Method and scope
 
@@ -112,6 +112,10 @@ The machine-readable [quality matrix](R7_3_QUALITY_MATRIX.json) holds the full c
 | R73-A02 | Applicability and scientific interpretation | SCOPE_REVIEW | Confirm scope with reviewer; record limitations, warnings and rationale for any criteria considered not applicable. |
 
 ## Priority follow-up
+
+See [Phase 5 procedure](R7_3_PHASE5.md) and [user feedback register](R7_3_CODESIGN_REGISTER.md). Technical usability and survey results remain pending.
+
+The [Phase 4 interoperability procedure](R7_3_PHASE4.md) defines the bounded public-record checks and independent catalogue evidence requirements. Results remain pending execution.
 
 - **Phase 2 — Data and performance:** validate a fixed snapshot and report schema/type/key checks, missingness and scientific/geographic QA separately. Record latency (median, p95, max), errors, bytes, workload, revision, date and environment. Set proposed thresholds before measuring. Measure export throughput and biodiversity CPU/memory/storage on controlled workloads. Keep live requests sequential and bounded; concurrency and failure/recovery exercises belong on approved dev systems.
 - **Phase 3 — Security:** verify deployed Keycloak/access controls, TLS, cookies, session backend and privacy behavior; audit dependencies and static findings, then triage. Use approved accounts and non-destructive checks. Never store tokens, session state, credentials, private sample data or raw sensitive logs in publication evidence.
