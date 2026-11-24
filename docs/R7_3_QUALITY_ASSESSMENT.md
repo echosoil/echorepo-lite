@@ -113,6 +113,8 @@ The machine-readable [quality matrix](R7_3_QUALITY_MATRIX.json) holds the full c
 
 ## Priority follow-up
 
+The [Phase 4 interoperability procedure](R7_3_PHASE4.md) defines the bounded public-record checks and independent catalogue evidence requirements. Results remain pending execution.
+
 - **Phase 2 — Data and performance:** validate a fixed snapshot and report schema/type/key checks, missingness and scientific/geographic QA separately. Record latency (median, p95, max), errors, bytes, workload, revision, date and environment. Set proposed thresholds before measuring. Measure export throughput and biodiversity CPU/memory/storage on controlled workloads. Keep live requests sequential and bounded; concurrency and failure/recovery exercises belong on approved dev systems.
 - **Phase 3 — Security:** verify deployed Keycloak/access controls, TLS, cookies, session backend and privacy behavior; audit dependencies and static findings, then triage. Use approved accounts and non-destructive checks. Never store tokens, session state, credentials, private sample data or raw sensitive logs in publication evidence.
 - **Phase 4 — Interoperability:** reuse the canonical and 95-sample biodiversity pilot publication references, SoilWise and European Data Portal discovery, and LOESS consumption. Distinguish record discovery, CSVW publication, downstream CSVW interpretation and independent JRC/EUSO indexing. Request confirmation where in scope; no assumption that the publication is byte-identical to the tested snapshot.
