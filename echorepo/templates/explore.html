@@ -24,6 +24,18 @@
     overflow: hidden;
   }
 
+  .explore-header > *,
+  .explore-actions > *,
+  .explore-filters > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .explore-actions .btn {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .echo-layout-switch {
     display: none;
     align-items: center;
@@ -67,15 +79,15 @@
 {% endblock %}
 
 {% block content %}
-<div class="explore-header d-flex justify-content-between align-items-center mb-3">
+<div class="explore-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <h1 class="h4 mb-0">{{ _('Explore the map') }}</h1>
   {% if not can_export %}
-  <div class="alert alert-info small">
+  <div class="alert alert-info small mb-0">
     {{ _('Sign in to export data and access your personal samples.') }}
   </div>
   {% endif %}
 
-  <div class="explore-actions d-flex gap-2">
+  <div class="explore-actions d-flex flex-wrap gap-2">
     {% if zenodo_dataset_url %}
     <a class="btn btn-outline-success" href="{{ zenodo_dataset_url }}" target="_blank" rel="noopener">
       <i class="bi bi-cloud-download"></i>
@@ -104,14 +116,14 @@
   <span class="text-muted small">{{ _('pH') }}</span>
 
   <input type="number" step="0.1" min="0" max="14" id="phMin" class="form-control form-control-sm"
-    placeholder="{{ _('min') }}" style="width:5.5rem">
+    aria-label="{{ _('pH min') }}" placeholder="{{ _('min') }}" style="width:5.5rem">
 
   <span class="text-muted echo-range-separator">–</span>
 
   <input type="number" step="0.1" min="0" max="14" id="phMax" class="form-control form-control-sm"
-    placeholder="{{ _('max') }}" style="width:5.5rem">
+    aria-label="{{ _('pH max') }}" placeholder="{{ _('max') }}" style="width:5.5rem">
 
-  <span class="text-muted small">{{ _('Country') }}</span>
+  <label class="text-muted small mb-0" for="countryFilter">{{ _('Country') }}</label>
 
   <select id="countryFilter" class="form-select form-select-sm" style="width:14rem">
     <option value="">{{ _('Any country') }}</option>
@@ -130,11 +142,11 @@
 
   <span class="text-muted small">{{ _('Date') }}</span>
 
-  <input type="date" id="dateFrom" class="form-control form-control-sm" style="width:9.5rem">
+  <input type="date" id="dateFrom" aria-label="{{ _('Date from') }}" class="form-control form-control-sm" style="width:9.5rem">
 
   <span class="text-muted">–</span>
 
-  <input type="date" id="dateTo" class="form-control form-control-sm" style="width:9.5rem">
+  <input type="date" id="dateTo" aria-label="{{ _('Date to') }}" class="form-control form-control-sm" style="width:9.5rem">
 
   <button class="btn btn-sm btn-outline-secondary" id="btnApplyFilter" type="button">
     {{ _('Apply') }}

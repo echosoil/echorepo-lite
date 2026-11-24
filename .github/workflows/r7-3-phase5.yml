@@ -5,6 +5,7 @@ on:
     paths:
       - "tools/r73_ux.py"
       - "tests/test_r73_phase5.py"
+      - "echorepo/templates/**"
       - ".github/workflows/r7-3-phase5.yml"
   workflow_dispatch:
 permissions:

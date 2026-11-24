@@ -159,6 +159,11 @@
       "kind": "public_user_feedback",
       "path": "docs/R7_3_CODESIGN_REGISTER.md",
       "note": "Public GitHub issue #4 opened 11 November 2026 and project developer response 23 November; documented consultation only."
+    },
+    "P5UX": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE5_RESULTS.md",
+      "note": "Operator-supplied 24 November 2026 technical scan and five manual pass observations; one screen-reader check not assessed."
     }
   },
   "criteria": [
@@ -359,11 +364,12 @@
       "evidence_refs": [
         "R71",
         "M3",
-        "UX"
+        "UX",
+        "P5UX"
       ],
       "r71_checks": "B13,B14",
-      "assessment": "Spanish locale and one mobile layout checked; not a cross-browser or accessibility audit.",
-      "next_action": "Run Phase 5 bounded anonymous Playwright/axe-core observations and manual keyboard/zoom/mobile checks; assess findings and limitations.",
+      "assessment": "Seven public browser cases render, expected locales and mobile navigation observed; all seven REVIEW for automated accessibility/other findings; five manual tasks PASS, screen reader not assessed. Contrast, control labels, mobile overflow and login skip link need follow-up; blocked resources limit interpretation.",
+      "next_action": "Validate targeted template changes and revised audit diagnostics; repeat scan; retain manual and assistive-technology limitations.",
       "follow_up_phase": 5
     },
     {
@@ -652,7 +658,7 @@
       "NOT_ASSESSED": 1,
       "SCOPE_REVIEW": 1
     },
-    "overall": "PHASE_5_USER_FEEDBACK_EVIDENCE_PARTIAL; TECHNICAL_AND_SURVEY_RESULTS_PENDING"
+    "overall": "PHASE_5_INITIAL_UX_EVIDENCE_RECORDED; REMEDIATION_AND_SURVEY_PENDING"
   },
   "proposed_user_satisfaction_target_pct": 80,
   "target_status": "WP2 suggested target; not independently established as contractual",
@@ -663,14 +669,15 @@
     "Phase 2 results are summarized in docs/R7_3_PHASE2_RESULTS.md; retain original reports in controlled evidence storage.",
     "Phase 3 adds operator-reported security observations before and after remediation and seven manual production checks. Final configuration evidence and contextual review remain open; original reports stay private.",
     "Phase 4 records bounded public publication and browser discovery/consumption evidence. Independent EUSO indexing and downstream semantic interpretation are not assessed; user evaluation remains pending.",
-    "Phase 5 starts with documented external feedback and an operator-reported published survey. No technical accessibility measurements or survey responses have yet been assessed."
+    "Phase 5 starts with documented external feedback and an operator-reported published survey. No technical accessibility measurements or survey responses have yet been assessed.",
+    "Phase 5 initial scan and operator manual checks recorded; proposed fixes not yet verified. No change in criterion maturity counts."
   ],
   "last_updated_utc": "2026-11-24",
   "latest_assessment": {
     "phase": 5,
     "date": "2026-11-24",
-    "status": "DOCUMENTED_USER_FEEDBACK; SURVEY_AND_TECHNICAL_MEASUREMENTS_PENDING",
-    "results_summary": "docs/R7_3_CODESIGN_REGISTER.md",
-    "source_reporting_commit": "49cb71b7133b84f15ea4985460127c35cf1bde8e"
+    "status": "INITIAL_TECHNICAL_AND_MANUAL_OBSERVATIONS_RECORDED",
+    "results_summary": "docs/R7_3_PHASE5_RESULTS.md",
+    "source_reporting_commit": "6d9e8ae90346f86b3fb40064482628d9bf442da9"
   }
 }
