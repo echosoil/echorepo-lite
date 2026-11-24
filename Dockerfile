@@ -20,7 +20,8 @@ COPY requirements.txt .
 
 RUN pip install --upgrade pip \
  && pip install -r requirements.txt \
- && pip install debugpy
+ && pip install debugpy \
+ && pip check
 
 # Copy app package
 COPY echorepo/ ./echorepo/

@@ -22,6 +22,7 @@ from flask_babel import ngettext as _real_ngettext
 from .analytics import hash_ip, log_usage_event
 from .auth.routes import auth_bp, init_oauth
 from .config import settings
+from .http_security import configure_http_security, debug_routes_enabled
 from .i18n import BASE_LABEL_MSGIDS, LOCALE_FLAGS, SUPPORTED_LOCALES, init_i18n, lang_bp
 from .routes import data_api
 from .routes.api import api_bp
@@ -185,14 +186,8 @@ def create_app() -> Flask:
         "/download/all_csv",  # old alias
     )
 
-    ENABLE_DEBUG_ROUTES = (
-        app.debug
-        or os.getenv(
-            "ENABLE_DEBUG_ROUTES",
-            "0",
-        )
-        == "1"
-    )
+    configure_http_security(app)
+    ENABLE_DEBUG_ROUTES = debug_routes_enabled(app)
 
     # ---- Request timing logging, see /tmp/echorepo-slow.log ----
     @app.before_request
@@ -550,7 +545,7 @@ def create_app() -> Flask:
         def i18n_probe_tpl():
             s = request.args.get("s", "About")
             # Render via Jinja so we test what templates *actually* call.
-            out = render_template_string("{{ _('" + s.replace('"', '\\"') + "') }}")
+            out = render_template_string("{{ _(probe_text) }}", probe_text=s)
             return out
 
         @app.get("/debug/whoami")

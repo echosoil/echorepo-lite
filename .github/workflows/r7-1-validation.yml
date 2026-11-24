@@ -5,6 +5,9 @@ on:
     branches: ["develop"]
     paths:
       - "echorepo/**"
+      - "requirements.txt"
+      - "Dockerfile"
+      - "tests/test_r73_hardening.py"
       - "streamlit/**"
       - "notebooks/lib/**"
       - "scripts/run_pg_migrations.py"
@@ -97,6 +100,7 @@ jobs:
             tests/e2e/test_r71_phase3_browser.py \
             tests/test_biodiversity_api_upload.py \
             tests/test_server_sessions.py \
+            tests/test_r73_hardening.py \
             tests/test_jupyterhub_auth.py \
             tests/test_loess_converter.py \
             tests/test_loess_photo_urls.py \
