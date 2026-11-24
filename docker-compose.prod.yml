@@ -5,6 +5,10 @@ services:
 
     environment:
       APP_ENV: prod
+      FLASK_DEBUG: "0"
+      ENABLE_DEBUG_ROUTES: "0"
+      # Production is served via an HTTPS reverse proxy. No subdomain policy.
+      ECHOREPO_HSTS_MAX_AGE: ${ECHOREPO_HSTS_MAX_AGE:-86400}
 
       # The map endpoint checks specifically for the string "1".
       CANONICAL_PUBLIC: ${CANONICAL_PUBLIC:-0}

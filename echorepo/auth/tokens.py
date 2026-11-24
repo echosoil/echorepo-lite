@@ -55,27 +55,35 @@ def create_session_from_tokens(tok_json: dict):
     session.permanent = True
 
 
+def _clear_authentication():
+    # Keep unrelated browser preferences, but invalidate all identity state.
+    session.pop("kc", None)
+    session.pop("user", None)
+
+
 def refresh_tokens_if_needed():
     kc = session.get("kc")
-    if not kc:
+    if not isinstance(kc, dict) or not kc:
+        if "kc" in session or "user" in session:
+            _clear_authentication()
         return
-    now = int(time.time())
-    if now < kc.get("exp", 0) - 60:
-        return
-    data = {
-        "grant_type": "refresh_token",
-        "client_id": settings.KC_CLIENT_ID,
-        "client_secret": settings.KC_CLIENT_SECRET,
-        "refresh_token": kc.get("refresh_token"),
-    }
     try:
+        now = int(time.time())
+        if now < int(kc.get("exp", 0)) - 60:
+            return
+        data = {
+            "grant_type": "refresh_token",
+            "client_id": settings.KC_CLIENT_ID,
+            "client_secret": settings.KC_CLIENT_SECRET,
+            "refresh_token": kc.get("refresh_token"),
+        }
         r = requests.post(KC_TOKEN, data=data, timeout=15)
         if r.status_code == 200:
             create_session_from_tokens(r.json())
         else:
-            session.pop("kc", None)
-    except Exception:
-        session.pop("kc", None)
+            _clear_authentication()
+    except (requests.RequestException, ValueError, TypeError, AttributeError, KeyError, OverflowError):
+        _clear_authentication()
 
 
 def before_request_refresh():
