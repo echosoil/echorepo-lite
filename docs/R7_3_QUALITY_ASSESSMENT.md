@@ -113,6 +113,8 @@ The machine-readable [quality matrix](R7_3_QUALITY_MATRIX.json) holds the full c
 
 ## Priority follow-up
 
+See [Phase 5 procedure](R7_3_PHASE5.md) and [user feedback register](R7_3_CODESIGN_REGISTER.md). Technical usability and survey results remain pending.
+
 The [Phase 4 interoperability procedure](R7_3_PHASE4.md) defines the bounded public-record checks and independent catalogue evidence requirements. Results remain pending execution.
 
 - **Phase 2 — Data and performance:** validate a fixed snapshot and report schema/type/key checks, missingness and scientific/geographic QA separately. Record latency (median, p95, max), errors, bytes, workload, revision, date and environment. Set proposed thresholds before measuring. Measure export throughput and biodiversity CPU/memory/storage on controlled workloads. Keep live requests sequential and bounded; concurrency and failure/recovery exercises belong on approved dev systems.

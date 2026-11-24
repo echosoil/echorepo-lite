@@ -154,6 +154,11 @@
       "kind": "operator_supplied_browser_capture",
       "path": "docs/R7_3_PHASE4_RESULTS.md",
       "note": "Three browser captures supplied 24 November 2026; original images held by operator; no identity-bearing image committed."
+    },
+    "P5CD": {
+      "kind": "public_user_feedback",
+      "path": "docs/R7_3_CODESIGN_REGISTER.md",
+      "note": "Public GitHub issue #4 opened 11 November 2026 and project developer response 23 November; documented consultation only."
     }
   },
   "criteria": [
@@ -358,7 +363,7 @@
       ],
       "r71_checks": "B13,B14",
       "assessment": "Spanish locale and one mobile layout checked; not a cross-browser or accessibility audit.",
-      "next_action": "Review representative keyboard navigation, contrast and labels; test additional browser/device combinations as appropriate.",
+      "next_action": "Run Phase 5 bounded anonymous Playwright/axe-core observations and manual keyboard/zoom/mobile checks; assess findings and limitations.",
       "follow_up_phase": 5
     },
     {
@@ -371,8 +376,8 @@
         "UX"
       ],
       "r71_checks": "",
-      "assessment": "No existing survey is known to project operator; no satisfaction estimate.",
-      "next_action": "Phase 5: use draft survey protocol; report denominator, recruitment, dates and response distribution.",
+      "assessment": "Operator reports survey published and collecting responses; actual instrument, privacy settings, recruitment and results not yet supplied. No satisfaction estimate.",
+      "next_action": "Retain exact published instrument, recruitment and privacy documentation; analyze actual aggregate results with predefined scoring rule.",
       "follow_up_phase": 5
     },
     {
@@ -380,13 +385,14 @@
       "characteristic": "Interaction capability",
       "subject": "Co-design feedback and improvements",
       "criterion": "Document dated workshops or task-based feedback and resulting design changes.",
-      "status": "NOT_ASSESSED",
+      "status": "PARTIAL",
       "evidence_refs": [
-        "UX"
+        "UX",
+        "P5CD"
       ],
       "r71_checks": "",
-      "assessment": "No workshop evidence supplied in this review.",
-      "next_action": "Request relevant project records or organize a new documented feedback session; do not relabel it as a historical workshop.",
+      "assessment": "Dated external participant feedback and independent prototype proposal documented in GitHub issue #4, with project response. Proposed changes remain under review; no formal workshop or validated implementation established.",
+      "next_action": "Obtain prototype/expert review and additional dated feedback or workshop records; link decisions, implementation and verification.",
       "follow_up_phase": 5
     },
     {
@@ -642,11 +648,11 @@
     "total": 28,
     "status_counts": {
       "SUPPORTED": 10,
-      "PARTIAL": 15,
-      "NOT_ASSESSED": 2,
+      "PARTIAL": 16,
+      "NOT_ASSESSED": 1,
       "SCOPE_REVIEW": 1
     },
-    "overall": "PHASE_4_INTEROPERABILITY_EVIDENCE_RECORDED; EXTERNAL_CONFIRMATION_AND_USER_EVALUATION_OPEN"
+    "overall": "PHASE_5_USER_FEEDBACK_EVIDENCE_PARTIAL; TECHNICAL_AND_SURVEY_RESULTS_PENDING"
   },
   "proposed_user_satisfaction_target_pct": 80,
   "target_status": "WP2 suggested target; not independently established as contractual",
@@ -656,14 +662,15 @@
     "Phase 1 was a desk assessment; Phase 2 adds operator-reported offline snapshot checks and bounded sequential HTTP measurements. No new vulnerability audit, survey or production load test has been performed in this update.",
     "Phase 2 results are summarized in docs/R7_3_PHASE2_RESULTS.md; retain original reports in controlled evidence storage.",
     "Phase 3 adds operator-reported security observations before and after remediation and seven manual production checks. Final configuration evidence and contextual review remain open; original reports stay private.",
-    "Phase 4 records bounded public publication and browser discovery/consumption evidence. Independent EUSO indexing and downstream semantic interpretation are not assessed; user evaluation remains pending."
+    "Phase 4 records bounded public publication and browser discovery/consumption evidence. Independent EUSO indexing and downstream semantic interpretation are not assessed; user evaluation remains pending.",
+    "Phase 5 starts with documented external feedback and an operator-reported published survey. No technical accessibility measurements or survey responses have yet been assessed."
   ],
   "last_updated_utc": "2026-11-24",
   "latest_assessment": {
-    "phase": 4,
+    "phase": 5,
     "date": "2026-11-24",
-    "status": "OBSERVED_INTEROPERABILITY_EVIDENCE_RECORDED",
-    "results_summary": "docs/R7_3_PHASE4_RESULTS.md",
-    "source_reporting_commit": "2b226e53145adf8ce6d38627d0a33df70788e2e8"
+    "status": "DOCUMENTED_USER_FEEDBACK; SURVEY_AND_TECHNICAL_MEASUREMENTS_PENDING",
+    "results_summary": "docs/R7_3_CODESIGN_REGISTER.md",
+    "source_reporting_commit": "49cb71b7133b84f15ea4985460127c35cf1bde8e"
   }
 }
