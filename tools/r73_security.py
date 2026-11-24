@@ -7,7 +7,6 @@ import csv
 import hashlib
 import io
 import json
-import math
 import os
 import re
 import zipfile
@@ -92,7 +91,7 @@ def config_observations(env):
     }))
     bearer_issuer = bool(env.get("OIDC_ISSUER_URL", "").strip())
     checks.append(check("CFG11", "Configured bearer-token audience/client restriction",
-                        not bearer_issuer or bool(env.get("OIDC_AUDIENCE", "").strip() or env.get("OIDC_CLIENT_ID", "").strip()),
+                        bearer_issuer and bool(env.get("OIDC_AUDIENCE", "").strip() or env.get("OIDC_CLIENT_ID", "").strip()),
                         {"issuer_env_present": bearer_issuer,
                          "audience_env_present": bool(env.get("OIDC_AUDIENCE", "").strip()),
                          "client_id_env_present": bool(env.get("OIDC_CLIENT_ID", "").strip()),
