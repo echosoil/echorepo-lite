@@ -169,6 +169,11 @@
       "kind": "historical_poll_and_retrospective_traceability",
       "path": "docs/R7_3_CODESIGN_TRACEABILITY.md",
       "note": "Operator-supplied June 2024 Slido PDF and overlapping anonymous workshop DOCX; thematic mapping to later validation, not causal proof."
+    },
+    "P5FORUM": {
+      "kind": "public_channel_and_operator_report",
+      "path": "docs/R7_3_CODESIGN_TRACEABILITY.md",
+      "note": "Dedicated ECHO Discourse forum public landing-page representation and operator report on 24 November 2026; current activity and authenticated behavior not tested."
     }
   },
   "criteria": [
@@ -400,10 +405,11 @@
       "evidence_refs": [
         "UX",
         "P5CD",
-        "P5GA"
+        "P5GA",
+        "P5FORUM"
       ],
       "r71_checks": "",
-      "assessment": "Contemporaneous June 2024 Slido input and anonymous workshop responses mapped to later validated ECHOREPO features; subsequent public issue #4 and developer response document ongoing feedback. Additional consultations operator-reported; formal decisions and causal history incomplete.",
+      "assessment": "Contemporaneous June 2024 Slido input and anonymous workshop responses mapped to later validated ECHOREPO features; subsequent public issue #4 and developer response document ongoing feedback. Additional consultations operator-reported; formal decisions and causal history incomplete. Dedicated ECHO discussion forum corresponds to historical interaction proposals; operator reports limited engagement. Current posting and moderation not assessed.",
       "next_action": "Retain primary records; confirm event details and link representative decisions or subsequent changes where available; retain open suggestions.",
       "follow_up_phase": 5
     },
