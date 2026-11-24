@@ -144,6 +144,16 @@
       "kind": "operator_reported_manual_verification",
       "path": "docs/R7_3_PHASE3_RESULTS.md",
       "note": "Seven operator-confirmed production manual observations; no independent execution."
+    },
+    "P4INT": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE4_RESULTS.md",
+      "note": "Phase 4 aggregate automated evidence dated 2026-11-24T12:39:26+00:00; reporting commit 2b226e53145adf8ce6d38627d0a33df70788e2e8."
+    },
+    "P4BROWSER": {
+      "kind": "operator_supplied_browser_capture",
+      "path": "docs/R7_3_PHASE4_RESULTS.md",
+      "note": "Three browser captures supplied 24 November 2026; original images held by operator; no identity-bearing image committed."
     }
   },
   "criteria": [
@@ -275,11 +285,12 @@
         "ZPUB",
         "ZBIO",
         "BIOPUB",
-        "PUB"
+        "PUB",
+        "P4INT"
       ],
       "r71_checks": "C07; I10",
-      "assessment": "Project reports canonical and pilot publications; dry run checks preparation, not upload or record equality. Pilot files may be restricted.",
-      "next_action": "Retain public metadata/file listings and publication logs; verify links in Phase 4.",
+      "assessment": "Both pinned version-specific DOIs resolve; both records are publicly accessible with expected inventory and license metadata. Nine published files pass repository size/checksum checks; all nine CSV tables pass selected CSVW consistency checks. No claim of full CSVW conformance, scientific harmonization or equality to live snapshot.",
+      "next_action": "Retain original reports; reconcile biodiversity pilot description with observed matrix widths before reporting sample counts; repeat for new published versions.",
       "follow_up_phase": 4
     },
     {
@@ -291,11 +302,13 @@
       "evidence_refs": [
         "R71",
         "SW",
-        "EDP"
+        "EDP",
+        "P4INT",
+        "P4BROWSER"
       ],
       "r71_checks": "C18",
-      "assessment": "Project-observed catalogue links exist; downstream CSVW parsing and JRC/EUSO indexing remain unverified.",
-      "next_action": "Retain dated record captures and SoilWise reply; establish applicable requirements for JRC/EUSO.",
+      "assessment": "SoilWise capture shows the exact canonical version DOI and matching title; European Data Portal capture shows matching title and record identifier. External discovery demonstrated. EUSO record-specific indexing and downstream interpretation of CSVW remain unverified.",
+      "next_action": "Retain dated captures; seek SoilWise/JRC clarification and separately record metadata provenance or record-specific EUSO evidence.",
       "follow_up_phase": 4
     },
     {
@@ -303,15 +316,17 @@
       "characteristic": "Compatibility",
       "subject": "External data consumption",
       "criterion": "Confirm LOESS overlay behavior and provenance.",
-      "status": "PARTIAL",
+      "status": "SUPPORTED",
       "evidence_refs": [
         "R71",
         "M1",
-        "LOESS"
+        "LOESS",
+        "P4INT",
+        "P4BROWSER"
       ],
       "r71_checks": "C15,C16",
-      "assessment": "Conversion and localization tested; live refresh and end-to-end data provenance not established here.",
-      "next_action": "Collect dated refresh status, source link and screenshot of active overlay if applicable.",
+      "assessment": "Served LOESS GeoJSON passes selected structural checks (352 features, zero invalid observations and duplicate IDs). Browser capture shows enabled layer, category controls, populated popup, photograph and attribution. No proof of upstream equality, freshness or all interaction paths.",
+      "next_action": "Retain redacted browser evidence; separately verify scheduled refresh status and upstream correspondence if required.",
       "follow_up_phase": 4
     },
     {
@@ -626,12 +641,12 @@
   "summary": {
     "total": 28,
     "status_counts": {
-      "SUPPORTED": 9,
-      "PARTIAL": 16,
+      "SUPPORTED": 10,
+      "PARTIAL": 15,
       "NOT_ASSESSED": 2,
       "SCOPE_REVIEW": 1
     },
-    "overall": "PHASE_3_SECURITY_EVIDENCE_RECORDED; FOLLOW_UP_OPEN"
+    "overall": "PHASE_4_INTEROPERABILITY_EVIDENCE_RECORDED; EXTERNAL_CONFIRMATION_AND_USER_EVALUATION_OPEN"
   },
   "proposed_user_satisfaction_target_pct": 80,
   "target_status": "WP2 suggested target; not independently established as contractual",
@@ -640,14 +655,15 @@
     "Do not treat SUPPORTED criteria as formal acceptance; update after dated evidence is collected.",
     "Phase 1 was a desk assessment; Phase 2 adds operator-reported offline snapshot checks and bounded sequential HTTP measurements. No new vulnerability audit, survey or production load test has been performed in this update.",
     "Phase 2 results are summarized in docs/R7_3_PHASE2_RESULTS.md; retain original reports in controlled evidence storage.",
-    "Phase 3 adds operator-reported security observations before and after remediation and seven manual production checks. Final configuration evidence and contextual review remain open; original reports stay private."
+    "Phase 3 adds operator-reported security observations before and after remediation and seven manual production checks. Final configuration evidence and contextual review remain open; original reports stay private.",
+    "Phase 4 records bounded public publication and browser discovery/consumption evidence. Independent EUSO indexing and downstream semantic interpretation are not assessed; user evaluation remains pending."
   ],
   "last_updated_utc": "2026-11-24",
   "latest_assessment": {
-    "phase": 3,
+    "phase": 4,
     "date": "2026-11-24",
-    "status": "OBSERVED_SECURITY_AND_MANUAL_EVIDENCE_RECORDED",
-    "results_summary": "docs/R7_3_PHASE3_RESULTS.md",
-    "source_reporting_commit": "a16bacf556ffc35fa9b00bd9043d2ac604307e41"
+    "status": "OBSERVED_INTEROPERABILITY_EVIDENCE_RECORDED",
+    "results_summary": "docs/R7_3_PHASE4_RESULTS.md",
+    "source_reporting_commit": "2b226e53145adf8ce6d38627d0a33df70788e2e8"
   }
 }
