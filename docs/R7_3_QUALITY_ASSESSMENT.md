@@ -5,6 +5,8 @@
 **Baseline:** `develop` at `25d204a035d6b5b8ef10ebffa10d9bfdd374dd0d`; desk assessment dated 2026-11-24.  
 **Status:** Phase 1 baseline complete; R7-3 assessment in progress.
 
+**Historical baseline:** This document preserves the Phase 1 desk assessment and its original counts. See [Phase 2 observed results](R7_3_PHASE2_RESULTS.md) and the updated [quality matrix](R7_3_QUALITY_MATRIX.json) for the latest evidence states.
+
 ## Method and scope
 
 The assessment is structured around the nine product-quality characteristics of [ISO/IEC 25010:2023](https://www.iso.org/standard/78176.html). The checklist contains project-specific criteria rather than reproducing the normative text or claiming ISO conformity/certification. [ISO/IEC 25019:2023](https://www.iso.org/standard/78177.html) is a complementary reference for user evaluation in context.

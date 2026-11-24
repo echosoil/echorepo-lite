@@ -124,6 +124,16 @@
     "FIRE": {
       "kind": "implementation",
       "path": "echorepo/services/firebase.py"
+    },
+    "P2DQ": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE2_RESULTS.md",
+      "note": "Aggregate summary of operator-supplied data-quality.md, 2026-11-24T01:42:48+00:00; original Markdown/JSON retained by operator; no independent rerun."
+    },
+    "P2HTTP": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE2_RESULTS.md",
+      "note": "Aggregate summary of operator-supplied performance.md, 2026-11-24T01:45:10+00:00 to 01:46:25+00:00; production-readonly sequential HTTP benchmark; no independent rerun."
     }
   },
   "criteria": [
@@ -154,11 +164,12 @@
         "R71",
         "DATA",
         "M1",
-        "M2"
+        "M2",
+        "P2DQ"
       ],
       "r71_checks": "C03–C05, C07; I04,I06,I09,I10",
-      "assessment": "Saved bundle validation and synthetic contract tests passed within their scope.",
-      "next_action": "Retain bundle hash, per-rule counts and validation report; quantify missingness and domain QA in Phase 2.",
+      "assessment": "The assessed immutable ZIP contains 11,329 distinct samples and six matching resource schemas, 219,732 rows and zero violations across 73 reported rules (2,363,065 rule observations). Fingerprint matches R7-1. Missingness and 210 existing coordinate QA flags are reported separately.",
+      "next_action": "Retain dated original reports and snapshot hash; review geographic flags and missing semantic metadata. Separate CSVW assessment not performed.",
       "follow_up_phase": 2
     },
     {
@@ -172,11 +183,12 @@
         "M1",
         "BIO",
         "BIOPUB",
-        "ZBIO"
+        "ZBIO",
+        "P2DQ"
       ],
       "r71_checks": "C04,C09,C12; I09,I10",
-      "assessment": "Mapped tests and separate pilot publication support capability; full-volume scientific fidelity and ingestion provenance not established by them.",
-      "next_action": "Collect representative data-quality checks and operational import evidence; clarify Firebase scope.",
+      "assessment": "Snapshot contains 79,601 linked laboratory parameter rows and 100,102 linked biodiversity rows, with assessed finite numeric values, valid references and no blank fields in these tables. This does not establish source-import completeness or scientific fidelity.",
+      "next_action": "Retain processing provenance and operational import evidence; clarify Firebase scope; investigate untranslated text and blank semantic metadata.",
       "follow_up_phase": 2
     },
     {
@@ -184,14 +196,15 @@
       "characteristic": "Performance efficiency",
       "subject": "Interactive response time",
       "criterion": "Measure sequential HTTP response latency for health, count, pagination, search, public pages and map data.",
-      "status": "NOT_ASSESSED",
+      "status": "SUPPORTED",
       "evidence_refs": [
         "API",
-        "COMPOSE"
+        "COMPOSE",
+        "P2HTTP"
       ],
       "r71_checks": "",
-      "assessment": "No R7-3 measurements collected yet.",
-      "next_action": "Phase 2: record sample count, median, p95, maximum, errors and response bytes; approve operation-specific targets before measurements.",
+      "assessment": "Production-readonly sequential benchmark on 24 November 2026: 70/70 successful requests across seven operations; all six proposed latency targets met. Observed p95/max 45.31–197.31 ms among targeted operations. Ten observations per operation; not load or browser-render performance.",
+      "next_action": "Retain original benchmark evidence, note runner location/deployed revision if known, and obtain reviewer agreement on proposed targets. Repeat under controlled workloads only if needed.",
       "follow_up_phase": 2
     },
     {
@@ -199,14 +212,15 @@
       "characteristic": "Performance efficiency",
       "subject": "Export throughput",
       "criterion": "Measure elapsed time, output size and throughput for representative canonical exports.",
-      "status": "NOT_ASSESSED",
+      "status": "PARTIAL",
       "evidence_refs": [
         "DATA",
-        "PUB"
+        "PUB",
+        "P2HTTP"
       ],
       "r71_checks": "",
-      "assessment": "R7-1 establishes preparation, not measured speed.",
-      "next_action": "Phase 2: use bounded/approved export workloads, record snapshot and environment.",
+      "assessment": "Bounded 100-row-limit CSV benchmark: 10/10 successful; median 45.95 ms, p95/max 57.70 ms, median 5,015 decoded bytes and 0.104 MiB/s. Full ZIP and raw biodiversity export throughput unmeasured.",
+      "next_action": "Retain bounded results; optional approved staging export benchmark if required; do not stress production.",
       "follow_up_phase": 2
     },
     {
@@ -359,11 +373,12 @@
       "evidence_refs": [
         "R71",
         "M2",
-        "COMPOSE"
+        "COMPOSE",
+        "P2HTTP"
       ],
       "r71_checks": "I01,I05–I08",
-      "assessment": "Point-in-time service checks passed; uptime is not established.",
-      "next_action": "Obtain existing monitoring aggregates and incident history; define observation window.",
+      "assessment": "R7-1 point-in-time service checks and R7-3 70/70 sequential HTTP requests succeeded. Neither establishes long-term availability.",
+      "next_action": "Obtain dated monitoring aggregates and incident history with a defined observation interval.",
       "follow_up_phase": 2
     },
     {
@@ -376,11 +391,12 @@
         "R71",
         "DATA",
         "MIG",
-        "M1"
+        "M1",
+        "P2DQ"
       ],
       "r71_checks": "C03,C08,C10; I09",
-      "assessment": "Snapshot validator, storage and migration tests support integrity; backup restore and disaster recovery not demonstrated.",
-      "next_action": "Verify backup/restore procedure using disposable dev data; record recovery outcomes and limitations.",
+      "assessment": "Exact-snapshot SHA-256 matches R7-1 and six resources passed assessed integrity checks. Backup restore and disaster recovery remain untested in this assessment.",
+      "next_action": "Verify recovery procedures with disposable dev data; retain recovery outcomes and limitations.",
       "follow_up_phase": 2
     },
     {
@@ -457,11 +473,12 @@
         "R71",
         "M1",
         "M3",
-        "QA"
+        "QA",
+        "P2DQ"
       ],
       "r71_checks": "C06,C11,C14,C15; B10,B11",
-      "assessment": "Selected privacy controls tested; not a GDPR or complete authorization assessment.",
-      "next_action": "Review canonical exports, private routes, logs, retention and consent; use synthetic users and aggregate results.",
+      "assessment": "Existing public field suppression and privacy checks; coordinate ranges and radii checked. Aggregate snapshot report records collected_by populated in samples/images; values and privacy semantics have not been assessed.",
+      "next_action": "Phase 3: review public versus authenticated export projections, collected_by semantics, private routes and retention without publishing identifiers or tokens.",
       "follow_up_phase": 3
     },
     {
@@ -563,11 +580,12 @@
         "DATA",
         "QA",
         "SESSION",
-        "BIO"
+        "BIO",
+        "P2DQ"
       ],
       "r71_checks": "C03,C05,C06,C13; I09",
-      "assessment": "Relevant safeguards exist and some are tested; safety-specific risk assessment not completed.",
-      "next_action": "Review data-use limitations, failure modes and escalation paths with scientific and technical owners; no claim of safety certification.",
+      "assessment": "Snapshot domain-sanity checks passed, but 210 samples carry wrong_coordinates QA flags and missing values are separately quantified. This is not a safety risk assessment or scientific accuracy certification.",
+      "next_action": "Review downstream handling of QA flags, scientific limitations, failure modes and escalation with relevant owners.",
       "follow_up_phase": 3
     },
     {
@@ -589,18 +607,27 @@
   "summary": {
     "total": 28,
     "status_counts": {
-      "SUPPORTED": 7,
-      "PARTIAL": 14,
-      "NOT_ASSESSED": 6,
+      "SUPPORTED": 8,
+      "PARTIAL": 15,
+      "NOT_ASSESSED": 4,
       "SCOPE_REVIEW": 1
     },
-    "overall": "PHASE_1_BASELINE_COMPLETE; R7-3 ASSESSMENT IN PROGRESS"
+    "overall": "PHASE_2_INITIAL_MEASUREMENTS_RECORDED; R7-3 ASSESSMENT IN PROGRESS"
   },
   "proposed_user_satisfaction_target_pct": 80,
   "target_status": "WP2 suggested target; not independently established as contractual",
   "notes": [
     "R7-1: 49/49 mapped automated tests, 10/10 integration checks and 18/18 browser checks (77/77) per supplied Phase 4 report; 18/19 isolated-component coverage. These numbers are not an R7-3 score.",
-    "No new live probes, benchmarks, vulnerability scans, user surveys or production changes were performed in Phase 1.",
-    "Do not treat SUPPORTED criteria as formal acceptance; update after dated evidence is collected."
-  ]
+    "Do not treat SUPPORTED criteria as formal acceptance; update after dated evidence is collected.",
+    "Phase 1 was a desk assessment; Phase 2 adds operator-reported offline snapshot checks and bounded sequential HTTP measurements. No new vulnerability audit, survey or production load test has been performed in this update.",
+    "Phase 2 results are summarized in docs/R7_3_PHASE2_RESULTS.md; retain original reports in controlled evidence storage."
+  ],
+  "last_updated_utc": "2026-11-24",
+  "latest_assessment": {
+    "phase": 2,
+    "source_reporting_commit": "c188d629a20e0e7015633766349388229b4971ca",
+    "date": "2026-11-24",
+    "status": "INITIAL_QUANTITATIVE_EVIDENCE_RECORDED",
+    "results_summary": "docs/R7_3_PHASE2_RESULTS.md"
+  }
 }
