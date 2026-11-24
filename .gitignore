@@ -136,3 +136,5 @@ notebooks/templates/*
 !notebooks/templates/.gitkeep
 # R7-1 validation output (may contain environment-specific diagnostics)
 /r71-evidence/
+# R7-3 quality assessment outputs (environment-specific evidence)
+/r73-evidence/

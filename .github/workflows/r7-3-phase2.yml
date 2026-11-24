@@ -1,0 +1,27 @@
+name: R7-3 Phase 2 tools (offline)
+
+on:
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "tools/r73_data_quality.py"
+      - "tools/r73_performance.py"
+      - "tools/validate_echorepo_bundle.py"
+      - "tests/test_r73_phase2.py"
+      - ".github/workflows/r7-3-phase2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase2-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest requests
+      - run: python -m pytest -q tests/test_r73_phase2.py
