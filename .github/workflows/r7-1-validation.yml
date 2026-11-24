@@ -8,6 +8,8 @@ on:
       - "requirements.txt"
       - "Dockerfile"
       - "tests/test_r73_hardening.py"
+      - "tests/test_r73_maintenance.py"
+      - "scripts/make_release.sh"
       - "streamlit/**"
       - "notebooks/lib/**"
       - "scripts/run_pg_migrations.py"
@@ -101,6 +103,7 @@ jobs:
             tests/test_biodiversity_api_upload.py \
             tests/test_server_sessions.py \
             tests/test_r73_hardening.py \
+            tests/test_r73_maintenance.py \
             tests/test_jupyterhub_auth.py \
             tests/test_loess_converter.py \
             tests/test_loess_photo_urls.py \

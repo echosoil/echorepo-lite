@@ -30,26 +30,17 @@ MAIN_REF="$SOURCE_REMOTE/main"
 DEVELOP_REF="$SOURCE_REMOTE/develop"
 echo "[INFO] release source: $SOURCE_REMOTE (main and develop)"
 
-TMPDIR="$(mktemp -d)"
-cleanup() { rm -rf -- "$TMPDIR"; }
-trap cleanup EXIT
-
-# ---------------------------------------------------------------------------
-# 1) Save and sanitize the development .env for production.
-# ---------------------------------------------------------------------------
-if [[ -f "$DEV_REPO_DIR/.env" ]]; then
-  cp -p -- "$DEV_REPO_DIR/.env" "$TMPDIR/.env"
-
-  sed -i 's/^APP_ENV=dev$/APP_ENV=prod/' "$TMPDIR/.env"
-  sed -i 's/-dev//g' "$TMPDIR/.env"
-  sed -i 's/keycloak\.quanta-labs\.com/keycloak-dev.quanta-labs.com/g' "$TMPDIR/.env"
-  sed -i 's|localhost:18080|echorepo.quanta-labs.com|g' "$TMPDIR/.env"
-  sed -i 's|echorepo_dev|echorepo_prod|g' "$TMPDIR/.env"
-  sed -i 's|5433|5432|g' "$TMPDIR/.env"
-  echo "[INFO] copied and sanitized .env from dev"
-else
-  echo "[WARN] no .env in $DEV_REPO_DIR; production .env will not be replaced"
+# Production configuration is independent from development. Never copy,
+# rewrite, or print environment files during a source release.
+if [[ ! -f "$PROD_REPO_DIR/.env" || ! -r "$PROD_REPO_DIR/.env" ]]; then
+    echo "[ERROR] Provision the production .env independently before releasing." >&2
+    exit 1
 fi
+if git -C "$PROD_REPO_DIR" ls-files --error-unmatch -- .env >/dev/null 2>&1; then
+    echo "[ERROR] Production .env must not be tracked by Git." >&2
+    exit 1
+fi
+echo "[INFO] preserving existing production .env"
 
 # ---------------------------------------------------------------------------
 # 2) Update production main and merge develop.
@@ -76,6 +67,14 @@ if ! git show-ref --verify --quiet "refs/remotes/$SOURCE_REMOTE/main" || \
   echo "[ERROR] Expected $MAIN_REF and $DEVELOP_REF after fetch." >&2
   exit 1
 fi
+
+# Neither incoming source ref may contain a tracked production environment.
+for ref in "$MAIN_REF" "$DEVELOP_REF"; do
+  if git cat-file -e "$ref:.env" 2>/dev/null; then
+    echo "[ERROR] Ref $ref contains a tracked .env; release refused." >&2
+    exit 1
+  fi
+done
 
 echo "[INFO] switching to main..."
 git switch main
@@ -147,26 +146,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 3) Apply the sanitized .env only AFTER a successful merge.
-# ---------------------------------------------------------------------------
-if [[ -f "$TMPDIR/.env" ]]; then
-  if [[ -f .env ]]; then
-    BACKUP_DIR="$HOME/echorepo-release-backups"
-    mkdir -p -- "$BACKUP_DIR"
-    cp -p -- .env "$BACKUP_DIR/env.prod-$(date +%Y%m%d-%H%M%S)-$$"
-  fi
-  cp -- "$TMPDIR/.env" .env
-  echo "[INFO] restored sanitized .env into prod"
-fi
-
-# Only touch this container once the source release has succeeded.
-if docker ps -a --format '{{.Names}}' | grep -qx libretranslate; then
-  echo "[INFO] removing existing libretranslate container"
-  docker rm -f libretranslate
-fi
-
-# ---------------------------------------------------------------------------
-# 4) Tag and push.
+# 3) Tag and push. Source release only; no container changes.
 # ---------------------------------------------------------------------------
 TAG="v$(date +%Y.%m.%d-%H%M)"
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then

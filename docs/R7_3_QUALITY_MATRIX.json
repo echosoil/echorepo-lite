@@ -134,6 +134,16 @@
       "kind": "operator_reported_measurement",
       "path": "docs/R7_3_PHASE2_RESULTS.md",
       "note": "Aggregate summary of operator-supplied performance.md, 2026-11-24T01:45:10+00:00 to 01:46:25+00:00; production-readonly sequential HTTP benchmark; no independent rerun."
+    },
+    "P3SEC": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE3_RESULTS.md",
+      "note": "Aggregate before/after live, configuration, dependency, static and privacy checks; 24 November 2026; controlled originals retained by operator."
+    },
+    "P3MAN": {
+      "kind": "operator_reported_manual_verification",
+      "path": "docs/R7_3_PHASE3_RESULTS.md",
+      "note": "Seven operator-confirmed production manual observations; no independent execution."
     }
   },
   "criteria": [
@@ -409,11 +419,12 @@
         "R71",
         "M1",
         "SESSION",
-        "BIO"
+        "BIO",
+        "P3MAN"
       ],
       "r71_checks": "C01,C08,C12,C13",
-      "assessment": "Input handling tested; session fail-closed and import rollback documented; no deployment fault injection evidence.",
-      "next_action": "Review failure modes and test selected failures in development only.",
+      "assessment": "Existing input handling and session regression evidence plus operator-confirmed normal authentication flow; no live fault injection or comprehensive dependency failure assessment.",
+      "next_action": "Review controlled dev failure tests; document recovery and operational limitations.",
       "follow_up_phase": 3
     },
     {
@@ -426,11 +437,13 @@
         "R71",
         "M1",
         "M2",
-        "M3"
+        "M3",
+        "P3SEC",
+        "P3MAN"
       ],
       "r71_checks": "C01,C02,C14; I02,I07; B11,B12,B15",
-      "assessment": "Mapped checks support bounded authentication/access behaviors; no full authorization audit.",
-      "next_action": "Phase 3: check actual deployed HTTPS login and role boundaries with authorized test accounts.",
+      "assessment": "Keycloak discovery and public signing-key metadata verified; anonymous access restrictions pass; operator confirms normal login, dashboard, logout, authenticated ZIP and research access. Not full authorization assessment.",
+      "next_action": "Retain operator evidence; use synthetic two-account fixtures for role separation.",
       "follow_up_phase": 3
     },
     {
@@ -442,11 +455,13 @@
       "evidence_refs": [
         "R71",
         "SESSION",
-        "M1"
+        "M1",
+        "P3SEC",
+        "P3MAN"
       ],
       "r71_checks": "C13",
-      "assessment": "Unit checks support implementation; rollout document describes optional configuration; database stores sensitive token data.",
-      "next_action": "Confirm actual deployed session backend and cookie flags without collecting token or cookie values; verify expiry/revocation in controlled tests.",
+      "assessment": "PostgreSQL backend configured; secure opaque anonymous cookie observed; operator confirms logged-in flags and normal logout/re-login requirement. Full expiry/replay and infrastructure review remain.",
+      "next_action": "Retain controlled expiry/revocation tests; review legacy migration retirement and storage protection.",
       "follow_up_phase": 3
     },
     {
@@ -454,13 +469,14 @@
       "characteristic": "Security",
       "subject": "Transport and security headers",
       "criterion": "Inspect TLS validity, HTTPS redirects and relevant response headers.",
-      "status": "NOT_ASSESSED",
+      "status": "SUPPORTED",
       "evidence_refs": [
-        "COMPOSE"
+        "COMPOSE",
+        "P3SEC"
       ],
       "r71_checks": "",
-      "assessment": "Deployment settings alone do not verify edge configuration.",
-      "next_action": "Phase 3: conservative public HTTPS checks; record header presence and context, not secrets.",
+      "assessment": "Production TLS and redirect checks pass; all six selected HTTP header protections present after remediation. Header presence is not comprehensive policy validation.",
+      "next_action": "Retest on major deployment changes; review CSP and edge coverage as appropriate.",
       "follow_up_phase": 3
     },
     {
@@ -474,11 +490,13 @@
         "M1",
         "M3",
         "QA",
-        "P2DQ"
+        "P2DQ",
+        "P3SEC",
+        "P3MAN"
       ],
       "r71_checks": "C06,C11,C14,C15; B10,B11",
-      "assessment": "Existing public field suppression and privacy checks; coordinate ranges and radii checked. Aggregate snapshot report records collected_by populated in samples/images; values and privacy semantics have not been assessed.",
-      "next_action": "Phase 3: review public versus authenticated export projections, collected_by semantics, private routes and retention without publishing identifiers or tokens.",
+      "assessment": "Authenticated and anonymous bounded public projection omits collector field; local pattern screening found no email-like collector values. Persistent identifiers and publication policy still need review.",
+      "next_action": "Review publication authorization and privacy with data owner; synthetic role isolation.",
       "follow_up_phase": 3
     },
     {
@@ -486,15 +504,16 @@
       "characteristic": "Security",
       "subject": "Dependency and source security",
       "criterion": "Audit installed dependencies, static code findings and configuration defaults.",
-      "status": "NOT_ASSESSED",
+      "status": "PARTIAL",
       "evidence_refs": [
         "STYLE",
         "COMPOSE",
-        "SESSION"
+        "SESSION",
+        "P3SEC"
       ],
       "r71_checks": "",
-      "assessment": "No current vulnerability audit or secret-management review collected. Compose includes a development-style fallback DB password; actual deployed value is unknown.",
-      "next_action": "Run pip-audit on recorded environment, Bandit/static review and config review; triage findings without publishing secrets.",
+      "assessment": "Repeated audit of 83 installed Python packages reports zero known findings, with none skipped. Static review retains 30 medium and 20 low findings, no high findings; final configuration evidence and remaining scope review pending.",
+      "next_action": "Retain final configuration report, triage outstanding source observations and reassess after releases.",
       "follow_up_phase": 3
     },
     {
@@ -607,12 +626,12 @@
   "summary": {
     "total": 28,
     "status_counts": {
-      "SUPPORTED": 8,
-      "PARTIAL": 15,
-      "NOT_ASSESSED": 4,
+      "SUPPORTED": 9,
+      "PARTIAL": 16,
+      "NOT_ASSESSED": 2,
       "SCOPE_REVIEW": 1
     },
-    "overall": "PHASE_2_INITIAL_MEASUREMENTS_RECORDED; R7-3 ASSESSMENT IN PROGRESS"
+    "overall": "PHASE_3_SECURITY_EVIDENCE_RECORDED; FOLLOW_UP_OPEN"
   },
   "proposed_user_satisfaction_target_pct": 80,
   "target_status": "WP2 suggested target; not independently established as contractual",
@@ -620,14 +639,15 @@
     "R7-1: 49/49 mapped automated tests, 10/10 integration checks and 18/18 browser checks (77/77) per supplied Phase 4 report; 18/19 isolated-component coverage. These numbers are not an R7-3 score.",
     "Do not treat SUPPORTED criteria as formal acceptance; update after dated evidence is collected.",
     "Phase 1 was a desk assessment; Phase 2 adds operator-reported offline snapshot checks and bounded sequential HTTP measurements. No new vulnerability audit, survey or production load test has been performed in this update.",
-    "Phase 2 results are summarized in docs/R7_3_PHASE2_RESULTS.md; retain original reports in controlled evidence storage."
+    "Phase 2 results are summarized in docs/R7_3_PHASE2_RESULTS.md; retain original reports in controlled evidence storage.",
+    "Phase 3 adds operator-reported security observations before and after remediation and seven manual production checks. Final configuration evidence and contextual review remain open; original reports stay private."
   ],
   "last_updated_utc": "2026-11-24",
   "latest_assessment": {
-    "phase": 2,
-    "source_reporting_commit": "c188d629a20e0e7015633766349388229b4971ca",
+    "phase": 3,
     "date": "2026-11-24",
-    "status": "INITIAL_QUANTITATIVE_EVIDENCE_RECORDED",
-    "results_summary": "docs/R7_3_PHASE2_RESULTS.md"
+    "status": "OBSERVED_SECURITY_AND_MANUAL_EVIDENCE_RECORDED",
+    "results_summary": "docs/R7_3_PHASE3_RESULTS.md",
+    "source_reporting_commit": "a16bacf556ffc35fa9b00bd9043d2ac604307e41"
   }
 }

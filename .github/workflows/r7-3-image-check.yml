@@ -6,6 +6,8 @@ on:
     paths:
       - "requirements.txt"
       - "Dockerfile"
+      - ".dockerignore"
+      - "docker-compose.prod.yml"
       - ".github/workflows/r7-3-image-check.yml"
   workflow_dispatch:
 
@@ -18,10 +20,13 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Simulate restrictive source-file permissions
+        run: chmod 600 echorepo/__init__.py echorepo/http_security.py
       - name: Build application image
         run: docker build -t echorepo-r73-ci .
       - name: Validate installed dependency inventory and imports
         run: |
           docker run --rm echorepo-r73-ci python -m pip check
           docker run --rm echorepo-r73-ci python -c 'from importlib.metadata import version; expected = {"flask": "3.1.3", "requests": "2.33.0", "setuptools": "84.1.0"}; actual = {p: version(p) for p in expected}; print(actual); assert actual == expected'
-          docker run --rm echorepo-r73-ci python -c 'import flask, requests, reverse_geocoder, firebase_admin, authlib, echorepo; print("Application imports OK")'
+          docker run --rm --user 1001:1001 -e PROJECT_ROOT=/app -e CSV_PATH=/data/samples.csv -e SQLITE_PATH=/data/legacy.sqlite echorepo-r73-ci python -c 'import flask, requests, reverse_geocoder, firebase_admin, authlib, echorepo; print("Production-user imports OK")'
+          docker run --rm --user 1001:1001 echorepo-r73-ci gunicorn --help | grep -q -- --no-control-socket

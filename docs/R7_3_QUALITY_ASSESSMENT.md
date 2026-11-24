@@ -5,7 +5,7 @@
 **Baseline:** `develop` at `25d204a035d6b5b8ef10ebffa10d9bfdd374dd0d`; desk assessment dated 2026-11-24.  
 **Status:** Phase 1 baseline complete; R7-3 assessment in progress.
 
-**Historical baseline:** This document preserves the Phase 1 desk assessment and its original counts. See [Phase 2 observed results](R7_3_PHASE2_RESULTS.md) and the updated [quality matrix](R7_3_QUALITY_MATRIX.json) for the latest evidence states.
+**Historical baseline:** This document preserves the Phase 1 desk assessment and its original counts. See [Phase 2 observed results](R7_3_PHASE2_RESULTS.md), [Phase 3 security results](R7_3_PHASE3_RESULTS.md) and the updated [quality matrix](R7_3_QUALITY_MATRIX.json) for the latest evidence states.
 
 ## Method and scope
 

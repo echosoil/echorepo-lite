@@ -49,7 +49,9 @@ RUN mkdir -p /data/db /data/storage
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash appuser \
- && chown -R appuser:appuser /app /data
+ && chown -R appuser:appuser /app /data \
+ && chmod a+rx /app \
+ && chmod -R a+rX /app/echorepo /app/scripts /app/migrations /app/static /app/metadata /app/tools
 
 USER appuser
 
