@@ -6,6 +6,10 @@ Assessment date: 24 November 2026. This register distinguishes documented extern
 
 See [June 2024 co-design traceability](R7_3_CODESIGN_TRACEABILITY.md) for the original Slido source inventory, first-phase presentation preferences and a bounded mapping to later functionality and evidence. Other consultation channels are operator-reported until supporting records are available.
 
+## Existing discussion channel
+
+The [ECHOSOIL Forum](https://forum-echo.quanta-labs.com/) is a dedicated Discourse-based channel for project contributors and ambassadors. Its publicly retrieved landing-page representation shows discussion topics. On 24 November 2026 the operator reported limited current engagement and expressed interest in simplifying its appearance and usage. Record the forum as an existing project-level response to historical discussion-platform suggestions (GA13), not as evidence of active community participation, completed redesign or forum usability testing. See the traceability document for scope and limitations.
+
 ## Documented participatory feedback
 
 Source: [ECHOREPO issue #4](https://github.com/echosoil/echorepo-lite/issues/4), opened 11 November 2026 by a self-described ECHO ambassador/volunteer working with participants in Germany. The [project developer response](https://github.com/echosoil/echorepo-lite/issues/4#issuecomment-7100671078) on 23 November 2026 expresses interest in reviewing the prototype, requests examples/scripts and proposes scientific review before endorsement. The issue remains open at this assessment. No prototype review, adoption or implementation is established by these public records. No personal contact details or sample identifiers are reproduced.
