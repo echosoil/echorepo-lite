@@ -21,7 +21,19 @@ READ_API = {"/api/v1/canonical/map.geojson", "/api/v1/canonical/map.count",
 ASSET_HOSTS = {"cdn.jsdelivr.net", "unpkg.com", "fonts.googleapis.com", "fonts.gstatic.com",
                "a.tile.openstreetmap.org", "b.tile.openstreetmap.org", "c.tile.openstreetmap.org",
                "tile.openstreetmap.org", "server.arcgisonline.com"}
+# Axe may re-fetch linked CSS to inspect its rules. Permit only these known
+# public stylesheet URLs for script-driven inspection, not arbitrary CDN fetches.
+EXTERNAL_CSS = {
+    ("cdn.jsdelivr.net", "/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"),
+    ("cdn.jsdelivr.net", "/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"),
+    ("cdn.jsdelivr.net", "/npm/flag-icons/css/flag-icons.min.css"),
+    ("unpkg.com", "/leaflet@1.9.4/dist/leaflet.css"),
+    ("unpkg.com", "/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"),
+    ("unpkg.com", "/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"),
+    ("fonts.googleapis.com", "/css2"),
+}
 CRITICAL = {"document", "script", "stylesheet", "xhr", "fetch"}
+RESOURCE_TYPES = CRITICAL | {"font", "image", "media", "other", "eventsource", "websocket", "manifest", "texttrack"}
 CASES = [(page, width, height, "en")
          for page in ("/explore", "/search", "/login")
          for width, height in ((1366, 900), (390, 844))]
@@ -40,11 +52,31 @@ def allowed_request(method, url, resource_type):
                 return p.path in DOCS and not p.query
             return (p.path.startswith("/static/") or p.path == "/favicon.ico"
                     or p.path in READ_API)
+        if resource_type in {"xhr", "fetch"}:
+            return (p.hostname, p.path) in EXTERNAL_CSS
         return p.hostname in ASSET_HOSTS and resource_type in {
             "script", "stylesheet", "font", "image"
         }
     except ValueError:
         return False
+
+
+def blocked_bucket(method, url, resource_type, *, budget_exceeded=False):
+    """Classify blocked requests without storing URLs, paths or query strings."""
+    try:
+        p = urlsplit(url)
+        if p.hostname == "echorepo.quanta-labs.com":
+            host = "application"
+        elif p.hostname in ASSET_HOSTS:
+            host = p.hostname
+        else:
+            host = "other"
+    except ValueError:
+        host = "invalid"
+    kind = resource_type if resource_type in RESOURCE_TYPES else "other"
+    verb = method if method in {"GET", "HEAD"} else "non-read"
+    reason = "budget" if budget_exceeded else "policy"
+    return f"{reason}:{host}:{kind}:{verb}"
 
 
 def summarize_axe(raw):
@@ -118,7 +150,8 @@ def inspect_case(browser, axe_path, case):
     result = {"page": path, "viewport": [width, height], "requested_locale": locale,
               "status": "NOT_ASSESSED"}
     metrics = {"requests": 0, "blocked": 0, "blocked_critical": 0,
-               "critical_http_errors": 0, "critical_request_failures": 0, "page_errors": 0}
+               "critical_http_errors": 0, "critical_request_failures": 0, "page_errors": 0,
+               "blocked_categories": {}}
     context = browser.new_context(viewport={"width": width, "height": height},
                                   locale="en-GB", accept_downloads=False,
                                   service_workers="block")
@@ -134,6 +167,10 @@ def inspect_case(browser, axe_path, case):
             else:
                 metrics["blocked"] += 1
                 metrics["blocked_critical"] += request.resource_type in CRITICAL
+                bucket = blocked_bucket(request.method, request.url, request.resource_type,
+                                        budget_exceeded=metrics["requests"] > 220)
+                buckets = metrics["blocked_categories"]
+                buckets[bucket] = buckets.get(bucket, 0) + 1
                 route.abort()
 
         context.route("**/*", guard)

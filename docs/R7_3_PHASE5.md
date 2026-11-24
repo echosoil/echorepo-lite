@@ -52,3 +52,7 @@ Retain the published instrument and approved privacy information; record start/e
 ## 5. Consolidation
 
 Update R73-I02 only after the technical and manual evidence is received. R73-I04 has partial evidence from documented external participant feedback, with workshop/change verification pending. R73-I03 remains NOT_ASSESSED until actual survey results. No ISO conformity declaration.
+
+## Initial observed results and repeat scan
+
+See [initial technical results](R7_3_PHASE5_RESULTS.md). The follow-up proposes template fixes and adds blocked-request categories (no raw URLs or query strings) and narrow permission for axe to re-fetch the known public stylesheets. Retain the initial reports unchanged. A repeat scan after the corresponding production template release should use a new timestamped evidence directory; report the change in request policy as a methodological difference. Do not assume a reduction in findings is solely an application improvement. Review remaining incomplete rules manually. No change to survey scoring.
