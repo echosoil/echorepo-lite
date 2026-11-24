@@ -1,0 +1,65 @@
+{
+  "kpi": "R7-1",
+  "phase": "Phase 4 external evidence register",
+  "caution": "Publicly observed records do not establish that SoilWise consumes file.json or that EUSO independently indexes ECHO. The M40 date must be backed by September 2026 records; modern test runs cannot prove historical compliance.",
+  "reviewed_at_utc": "2026-11-22",
+  "items": [
+    {
+      "id": "EXT-01",
+      "subject": "Published Zenodo v12 record",
+      "assessment": "PUBLIC_RECORD_OBSERVED",
+      "claim": "Zenodo record 23784504 is a published, open ECHOREPO dataset (version 12, published 2026-10-30), carrying six canonical CSV files plus file.json.",
+      "source_url": "https://zenodo.org/records/23784504",
+      "source_doi": "10.5281/zenodo.23784504",
+      "next_evidence": "Retain dated Zenodo REST metadata response and file listing with DOI, license and checksums. Independently compare publication resources with the validated snapshot; do not assume byte equality."
+    },
+    {
+      "id": "EXT-02",
+      "subject": "CSVW file.json consumption by SoilWise",
+      "assessment": "NOT_VERIFIED",
+      "claim": "Zenodo visibly hosts file.json, but its parsing or use by SoilWise or EUSO has not been demonstrated.",
+      "source_url": "https://zenodo.org/records/23784504",
+      "next_evidence": "Inspect SoilWise's dataset metadata display/XML or documented harvesting mapping for fields unique to file.json; request confirmation and raw metadata provenance from SoilWise."
+    },
+    {
+      "id": "EXT-03",
+      "subject": "SoilWise harvest of ECHOREPO record",
+      "assessment": "USER_REPORTED",
+      "claim": "The project reports that its Zenodo dataset is discoverable on SoilWise; no exact independent SoilWise record permalink has yet been attached to this evidence package.",
+      "source_url": "https://soilwise-he.eu/faq/",
+      "next_evidence": "Provide the exact public SoilWise record URL or its metadata export showing DOI 10.5281/zenodo.23784504 (or a clearly identified version). Capture record date, source repository and field mapping."
+    },
+    {
+      "id": "EXT-04",
+      "subject": "EUSO indexing/harvest of ECHOREPO",
+      "assessment": "NOT_VERIFIED",
+      "claim": "SoilWise documentation describes integration and migration to EUSO, but does not establish independent indexing of this particular ECHOREPO DOI in an EUSO catalogue.",
+      "source_url": "https://soilwise-he.eu/repository-road-map/",
+      "next_evidence": "Obtain a JRC/EUSO record URL, testable API response or signed technical confirmation that identifies ECHOREPO DOI and data flow."
+    },
+    {
+      "id": "EXT-05",
+      "subject": "Firebase and external dependency operations",
+      "assessment": "NOT_VERIFIED",
+      "claim": "Live API/PostgreSQL/Keycloak/MinIO and browser checks do not by themselves validate Firebase ingestion, external publication, all access controls or actual Zenodo upload operation.",
+      "source_url": "https://github.com/echosoil/echorepo-lite/blob/develop/docs/R7_1_VALIDATION_MATRIX.json",
+      "next_evidence": "Obtain separate read-only logs from relevant staging/production pipelines, release inventories, owners and authorized acceptance criteria."
+    },
+    {
+      "id": "EXT-06",
+      "subject": "Formal requirements baseline and WP sign-off",
+      "assessment": "NOT_VERIFIED",
+      "claim": "Technical tests are not a substitute for an approved Grant Agreement/D5.1 requirements-to-component mapping and assigned owner acceptance.",
+      "source_url": "https://github.com/echosoil/echorepo-lite/blob/develop/docs/R7_1_VALIDATION.md",
+      "next_evidence": "Attach exact GA/D5.1 version and clause references, approved component inventory, issue dispositions, named approvers and signed acceptance date."
+    },
+    {
+      "id": "EXT-07",
+      "subject": "M40 September 2026 historical baseline",
+      "assessment": "NOT_VERIFIED",
+      "claim": "November 2026 tests cannot retroactively prove deployment, conformity and testing at M40 (2026-09-30).",
+      "source_url": "https://github.com/echosoil/echorepo-lite/blob/develop/docs/R7_1_VALIDATION.md",
+      "next_evidence": "Retrieve immutable September 2026 release SHA, dated snapshots, test/deployment logs, documented requirements and change history."
+    }
+  ]
+}

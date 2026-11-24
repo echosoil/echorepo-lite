@@ -1,0 +1,633 @@
+{
+  "kpi": "R7-3",
+  "phase": 1,
+  "assessment_date": "2026-11-24",
+  "repository": "echosoil/echorepo-lite",
+  "reviewed_ref": "develop",
+  "reviewed_commit": "25d204a035d6b5b8ef10ebffa10d9bfdd374dd0d",
+  "model": {
+    "name": "ISO/IEC 25010:2023",
+    "url": "https://www.iso.org/standard/78176.html",
+    "quality_in_use_reference": "https://www.iso.org/standard/78177.html",
+    "note": "Project-defined criteria organized by nine product-quality characteristics, not a reproduction of the standard or formal ISO conformity assessment."
+  },
+  "scope": "ECHOREPO repository, portal, API and supporting services; independent mobile application and external platforms require separate owner evidence where applicable.",
+  "status_definitions": {
+    "SUPPORTED": "Existing evidence supports the stated bounded criterion; not an ISO pass or formal acceptance.",
+    "PARTIAL": "Some evidence exists; important part of the criterion remains unverified.",
+    "NOT_ASSESSED": "No adequate measured or direct evidence yet.",
+    "SCOPE_REVIEW": "Applicability or requirement scope requires agreement."
+  },
+  "evidence_sources": {
+    "R71": {
+      "kind": "reported_test_results",
+      "url": "https://zenodo.org/records/24485700",
+      "note": "Project-supplied R7-1 evidence archive; 77/77 mapped checks per supplied Phase 4 report dated 2026-11-23. Archive not independently reopened during this review."
+    },
+    "CI": {
+      "kind": "ci_run",
+      "url": "https://github.com/echosoil/echorepo-lite/actions/runs/45076519469",
+      "note": "Successful isolated CI run, 2026-11-22; separate from the 77 mapped-check denominator."
+    },
+    "M1": {
+      "kind": "repository_definition",
+      "path": "docs/R7_1_VALIDATION_MATRIX.json"
+    },
+    "M2": {
+      "kind": "repository_definition",
+      "path": "docs/R7_1_PHASE2_MATRIX.json"
+    },
+    "M3": {
+      "kind": "repository_definition",
+      "path": "docs/R7_1_PHASE3_MATRIX.json"
+    },
+    "P4": {
+      "kind": "repository_definition",
+      "path": "docs/R7_1_PHASE4.md"
+    },
+    "DATA": {
+      "kind": "implementation",
+      "path": "tools/validate_echorepo_bundle.py"
+    },
+    "API": {
+      "kind": "implementation",
+      "path": "echorepo/routes/data_api.py"
+    },
+    "SESSION": {
+      "kind": "deployment_documentation",
+      "path": "docs/SERVER_SESSION_ROLLOUT.md"
+    },
+    "BIO": {
+      "kind": "deployment_documentation",
+      "path": "docs/streaming_biodiversity_import.md"
+    },
+    "BIOPUB": {
+      "kind": "deployment_documentation",
+      "path": "docs/biodiversity_zenodo_publication.md"
+    },
+    "ZPUB": {
+      "kind": "publication_reference",
+      "url": "https://zenodo.org/records/23784504"
+    },
+    "ZBIO": {
+      "kind": "publication_reference",
+      "url": "https://zenodo.org/records/22014977"
+    },
+    "SW": {
+      "kind": "catalogue_reference",
+      "url": "https://catalogue.soilwise-he.eu/resource?id=10.5281%2Fzenodo.23784504"
+    },
+    "EDP": {
+      "kind": "catalogue_reference",
+      "url": "https://data.europa.eu/data/datasets/oai-zenodo-org-23784504?locale=en"
+    },
+    "COMPOSE": {
+      "kind": "deployment_definition",
+      "path": "docker-compose.prod.yml"
+    },
+    "LOESS": {
+      "kind": "implementation",
+      "path": "tools/refresh_loess_geojson.py"
+    },
+    "QA": {
+      "kind": "implementation",
+      "path": "echorepo/services/coordinate_qa_exact_overrides.py"
+    },
+    "CI_DEF": {
+      "kind": "repository_definition",
+      "path": ".github/workflows/r7-1-validation.yml"
+    },
+    "STYLE": {
+      "kind": "repository_definition",
+      "path": "pyproject.toml"
+    },
+    "MIG": {
+      "kind": "implementation",
+      "path": "scripts/run_pg_migrations.py"
+    },
+    "IMPORT": {
+      "kind": "implementation",
+      "path": "tools/import_biodiversity_large.py"
+    },
+    "GUARD": {
+      "kind": "repository_definition",
+      "path": "docs/R7_1_PHASE2.md"
+    },
+    "UX": {
+      "kind": "repository_definition",
+      "path": "docs/R7_1_PHASE3.md"
+    },
+    "PUB": {
+      "kind": "implementation",
+      "path": "tools/publish_api_file_to_zenodo.py"
+    },
+    "FIRE": {
+      "kind": "implementation",
+      "path": "echorepo/services/firebase.py"
+    },
+    "P2DQ": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE2_RESULTS.md",
+      "note": "Aggregate summary of operator-supplied data-quality.md, 2026-11-24T01:42:48+00:00; original Markdown/JSON retained by operator; no independent rerun."
+    },
+    "P2HTTP": {
+      "kind": "operator_reported_measurement",
+      "path": "docs/R7_3_PHASE2_RESULTS.md",
+      "note": "Aggregate summary of operator-supplied performance.md, 2026-11-24T01:45:10+00:00 to 01:46:25+00:00; production-readonly sequential HTTP benchmark; no independent rerun."
+    }
+  },
+  "criteria": [
+    {
+      "id": "R73-F01",
+      "characteristic": "Functional suitability",
+      "subject": "Core portal and data API",
+      "criterion": "Verify mapped functionality and representative user journeys.",
+      "status": "SUPPORTED",
+      "evidence_refs": [
+        "R71",
+        "M1",
+        "M2",
+        "M3"
+      ],
+      "r71_checks": "C01–C03, C17, C19; I01–I04; B01–B09, B15–B18",
+      "assessment": "R7-1 reported mapped results support defined functionality, not every product requirement.",
+      "next_action": "Review agreed requirements and scope, including mobile app ownership.",
+      "follow_up_phase": 1
+    },
+    {
+      "id": "R73-F02",
+      "characteristic": "Functional suitability",
+      "subject": "Canonical data correctness",
+      "criterion": "Validate six resource schemas, types, keys and consistent counts on a dated snapshot.",
+      "status": "SUPPORTED",
+      "evidence_refs": [
+        "R71",
+        "DATA",
+        "M1",
+        "M2",
+        "P2DQ"
+      ],
+      "r71_checks": "C03–C05, C07; I04,I06,I09,I10",
+      "assessment": "The assessed immutable ZIP contains 11,329 distinct samples and six matching resource schemas, 219,732 rows and zero violations across 73 reported rules (2,363,065 rule observations). Fingerprint matches R7-1. Missingness and 210 existing coordinate QA flags are reported separately.",
+      "next_action": "Retain dated original reports and snapshot hash; review geographic flags and missing semantic metadata. Separate CSVW assessment not performed.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-F03",
+      "characteristic": "Functional suitability",
+      "subject": "Soil and biodiversity processing",
+      "criterion": "Verify transformations, laboratory joins, controlled imports and publication preparation.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "M1",
+        "BIO",
+        "BIOPUB",
+        "ZBIO",
+        "P2DQ"
+      ],
+      "r71_checks": "C04,C09,C12; I09,I10",
+      "assessment": "Snapshot contains 79,601 linked laboratory parameter rows and 100,102 linked biodiversity rows, with assessed finite numeric values, valid references and no blank fields in these tables. This does not establish source-import completeness or scientific fidelity.",
+      "next_action": "Retain processing provenance and operational import evidence; clarify Firebase scope; investigate untranslated text and blank semantic metadata.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-P01",
+      "characteristic": "Performance efficiency",
+      "subject": "Interactive response time",
+      "criterion": "Measure sequential HTTP response latency for health, count, pagination, search, public pages and map data.",
+      "status": "SUPPORTED",
+      "evidence_refs": [
+        "API",
+        "COMPOSE",
+        "P2HTTP"
+      ],
+      "r71_checks": "",
+      "assessment": "Production-readonly sequential benchmark on 24 November 2026: 70/70 successful requests across seven operations; all six proposed latency targets met. Observed p95/max 45.31–197.31 ms among targeted operations. Ten observations per operation; not load or browser-render performance.",
+      "next_action": "Retain original benchmark evidence, note runner location/deployed revision if known, and obtain reviewer agreement on proposed targets. Repeat under controlled workloads only if needed.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-P02",
+      "characteristic": "Performance efficiency",
+      "subject": "Export throughput",
+      "criterion": "Measure elapsed time, output size and throughput for representative canonical exports.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "DATA",
+        "PUB",
+        "P2HTTP"
+      ],
+      "r71_checks": "",
+      "assessment": "Bounded 100-row-limit CSV benchmark: 10/10 successful; median 45.95 ms, p95/max 57.70 ms, median 5,015 decoded bytes and 0.104 MiB/s. Full ZIP and raw biodiversity export throughput unmeasured.",
+      "next_action": "Retain bounded results; optional approved staging export benchmark if required; do not stress production.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-P03",
+      "characteristic": "Performance efficiency",
+      "subject": "Resource use and capacity",
+      "criterion": "Document CPU, peak RSS, disk, workload size and processing time for large biodiversity tasks.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "BIO",
+        "IMPORT",
+        "BIOPUB"
+      ],
+      "r71_checks": "",
+      "assessment": "Streaming and resource limits are documented; actual capacity limits are unmeasured in this assessment.",
+      "next_action": "Retain existing dated benchmark logs if available; perform controlled dev benchmarks, not production stress tests.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-C01",
+      "characteristic": "Compatibility",
+      "subject": "Internal service integration",
+      "criterion": "Check REST API/database, OIDC discovery, object storage and export interfaces.",
+      "status": "SUPPORTED",
+      "evidence_refs": [
+        "R71",
+        "M2"
+      ],
+      "r71_checks": "I01–I10",
+      "assessment": "Ten reported integration checks passed against production observations with staging opt-in; no claim of full staging acceptance.",
+      "next_action": "Record exact environment and test dates; retain original XML evidence.",
+      "follow_up_phase": 1
+    },
+    {
+      "id": "R73-C02",
+      "characteristic": "Compatibility",
+      "subject": "Zenodo data publication",
+      "criterion": "Confirm version-specific records, file inventory and preparation workflow.",
+      "status": "SUPPORTED",
+      "evidence_refs": [
+        "R71",
+        "ZPUB",
+        "ZBIO",
+        "BIOPUB",
+        "PUB"
+      ],
+      "r71_checks": "C07; I10",
+      "assessment": "Project reports canonical and pilot publications; dry run checks preparation, not upload or record equality. Pilot files may be restricted.",
+      "next_action": "Retain public metadata/file listings and publication logs; verify links in Phase 4.",
+      "follow_up_phase": 4
+    },
+    {
+      "id": "R73-C03",
+      "characteristic": "Compatibility",
+      "subject": "SoilWise and European Data Portal discovery",
+      "criterion": "Confirm exact record/DOI discoverability and distinguish metadata parsing.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "SW",
+        "EDP"
+      ],
+      "r71_checks": "C18",
+      "assessment": "Project-observed catalogue links exist; downstream CSVW parsing and JRC/EUSO indexing remain unverified.",
+      "next_action": "Retain dated record captures and SoilWise reply; establish applicable requirements for JRC/EUSO.",
+      "follow_up_phase": 4
+    },
+    {
+      "id": "R73-C04",
+      "characteristic": "Compatibility",
+      "subject": "External data consumption",
+      "criterion": "Confirm LOESS overlay behavior and provenance.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "M1",
+        "LOESS"
+      ],
+      "r71_checks": "C15,C16",
+      "assessment": "Conversion and localization tested; live refresh and end-to-end data provenance not established here.",
+      "next_action": "Collect dated refresh status, source link and screenshot of active overlay if applicable.",
+      "follow_up_phase": 4
+    },
+    {
+      "id": "R73-I01",
+      "characteristic": "Interaction capability",
+      "subject": "Navigation, search and map",
+      "criterion": "Exercise public map, filtering, pagination and authenticated navigation in real browser.",
+      "status": "SUPPORTED",
+      "evidence_refs": [
+        "R71",
+        "M3",
+        "UX"
+      ],
+      "r71_checks": "B01–B09,B12,B15,B16",
+      "assessment": "Reported browser checks passed for these journeys.",
+      "next_action": "Retain browser evidence and describe tested browser/device context.",
+      "follow_up_phase": 1
+    },
+    {
+      "id": "R73-I02",
+      "characteristic": "Interaction capability",
+      "subject": "Localization and responsiveness",
+      "criterion": "Check locale switching and mobile viewport; review accessibility.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "M3",
+        "UX"
+      ],
+      "r71_checks": "B13,B14",
+      "assessment": "Spanish locale and one mobile layout checked; not a cross-browser or accessibility audit.",
+      "next_action": "Review representative keyboard navigation, contrast and labels; test additional browser/device combinations as appropriate.",
+      "follow_up_phase": 5
+    },
+    {
+      "id": "R73-I03",
+      "characteristic": "Interaction capability",
+      "subject": "User experience and satisfaction",
+      "criterion": "Collect anonymous responses from people who have used ECHOREPO.",
+      "status": "NOT_ASSESSED",
+      "evidence_refs": [
+        "UX"
+      ],
+      "r71_checks": "",
+      "assessment": "No existing survey is known to project operator; no satisfaction estimate.",
+      "next_action": "Phase 5: use draft survey protocol; report denominator, recruitment, dates and response distribution.",
+      "follow_up_phase": 5
+    },
+    {
+      "id": "R73-I04",
+      "characteristic": "Interaction capability",
+      "subject": "Co-design feedback and improvements",
+      "criterion": "Document dated workshops or task-based feedback and resulting design changes.",
+      "status": "NOT_ASSESSED",
+      "evidence_refs": [
+        "UX"
+      ],
+      "r71_checks": "",
+      "assessment": "No workshop evidence supplied in this review.",
+      "next_action": "Request relevant project records or organize a new documented feedback session; do not relabel it as a historical workshop.",
+      "follow_up_phase": 5
+    },
+    {
+      "id": "R73-R01",
+      "characteristic": "Reliability",
+      "subject": "Operational availability",
+      "criterion": "Measure availability over a defined observation interval and summarize incidents.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "M2",
+        "COMPOSE",
+        "P2HTTP"
+      ],
+      "r71_checks": "I01,I05–I08",
+      "assessment": "R7-1 point-in-time service checks and R7-3 70/70 sequential HTTP requests succeeded. Neither establishes long-term availability.",
+      "next_action": "Obtain dated monitoring aggregates and incident history with a defined observation interval.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-R02",
+      "characteristic": "Reliability",
+      "subject": "Data integrity and recoverability",
+      "criterion": "Check snapshot integrity and demonstrate restore/recovery on disposable environment.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "DATA",
+        "MIG",
+        "M1",
+        "P2DQ"
+      ],
+      "r71_checks": "C03,C08,C10; I09",
+      "assessment": "Exact-snapshot SHA-256 matches R7-1 and six resources passed assessed integrity checks. Backup restore and disaster recovery remain untested in this assessment.",
+      "next_action": "Verify recovery procedures with disposable dev data; retain recovery outcomes and limitations.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-R03",
+      "characteristic": "Reliability",
+      "subject": "Failure handling",
+      "criterion": "Assess safe behavior on malformed requests and dependency loss.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "M1",
+        "SESSION",
+        "BIO"
+      ],
+      "r71_checks": "C01,C08,C12,C13",
+      "assessment": "Input handling tested; session fail-closed and import rollback documented; no deployment fault injection evidence.",
+      "next_action": "Review failure modes and test selected failures in development only.",
+      "follow_up_phase": 3
+    },
+    {
+      "id": "R73-S01",
+      "characteristic": "Security",
+      "subject": "Authentication and access control",
+      "criterion": "Verify Keycloak discovery, protected API routes, safe redirects and authorized browser access.",
+      "status": "SUPPORTED",
+      "evidence_refs": [
+        "R71",
+        "M1",
+        "M2",
+        "M3"
+      ],
+      "r71_checks": "C01,C02,C14; I02,I07; B11,B12,B15",
+      "assessment": "Mapped checks support bounded authentication/access behaviors; no full authorization audit.",
+      "next_action": "Phase 3: check actual deployed HTTPS login and role boundaries with authorized test accounts.",
+      "follow_up_phase": 3
+    },
+    {
+      "id": "R73-S02",
+      "characteristic": "Security",
+      "subject": "Session confidentiality",
+      "criterion": "Verify opaque server-side session implementation and production cookie/configuration behavior.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "SESSION",
+        "M1"
+      ],
+      "r71_checks": "C13",
+      "assessment": "Unit checks support implementation; rollout document describes optional configuration; database stores sensitive token data.",
+      "next_action": "Confirm actual deployed session backend and cookie flags without collecting token or cookie values; verify expiry/revocation in controlled tests.",
+      "follow_up_phase": 3
+    },
+    {
+      "id": "R73-S03",
+      "characteristic": "Security",
+      "subject": "Transport and security headers",
+      "criterion": "Inspect TLS validity, HTTPS redirects and relevant response headers.",
+      "status": "NOT_ASSESSED",
+      "evidence_refs": [
+        "COMPOSE"
+      ],
+      "r71_checks": "",
+      "assessment": "Deployment settings alone do not verify edge configuration.",
+      "next_action": "Phase 3: conservative public HTTPS checks; record header presence and context, not secrets.",
+      "follow_up_phase": 3
+    },
+    {
+      "id": "R73-S04",
+      "characteristic": "Security",
+      "subject": "Data privacy and least privilege",
+      "criterion": "Check public field suppression, coordinate jitter and role-separated private resources.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "M1",
+        "M3",
+        "QA",
+        "P2DQ"
+      ],
+      "r71_checks": "C06,C11,C14,C15; B10,B11",
+      "assessment": "Existing public field suppression and privacy checks; coordinate ranges and radii checked. Aggregate snapshot report records collected_by populated in samples/images; values and privacy semantics have not been assessed.",
+      "next_action": "Phase 3: review public versus authenticated export projections, collected_by semantics, private routes and retention without publishing identifiers or tokens.",
+      "follow_up_phase": 3
+    },
+    {
+      "id": "R73-S05",
+      "characteristic": "Security",
+      "subject": "Dependency and source security",
+      "criterion": "Audit installed dependencies, static code findings and configuration defaults.",
+      "status": "NOT_ASSESSED",
+      "evidence_refs": [
+        "STYLE",
+        "COMPOSE",
+        "SESSION"
+      ],
+      "r71_checks": "",
+      "assessment": "No current vulnerability audit or secret-management review collected. Compose includes a development-style fallback DB password; actual deployed value is unknown.",
+      "next_action": "Run pip-audit on recorded environment, Bandit/static review and config review; triage findings without publishing secrets.",
+      "follow_up_phase": 3
+    },
+    {
+      "id": "R73-M01",
+      "characteristic": "Maintainability",
+      "subject": "Regression testing and traceability",
+      "criterion": "Check that test code, criteria, CI and results are versioned and reproducible.",
+      "status": "SUPPORTED",
+      "evidence_refs": [
+        "R71",
+        "CI",
+        "CI_DEF",
+        "M1",
+        "M2",
+        "M3",
+        "P4"
+      ],
+      "r71_checks": "C01–C19",
+      "assessment": "Repository contains tests, explicit matrices, CI and consolidation tooling; 18/19 components have isolated passing tests.",
+      "next_action": "Record test revision versus deployment revision; retain evidence archive; expand tests when requirements change.",
+      "follow_up_phase": 1
+    },
+    {
+      "id": "R73-M02",
+      "characteristic": "Maintainability",
+      "subject": "Modularity and documentation",
+      "criterion": "Review service separation, API guidance, migration and publication documentation.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "API",
+        "BIOPUB",
+        "SESSION",
+        "MIG",
+        "STYLE"
+      ],
+      "r71_checks": "",
+      "assessment": "Source and runbooks exist; no measured maintainability review; older architecture overview may not match current implementation.",
+      "next_action": "Review representative code and documentation consistency, technical debt and release process.",
+      "follow_up_phase": 1
+    },
+    {
+      "id": "R73-X01",
+      "characteristic": "Flexibility",
+      "subject": "Deployment and configuration",
+      "criterion": "Review Docker deployment variants, environment-specific controls and database migrations.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "COMPOSE",
+        "GUARD",
+        "SESSION",
+        "MIG"
+      ],
+      "r71_checks": "C10,C13",
+      "assessment": "Deployment/configuration artifacts exist; portability and repeatable installation not demonstrated here.",
+      "next_action": "Reproduce a clean dev deployment or retain documented deployment checks; avoid production changes.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-X02",
+      "characteristic": "Flexibility",
+      "subject": "Scalability and extensibility",
+      "criterion": "Review bounded-memory processing, batch import and optional research services.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "BIO",
+        "IMPORT",
+        "BIOPUB",
+        "R71"
+      ],
+      "r71_checks": "C12,C14,C17,C19",
+      "assessment": "Designed for configurable workflows and optional services; no measured scalability guarantee.",
+      "next_action": "Record workload/resource measurements in Phase 2; identify practical scaling constraints.",
+      "follow_up_phase": 2
+    },
+    {
+      "id": "R73-A01",
+      "characteristic": "Safety",
+      "subject": "Data integrity and safe failure",
+      "criterion": "Identify consequential failures such as incorrect soil results, data loss or exposing sensitive records; review safeguards.",
+      "status": "PARTIAL",
+      "evidence_refs": [
+        "R71",
+        "DATA",
+        "QA",
+        "SESSION",
+        "BIO",
+        "P2DQ"
+      ],
+      "r71_checks": "C03,C05,C06,C13; I09",
+      "assessment": "Snapshot domain-sanity checks passed, but 210 samples carry wrong_coordinates QA flags and missing values are separately quantified. This is not a safety risk assessment or scientific accuracy certification.",
+      "next_action": "Review downstream handling of QA flags, scientific limitations, failure modes and escalation with relevant owners.",
+      "follow_up_phase": 3
+    },
+    {
+      "id": "R73-A02",
+      "characteristic": "Safety",
+      "subject": "Applicability and scientific interpretation",
+      "criterion": "Determine whether safety-specific operational constraints or warnings apply to intended use.",
+      "status": "SCOPE_REVIEW",
+      "evidence_refs": [
+        "ZPUB",
+        "ZBIO"
+      ],
+      "r71_checks": "",
+      "assessment": "Repository is a research data service, not assumed to be safety-critical; soil estimates may be misinterpreted.",
+      "next_action": "Confirm scope with reviewer; record limitations, warnings and rationale for any criteria considered not applicable.",
+      "follow_up_phase": 5
+    }
+  ],
+  "summary": {
+    "total": 28,
+    "status_counts": {
+      "SUPPORTED": 8,
+      "PARTIAL": 15,
+      "NOT_ASSESSED": 4,
+      "SCOPE_REVIEW": 1
+    },
+    "overall": "PHASE_2_INITIAL_MEASUREMENTS_RECORDED; R7-3 ASSESSMENT IN PROGRESS"
+  },
+  "proposed_user_satisfaction_target_pct": 80,
+  "target_status": "WP2 suggested target; not independently established as contractual",
+  "notes": [
+    "R7-1: 49/49 mapped automated tests, 10/10 integration checks and 18/18 browser checks (77/77) per supplied Phase 4 report; 18/19 isolated-component coverage. These numbers are not an R7-3 score.",
+    "Do not treat SUPPORTED criteria as formal acceptance; update after dated evidence is collected.",
+    "Phase 1 was a desk assessment; Phase 2 adds operator-reported offline snapshot checks and bounded sequential HTTP measurements. No new vulnerability audit, survey or production load test has been performed in this update.",
+    "Phase 2 results are summarized in docs/R7_3_PHASE2_RESULTS.md; retain original reports in controlled evidence storage."
+  ],
+  "last_updated_utc": "2026-11-24",
+  "latest_assessment": {
+    "phase": 2,
+    "source_reporting_commit": "c188d629a20e0e7015633766349388229b4971ca",
+    "date": "2026-11-24",
+    "status": "INITIAL_QUANTITATIVE_EVIDENCE_RECORDED",
+    "results_summary": "docs/R7_3_PHASE2_RESULTS.md"
+  }
+}

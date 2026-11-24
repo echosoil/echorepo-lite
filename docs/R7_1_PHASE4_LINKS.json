@@ -1,0 +1,126 @@
+{
+  "kpi": "R7-1",
+  "note": "Supporting checks are corroborating test evidence, not a substitute for complete acceptance of the component criterion or additional external evidence.",
+  "components": [
+    {
+      "id": "R71-C01",
+      "supporting_checks": [
+        "R71-I01",
+        "R71-I02",
+        "R71-I03",
+        "R71-I04",
+        "R71-B11"
+      ]
+    },
+    {
+      "id": "R71-C02",
+      "supporting_checks": [
+        "R71-B01",
+        "R71-B02",
+        "R71-B12",
+        "R71-B15",
+        "R71-B16"
+      ]
+    },
+    {
+      "id": "R71-C03",
+      "supporting_checks": [
+        "R71-I04",
+        "R71-I09"
+      ]
+    },
+    {
+      "id": "R71-C04",
+      "supporting_checks": [
+        "R71-I09"
+      ]
+    },
+    {
+      "id": "R71-C05",
+      "supporting_checks": [
+        "R71-I09"
+      ]
+    },
+    {
+      "id": "R71-C06",
+      "supporting_checks": [
+        "R71-I03",
+        "R71-B10"
+      ]
+    },
+    {
+      "id": "R71-C07",
+      "supporting_checks": [
+        "R71-I10"
+      ]
+    },
+    {
+      "id": "R71-C08",
+      "supporting_checks": [
+        "R71-I08"
+      ]
+    },
+    {
+      "id": "R71-C09",
+      "supporting_checks": []
+    },
+    {
+      "id": "R71-C10",
+      "supporting_checks": [
+        "R71-I05"
+      ]
+    },
+    {
+      "id": "R71-C11",
+      "supporting_checks": []
+    },
+    {
+      "id": "R71-C12",
+      "supporting_checks": []
+    },
+    {
+      "id": "R71-C13",
+      "supporting_checks": [
+        "R71-B12",
+        "R71-B15"
+      ]
+    },
+    {
+      "id": "R71-C14",
+      "supporting_checks": [
+        "R71-B17"
+      ]
+    },
+    {
+      "id": "R71-C15",
+      "supporting_checks": []
+    },
+    {
+      "id": "R71-C16",
+      "supporting_checks": [
+        "R71-B13"
+      ]
+    },
+    {
+      "id": "R71-C17",
+      "supporting_checks": [
+        "R71-B18"
+      ]
+    },
+    {
+      "id": "R71-C18",
+      "supporting_checks": [
+        "R71-I05",
+        "R71-I07",
+        "R71-I08",
+        "R71-I10"
+      ]
+    },
+    {
+      "id": "R71-C19",
+      "supporting_checks": [
+        "R71-B17"
+      ]
+    }
+  ]
+}

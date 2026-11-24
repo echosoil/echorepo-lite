@@ -1,0 +1,152 @@
+{
+  "kpi": "R7-1",
+  "phase": "Phase 3 — browser and end-to-end acceptance",
+  "baseline_note": "Tests execute against an explicitly selected current deployment; not retrospective M40 evidence.",
+  "security": "production-readonly never submits login, logout, consent or export requests; GET may still create analytics events",
+  "cases": [
+    {
+      "id": "R71-B01",
+      "component": "Anonymous landing route",
+      "test": "test_r71_b01_anonymous_landing_opens_explore",
+      "criterion": "Anonymous / redirects to /explore and renders its map.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B02",
+      "component": "Public exploration navigation",
+      "test": "test_r71_b02_public_explore_has_accessible_navigation",
+      "criterion": "Public explore page renders heading, map, search navigation, and no authenticated export control.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B03",
+      "component": "Leaflet map initialization",
+      "test": "test_r71_b03_public_leaflet_map_initializes",
+      "criterion": "A real Chromium browser initializes the public Leaflet map, not merely its HTML container.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B04",
+      "component": "Map filter behavior",
+      "test": "test_r71_b04_map_ph_filters_update_url",
+      "criterion": "Applying pH filters updates map URL parameters while retaining the map.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B05",
+      "component": "Map deep linking",
+      "test": "test_r71_b05_map_deep_link_centers_correctly",
+      "criterion": "A lat/lng/zoom deep link centers the live Leaflet map at the requested location.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B06",
+      "component": "Search UI structure",
+      "test": "test_r71_b06_search_form_and_results_render",
+      "criterion": "All seven search inputs and eight table columns render.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B07",
+      "component": "Search country filter",
+      "test": "test_r71_b07_search_country_filter_round_trip",
+      "criterion": "Country selection submits via GET, persists in the UI and constrains visible results.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B08",
+      "component": "Search pH range filter",
+      "test": "test_r71_b08_search_ph_filter_enforces_visible_range",
+      "criterion": "Submitting pH bounds persists the controls and limits visible numeric pH results.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B09",
+      "component": "Search pagination",
+      "test": "test_r71_b09_search_pagination_preserves_country",
+      "criterion": "Country-filtered pagination preserves the country and changes sample rows.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B10",
+      "component": "Public data privacy",
+      "test": "test_r71_b10_anonymous_search_redacts_submitter_id",
+      "criterion": "Anonymous result table never exposes collected_by identities.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B11",
+      "component": "Anonymous export authorization",
+      "test": "test_r71_b11_anonymous_zip_export_is_forbidden",
+      "criterion": "Public UI hides private ZIP export; direct anonymous request responds 403.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B12",
+      "component": "Personal page auth redirect",
+      "test": "test_r71_b12_personal_page_requires_login_and_preserves_next",
+      "criterion": "Anonymous /my redirects to login and preserves a safe deep-link destination.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B13",
+      "component": "Locale switching",
+      "test": "test_r71_b13_language_selection_sets_locale_cookie",
+      "criterion": "Switching to Spanish updates document locale and browser locale cookie.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B14",
+      "component": "Mobile responsiveness",
+      "test": "test_r71_b14_responsive_public_map_on_mobile",
+      "criterion": "390-pixel viewport shows public map and desktop-mode switch.",
+      "required": true,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B15",
+      "component": "Authenticated personal dashboard",
+      "test": "test_r71_b15_authenticated_personal_page_renders",
+      "criterion": "With a preexisting opted-in session, /my renders map and data table without modifying account.",
+      "required": false,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B16",
+      "component": "Authenticated search export UI",
+      "test": "test_r71_b16_authenticated_search_shows_export_link",
+      "criterion": "With an authenticated session, search displays ZIP export link without downloading.",
+      "required": false,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B17",
+      "component": "Jupyter research environment",
+      "test": "test_r71_b17_optional_jupyter_interface_reachable",
+      "criterion": "If an explicit safe Jupyter URL is supplied, browser reaches the expected research interface.",
+      "required": false,
+      "automation": "Playwright Chromium"
+    },
+    {
+      "id": "R71-B18",
+      "component": "Streamlit research environment",
+      "test": "test_r71_b18_optional_streamlit_interface_reachable",
+      "criterion": "If an explicit safe Streamlit URL is supplied, browser renders the Streamlit interface.",
+      "required": false,
+      "automation": "Playwright Chromium"
+    }
+  ]
+}

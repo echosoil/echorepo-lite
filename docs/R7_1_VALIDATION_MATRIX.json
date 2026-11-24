@@ -1,0 +1,208 @@
+{
+  "kpi": "R7-1",
+  "title": "Validation of ECHOREPO software components against explicit acceptance criteria",
+  "baseline": "M40 (2026-09-30); current-run tests are NOT retrospective M40 evidence",
+  "source": "echosoil/echorepo-lite, starting from main at 31bbac0b7bf3263c81a1f05a74d5b4702226df48",
+  "components": [
+    {
+      "id": "R71-C01",
+      "name": "REST API and query validation",
+      "criterion": "Public health probe works; protected canonical requests reject unauthenticated clients; API key works; invalid selectors and filters fail before DB access.",
+      "tests": [
+        "test_r71_api_01_public_health_endpoint",
+        "test_r71_api_02_private_exports_require_auth",
+        "test_r71_api_03_valid_api_key_is_accepted",
+        "test_r71_api_04_private_identity_field_is_rejected",
+        "test_r71_api_05_invalid_format_and_order_rejected",
+        "test_r71_api_06_pagination_and_filters_bounded",
+        "test_r71_api_07_date_range_validation"
+      ],
+      "additional_evidence": "Integration against staging PostgreSQL and a deployed API; test real filter/count consistency."
+    },
+    {
+      "id": "R71-C02",
+      "name": "Web application access",
+      "criterion": "Anonymous access redirects to login safely; POST is not replayed; logged-in users can reach protected routes.",
+      "tests": [
+        "test_r71_web_01_anonymous_get_redirects_with_next",
+        "test_r71_web_02_post_not_replayed_after_login",
+        "test_r71_web_03_authenticated_user_can_access"
+      ],
+      "additional_evidence": "Browser-based workflow and usability acceptance tests on deployed /explore, /search and /my pages."
+    },
+    {
+      "id": "R71-C03",
+      "name": "Canonical data exports",
+      "criterion": "Six published CSV schemas agree across producer, validator and publisher; ZIP is parseable with no comment prefix; filtering IDs normalizes; parameter threshold is respected.",
+      "tests": [
+        "test_r71_export_01_contracts_match_publisher_and_validator",
+        "test_r71_export_02_machine_zip_has_six_parseable_resources",
+        "test_r71_export_03_sample_id_normalization_is_unique_and_stable",
+        "test_r71_export_04_parameter_threshold_preserves_boundary"
+      ],
+      "additional_evidence": "Real snapshot row-count, foreign-key and value validation using an immutable dataset bundle."
+    },
+    {
+      "id": "R71-C04",
+      "name": "Soil data harmonisation",
+      "criterion": "Multilingual soil texture values map to documented canonical vocabulary; unsupported categories rejected.",
+      "tests": [
+        "test_r71_harmon_01_multilingual_soil_texture_standardized",
+        "test_r71_harmon_02_invalid_category_rejected"
+      ],
+      "additional_evidence": "Representative field-to-lab sample reconciliation and semantic validation with external vocabularies."
+    },
+    {
+      "id": "R71-C05",
+      "name": "Data quality controls",
+      "criterion": "Default/malformed coordinates, duplicate samples, invalid types and wrong header schemas are detected.",
+      "tests": [
+        "test_r71_qa_01_sentinel_and_out_of_bounds_coordinates_excluded",
+        "test_r71_qa_02_duplicate_samples_and_bad_categories_reported",
+        "test_r71_qa_03_numeric_and_timestamp_validation"
+      ],
+      "additional_evidence": "QA report on the M40 archive with defect counts, dispositions and reviewer signatures."
+    },
+    {
+      "id": "R71-C06",
+      "name": "Geospatial and privacy safeguards",
+      "criterion": "Malformed locations are excluded from map output; coordinate jitter is reproducible and bounded.",
+      "tests": [
+        "test_r71_geo_01_geojson_excludes_invalid_coordinates",
+        "test_r71_privacy_01_jitter_is_stable_and_within_radius"
+      ],
+      "additional_evidence": "Payload review for personal data, access rules and adversarial location disclosure; privacy risk assessment."
+    },
+    {
+      "id": "R71-C07",
+      "name": "CSVW metadata and Zenodo preparation",
+      "criterion": "CSVW metadata describes all canonical resource schemas and rejects inconsistent headers.",
+      "tests": [
+        "test_r71_metadata_01_csvw_describes_every_public_resource",
+        "test_r71_metadata_02_csvw_header_mismatch_rejected"
+      ],
+      "additional_evidence": "Offline --dry-run of complete publication workflow; DOI/record evidence; external CSVW interoperability."
+    },
+    {
+      "id": "R71-C08",
+      "name": "MinIO storage",
+      "criterion": "Object paths reject traversal, snapshots target dated/latest paths, responses release connections.",
+      "tests": [
+        "test_r71_storage_01_rejects_path_traversal",
+        "test_r71_storage_02_archive_published_at_versioned_and_latest_paths",
+        "test_r71_storage_03_read_object_closes_minio_response"
+      ],
+      "additional_evidence": "Actual MinIO read/write/restore integration and access policy checks."
+    },
+    {
+      "id": "R71-C09",
+      "name": "Laboratory data ingestion",
+      "criterion": "Sample QR normalization consistent; oversized uploads rejected before DB access.",
+      "tests": [
+        "test_r71_lab_01_qr_identifier_normalization",
+        "test_r71_lab_02_oversized_upload_rejected_before_db_access"
+      ],
+      "additional_evidence": "Staging DB upsert, idempotence, authorization, rollback and per-field lineage tests."
+    },
+    {
+      "id": "R71-C10",
+      "name": "Database migrations",
+      "criterion": "Migration ledger uses bound filename parameters for queries and writes.",
+      "tests": [
+        "test_r71_db_01_migration_ledger_is_parameterized"
+      ],
+      "additional_evidence": "Fresh PostgreSQL 16 migration test and restore-from-backup exercise."
+    },
+    {
+      "id": "R71-C11",
+      "name": "Usage analytics",
+      "criterion": "IP addresses are consistently pseudonymized for usage statistics.",
+      "tests": [
+        "test_r71_analytics_01_ip_identifier_is_pseudonymized"
+      ],
+      "additional_evidence": "Aggregate event ingestion, retention, access policy and dashboard checks on staging."
+    },
+    {
+      "id": "R71-C12",
+      "name": "Biodiversity import and upload",
+      "criterion": "Uploads are bounded and content-exact; auth separation and queueing verified using mocks.",
+      "tests": [
+        "test_staging_is_content_exact_and_bounded",
+        "test_api_upload_enqueues_file_and_exposes_status",
+        "test_too_large_rejected"
+      ],
+      "additional_evidence": "Existing queue/PostgreSQL integration suite, 16S/ITS pipeline processing and scientific outputs."
+    },
+    {
+      "id": "R71-C13",
+      "name": "Server-side sessions",
+      "criterion": "Opaque cookie does not expose tokens; session IDs rotate and logout revokes.",
+      "tests": [
+        "test_tokens_not_in_cookie_and_persist_between_requests",
+        "test_sid_rotation_login_vs_refresh_and_logout_revokes",
+        "test_invalid_legacy_signature_does_not_authenticate"
+      ],
+      "additional_evidence": "Secure live HTTPS cookie configuration, Keycloak login/logout and concurrency stress checks."
+    },
+    {
+      "id": "R71-C14",
+      "name": "JupyterHub edge authentication",
+      "criterion": "Unauthenticated/unauthorised users denied; authorised subject header only emitted on success.",
+      "tests": [
+        "test_anonymous_cannot_inject_identity_header",
+        "test_non_allowlisted_user_is_denied",
+        "test_all_authenticated_users_get_stable_subject"
+      ],
+      "additional_evidence": "Deployment-level notebook isolation, permissions, networking and resource limits."
+    },
+    {
+      "id": "R71-C15",
+      "name": "LOESS overlay",
+      "criterion": "GeoJSON coordinates and status filters correct; accepted public photo links populated without user PII.",
+      "tests": [
+        "test_verified_geojson_coordinate_convention",
+        "test_status_filter_default_and_optional",
+        "test_adds_photo_to_accepted_with_file_path_only"
+      ],
+      "additional_evidence": "Deployed map overlay/manual browser acceptance checks and scheduled refresh logs."
+    },
+    {
+      "id": "R71-C16",
+      "name": "Multilingual user interface",
+      "criterion": "LOESS translation labels registered and fallback/format substitutions validated.",
+      "tests": [
+        "test_every_loess_translation_key_is_registered",
+        "test_english_fallback_and_variable_substitution"
+      ],
+      "additional_evidence": "Language-switching smoke tests across the deployed application and accessibility review."
+    },
+    {
+      "id": "R71-C17",
+      "name": "Optional Streamlit research explorer",
+      "criterion": "Streamlit research UI country filtering and CSV export preserve data semantics.",
+      "tests": [
+        "test_r71_streamlit_01_country_list_omits_missing_and_sorts",
+        "test_r71_streamlit_02_csv_export_is_utf8_and_preserves_headers"
+      ],
+      "additional_evidence": "Only pure helper functions covered; full interactive Streamlit UI, API access, identity and deployment validation remain pending."
+    },
+    {
+      "id": "R71-C18",
+      "name": "External dependencies and publication interoperability",
+      "criterion": "Deployed PostgreSQL, Keycloak, Firebase and Zenodo interfaces work as specified.",
+      "tests": [],
+      "additional_evidence": "External staging/live tests with explicit authorisation and traceable logs. SoilWise/JRC/EOSC are separately scoped commitments."
+    },
+    {
+      "id": "R71-C19",
+      "name": "Jupyter notebook API client",
+      "criterion": "Notebook client sends canonical API filters correctly, parses CSV, rejects wrong media types and requests JSON pagination.",
+      "tests": [
+        "test_r71_research_01_csv_client_transmits_filters_and_parses",
+        "test_r71_research_02_unexpected_non_csv_response_rejected",
+        "test_r71_research_03_paginated_request_uses_json_contract"
+      ],
+      "additional_evidence": "Authenticate against deployed private API and verify end-to-end datasets and notebooks."
+    }
+  ]
+}

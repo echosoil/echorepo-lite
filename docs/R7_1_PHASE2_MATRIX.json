@@ -1,0 +1,68 @@
+{
+  "kpi": "R7-1",
+  "phase": "Phase 2 — staging integration checks",
+  "source_branch": "develop",
+  "note": "Checks run only with R71_PHASE2_RUN=staging; missing prerequisites are INCOMPLETE and never PASS.",
+  "checks": [
+    {
+      "id": "R71-I01",
+      "component": "REST API",
+      "name": "test_r71_i01_staging_api_health",
+      "criterion": "Staging API health endpoint responds with documented JSON."
+    },
+    {
+      "id": "R71-I02",
+      "component": "REST API authentication",
+      "name": "test_r71_i02_staging_private_bundle_rejects_anonymous",
+      "criterion": "Protected canonical bundle request without credentials returns HTTP 401."
+    },
+    {
+      "id": "R71-I03",
+      "component": "REST API pagination",
+      "name": "test_r71_i03_staging_authenticated_api_pagination",
+      "criterion": "Authenticated, bounded canonical JSON request responds with valid pagination metadata and no collected_by field."
+    },
+    {
+      "id": "R71-I04",
+      "component": "REST API CSV/count",
+      "name": "test_r71_i04_staging_api_count_and_bounded_csv",
+      "criterion": "Count endpoint and bounded CSV export function using an authenticated request."
+    },
+    {
+      "id": "R71-I05",
+      "component": "PostgreSQL",
+      "name": "test_r71_i05_postgres_readonly_schema_and_count",
+      "criterion": "Connect to explicitly approved staging database in read-only transaction and find required canonical tables."
+    },
+    {
+      "id": "R71-I06",
+      "component": "API ↔ PostgreSQL",
+      "name": "test_r71_i06_postgres_matches_api_sample_count",
+      "criterion": "Staging API sample count equals PostgreSQL sample count, without writing application tables."
+    },
+    {
+      "id": "R71-I07",
+      "component": "Keycloak/OIDC",
+      "name": "test_r71_i07_keycloak_discovery_and_jwks",
+      "criterion": "Staging issuer discovery and JWKS endpoints are reachable and internally consistent."
+    },
+    {
+      "id": "R71-I08",
+      "component": "MinIO",
+      "name": "test_r71_i08_minio_canonical_snapshot_exists",
+      "criterion": "Staging object-storage bucket exists and canonical/latest/all.zip has nonzero size (HEAD/stat only)."
+    },
+    {
+      "id": "R71-I09",
+      "component": "Canonical snapshot",
+      "name": "test_r71_i09_local_canonical_bundle_validates",
+      "criterion": "Actual local canonical bundle passes structural, type and referential-integrity validator."
+    },
+    {
+      "id": "R71-I10",
+      "component": "Zenodo/CSVW preparation",
+      "name": "test_r71_i10_zenodo_csvw_dry_run_no_publication",
+      "criterion": "Real publisher prepares all six resources and file.json from a local bundle with --dry-run, without contacting Zenodo."
+    }
+  ]
+}

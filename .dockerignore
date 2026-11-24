@@ -15,3 +15,14 @@ keys/
 *.log
 .DS_Store
 node_modules/
+# Persistent application data
+minio-data/
+postgres-data/
+
+# Validation evidence
+r71-evidence/
+r73-evidence/
+
+# Local credentials and configuration
+.env
+.env.*
