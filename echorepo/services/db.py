@@ -109,10 +109,17 @@ def get_pg_conn():
     )
 
 
+def _quote_sqlite_identifier(name: str) -> str:
+    """Quote a single SQLite identifier; data values still use placeholders."""
+    if not isinstance(name, str) or not name or "\0" in name:
+        raise ValueError("Invalid SQLite identifier")
+    return '"' + name.replace('"', '""') + '"'
+
+
 def _find_main_table(conn: sqlite3.Connection) -> str | None:
     cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
     for (tname,) in cur.fetchall():
-        c2 = conn.execute(f"PRAGMA table_info({tname})")
+        c2 = conn.execute(f"PRAGMA table_info({_quote_sqlite_identifier(tname)})")
         cols = {r[1] for r in c2.fetchall()}
         if {"sampleId", "GPS_lat", "GPS_long"}.issubset(cols):
             return tname
@@ -120,10 +127,10 @@ def _find_main_table(conn: sqlite3.Connection) -> str | None:
 
 
 def _ensure_col(conn: sqlite3.Connection, table: str, name: str, decl: str):
-    cur = conn.execute(f"PRAGMA table_info({table})")
+    cur = conn.execute(f"PRAGMA table_info({_quote_sqlite_identifier(table)})")
     cols = {r[1] for r in cur.fetchall()}
     if name not in cols:
-        conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
+        conn.execute(f"ALTER TABLE {_quote_sqlite_identifier(table)} ADD COLUMN {_quote_sqlite_identifier(name)} {decl}")
 
 
 def update_coords_sqlite(sample_id: str, lat: float, lon: float) -> tuple[bool, str]:
@@ -148,13 +155,13 @@ def update_coords_sqlite(sample_id: str, lat: float, lon: float) -> tuple[bool, 
 
         # write ORIGINAL coords
         conn.execute(
-            f"UPDATE {tbl} SET GPS_lat = ?, GPS_long = ? WHERE sampleId = ?", (lat, lon, sample_id)
+            f"UPDATE {_quote_sqlite_identifier(tbl)} SET GPS_lat = ?, GPS_long = ? WHERE sampleId = ?", (lat, lon, sample_id)
         )
 
         # recompute jitter
         jlat, jlon = deterministic_jitter(lat, lon, sample_id, LC_MAX_JITTER_METERS)
         conn.execute(
-            f"UPDATE {tbl} SET lat = ?, lon = ? WHERE sampleId = ?", (jlat, jlon, sample_id)
+            f"UPDATE {_quote_sqlite_identifier(tbl)} SET lat = ?, lon = ? WHERE sampleId = ?", (jlat, jlon, sample_id)
         )
 
         conn.commit()
@@ -292,11 +299,11 @@ def query_user_df(user_key: str) -> pd.DataFrame:
         SELECT
             s.*,
             lab.METALS_info AS lab_METALS_info
-        FROM {settings.TABLE_NAME} AS s
+        FROM {_quote_sqlite_identifier(settings.TABLE_NAME)} AS s
         LEFT JOIN lab
           ON lab.qr_code = s.QR_qrCode
              OR lab.qr_code = s.sampleId
-        WHERE s.{user_col} = ?
+        WHERE s.{_quote_sqlite_identifier(user_col)} = ?
            OR s.userId = ?
         """
         df = pd.read_sql_query(q, conn, params=(user_key, user_key))
@@ -345,10 +352,10 @@ def query_others_df(user_key: str) -> pd.DataFrame:
         )
         SELECT s.*,
                lab.METALS_info AS lab_METALS_info
-        FROM {settings.TABLE_NAME} AS s
+        FROM {_quote_sqlite_identifier(settings.TABLE_NAME)} AS s
         LEFT JOIN lab
           ON {join_clause}
-        WHERE (s.{user_col} IS NULL OR s.{user_col} <> ?)
+        WHERE (s.{_quote_sqlite_identifier(user_col)} IS NULL OR s.{_quote_sqlite_identifier(user_col)} <> ?)
           AND (s.userId IS NULL OR s.userId <> ?)
         """
         df = pd.read_sql_query(q, conn, params=(user_key, user_key))
@@ -380,7 +387,7 @@ def query_sample(sample_id: str) -> pd.DataFrame:
         )
         SELECT s.*,
                lab.METALS_info AS lab_METALS_info
-        FROM {settings.TABLE_NAME} AS s
+        FROM {_quote_sqlite_identifier(settings.TABLE_NAME)} AS s
         LEFT JOIN lab
           ON {join_clause}
         WHERE s.sampleId = ?
@@ -394,5 +401,5 @@ def query_sample(sample_id: str) -> pd.DataFrame:
 def query_sample_df(sample_id: str) -> pd.DataFrame:
     with sqlite3.connect(settings.SQLITE_PATH) as conn:
         return pd.read_sql_query(
-            f"SELECT * FROM {settings.TABLE_NAME} WHERE sampleId = ?", conn, params=(sample_id,)
+            f"SELECT * FROM {_quote_sqlite_identifier(settings.TABLE_NAME)} WHERE sampleId = ?", conn, params=(sample_id,)
         )

@@ -8,7 +8,7 @@ The previous published GitHub release is `v0.2.0` (1 July 2026). The proposed ne
 
 The repository currently has no automated GitHub Actions release job. GitHub releases must therefore be created manually through the website or GitHub CLI.
 
-**Important:** `scripts/make_release.sh` is a *different operation*: it merges the remote `develop` branch into the local production checkout, modifies production environment configuration, and automatically creates and pushes a date-based Git tag. Do **not** invoke that script simply to create a public GitHub v0.3.0 release.
+**Important:** `scripts/make_release.sh` is a *different operation*: it merges the remote `develop` branch into the local production checkout and automatically creates and pushes a date-based Git tag. It preserves the existing production `.env` and does not manage containers. Provision or update production configuration separately; never synchronize development credentials into production. Do **not** invoke that script simply to create a public GitHub v0.3.0 release.
 
 ## Step 1 — Select and review the commit
 

@@ -817,7 +817,8 @@ def _stream_feature_groups(
                 continue
 
             if feature_id != current_feature_id:
-                assert current_taxonomy is not None
+                if current_taxonomy is None:
+                    raise RuntimeError("Missing taxonomy in feature stream")
                 yield (
                     current_feature_id,
                     current_taxonomy,
@@ -853,7 +854,8 @@ def _stream_feature_groups(
             current_sources.add(source_id)
 
         if current_feature_id is not None:
-            assert current_taxonomy is not None
+            if current_taxonomy is None:
+                raise RuntimeError("Missing taxonomy in feature stream")
             yield (
                 current_feature_id,
                 current_taxonomy,
