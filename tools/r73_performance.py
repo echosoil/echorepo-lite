@@ -253,7 +253,7 @@ def main() -> int:
             raise ValueError("Set exactly one of R73_API_KEY or R73_BEARER_TOKEN, or use --public-only")
         if not args.public_only and urlsplit(origin).scheme != "https" and urlsplit(origin).hostname not in {"localhost", "127.0.0.1", "::1"}:
             raise ValueError("Credentials require HTTPS or local loopback")
-    except ValueError as exc:
+    except ValueError:
         # urlsplit may include a user-supplied URL in its error; do not echo raw exceptions.
         p.error("Invalid target, acknowledgement, credentials or workload configuration; see runbook")
     auth = {"X-API-Key": key} if key else {"Authorization": f"Bearer {bearer}"} if bearer else {}
