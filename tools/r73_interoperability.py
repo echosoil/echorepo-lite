@@ -8,7 +8,6 @@ import hashlib
 import io
 import json
 import math
-import re
 import time
 import zipfile
 from datetime import datetime, timezone
