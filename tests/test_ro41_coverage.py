@@ -66,3 +66,24 @@ def test_canonical_version_lineage():
     assert not canonical_record_matches({
         "conceptrecid": "19722513", "conceptdoi": "10.5281/zenodo.22014976"
     })
+
+
+def test_unnamed_columns_preserved_as_aggregate_diagnostics():
+    raw = (b"QR_code,mean_pH_lab,pH_CS,,,Lab_texture_reclass,CS_texture\n"
+           b"A,7,6,,auxiliary,L,L\nB,,5,,,S,\n")
+    result = validation(raw)
+    assert result["rows"] == 2
+    assert result["csv_format"]["blank_headers"] == 2
+    assert not result["csv_format"]["unique_headers"]
+    assert result["csv_format"]["unique_named_headers"]
+    assert result["csv_format"]["unnamed_column_nonempty_counts"] == [0, 1]
+    assert result["ph_paired_nonempty_or_numeric_rows"] == 1
+    assert result["texture_paired_nonempty_or_numeric_rows"] == 1
+    assert not result["expected_columns_present"]["lab_orgc"]
+    assert "organic_carbon_paired_nonempty_or_numeric_rows" not in result
+    assert "auxiliary" not in str(result)
+
+
+def test_duplicate_named_headers_still_rejected_with_unnamed_columns():
+    with pytest.raises(ValidationFormatError):
+        validation(b"QR_code,mean_pH_lab,pH_CS,pH_CS,\nA,7,6,6,\n")
