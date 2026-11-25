@@ -1,0 +1,19 @@
+name: Guild publication candidates (offline)
+on:
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "tools/prepare_guild_publication.py"
+      - "tools/guild_publication_audit.py"
+      - "tests/test_prepare_guild_publication.py"
+      - ".github/workflows/guild-publication-candidates.yml"
+  workflow_dispatch:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m unittest discover -s tests -p 'test_prepare_guild_publication.py' -v
