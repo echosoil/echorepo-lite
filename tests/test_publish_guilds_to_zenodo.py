@@ -101,6 +101,40 @@ class ReleaseTests(unittest.TestCase):
         self.assertTrue((state / "faprotax-sandbox.json").exists())
         self.assertFalse((state / "funguild-sandbox.json").exists())
 
+    def test_publish_records_doi_and_skips_identical_release(self):
+        folder = self.root / "plan"
+        plan = p.plan_release(self.bundle, "funguild", "sandbox",
+                              self.approved("funguild"), folder)
+        state = self.root / "state"
+        state.mkdir()
+        content = p.digest({"files": plan["files"], "metadata": plan["metadata"]})
+        p.atomic_state(state / "funguild-sandbox.json", {
+            "dataset": "funguild", "target": "sandbox", "published": None,
+            "pending": {"status": "staged", "id": "123",
+                        "plan_sha256": plan["plan_sha256"], "content_sha256": content},
+            "history": [],
+        })
+        draft = {"metadata": plan["metadata"], "submitted": False}
+        published = {"metadata": plan["metadata"], "submitted": True, "doi": "10.5281/zenodo.123",
+                     "conceptrecid": "122", "conceptdoi": "10.5281/zenodo.122",
+                     "links": {"html": "https://sandbox.zenodo.org/records/123"}}
+        with (
+            patch.object(p.zen, "env_or_config", return_value="token"),
+            patch.object(p, "get_record", side_effect=[draft, published]),
+            patch.object(p, "verify_remote_files"),
+            patch.object(p.zen, "publish_deposition") as publish,
+            patch.object(p.zen, "create_new_deposition") as create,
+        ):
+            result = p.run_remote("publish", folder, plan["plan_sha256"], state, self.root / "env")
+            publish.assert_called_once()
+            self.assertEqual(result["doi"], "10.5281/zenodo.123")
+            result = p.run_remote("stage", folder, plan["plan_sha256"], state, self.root / "env")
+            self.assertEqual(result["status"], "unchanged")
+            create.assert_not_called()
+        saved = prep.read_json(state / "funguild-sandbox.json")
+        self.assertIsNone(saved["pending"])
+        self.assertEqual(len(saved["history"]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

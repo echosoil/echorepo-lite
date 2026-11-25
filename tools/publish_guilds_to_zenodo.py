@@ -110,7 +110,8 @@ def review_blockers(kind, config):
         blockers.append("Creator metadata missing")
     for name in CHECKS:
         item = config.get("review", {}).get(name, {})
-        if item.get("approved") is not True or not str(item.get("evidence", "")).strip():
+        evidence = item.get("evidence")
+        if item.get("approved") is not True or not isinstance(evidence, str) or not evidence.strip():
             blockers.append(f"Review required: {name}")
     public = config.get("public_provenance", {})
     for name in ("reference_version", "reference_citation", "source_description", "limitations"):
