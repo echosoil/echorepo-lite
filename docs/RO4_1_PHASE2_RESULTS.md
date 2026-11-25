@@ -42,3 +42,12 @@ After publication, record the exact new version record ID (not the concept ID). 
       --commit "$(git rev-parse HEAD)" --out "$OUT/coverage.json"
 
 The reader verifies the canonical concept lineage (19722513), the version DOI and samples.csv checksum before deriving counts. A new publication does not inherit evidence of external catalogue discovery or full resource/CSVW validation from the older release; verify those separately. Live counts and published counts can differ even after a refresh.
+
+
+## Validation subset targeted diagnostic (25 November 2026)
+
+Operator report at 18:29:04 UTC, reporting revision `5428925ee76374c5e6543a281d4a10c7febf6705`. Both resources again match published byte sizes and checksums, DOI resolution matches. The UTF-8 comma reader finds 133 data rows, 17 columns, zero inconsistent row widths and seven unnamed header positions; headers are not unique overall. QR identifier and pH/texture pairs match the expected names; neither expected organic-carbon name matches. Semicolon and tab yield one column each and no recognized expected fields. Original assessment remains NOT_ASSESSED / ValidationFormatError. This is evidence of a machine-readability issue, not proof of a damaged file or invalid scientific results. The unnamed columns' occupancy and exact uniqueness of nonempty headers were not measured in that report.
+
+The follow-up reader permits unambiguous named-field analysis even with unnamed columns, but rejects duplicate named headers, ambiguous delimiters and inconsistent widths. It reports per-unnamed-column nonempty cell counts only; no cell values, sample IDs or guessed mappings are emitted. Missing organic-carbon header names remain unassessed. If unnamed columns or missing expected names are present, the record remains REVIEW even if selected coverage metrics can be computed. No data changes or new Zenodo version are required for this bounded assessment.
+
+The operator elected to retain the pinned October canonical deposition to keep KPI evidence aligned. Do not replace its historical statistics with live portal counts. Retain this diagnostic report separately and repeat only the validation record after the follow-up change. Actual success on the published bytes and scientific interpretation remain to be verified.

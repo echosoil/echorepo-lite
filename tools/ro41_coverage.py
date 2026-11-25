@@ -135,21 +135,33 @@ def validation_rows(data):
         matched = [k for k, v in VALIDATION_COLUMNS.items() if v in header]
         width_errors = sum(len(row) != len(header) for row in rows)
         unique = len(header) == len(set(header))
+        named = [col for col in header if col]
+        named_unique = len(named) == len(set(named))
+        unnamed_indexes = [i for i, col in enumerate(header) if not col]
+        unnamed_nonempty = [
+            sum(bool(row[i].strip()) for row in rows) for i in unnamed_indexes
+        ] if not width_errors else None
         info.update({"columns": len(header), "rows": len(rows),
                      "matched_expected_fields": matched, "width_errors": width_errors,
-                     "unique_headers": unique, "blank_headers": header.count("")})
+                     "unique_headers": unique, "blank_headers": len(unnamed_indexes),
+                     "unique_named_headers": named_unique,
+                     "unnamed_column_nonempty_counts": unnamed_nonempty})
         # A delimiter is only accepted if the exact known identifier and at
         # least one complete measurement pair are found. Never guess by width.
         pairs = (("lab_ph", "field_ph"), ("lab_orgc", "field_orgc"),
                  ("lab_texture", "field_texture"))
         if ("qr" in matched and any(a in matched and b in matched for a, b in pairs)
-                and unique and all(header) and not width_errors):
-            candidates.append((delimiter, name, header, rows))
+                and named_unique and not width_errors):
+            candidates.append((delimiter, name, header, rows, info))
     if len(candidates) != 1:
         raise ValidationFormatError(diagnostics)
-    delimiter, name, header, rows = candidates[0]
+    delimiter, name, header, rows, info = candidates[0]
     return header, rows, delimiter, {"encoding": encoding, "delimiter": name,
-                                     "excel_delimiter_declaration": declared is not None}
+                                     "excel_delimiter_declaration": declared is not None,
+                                     "unique_headers": info["unique_headers"],
+                                     "unique_named_headers": info["unique_named_headers"],
+                                     "blank_headers": info["blank_headers"],
+                                     "unnamed_column_nonempty_counts": info["unnamed_column_nonempty_counts"]}
 
 
 def numeric(value, *, decimal_comma=False):
@@ -236,9 +248,16 @@ def assess(reader, ident, names, *, canonical_release=False):
             result["coverage"] = validation(data[names[0]])
             result["readme_retrieved"] = bool(data[names[1]].strip())
         result["status"] = "OBSERVED"
-        if ident == "24003680" and not all(result["coverage"]["expected_columns_present"].values()):
-            result["status"] = "REVIEW"
-            result["reason"] = "Some expected columns are missing"
+        if ident == "24003680" and not canonical_release:
+            coverage = result["coverage"]
+            issues = []
+            if coverage["csv_format"]["blank_headers"]:
+                issues.append("Unnamed columns: excluded from named-field analysis, occupancy recorded")
+            if not all(coverage["expected_columns_present"].values()):
+                issues.append("Some expected column names are missing; no inferred mapping")
+            if issues:
+                result["status"] = "REVIEW"
+                result["reason"] = "; ".join(issues)
     except ValidationFormatError as exc:
         result["reason"] = "ValidationFormatError"
         result["format_diagnostics"] = exc.diagnostics
