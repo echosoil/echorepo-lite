@@ -1001,13 +1001,21 @@ def fetch_current_fungal_data_from_archives(
         )
 
     current_ids = set(mappings["sample_id"].astype(str).str.upper())
+    # Normalize null archive names before grouping: pandas represents missing
+    # group keys as NaN, which must not be interpreted as a MinIO object.
+    mappings = mappings.copy()
+    mappings["archive_object_name"] = mappings["archive_object_name"].map(
+        lambda value: str(value).strip()
+        if pd.notna(value) and str(value).strip().lower() not in {"none", ""}
+        else ""
+    )
     if source_inventory is not None:
         for row in mappings.itertuples(index=False):
             archive = row.archive_object_name
             source_inventory[str(row.sample_id).upper()] = {
-                "source_kind": "current_archive" if pd.notna(archive) and str(archive).strip() and str(archive).lower() != "none" else "current_structured",
+                "source_kind": "current_archive" if archive else "current_structured",
                 "source_upload_id": str(row.source_upload_id),
-                "archive_object_name": str(archive) if pd.notna(archive) else None,
+                "archive_object_name": archive or None,
                 "source_status": "not_reconstructed",
             }
     frames: list[pd.DataFrame] = []

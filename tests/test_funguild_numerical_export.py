@@ -62,6 +62,27 @@ class FungalExportTests(unittest.TestCase):
         self.assertEqual(set(frame["sample_id"]), {"UNKN-0001"})
         self.assertEqual(inventory["ABCD-1234"]["source_status"], "not_reconstructed")
 
+    def test_null_archive_uses_structured_source_and_records_inventory(self):
+        mappings = pd.DataFrame([
+            {"sample_id": "ABCD-1234", "source_upload_id": "upload-1",
+             "archive_object_name": float("nan")}
+        ])
+        frame = self.frame.iloc[[0]].copy()
+        with (
+            patch.object(guild, "fetch_current_biodiversity_archives", return_value=mappings),
+            patch.object(guild, "_fungal_from_structured_raw", return_value=frame) as sql,
+            patch.object(guild, "_download_minio_object") as download,
+        ):
+            inventory = {}
+            _, current, reconstructed = guild.fetch_current_fungal_data_from_archives(
+                None, source_inventory=inventory)
+        sql.assert_called_once()
+        download.assert_not_called()
+        self.assertEqual(current, {"ABCD-1234"})
+        self.assertEqual(reconstructed, current)
+        self.assertEqual(inventory["ABCD-1234"]["source_kind"], "current_structured")
+        self.assertEqual(inventory["ABCD-1234"]["source_status"], "reconstructed")
+
     def test_bundle_and_hashes(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "bundle"
