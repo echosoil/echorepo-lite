@@ -28,3 +28,17 @@ Run after merging and passing CI, from the development checkout:
     cat "$OUT/coverage.md"
 
 Keep the original complete report and this targeted follow-up separately. No production deployment or new publication. Scientific coverage assessment, formal acceptance scope and additional scientifically justified publications remain follow-up items.
+
+
+## Refresh for a newer published canonical version
+
+The October version remains historical evidence; do not overwrite its statistics. Use the established `scripts/update_zenodo_bundle.sh` publication workflow, first with `--dry-run --save-prepared-dir` in a private directory. Review the freshly prepared files, schema checks, metadata warnings and privacy/publication authorization before publishing. The normal publication run downloads the source again; verify the exact new published bytes separately. Do not publish a new concept solely to update the count. Check the current deposition state and production/sandbox configuration without exposing credentials.
+
+After publication, record the exact new version record ID (not the concept ID). Run from a checkout containing this change:
+
+    OUT="$PWD/ro41-evidence/canonical-refresh-$(date -u +%Y%m%dT%H%M%SZ)"
+    python -m tools.ro41_coverage --ack yes-public-readonly \
+      --canonical-record-id NEW_VERSION_RECORD_ID \
+      --commit "$(git rev-parse HEAD)" --out "$OUT/coverage.json"
+
+The reader verifies the canonical concept lineage (19722513), the version DOI and samples.csv checksum before deriving counts. A new publication does not inherit evidence of external catalogue discovery or full resource/CSVW validation from the older release; verify those separately. Live counts and published counts can differ even after a refresh.

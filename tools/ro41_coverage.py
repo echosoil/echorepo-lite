@@ -184,7 +184,21 @@ def validation(data):
     return result
 
 
-def assess(reader, ident, names):
+CANONICAL_CONCEPT_ID = "19722513"
+CANONICAL_CONCEPT_DOI = "10.5281/zenodo." + CANONICAL_CONCEPT_ID
+
+
+def canonical_record_matches(record):
+    # A new release must belong to the existing canonical collection.
+    # Neither title similarity nor a standalone DOI is sufficient.
+    concept_id = str(record.get("conceptrecid") or "")
+    concept_doi = str(record.get("conceptdoi") or "").lower()
+    return (bool(concept_id or concept_doi)
+            and (not concept_id or concept_id == CANONICAL_CONCEPT_ID)
+            and (not concept_doi or concept_doi == CANONICAL_CONCEPT_DOI))
+
+
+def assess(reader, ident, names, *, canonical_release=False):
     result = {"record_id": ident, "doi": "10.5281/zenodo." + ident, "status": "NOT_ASSESSED"}
     try:
         raw, final = reader.get("https://doi.org/" + result["doi"], 4 * MIB)
@@ -196,6 +210,12 @@ def assess(reader, ident, names):
         record = json_doc(raw)
         if str(record.get("id")) != ident:
             raise ValueError("Wrong record")
+        if canonical_release or ident == "23784504":
+            result["canonical_concept_matches"] = canonical_record_matches(record)
+            if not result["canonical_concept_matches"]:
+                result["status"] = "REVIEW"
+                result["reason"] = "Record does not identify the expected canonical concept"
+                return result
         entries = {x["key"]: x for x in record["files"]}
         data = {}
         integrity = {}
@@ -208,7 +228,7 @@ def assess(reader, ident, names):
             result["status"] = "REVIEW"
             result["reason"] = "File integrity mismatch; no coverage inference"
             return result
-        if ident == "23784504":
+        if canonical_release or ident == "23784504":
             result["coverage"] = canonical(data[names[0]])
         elif ident == "22014977":
             result["coverage"] = biodiversity(data[names[0]])
@@ -234,11 +254,21 @@ def main():
     p.add_argument("--commit", default="not recorded")
     p.add_argument("--record-id", action="append", choices=list(RECORDS),
                    help="Assess only selected pinned records; repeat for multiple")
+    p.add_argument("--canonical-record-id",
+                   help="Assess an explicit published version of the existing canonical concept")
     args = p.parse_args()
+    if args.canonical_record_id and not re.fullmatch(r"[0-9]{1,15}", args.canonical_record_id):
+        p.error("--canonical-record-id requires a numeric Zenodo version record ID")
+    if args.canonical_record_id and args.record_id:
+        p.error("Use --canonical-record-id separately from --record-id")
     selected = list(dict.fromkeys(args.record_id or RECORDS))
     reader = PublicReader()
     try:
-        rows = [assess(reader, ident, RECORDS[ident]) for ident in selected]
+        if args.canonical_record_id:
+            rows = [assess(reader, args.canonical_record_id, ("samples.csv",),
+                           canonical_release=True)]
+        else:
+            rows = [assess(reader, ident, RECORDS[ident]) for ident in selected]
     finally:
         reader.session.close()
     report = {"kpi": "RO4-1", "phase": 2, "report_commit": args.commit,

@@ -3,7 +3,9 @@ import zipfile
 
 import pytest
 
-from tools.ro41_coverage import ValidationFormatError, biodiversity, canonical, validation
+from tools.ro41_coverage import (
+    ValidationFormatError, biodiversity, canonical, canonical_record_matches, validation,
+)
 
 
 def test_coverage_counts():
@@ -54,3 +56,13 @@ def test_bad_width_and_unrecognized_header():
 def test_duplicate_headers_not_accepted():
     with pytest.raises(ValidationFormatError):
         validation(b"QR_code;mean_pH_lab;pH_CS;pH_CS\nA;7;6;6\n")
+
+
+def test_canonical_version_lineage():
+    assert canonical_record_matches({"conceptrecid": "19722513"})
+    assert canonical_record_matches({"conceptdoi": "10.5281/zenodo.19722513"})
+    assert not canonical_record_matches({})
+    assert not canonical_record_matches({"conceptrecid": "22014976"})
+    assert not canonical_record_matches({
+        "conceptrecid": "19722513", "conceptdoi": "10.5281/zenodo.22014976"
+    })
