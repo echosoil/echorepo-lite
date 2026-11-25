@@ -229,8 +229,17 @@ def table(url, columns, key, foreign=()):
 
 def metadata(kind):
     sid = column("sample_id", "string", "ECHOREPO sample label; publication approval pending.")
-    fraction = lambda name, desc, required=True: column(name, {"base": "decimal", "minimum": 0, "maximum": 1}, desc, required)
-    count = lambda name, desc, required=True: column(name, {"base": "decimal", "minimum": 0}, desc, required)
+    # ITS exporter serializes Python floats, including scientific notation.
+    # CSVW double supports that lexical form; FAPROTAX rounded decimals do not
+    # need floating-point metadata.
+    base = "decimal" if kind == "faprotax" else "double"
+
+    def fraction(name, desc, required=True):
+        return column(name, {"base": base, "minimum": 0, "maximum": 1}, desc, required)
+
+    def count(name, desc, required=True):
+        return column(name, {"base": base, "minimum": 0}, desc, required)
+
     if kind == "faprotax":
         func = column("function_code", "string", "Original FAPROTAX output function identifier.")
         tables = [
