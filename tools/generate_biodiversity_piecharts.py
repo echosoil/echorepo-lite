@@ -459,7 +459,7 @@ def get_pg_conn():
     )
 
 
-def init_minio():
+def init_minio(*, read_only: bool = False):
     if Minio is None:
         print("[INFO] python-minio not installed; skipping MinIO upload.")
         return None
@@ -487,6 +487,8 @@ def init_minio():
     try:
         found = client.bucket_exists(MINIO_BUCKET)
         if not found:
+            if read_only:
+                raise RuntimeError(f"MinIO bucket does not exist: {MINIO_BUCKET}")
             client.make_bucket(MINIO_BUCKET)
             print(f"[INFO] Created MinIO bucket {MINIO_BUCKET}")
     except Exception as e:
@@ -982,6 +984,8 @@ def _fungal_from_structured_raw(current_mapping: pd.DataFrame) -> pd.DataFrame:
 def fetch_current_fungal_data_from_archives(
     mclient,
     sample_ids: set[str] | None = None,
+    *,
+    source_inventory: dict | None = None,
 ) -> tuple[pd.DataFrame, set[str], set[str]]:
     """
     Reconstruct current ITS genus/count data from archives or structured raw SQL.
@@ -997,6 +1001,15 @@ def fetch_current_fungal_data_from_archives(
         )
 
     current_ids = set(mappings["sample_id"].astype(str).str.upper())
+    if source_inventory is not None:
+        for row in mappings.itertuples(index=False):
+            archive = row.archive_object_name
+            source_inventory[str(row.sample_id).upper()] = {
+                "source_kind": "current_archive" if pd.notna(archive) and str(archive).strip() and str(archive).lower() != "none" else "current_structured",
+                "source_upload_id": str(row.source_upload_id),
+                "archive_object_name": str(archive) if pd.notna(archive) else None,
+                "source_status": "not_reconstructed",
+            }
     frames: list[pd.DataFrame] = []
     reconstructed_ids: set[str] = set()
 
@@ -1045,6 +1058,9 @@ def fetch_current_fungal_data_from_archives(
             frame["sample_id"] = frame["sample_id"].astype(str).str.upper()
             found = set(frame["sample_id"].unique())
             reconstructed_ids.update(found)
+            if source_inventory is not None:
+                for ident in found:
+                    source_inventory[ident]["source_status"] = "reconstructed"
             frames.append(frame)
 
             missing = archive_samples - found
@@ -1065,6 +1081,8 @@ def fetch_current_fungal_data_from_archives(
 def fetch_fungal_guild_source_data(
     mclient,
     sample_ids: set[str] | None = None,
+    *,
+    source_inventory: dict | None = None,
 ) -> pd.DataFrame:
     """
     Build the effective fungal source dataset.
@@ -1074,7 +1092,9 @@ def fetch_fungal_guild_source_data(
     provenance, so old data cannot override a newer upload.
     """
     archive_df, current_ids, reconstructed_ids = (
-        fetch_current_fungal_data_from_archives(mclient, sample_ids)
+        fetch_current_fungal_data_from_archives(mclient, sample_ids, **(
+            {"source_inventory": source_inventory} if source_inventory is not None else {}
+        ))
     )
 
     legacy_df = fetch_otu_data(marker="ITS")
@@ -1083,6 +1103,14 @@ def fetch_fungal_guild_source_data(
         if sample_ids:
             legacy_df = legacy_df[legacy_df["sample_id"].isin(sample_ids)].copy()
         legacy_df = legacy_df[~legacy_df["sample_id"].isin(current_ids)].copy()
+        if source_inventory is not None:
+            for ident in legacy_df["sample_id"].unique():
+                source_inventory[ident] = {
+                    "source_kind": "legacy",
+                    "source_upload_id": None,
+                    "archive_object_name": None,
+                    "source_status": "reconstructed",
+                }
 
     failed_current = current_ids - reconstructed_ids
     print(f"[INFO] Current ITS samples linked to raw archives: {len(current_ids)}")
@@ -2650,7 +2678,7 @@ def extract_primary_guild(guild_name: str) -> str:
     return s.replace("|", "").strip()
 
 
-def load_funguild_best_by_genus() -> dict[str, dict]:
+def load_funguild_best_by_genus(reference_path: Path | None = None) -> dict[str, dict]:
     """
     Load local FUNGuild_db.json and keep one best assignment per genus.
 
@@ -2664,7 +2692,7 @@ def load_funguild_best_by_genus() -> dict[str, dict]:
         }
       }
     """
-    path = Path(FUNGUILD_DB_JSON)
+    path = Path(FUNGUILD_DB_JSON) if reference_path is None else reference_path
     if not path.exists():
         raise FileNotFoundError(
             f"FUNGuild DB JSON not found: {path}. Set FUNGUILD_DB_JSON or place the file there."
@@ -2947,25 +2975,25 @@ def make_bacterial_guildplot_for_sample(
     return True
 
 
-def summarize_fungal_guilds(
+def calculate_fungal_guilds(
     sample_df: pd.DataFrame,
     funguild_by_genus: dict[str, dict],
-) -> tuple[pd.DataFrame, float]:
-    """Return displayed ITS guild percentages and accepted read coverage.
+) -> tuple[pd.DataFrame, float, float]:
+    """Return unfiltered mapped guild counts/percentages, total and assigned reads.
 
-    Denominator: all positive reconstructed ITS reads, including unassigned.
-    Coverage is calculated before hiding individual guilds below 1%.
+    Use the full positive reconstructed ITS read total, including unassigned
+    reads. A mapped genus contributes to exactly one macro guild.
     """
-    empty = pd.DataFrame(columns=["macro", "percent"])
+    empty = pd.DataFrame(columns=["macro", "count", "percent"])
     plot_df = sample_df.copy()
     plot_df["count"] = pd.to_numeric(plot_df["count"], errors="coerce").fillna(0)
     plot_df = plot_df[plot_df["count"] > 0].copy()
     if plot_df.empty:
-        return empty, 0.0
+        return empty, 0.0, 0.0
 
-    total = plot_df["count"].sum()
-    if total <= 0:
-        return empty, 0.0
+    total = float(plot_df["count"].sum())
+    if not math.isfinite(total):
+        raise ValueError("Non-finite positive ITS read total")
 
     plot_df["genus"] = plot_df.apply(extract_fungal_genus, axis=1)
     plot_df["macro"] = plot_df["genus"].map(
@@ -2973,13 +3001,24 @@ def summarize_fungal_guilds(
     )
     annotated = plot_df[plot_df["macro"].astype(str).str.strip() != ""].copy()
     if annotated.empty:
-        return empty, 0.0
+        return empty, total, 0.0
 
-    coverage_pct = float(annotated["count"].sum() / total * 100.0)
+    assigned = float(annotated["count"].sum())
     grouped = annotated.groupby("macro", dropna=False)["count"].sum().reset_index()
     grouped["percent"] = grouped["count"] / total * 100.0
-    grouped = grouped[grouped["percent"] >= 1.0].copy()
-    return grouped, coverage_pct
+    return grouped, total, assigned
+
+
+def summarize_fungal_guilds(
+    sample_df: pd.DataFrame,
+    funguild_by_genus: dict[str, dict],
+) -> tuple[pd.DataFrame, float]:
+    """Return displayed ITS guild percentages and accepted read coverage."""
+    grouped, total, assigned = calculate_fungal_guilds(sample_df, funguild_by_genus)
+    coverage_pct = assigned / total * 100.0 if total else 0.0
+    if grouped.empty:
+        return pd.DataFrame(columns=["macro", "percent"]), coverage_pct
+    return grouped[grouped["percent"] >= 1.0].copy(), coverage_pct
 
 
 def make_fungal_guildplot_for_sample(
