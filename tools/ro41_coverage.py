@@ -76,36 +76,129 @@ def biodiversity(data):
             "note": "Exact suffix-stripped header labels, not verified distinct physical samples or linkage to canonical IDs. Invalid suffix columns excluded from overlap."}
 
 
-def numeric(value):
+VALIDATION_COLUMNS = {
+    "qr": "QR_code",
+    "lab_ph": "mean_pH_lab",
+    "field_ph": "pH_CS",
+    "lab_orgc": "mean_orgC_lab (%)",
+    "field_orgc": "orgC_CS (%)",
+    "lab_texture": "Lab_texture_reclass",
+    "field_texture": "CS_texture",
+}
+
+
+class ValidationFormatError(ValueError):
+    """Only sanitized structural diagnostics are included in reports."""
+
+    def __init__(self, diagnostics):
+        super().__init__("Validation CSV format not uniquely recognized")
+        self.diagnostics = diagnostics
+
+
+def validation_rows(data):
+    # Do not modify the published bytes. The checksum is checked before this
+    # analysis. Support BOM-marked UTF-16, UTF-8 and a labelled Windows fallback.
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        encodings = ("utf-16",)
+    else:
+        encodings = ("utf-8-sig", "cp1252")
+    text = None
+    for encoding in encodings:
+        try:
+            text = data.decode(encoding)
+            break
+        except UnicodeError:
+            continue
+    if text is None:
+        raise ValidationFormatError({"reason": "unsupported_encoding"})
+    # Optional Excel delimiter declaration, not a header or a data record.
+    declared = None
+    lines = text.splitlines(keepends=True)
+    if lines and lines[0].strip().lower() in {"sep=,", "sep=;", "sep=\t"}:
+        declared = lines.pop(0).rstrip("\r\n")[-1]
+        text = "".join(lines)
+    diagnostics = {"encoding": encoding, "candidates": {}}
+    candidates = []
+    for delimiter in (",", ";", "\t"):
+        if declared is not None and delimiter != declared:
+            continue
+        name = {",": "comma", ";": "semicolon", "\t": "tab"}[delimiter]
+        info = {}
+        diagnostics["candidates"][name] = info
+        try:
+            reader = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter, strict=True)
+            header = [col.strip() for col in next(reader, [])]
+            rows = list(reader)
+        except csv.Error:
+            info["reason"] = "csv_syntax_error"
+            continue
+        matched = [k for k, v in VALIDATION_COLUMNS.items() if v in header]
+        width_errors = sum(len(row) != len(header) for row in rows)
+        unique = len(header) == len(set(header))
+        info.update({"columns": len(header), "rows": len(rows),
+                     "matched_expected_fields": matched, "width_errors": width_errors,
+                     "unique_headers": unique, "blank_headers": header.count("")})
+        # A delimiter is only accepted if the exact known identifier and at
+        # least one complete measurement pair are found. Never guess by width.
+        pairs = (("lab_ph", "field_ph"), ("lab_orgc", "field_orgc"),
+                 ("lab_texture", "field_texture"))
+        if ("qr" in matched and any(a in matched and b in matched for a, b in pairs)
+                and unique and all(header) and not width_errors):
+            candidates.append((delimiter, name, header, rows))
+    if len(candidates) != 1:
+        raise ValidationFormatError(diagnostics)
+    delimiter, name, header, rows = candidates[0]
+    return header, rows, delimiter, {"encoding": encoding, "delimiter": name,
+                                     "excel_delimiter_declaration": declared is not None}
+
+
+def numeric(value, *, decimal_comma=False):
+    value = value.strip()
+    # Only a simple decimal-comma literal; no thousands separator inference.
+    if decimal_comma and re.fullmatch(r"[+-]?\d+,\d+(?:[eE][+-]?\d+)?", value):
+        value = value.replace(",", ".")
     try:
-        return math.isfinite(float(value.strip()))
+        return math.isfinite(float(value))
     except ValueError:
         return False
 
 
 def validation(data):
-    header, rows = csv_rows(data)
-    # Match only explicit known columns; do not silently infer a mapping.
-    expected = {"qr": "QR_code", "lab_ph": "mean_pH_lab", "field_ph": "pH_CS",
-                "lab_orgc": "mean_orgC_lab (%)", "field_orgc": "orgC_CS (%)",
-                "lab_texture": "Lab_texture_reclass", "field_texture": "CS_texture"}
+    header, rows, delimiter, format_info = validation_rows(data)
+    expected = VALIDATION_COLUMNS
     indexes = {k: header.index(v) for k, v in expected.items() if v in header}
-    result = {"rows": len(rows), "column_count": len(header),
+    result = {"rows": len(rows), "column_count": len(header), "csv_format": format_info,
               "expected_columns_present": {k: k in indexes for k in expected}}
-    if "qr" in indexes:
-        ids = [r[indexes["qr"]].strip() for r in rows]
-        result["unique_nonempty_qr_labels"] = len(set(ids) - {""})
-        result["blank_qr_labels"] = ids.count("")
+    ids = [r[indexes["qr"]].strip() for r in rows]
+    result["unique_nonempty_qr_labels"] = len(set(ids) - {""})
+    result["blank_qr_labels"] = ids.count("")
     for name, a, b in (("ph", "lab_ph", "field_ph"), ("organic_carbon", "lab_orgc", "field_orgc"),
                        ("texture", "lab_texture", "field_texture")):
         if a in indexes and b in indexes:
-            check = bool if name == "texture" else numeric
-            result[name + "_paired_nonempty_or_numeric_rows"] = sum(
-                check(r[indexes[a]].strip()) and check(r[indexes[b]].strip()) for r in rows)
+            if name == "texture":
+                count = sum(bool(r[indexes[a]].strip()) and bool(r[indexes[b]].strip()) for r in rows)
+            else:
+                count = sum(numeric(r[indexes[a]], decimal_comma=delimiter != ",")
+                            and numeric(r[indexes[b]], decimal_comma=delimiter != ",") for r in rows)
+            result[name + "_paired_nonempty_or_numeric_rows"] = count
     return result
 
 
-def assess(reader, ident, names):
+CANONICAL_CONCEPT_ID = "19722513"
+CANONICAL_CONCEPT_DOI = "10.5281/zenodo." + CANONICAL_CONCEPT_ID
+
+
+def canonical_record_matches(record):
+    # A new release must belong to the existing canonical collection.
+    # Neither title similarity nor a standalone DOI is sufficient.
+    concept_id = str(record.get("conceptrecid") or "")
+    concept_doi = str(record.get("conceptdoi") or "").lower()
+    return (bool(concept_id or concept_doi)
+            and (not concept_id or concept_id == CANONICAL_CONCEPT_ID)
+            and (not concept_doi or concept_doi == CANONICAL_CONCEPT_DOI))
+
+
+def assess(reader, ident, names, *, canonical_release=False):
     result = {"record_id": ident, "doi": "10.5281/zenodo." + ident, "status": "NOT_ASSESSED"}
     try:
         raw, final = reader.get("https://doi.org/" + result["doi"], 4 * MIB)
@@ -117,6 +210,12 @@ def assess(reader, ident, names):
         record = json_doc(raw)
         if str(record.get("id")) != ident:
             raise ValueError("Wrong record")
+        if canonical_release or ident == "23784504":
+            result["canonical_concept_matches"] = canonical_record_matches(record)
+            if not result["canonical_concept_matches"]:
+                result["status"] = "REVIEW"
+                result["reason"] = "Record does not identify the expected canonical concept"
+                return result
         entries = {x["key"]: x for x in record["files"]}
         data = {}
         integrity = {}
@@ -129,7 +228,7 @@ def assess(reader, ident, names):
             result["status"] = "REVIEW"
             result["reason"] = "File integrity mismatch; no coverage inference"
             return result
-        if ident == "23784504":
+        if canonical_release or ident == "23784504":
             result["coverage"] = canonical(data[names[0]])
         elif ident == "22014977":
             result["coverage"] = biodiversity(data[names[0]])
@@ -137,6 +236,12 @@ def assess(reader, ident, names):
             result["coverage"] = validation(data[names[0]])
             result["readme_retrieved"] = bool(data[names[1]].strip())
         result["status"] = "OBSERVED"
+        if ident == "24003680" and not all(result["coverage"]["expected_columns_present"].values()):
+            result["status"] = "REVIEW"
+            result["reason"] = "Some expected columns are missing"
+    except ValidationFormatError as exc:
+        result["reason"] = "ValidationFormatError"
+        result["format_diagnostics"] = exc.diagnostics
     except (requests.RequestException, ValueError, KeyError, TypeError, AttributeError, csv.Error, RuntimeError, OSError, StopIteration) as exc:
         result["reason"] = type(exc).__name__
     return result
@@ -147,10 +252,23 @@ def main():
     p.add_argument("--ack", required=True, choices=["yes-public-readonly"])
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--commit", default="not recorded")
+    p.add_argument("--record-id", action="append", choices=list(RECORDS),
+                   help="Assess only selected pinned records; repeat for multiple")
+    p.add_argument("--canonical-record-id",
+                   help="Assess an explicit published version of the existing canonical concept")
     args = p.parse_args()
+    if args.canonical_record_id and not re.fullmatch(r"[0-9]{1,15}", args.canonical_record_id):
+        p.error("--canonical-record-id requires a numeric Zenodo version record ID")
+    if args.canonical_record_id and args.record_id:
+        p.error("Use --canonical-record-id separately from --record-id")
+    selected = list(dict.fromkeys(args.record_id or RECORDS))
     reader = PublicReader()
     try:
-        rows = [assess(reader, ident, names) for ident, names in RECORDS.items()]
+        if args.canonical_record_id:
+            rows = [assess(reader, args.canonical_record_id, ("samples.csv",),
+                           canonical_release=True)]
+        else:
+            rows = [assess(reader, ident, RECORDS[ident]) for ident in selected]
     finally:
         reader.session.close()
     report = {"kpi": "RO4-1", "phase": 2, "report_commit": args.commit,
