@@ -1815,8 +1815,15 @@
       const url = String(v).trim();
       if (!url) continue;
 
-      const opt = String(props[`PHOTO_photos_${idx}_option`] || "").toLowerCase();
-      const desc = String(props[`PHOTO_photos_${idx}_comment`] || props[`PHOTO_photos_${idx}_description`] || "").trim();
+      const cleanPhotoText = value => {
+        const text = String(value ?? '').trim();
+        return /^(nan|none|null|<na>)$/i.test(text) ? '' : text;
+      };
+      const option = cleanPhotoText(props[`PHOTO_photos_${idx}_option`]);
+      const opt = option.toLowerCase();
+      const comment = cleanPhotoText(props[`PHOTO_photos_${idx}_comment`]) ||
+        cleanPhotoText(props[`PHOTO_photos_${idx}_description`]);
+      const desc = [...new Set([option, comment].filter(Boolean))].join("\n");
       items.push({ idx, url, opt, desc });
     }
     if (!items.length) return null;
