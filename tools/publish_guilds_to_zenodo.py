@@ -268,7 +268,26 @@ def verify_metadata(record, expected):
 
 
 
-def run_remote(action, directory, approved, state_root, env_file, replace_plan=None):
+def check_version_links(prior, base, ident, confirm_no_existing_draft=False):
+    """A legacy latest_draft link may refer to the published record itself."""
+    links = prior.get("links", {})
+    latest = links.get("latest_draft")
+    expected = f"{base}/{ident}"
+    if latest:
+        if latest.rstrip("/") != expected:
+            raise ValueError("Prior concept already has a different draft link; reconcile manually")
+        # Zenodo RDM issue #858: even a real new draft may be hidden by
+        # a legacy self-link. Require an explicit operator check in the UI.
+        if not confirm_no_existing_draft:
+            raise ValueError(
+                "Zenodo latest_draft points to the published record itself. "
+                "Inspect My uploads (all versions); if no draft exists, "
+                "retry stage with --confirm-no-existing-draft."
+            )
+
+
+def run_remote(action, directory, approved, state_root, env_file, replace_plan=None,
+               confirm_no_existing_draft=False):
     plan = verify_plan(directory, approved)
     kind, target = plan["dataset"], plan["target"]
     base = zen.build_zenodo_base_url(target == "sandbox")
@@ -326,8 +345,7 @@ def run_remote(action, directory, approved, state_root, env_file, replace_plan=N
                 prior = get_record(base, token, previous["id"])
                 if not prior.get("submitted") or str(prior.get("conceptrecid")) != previous["conceptrecid"]:
                     raise ValueError("Prior published concept identity mismatch")
-                if prior.get("links", {}).get("latest_draft"):
-                    raise ValueError("Prior concept already has a draft; reconcile manually")
+                check_version_links(prior, base, previous["id"], confirm_no_existing_draft)
             # Persist intent before a non-idempotent API call. Ambiguous failure
             # must be reconciled manually rather than creating another record.
             pending = {"status": "creating", "plan_sha256": approved, "content_sha256": content_id}
@@ -403,13 +421,17 @@ def main():
         cmd.add_argument("--env-file", type=Path, required=True)
         if action == "restage":
             cmd.add_argument("--replace-plan", required=True, help="Old staged plan SHA256")
+        if action == "stage":
+            cmd.add_argument("--confirm-no-existing-draft", action="store_true",
+                             help="Confirm no unpublished version exists after inspecting Zenodo UI")
     args = parser.parse_args()
     if args.action == "plan":
         config = prep.read_json(args.review) if args.review else review_template(args.dataset)
         result = plan_release(args.bundle, args.dataset, args.target, config, args.out_dir)
     else:
         result = run_remote(args.action, args.plan_dir, args.approve_plan, args.state_dir, args.env_file,
-                            getattr(args, "replace_plan", None))
+                            getattr(args, "replace_plan", None),
+                            getattr(args, "confirm_no_existing_draft", False))
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 

@@ -48,3 +48,7 @@ This is not a substitute for verifying authoritative reference terms, public ide
 ## Funding and draft corrections
 
 Both ECHO awards are required in review metadata: 10.13039/501100000780::101112869 and 10.13039/100014013::10068004. Update older review JSON files accordingly. Use percentage-schema v2 candidates. If a tracked draft is still staged and unpublished, use restage with the new plan and --replace-plan OLD_PLAN_SHA256, the same state directory, and the new --approve-plan hash. It replaces files in place, verifies both grants, and never publishes. If already published, use stage for the next version (new metadata version). Do not delete state or manually edit hashes. An interrupted restage requires reconciliation.
+
+## Legacy Zenodo self-link during versioning
+
+The legacy GET deposition API may expose latest_draft pointing to the published deposition itself (Zenodo RDM issue #858), even when a distinct unpublished draft exists. If stage reports that self-link, inspect My uploads with all versions visible and confirm no unpublished version exists for the same concept. Only then rerun stage with --confirm-no-existing-draft. A link to a different deposition still blocks staging. Never delete or edit the local state to bypass this check. No other person should create drafts concurrently.
