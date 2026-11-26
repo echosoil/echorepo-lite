@@ -35,3 +35,16 @@ The personal table reads canonical translations for the authenticated user's
 own sample/image rows; source text must match. It never adds English columns.
 Structured lab concentration values retain the existing formatting and precedence.
 The existing UI catalogue translation workflow is independent.
+
+## Photo captions
+
+Canonical image descriptions include the nonempty photo option and comment (in
+that order, on separate lines if distinct). This preserves participant text
+such as an option-only Italian caption. All flattened photo path slots are
+included in canonical ingestion; the personal table still displays its first
+three photo columns and the map shows its existing representative photo.
+When an image description changes, ingestion clears only that image's English
+translation so the next translation backfill can regenerate it. To repair old
+records, run the regular ingestion with PostgreSQL upsert enabled, then run
+`scripts/translate_data.sh` against the same database. Refresh any cached
+snapshots separately; existing Zenodo depositions are unchanged.
