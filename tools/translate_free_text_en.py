@@ -78,7 +78,8 @@ def available_sources(session, endpoint, timeout):
     if not any(row.get("code") == "en" for row in rows):
         raise ValueError("English model unavailable")
     return frozenset(
-        row["code"] for row in rows
+        row["code"]
+        for row in rows
         if row.get("code") == "en" or "en" in (row.get("targets") or [])
     )
 
@@ -182,13 +183,16 @@ class Translator:
         self.supported = supported
         self.detections = {}
         self.results = {}
+        self.translations = {}
 
     def translate(self, text, country, strategy):
         key = (text, country_key(country), strategy)
         if key in self.results:
             return self.results[key]
         candidates = ()
-        if strategy != "auto":
+        priors = COUNTRY_LANGUAGES.get(country_key(country), ())
+        forced = strategy == "country" and priors and priors[0] in self.supported
+        if strategy != "auto" and not forced:
             if text not in self.detections:
                 self.detections[text] = detect_languages(
                     self.session, self.endpoint, text, self.timeout
@@ -199,10 +203,17 @@ class Translator:
         if decision.source == "en":
             translated = text
         elif decision.source:
-            translated = translate_text(
-                self.session, self.endpoint, text, self.timeout,
-                source_language=decision.source, supported=self.supported,
-            )
+            translation_key = (text, decision.source)
+            if translation_key not in self.translations:
+                self.translations[translation_key] = translate_text(
+                    self.session,
+                    self.endpoint,
+                    text,
+                    self.timeout,
+                    source_language=decision.source,
+                    supported=self.supported,
+                )
+            translated = self.translations[translation_key]
         self.results[key] = (translated, decision)
         return self.results[key]
 
@@ -212,12 +223,14 @@ def comparison_rows(conn, per_country, countries):
     parts = []
     for table, _, field in FIELDS:
         orig = sql.Identifier(field + "_orig")
-        parts.append(sql.SQL(
-            "SELECT upper(btrim(coalesce(country_code, ''))) AS country, "
-            "btrim({orig}) AS original, {field} AS field FROM {table} "
-            "WHERE NULLIF(btrim({orig}), '') IS NOT NULL "
-            "AND lower(btrim({orig})) NOT IN ('nan', 'none', 'null', '<na>')"
-        ).format(orig=orig, field=sql.Literal(field), table=sql.Identifier(table)))
+        parts.append(
+            sql.SQL(
+                "SELECT upper(btrim(coalesce(country_code, ''))) AS country, "
+                "btrim({orig}) AS original, {field} AS field FROM {table} "
+                "WHERE NULLIF(btrim({orig}), '') IS NOT NULL "
+                "AND lower(btrim({orig})) NOT IN ('nan', 'none', 'null', '<na>')"
+            ).format(orig=orig, field=sql.Literal(field), table=sql.Identifier(table))
+        )
     query = sql.SQL("""
         WITH sources AS ({sources}), unique_texts AS (
             SELECT country, original, string_agg(DISTINCT field, ', ' ORDER BY field) AS fields
@@ -254,11 +267,23 @@ def write_comparison(conn, translator, path, per_country, countries):
     stats = Counter()
     with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow([
-            "country_code", "fields", "original", "auto_en", "country_en", "hybrid_en",
-            "hybrid_source", "hybrid_reason", "detected_language", "confidence_pct",
-            "auto_status", "country_status", "hybrid_status",
-        ])
+        writer.writerow(
+            [
+                "country_code",
+                "fields",
+                "original",
+                "auto_en",
+                "country_en",
+                "hybrid_en",
+                "hybrid_source",
+                "hybrid_reason",
+                "detected_language",
+                "confidence_pct",
+                "auto_status",
+                "country_status",
+                "hybrid_status",
+            ]
+        )
         for country, original, fields in rows:
             results = {}
             statuses = {}
@@ -274,12 +299,19 @@ def write_comparison(conn, translator, path, per_country, countries):
                     results[strategy] = None
                     statuses[strategy] = "error"
                 stats[statuses[strategy]] += 1
-            writer.writerow([
-                country, fields, spreadsheet_safe(original),
-                *(spreadsheet_safe(results[s]) for s in STRATEGIES),
-                hybrid.source or "", hybrid.reason, hybrid.detected, hybrid.confidence,
-                *(statuses[s] for s in STRATEGIES),
-            ])
+            writer.writerow(
+                [
+                    spreadsheet_safe(country),
+                    fields,
+                    spreadsheet_safe(original),
+                    *(spreadsheet_safe(results[s]) for s in STRATEGIES),
+                    spreadsheet_safe(hybrid.source),
+                    hybrid.reason,
+                    spreadsheet_safe(hybrid.detected),
+                    hybrid.confidence,
+                    *(statuses[s] for s in STRATEGIES),
+                ]
+            )
             if sum(stats.values()) % 150 == 0:
                 print(f"Comparison: {sum(stats.values()) // 3}/{len(rows)} rows", flush=True)
     print(f"Comparison: {len(rows)} rows; {dict(stats)}; saved to {path}", flush=True)
@@ -287,7 +319,7 @@ def write_comparison(conn, translator, path, per_country, countries):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--db-host", default="127.0.0.1")
     parser.add_argument("--db-port", type=int, required=True)
@@ -308,6 +340,12 @@ def main():
         parser.error("--compare-per-country must be positive")
     if args.compare_output and args.compare_output.exists():
         parser.error("Comparison output already exists")
+    if args.compare_output and not args.compare_output.parent.is_dir():
+        parser.error("Comparison output directory does not exist")
+    if args.compare_country and not args.compare_output:
+        parser.error("--compare-country requires --compare-output")
+    if args.compare_output and args.limit is not None:
+        parser.error("Use --compare-per-country rather than --limit for comparison")
     if not Path(args.env_file).is_file():
         parser.error("Environment file not found")
     load_dotenv(args.env_file, override=True)
@@ -335,14 +373,18 @@ def main():
         if apply or compare:
             supported = available_sources(session, endpoint, args.timeout)
             print("English source models:", ", ".join(sorted(supported)), flush=True)
-            probe = translate_text(session, endpoint, "Bonjour tout le monde", args.timeout)
+            probe = translate_text(
+                session, endpoint, "Bonjour tout le monde", args.timeout,
+                source_language="fr" if "fr" in supported else "auto", supported=supported,
+            )
             if not probe or probe == "Bonjour tout le monde":
                 raise RuntimeError("LibreTranslate readiness probe failed")
             translator = Translator(session, endpoint, args.timeout, supported)
         if compare:
             countries = (
                 [country_key(code) for code in args.compare_country]
-                if args.compare_country else None
+                if args.compare_country
+                else None
             )
             return write_comparison(
                 conn, translator, compare, args.compare_per_country, countries

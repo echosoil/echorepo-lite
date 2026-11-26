@@ -1,15 +1,18 @@
+import csv
 from unittest.mock import Mock
 
 import pytest
 
 from tools.translate_free_text_en import (
     FIELDS,
+    LanguageChoice,
     Translator,
     available_sources,
     choose_source,
     detect_languages,
     spreadsheet_safe,
     translate_text,
+    write_comparison,
 )
 
 
@@ -121,3 +124,37 @@ def test_explicit_source_unchanged_is_not_success():
 def test_spreadsheet_formula_is_escaped():
     assert spreadsheet_safe("=1+1") == "'=1+1"
     assert spreadsheet_safe("campione 3") == "campione 3"
+
+
+def test_comparison_writes_review_csv_without_update(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "tools.translate_free_text_en.comparison_rows",
+        lambda conn, per_country, countries: [("IT", "campione 3", "image_description")],
+    )
+    translator = Mock()
+    translator.translate.side_effect = [
+        ("sample 3", LanguageChoice("auto", "auto")),
+        ("sample 3", LanguageChoice("it", "forced_country")),
+        ("sample 3", LanguageChoice("it", "country_prior", "es", 60)),
+    ]
+    conn = Mock()
+    path = tmp_path / "comparison.csv"
+    assert write_comparison(conn, translator, path, 50, ["IT"]) == 0
+    conn.cursor.assert_not_called()
+    with path.open(encoding="utf-8", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["hybrid_source"] == "it"
+    assert row["hybrid_en"] == "sample 3"
+    assert row["original"] == "campione 3"
+    assert row["hybrid_status"] == "ok"
+    with pytest.raises(FileExistsError):
+        write_comparison(conn, translator, path, 50, ["IT"])
+
+
+def test_country_mode_does_not_depend_on_detector():
+    session = Mock()
+    session.post.return_value.json.return_value = {"translatedText": "sample 3"}
+    translator = Translator(session, "http://localhost", 10, SUPPORTED)
+    assert translator.translate("campione 3", "IT", "country")[0] == "sample 3"
+    assert session.post.call_count == 1
+    assert session.post.call_args.kwargs["json"]["source"] == "it"
