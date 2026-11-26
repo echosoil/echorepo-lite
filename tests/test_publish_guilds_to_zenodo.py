@@ -25,6 +25,7 @@ class ReleaseTests(unittest.TestCase):
             prep.write_json(folder / "file.json", {"tables": []})
             stats = {"samples": 1}
             prep.write_json(folder / "provenance.json", {
+                "publication_schema_version": "2.0", "proportional_unit": "percent",
                 "statistics": stats, "files": {x.name: prep.file_meta(x) for x in folder.iterdir()}})
             report[kind] = stats
             report["candidate_manifests"][kind] = prep.file_meta(folder / "provenance.json")
@@ -134,6 +135,104 @@ class ReleaseTests(unittest.TestCase):
         saved = prep.read_json(state / "funguild-sandbox.json")
         self.assertIsNone(saved["pending"])
         self.assertEqual(len(saved["history"]), 1)
+
+    def test_version_self_link_requires_explicit_confirmation(self):
+        base = "https://sandbox.zenodo.org/api/deposit/depositions"
+        prior = {"links": {"latest_draft": f"{base}/123"}}
+        with self.assertRaisesRegex(ValueError, "confirm-no-existing-draft"):
+            p.check_version_links(prior, base, "123")
+        p.check_version_links(prior, base, "123", True)
+        p.check_version_links({"links": {}}, base, "123")
+        for url in (f"{base}/456", "https://example.org/api/deposit/depositions/123"):
+            with self.assertRaisesRegex(ValueError, "different draft link"):
+                p.check_version_links({"links": {"latest_draft": url}}, base, "123", True)
+
+    def test_version_stage_from_published_self_link(self):
+        folder = self.root / "plan"
+        config = self.approved("faprotax")
+        config["metadata"]["version"] = "1.1"
+        plan = p.plan_release(self.bundle, "faprotax", "sandbox", config, folder)
+        state = self.root / "state"
+        state.mkdir()
+        previous = {"id": "123", "conceptrecid": "122", "content_sha256": "old"}
+        state_path = state / "faprotax-sandbox.json"
+        p.atomic_state(state_path, {
+            "dataset": "faprotax", "target": "sandbox", "published": previous,
+            "pending": None, "history": [previous],
+        })
+        base = "https://sandbox.zenodo.org/api/deposit/depositions"
+        prior = {"id": 123, "submitted": True, "conceptrecid": "122",
+                 "links": {"latest_draft": f"{base}/123"}}
+        draft = {"id": 456, "submitted": False, "conceptrecid": "122",
+                 "links": {"bucket": "https://sandbox.zenodo.org/api/files/abc"}}
+        with (
+            patch.object(p.zen, "env_or_config", return_value="token"),
+            patch.object(p, "get_record", return_value=prior),
+            patch.object(p.zen, "create_new_version_draft", return_value=draft) as version,
+        ):
+            with self.assertRaisesRegex(ValueError, "confirm-no-existing-draft"):
+                p.run_remote("stage", folder, plan["plan_sha256"], state, self.root / "env")
+            version.assert_not_called()
+            self.assertIsNone(prep.read_json(state_path)["pending"])
+        with (
+            patch.object(p.zen, "env_or_config", return_value="token"),
+            patch.object(p, "get_record", side_effect=[prior, {"metadata": plan["metadata"]}]),
+            patch.object(p.zen, "create_new_version_draft", return_value=draft) as version,
+            patch.object(p.zen, "clear_deposition_files") as clear,
+            patch.object(p.zen, "update_metadata"),
+            patch.object(p.zen, "upload_file_to_bucket"),
+            patch.object(p, "verify_remote_files"),
+            patch.object(p.zen, "publish_deposition") as publish,
+        ):
+            result = p.run_remote("stage", folder, plan["plan_sha256"], state,
+                                  self.root / "env", confirm_no_existing_draft=True)
+            version.assert_called_once_with(base, "token", "123")
+            clear.assert_called_once_with(base, "token", "456")
+            publish.assert_not_called()
+        self.assertEqual(result["id"], "456")
+        self.assertEqual(result["status"], "staged")
+        self.assertEqual(prep.read_json(state_path)["published"], previous)
+
+    def test_both_funding_awards_required_and_verified(self):
+        config = self.approved("faprotax")
+        self.assertEqual(len(config["metadata"]["grants"]), 2)
+        remote = {**config["metadata"], "grants": config["metadata"]["grants"][:1]}
+        with self.assertRaisesRegex(ValueError, "funding"):
+            p.verify_metadata({"metadata": remote}, config["metadata"])
+        config["metadata"]["grants"] = remote["grants"]
+        self.assertIn("Expected both ECHO funding awards", p.review_blockers("faprotax", config))
+
+    def test_restage_reuses_unpublished_draft(self):
+        folder = self.root / "plan"
+        plan = p.plan_release(self.bundle, "faprotax", "sandbox",
+                              self.approved("faprotax"), folder)
+        state = self.root / "state"
+        state.mkdir()
+        p.atomic_state(state / "faprotax-sandbox.json", {
+            "dataset": "faprotax", "target": "sandbox", "published": None,
+            "pending": {"status": "staged", "id": "123", "plan_sha256": "old"},
+            "history": [],
+        })
+        draft = {"id": 123, "submitted": False, "metadata": plan["metadata"],
+                 "links": {"bucket": "https://sandbox.zenodo.org/api/files/abc"}}
+        with (
+            patch.object(p.zen, "env_or_config", return_value="token"),
+            patch.object(p, "get_record", return_value=draft),
+            patch.object(p.zen, "list_deposition_files",
+                         return_value=[{"filename": name} for name in plan["files"]]),
+            patch.object(p.zen, "update_metadata"),
+            patch.object(p.zen, "upload_file_to_bucket"),
+            patch.object(p, "verify_remote_files"),
+            patch.object(p.zen, "create_new_deposition") as create,
+            patch.object(p.zen, "publish_deposition") as publish,
+        ):
+            with self.assertRaises(ValueError):
+                p.run_remote("restage", folder, plan["plan_sha256"], state, self.root / "env", "wrong")
+            result = p.run_remote("restage", folder, plan["plan_sha256"], state, self.root / "env", "old")
+            self.assertEqual(result["id"], "123")
+            self.assertEqual(result["status"], "staged")
+            create.assert_not_called()
+            publish.assert_not_called()
 
     def test_data_curator_is_supported_and_verified(self):
         config = self.approved("faprotax")

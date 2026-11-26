@@ -124,13 +124,12 @@ def fap_tables(src, out):
         coverage[ident] = (frac, pct)
     if not profiles or set(profiles) != set(coverage):
         raise ValueError("FAPROTAX sample sets differ or are empty")
-    write_csv(out / "functional_profiles.csv", ("sample_id", "function_code", "otu_fraction"),
-              ((ident, function, fraction)
+    write_csv(out / "functional_profiles.csv", ("sample_id", "function_code", "otu_perc"),
+              ((ident, function, fraction * 100)
                for ident, vals in sorted(profiles.items())
                for function, fraction in zip(functions, vals)))
-    write_csv(out / "annotation_coverage.csv", ("sample_id", "annotated_read_fraction",
-                                                "annotated_read_percent"),
-              ((ident, *values) for ident, values in sorted(coverage.items())))
+    write_csv(out / "annotation_coverage.csv", ("sample_id", "annotated_read_perc"),
+              ((ident, values[1]) for ident, values in sorted(coverage.items())))
     write_csv(out / "function_definitions.csv", ("function_code",),
               ((name,) for name in sorted(functions)))
     return {
@@ -213,6 +212,21 @@ def fungal_tables(out, manifest):
     }
 
 
+def convert_fungal_percentages(out):
+    """Convert already validated local fraction tables without changing counts/nulls."""
+    for filename, headers, old, new in (
+        (FUN_FILES[0], FUN_HEADERS[0], "fraction", "guild_perc"),
+        (FUN_FILES[1], FUN_HEADERS[1], "assigned_fraction", "assigned_perc"),
+    ):
+        rows = records(out / filename, headers)
+        write_csv(
+            out / filename,
+            [new if name == old else name for name in headers],
+            (((number(row[name], 1) * 100 if row[name] else "")
+              if name == old else row[name] for name in headers) for row in rows),
+        )
+
+
 def column(name, datatype, description, required=True):
     return {"name": name, "titles": name, "datatype": datatype,
             "dc:description": description, "required": required}
@@ -234,8 +248,8 @@ def metadata(kind):
     # need floating-point metadata.
     base = "decimal" if kind == "faprotax" else "double"
 
-    def fraction(name, desc, required=True):
-        return column(name, {"base": base, "minimum": 0, "maximum": 1}, desc, required)
+    def percentage(name, desc, required=True):
+        return column(name, {"base": base, "minimum": 0, "maximum": 100}, desc, required)
 
     def count(name, desc, required=True):
         return column(name, {"base": base, "minimum": 0}, desc, required)
@@ -243,22 +257,20 @@ def metadata(kind):
     if kind == "faprotax":
         func = column("function_code", "string", "Original FAPROTAX output function identifier.")
         tables = [
-            table("functional_profiles.csv", [sid, func, fraction("otu_fraction",
-                  "Fraction of present retained OTUs assigned to this function; functions overlap.")],
+            table("functional_profiles.csv", [sid, func, percentage("otu_perc",
+                  "Percentage of present retained OTUs assigned to this function; functions overlap.")],
                   ["sample_id", "function_code"],
                   [("sample_id", "annotation_coverage.csv", "sample_id"),
                    ("function_code", "function_definitions.csv", "function_code")]),
-            table("annotation_coverage.csv", [sid, fraction("annotated_read_fraction",
-                  "Fraction of retained reads assigned at least one function."),
-                  column("annotated_read_percent", {"base": "decimal", "minimum": 0, "maximum": 100},
-                         "Same read coverage expressed as percent.")], "sample_id"),
+            table("annotation_coverage.csv", [sid, percentage("annotated_read_perc",
+                  "Percentage of retained reads assigned at least one function.")], "sample_id"),
             table("function_definitions.csv", [func], "function_code"),
         ]
     else:
         g = column("guild", "string", "ECHOREPO mapped macro-guild label.")
         tables = [
             table("guild_profiles.csv", [sid, g, count("read_count", "Positive assigned reads."),
-                  fraction("fraction", "Fraction of all positive reconstructed ITS reads.")],
+                  percentage("guild_perc", "Percentage of all positive reconstructed ITS reads.")],
                   ["sample_id", "guild"], [("sample_id", "annotation_coverage.csv", "sample_id")]),
             table("annotation_coverage.csv", [
                 sid, column("status", "string", "Reconstruction/observation status."),
@@ -266,7 +278,7 @@ def metadata(kind):
                 count("total_reads", "All positive reconstructed ITS reads.", False),
                 count("assigned_reads", "Reads in accepted mapped guilds.", False),
                 count("unassigned_reads", "Remaining reconstructed reads.", False),
-                fraction("assigned_fraction", "Assigned reads / total; null if unavailable or zero total.", False),
+                percentage("assigned_perc", "Assigned reads / total times 100; null if unavailable or zero total.", False),
             ], "sample_id"),
             table("guild_definitions.csv", [g, column("primary_guild", "string", "Primary guild mapped by ECHOREPO.")],
                   "primary_guild"),
@@ -281,15 +293,15 @@ def finish(out, kind, stats, provenance):
     if kind == "faprotax":
         explanation = (
             "Each sample/function pair is retained, including zeros. The denominator is present "
-            "retained OTUs, not sequencing reads. Functions overlap; sums can exceed 1. "
-            "Annotation coverage uses retained sequencing reads. Values retain original rounding. "
+            "retained OTUs, not sequencing reads. Functions overlap; sums can exceed 100%. "
+            "Annotation coverage uses retained sequencing reads. All proportional values are percentages (0–100); conversion preserves original rounding. "
             "Function identifiers are the original output labels, not a redistributed reference "
             "database or independently curated biological definitions. Zero coverage alone does "
             "not distinguish no retained reads from no accepted assignments."
         )
     else:
         explanation = (
-            "Positive mapped guild rows are sparse, without a 1% cutoff. The denominator is all "
+            "Positive mapped guild rows are sparse, without a 1% cutoff. All proportional values are percentages (0–100). The denominator is all "
             "positive reconstructed ITS reads, including unassigned reads. Absent profile rows "
             "mean zero for an observed sample only. Missing reconstruction is not zero coverage. "
             "Genus matching selects one mapped macro guild per genus using Probable or Highly "
@@ -339,12 +351,14 @@ def prepare(fap_dir, audit_path, fungal_dir, out, code_commit):
         for name in FUN_FILES:
             checked_copy(fungal_dir / name, fun / name, manifest["files"][name])
         fun_stats = fungal_tables(fun, manifest)
+        convert_fungal_percentages(fun)
         # Keep private input associations out of both candidate directories.
         inventory = file_meta(fungal_dir / "source_inventory.local.json")
         if inventory != manifest["files"]["source_inventory.local.json"]:
             raise ValueError("ITS internal inventory fingerprint mismatch")
         shutil.rmtree(sources)
-        common = {"preparation_commit": code_commit,
+        common = {"publication_schema_version": "2.0", "proportional_unit": "percent",
+                  "preparation_commit": code_commit,
                   "prepared_at_utc": datetime.now(timezone.utc).isoformat(),
                   "limitations": ["Source lineage to a pinned public release is not yet established.",
                                   "Public sample identifiers and reference terms require approval."]}
