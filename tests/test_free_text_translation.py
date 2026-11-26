@@ -213,3 +213,89 @@ def test_comparison_cli_preserves_output_path(tmp_path, monkeypatch, preflight):
         assert translator.translate.call_count == 3
         cli.comparison_rows.assert_called_once_with(conn, 1, ["IT"])
         conn.cursor.assert_not_called()
+
+
+def setup_retranslation_cli(tmp_path, monkeypatch, translator, extra=()):
+    env = tmp_path / ".env"
+    env.write_text("DB_PASSWORD=test-password\n", encoding="utf-8")
+    backup = tmp_path / "backup.csv"
+    argv = [
+        "translate_free_text_en", "--env-file", str(env), "--db-port", "5432",
+        "--apply", "--retranslate-country", "IT", "--backup-output", str(backup),
+        *extra,
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    monkeypatch.setenv("DB_PASSWORD", "test-password")
+    conn = MagicMock()
+    cursor = conn.cursor.return_value.__enter__.return_value
+    cursor.fetchone.return_value = (1,)
+    cursor.fetchall.return_value = [("sample", "campione", "IT", "champion")]
+    cursor.rowcount = 1
+    monkeypatch.setattr(cli, "FIELDS", (("samples", ("sample_id",), "observations"),))
+    monkeypatch.setattr(cli.psycopg2, "connect", Mock(return_value=conn))
+    monkeypatch.setattr(cli.requests, "Session", Mock())
+    monkeypatch.setattr(cli, "available_sources", Mock(return_value=SUPPORTED))
+    monkeypatch.setattr(cli, "translate_text", Mock(return_value="Hello everyone"))
+    monkeypatch.setattr(cli, "Translator", Mock(return_value=translator))
+    return conn, cursor, backup
+
+
+def test_retranslation_cli_journals_before_guarded_update(tmp_path, monkeypatch):
+    translator = Mock()
+    translator.translate.return_value = ("sample", LanguageChoice("it", "country_prior"))
+    conn, cursor, backup = setup_retranslation_cli(tmp_path, monkeypatch, translator)
+
+    def check_execute(query, params):
+        if params and params[0] == "sample":
+            assert "pending" in backup.read_text(encoding="utf-8")
+            assert "champion" in backup.read_text(encoding="utf-8")
+            assert params == ("sample", "sample", "campione", "IT", "champion")
+
+    cursor.execute.side_effect = check_execute
+    assert cli.main() == 0
+    conn.set_session.assert_called_once_with(readonly=False)
+    with backup.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert [row["event"] for row in rows] == ["scope", "pending", "committed"]
+    assert backup.stat().st_mode & 0o777 == 0o600
+
+
+def test_failed_retranslation_retains_previous_value(tmp_path, monkeypatch):
+    translator = Mock()
+    translator.translate.return_value = (None, LanguageChoice(None, "unsupported_detected"))
+    _, cursor, backup = setup_retranslation_cli(tmp_path, monkeypatch, translator)
+    assert cli.main() == 0
+    assert cursor.execute.call_count == 2  # count and select only
+    assert "pending" not in backup.read_text(encoding="utf-8")
+
+
+def test_retranslation_preflight_never_creates_backup(tmp_path, monkeypatch):
+    translator = Mock()
+    conn, cursor, backup = setup_retranslation_cli(
+        tmp_path, monkeypatch, translator, extra=("--preflight",)
+    )
+    assert cli.main() == 0
+    assert not backup.exists()
+    conn.set_session.assert_called_once_with(readonly=True)
+    translator.translate.assert_not_called()
+    assert cursor.execute.call_count == 1
+
+
+def test_retranslation_journal_resume_and_conflicts(tmp_path):
+    from tools.retranslation_journal import RetranslationJournal
+
+    backup = tmp_path / "journal.csv"
+    scope = {"database": "test"}
+    key = ("samples", "observations", ("sample",))
+    journal = RetranslationJournal(backup, scope)
+    journal.record("pending", *key, "campione", "IT", None, "sample")
+    journal.close()
+    journal = RetranslationJournal(backup, scope, resume=True)
+    assert journal.resume_status(*key, "campione", "IT", None) == "retry"
+    assert journal.resume_status(*key, "campione", "IT", "sample") == "done"
+    assert journal.resume_status(*key, "campione", "IT", "sample") == "done"
+    assert journal.resume_status(*key, "edited", "IT", "sample") == "conflict"
+    assert journal.resume_status(*key, "campione", "IT", "manual edit") == "conflict"
+    journal.close()
+    with pytest.raises(ValueError, match="scope"):
+        RetranslationJournal(backup, {"database": "other"}, resume=True)

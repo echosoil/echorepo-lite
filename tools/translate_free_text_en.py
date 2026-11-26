@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backfill missing English free text only, without changing soil categories."""
+"""Backfill or explicitly replace English free text, never soil categories."""
 
 import argparse
 import csv
@@ -12,6 +12,8 @@ import psycopg2
 import requests
 from dotenv import load_dotenv
 from psycopg2 import sql
+
+from tools.retranslation_journal import RetranslationJournal
 
 FIELDS = (
     ("samples", ("sample_id",), "contamination_other"),
@@ -327,6 +329,11 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--apply", action="store_true")
     mode.add_argument("--compare-output", type=Path, help="Read-only comparison CSV (new file)")
+    scope = parser.add_mutually_exclusive_group()
+    scope.add_argument("--retranslate-all", action="store_true", help="Include existing English values")
+    scope.add_argument("--retranslate-country", action="append", help="Repeat for selected countries")
+    parser.add_argument("--backup-output", type=Path, help="Private write-ahead CSV journal")
+    parser.add_argument("--resume", action="store_true", help="Resume using the existing backup CSV")
     parser.add_argument("--language-strategy", choices=STRATEGIES, default="hybrid")
     parser.add_argument("--compare-per-country", type=int, default=50)
     parser.add_argument("--compare-country", action="append", help="Repeat for selected countries")
@@ -334,6 +341,23 @@ def main():
     parser.add_argument("--limit", type=int, help="Maximum candidates per field")
     parser.add_argument("--timeout", type=int, default=90)
     args = parser.parse_args()
+    retranslate = bool(args.retranslate_all or args.retranslate_country)
+    countries = sorted({country_key(code) for code in (args.retranslate_country or [])})
+    if any(len(code) != 2 or not code.isascii() or not code.isalpha() for code in countries):
+        parser.error("--retranslate-country requires two-letter country codes")
+    if retranslate and args.compare_output:
+        parser.error("Retranslation and comparison are separate modes")
+    if args.apply and retranslate and not args.backup_output:
+        parser.error("Retranslation writes require --backup-output")
+    if args.backup_output and (not retranslate or not args.apply):
+        parser.error("--backup-output requires --apply and a retranslation scope")
+    if args.resume and not args.backup_output:
+        parser.error("--resume requires --backup-output")
+    if args.backup_output:
+        if not args.backup_output.parent.is_dir():
+            parser.error("Backup output directory does not exist")
+        if args.backup_output.exists() != args.resume:
+            parser.error("Use a new backup path, or --resume with an existing backup")
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")
     if args.compare_per_country < 1:
@@ -368,6 +392,7 @@ def main():
     )
     session = requests.Session()
     session.trust_env = False
+    journal = None
     try:
         conn.set_session(readonly=not apply)
         if apply or compare:
@@ -389,6 +414,27 @@ def main():
             return write_comparison(
                 conn, translator, compare, args.compare_per_country, countries
             )
+        if retranslate:
+            print(
+                f"Retranslation scope: {','.join(countries) or 'ALL'}; "
+                "includes existing and missing English values",
+                flush=True,
+            )
+        if apply and retranslate:
+            journal = RetranslationJournal(
+                args.backup_output,
+                {
+                    "version": 1,
+                    "host": args.db_host,
+                    "port": args.db_port,
+                    "database": name,
+                    "user": user,
+                    "strategy": args.language_strategy,
+                    "countries": countries,
+                },
+                resume=args.resume,
+            )
+            print(f"Recovery journal: {args.backup_output}", flush=True)
         for table, keys, field in FIELDS:
             table_id = sql.Identifier(table)
             orig, en = map(sql.Identifier, (field + "_orig", field + "_en"))
@@ -396,25 +442,32 @@ def main():
             key_list = sql.SQL(", ").join(key_ids)
             missing = sql.SQL(
                 "NULLIF(btrim({orig}), '') IS NOT NULL "
-                "AND lower(btrim({orig})) NOT IN ('nan', 'none', 'null', '<na>') "
-                "AND NULLIF(btrim({en}), '') IS NULL"
-            ).format(orig=orig, en=en)
+                "AND lower(btrim({orig})) NOT IN ('nan', 'none', 'null', '<na>')"
+            ).format(orig=orig)
+            params = []
+            if not retranslate:
+                missing += sql.SQL(" AND NULLIF(btrim({}), '') IS NULL").format(en)
+            if retranslate and countries:
+                missing += sql.SQL(" AND upper(btrim(country_code)) = ANY(%s)")
+                params.append(countries)
             with conn.cursor() as cur:
-                cur.execute(sql.SQL("SELECT count(*) FROM {} WHERE {}").format(table_id, missing))
+                count_query = sql.SQL("SELECT count(*) FROM {} WHERE {}").format(table_id, missing)
+                cur.execute(count_query, params)
                 count = cur.fetchone()[0]
-                print(f"{table}.{field}_en: {count} missing", flush=True)
-                totals["missing"] += count
+                label = "eligible" if retranslate else "missing"
+                print(f"{table}.{field}_en: {count} {label}", flush=True)
+                totals[label] += count
                 if not apply or not count:
                     conn.commit()
                     continue
                 query = sql.SQL(
-                    "SELECT {keys}, {orig}, country_code FROM {table} "
+                    "SELECT {keys}, {orig}, country_code, {en} FROM {table} "
                     "WHERE {missing} ORDER BY {keys}"
-                ).format(keys=key_list, orig=orig, table=table_id, missing=missing)
-                if args.limit is not None:
-                    cur.execute(query + sql.SQL(" LIMIT %s"), (args.limit,))
+                ).format(keys=key_list, orig=orig, en=en, table=table_id, missing=missing)
+                if args.limit is not None and not retranslate:
+                    cur.execute(query + sql.SQL(" LIMIT %s"), [*params, args.limit])
                 else:
-                    cur.execute(query)
+                    cur.execute(query, params)
                 rows = cur.fetchall()
             conn.commit()
             where_keys = sql.SQL(" AND ").join(sql.SQL("{} = %s").format(key) for key in key_ids)
@@ -422,12 +475,21 @@ def main():
                 "UPDATE {table} SET {en} = %s WHERE {keys} "
                 "AND {orig} IS NOT DISTINCT FROM %s "
                 "AND country_code IS NOT DISTINCT FROM %s "
-                "AND NULLIF(btrim({en}), '') IS NULL"
+                "AND {en} IS NOT DISTINCT FROM %s"
             ).format(table=table_id, en=en, keys=where_keys, orig=orig)
             stats = Counter()
             errors = 0
+            attempted = 0
             for row in rows:
-                ids, raw, country = row[:-2], row[-2], row[-1]
+                ids, raw, country, previous = row[:-3], row[-3], row[-2], row[-1]
+                if journal:
+                    status = journal.resume_status(table, field, ids, raw, country, previous)
+                    if status != "retry":
+                        stats["already_completed" if status == "done" else "resume_conflict"] += 1
+                        continue
+                if retranslate and args.limit is not None and attempted >= args.limit:
+                    break
+                attempted += 1
                 source = raw.strip()
                 try:
                     translated, decision = translator.translate(
@@ -437,7 +499,7 @@ def main():
                 except (requests.RequestException, ValueError, TypeError, AttributeError) as exc:
                     stats["failed"] += 1
                     errors += 1
-                    print(f"Translation failed ({type(exc).__name__}); left missing", flush=True)
+                    print(f"Translation failed ({type(exc).__name__}); previous value retained", flush=True)
                     if errors >= 5:
                         raise RuntimeError("Five consecutive failures; prior commits retained") from None
                     continue
@@ -446,19 +508,33 @@ def main():
                 if translated is None:
                     stats["unsupported" if decision.source is None else "unchanged_unconfirmed"] += 1
                     continue
+                if journal and translated == previous:
+                    journal.record("unchanged", table, field, ids, raw, country, previous, translated)
+                    stats["unchanged"] += 1
+                    continue
+                if journal:
+                    # Persist the exact previous and proposed value before touching PostgreSQL.
+                    journal.record("pending", table, field, ids, raw, country, previous, translated)
                 with conn.cursor() as cur:
-                    cur.execute(update, (translated, *ids, raw, country))
-                    stats["updated" if cur.rowcount else "changed_since_read"] += 1
+                    cur.execute(update, (translated, *ids, raw, country, previous))
+                    changed = bool(cur.rowcount)
                 conn.commit()
+                if changed and journal:
+                    journal.record("committed", table, field, ids, raw, country, previous, translated)
+                stats["updated" if changed else "changed_since_read"] += 1
                 if sum(stats.values()) % 50 == 0:
                     print(dict(stats), flush=True)
             print(dict(stats), flush=True)
             totals.update(stats)
         print("TOTAL:", dict(totals), flush=True)
-        return 1 if totals["failed"] else 0
+        return 1 if any(totals[key] for key in ("failed", "resume_conflict", "changed_since_read")) else 0
     finally:
-        conn.close()
-        session.close()
+        try:
+            if journal is not None:
+                journal.close()
+        finally:
+            conn.close()
+            session.close()
 
 
 if __name__ == "__main__":
