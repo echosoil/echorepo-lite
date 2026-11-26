@@ -163,7 +163,17 @@
     "P5UX": {
       "kind": "operator_reported_measurement",
       "path": "docs/R7_3_PHASE5_RESULTS.md",
-      "note": "Operator-supplied 24 November 2026 technical scan and five manual pass observations; one screen-reader check not assessed."
+      "note": "Operator-supplied initial, diagnostic and after-remediation 24 November 2026 scans and five manual pass observations; residual incomplete and screen-reader not assessed."
+    },
+    "P5GA": {
+      "kind": "historical_poll_and_retrospective_traceability",
+      "path": "docs/R7_3_CODESIGN_TRACEABILITY.md",
+      "note": "Operator-supplied June 2024 Slido PDF and overlapping anonymous workshop DOCX; thematic mapping to later validation, not causal proof."
+    },
+    "P5FORUM": {
+      "kind": "public_channel_and_operator_report",
+      "path": "docs/R7_3_CODESIGN_TRACEABILITY.md",
+      "note": "Dedicated ECHO Discourse forum public landing-page representation and operator report on 24 November 2026; current activity and authenticated behavior not tested."
     }
   },
   "criteria": [
@@ -368,8 +378,8 @@
         "P5UX"
       ],
       "r71_checks": "B13,B14",
-      "assessment": "Seven public browser cases render, expected locales and mobile navigation observed; all seven REVIEW for automated accessibility/other findings; five manual tasks PASS, screen reader not assessed. Contrast, control labels, mobile overflow and login skip link need follow-up; blocked resources limit interpretation.",
-      "next_action": "Validate targeted template changes and revised audit diagnostics; repeat scan; retain manual and assistive-technology limitations.",
+      "assessment": "Same-tool diagnostic and post-remediation scans show 26 to zero detected violation-node observations, mobile overflow 76 to zero px, skip-link and H1 checks 7/7, no blocked requests. Five operator manual checks passed earlier. Residual incomplete rules and screen reader not assessed; all seven REVIEW.",
+      "next_action": "Retain three report pairs; review remaining contrast and link observations manually and assess assistive technology when feasible.",
       "follow_up_phase": 5
     },
     {
@@ -394,11 +404,13 @@
       "status": "PARTIAL",
       "evidence_refs": [
         "UX",
-        "P5CD"
+        "P5CD",
+        "P5GA",
+        "P5FORUM"
       ],
       "r71_checks": "",
-      "assessment": "Dated external participant feedback and independent prototype proposal documented in GitHub issue #4, with project response. Proposed changes remain under review; no formal workshop or validated implementation established.",
-      "next_action": "Obtain prototype/expert review and additional dated feedback or workshop records; link decisions, implementation and verification.",
+      "assessment": "Contemporaneous June 2024 Slido input and anonymous workshop responses mapped to later validated ECHOREPO features; subsequent public issue #4 and developer response document ongoing feedback. Additional consultations operator-reported; formal decisions and causal history incomplete. Dedicated ECHO discussion forum corresponds to historical interaction proposals; operator reports limited engagement. Current posting and moderation not assessed.",
+      "next_action": "Retain primary records; confirm event details and link representative decisions or subsequent changes where available; retain open suggestions.",
       "follow_up_phase": 5
     },
     {
@@ -658,7 +670,7 @@
       "NOT_ASSESSED": 1,
       "SCOPE_REVIEW": 1
     },
-    "overall": "PHASE_5_INITIAL_UX_EVIDENCE_RECORDED; REMEDIATION_AND_SURVEY_PENDING"
+    "overall": "PHASE_5_TECHNICAL_REMEDIATION_AND_CODESIGN_EVIDENCE_RECORDED; SURVEY_PENDING"
   },
   "proposed_user_satisfaction_target_pct": 80,
   "target_status": "WP2 suggested target; not independently established as contractual",
@@ -670,14 +682,15 @@
     "Phase 3 adds operator-reported security observations before and after remediation and seven manual production checks. Final configuration evidence and contextual review remain open; original reports stay private.",
     "Phase 4 records bounded public publication and browser discovery/consumption evidence. Independent EUSO indexing and downstream semantic interpretation are not assessed; user evaluation remains pending.",
     "Phase 5 starts with documented external feedback and an operator-reported published survey. No technical accessibility measurements or survey responses have yet been assessed.",
-    "Phase 5 initial scan and operator manual checks recorded; proposed fixes not yet verified. No change in criterion maturity counts."
+    "Phase 5 initial scan and operator manual checks recorded; proposed fixes not yet verified. No change in criterion maturity counts.",
+    "June 2024 poll and later usability results strengthen interaction capability evidence; status counts unchanged. Satisfaction survey not assessed."
   ],
   "last_updated_utc": "2026-11-24",
   "latest_assessment": {
     "phase": 5,
     "date": "2026-11-24",
-    "status": "INITIAL_TECHNICAL_AND_MANUAL_OBSERVATIONS_RECORDED",
+    "status": "POST_REMEDIATION_UX_AND_HISTORICAL_CODESIGN_EVIDENCE_RECORDED",
     "results_summary": "docs/R7_3_PHASE5_RESULTS.md",
-    "source_reporting_commit": "6d9e8ae90346f86b3fb40064482628d9bf442da9"
+    "source_reporting_commit": "deaa132ec0d0c74397654022f99bdd61d8b75a4a"
   }
 }

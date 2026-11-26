@@ -138,3 +138,6 @@ notebooks/templates/*
 /r71-evidence/
 # R7-3 quality assessment outputs (environment-specific evidence)
 /r73-evidence/
+
+# Local RO4-1 assessment evidence
+/ro41-evidence/
