@@ -21,12 +21,12 @@ It deliberately stops a pre-existing LibreTranslate in that project too; do not
 run concurrently with the UI catalogue translator. A host-user lock prevents
 overlapping backfills. It never runs compose down or starts PostgreSQL.
 
-Only missing contamination_other, observations, metals_info and
+By default, only missing contamination_other, observations, metals_info and
 image_description English fields are written. No soil texture/structure fields
-or existing translations are modified. Failed/unchanged unconfirmed strings
+are modified in any mode. Existing translations are preserved unless an explicit
+retranslation scope is selected. Failed/unchanged unconfirmed strings
 remain missing. Successful updates commit individually and guard against changes
-to the source or destination during translation. The script does not fix
-previously populated incorrect or stale translations.
+to the source or destination during translation. Use the explicit retranslation workflow below for previously populated values.
 
 Map pop-ups show original text first and a translation icon when a distinct
 English translation is available. Hover for the browser tooltip or click/tap
@@ -101,5 +101,62 @@ decision, translations and per-strategy status. It is a review aid, not an
 automated quality score. It contains participant free text, so keep it private.
 The CSV is created with owner-only permissions and never overwrites a file;
 formula-like text is prefixed with an apostrophe for spreadsheet safety.
-Failed rows remain visible with error status. Existing translations are not
-rewritten. A separate explicit retranslation workflow would be needed for that.
+Failed rows remain visible with error status. Comparison never rewrites existing translations.
+
+
+## Controlled retranslation of existing English values
+
+Use a new private journal path for each run. Preview counts without Docker or writes:
+
+```bash
+bash scripts/translate_data.sh --db-port 5432 --retranslate-all
+bash scripts/translate_data.sh --db-port 5432 --retranslate-country IT
+```
+
+Pilot (at most ten attempted eligible values per field, including existing values):
+
+```bash
+mkdir -p "$HOME/translation-review"
+LT_COMPOSE_DIR="$HOME/ECHO-STORE/echorepo-lite-dev" \
+  bash scripts/translate_data.sh --db-port 5432 --apply \
+  --retranslate-country IT --limit 10 \
+  --backup-output "$HOME/translation-review/italy-pilot.csv"
+```
+
+Full run:
+
+```bash
+LT_COMPOSE_DIR="$HOME/ECHO-STORE/echorepo-lite-dev" \
+  bash scripts/translate_data.sh --db-port 5432 --apply --retranslate-all \
+  --backup-output "$HOME/translation-review/retranslation.csv"
+```
+
+Repeat `--retranslate-country` to select multiple countries, or use
+`--retranslate-all` (mutually exclusive). Hybrid is still the default.
+Retranslation includes both missing and populated English values. It never
+clears an English value before translation and never replaces it on failed,
+unsupported or unconfirmed results. Equal results are recorded without an
+UPDATE. The UPDATE guards against concurrent changes to source, country and
+previous English value. The usual incremental command is unchanged.
+
+The owner-only CSV journal contains a scope record (database connection
+coordinates, strategy, countries) and exact JSON-encoded keys, source, country,
+previous and proposed English values. JSON preserves NULL, empty strings,
+newlines and quotation marks. Keep the journal private: it contains original
+participant text and sample IDs. Each pending record is flushed and fsynced
+before the PostgreSQL write; a committed record follows successful commit.
+A pending record alone is NOT proof of a completed write. This is a recovery
+and audit journal, not an automatic rollback utility. Keep it outside Git.
+
+If interrupted, use the same command, same scope and path, adding `--resume`.
+For a limited pilot, remove `--limit` to continue beyond it with the same scope
+and journal. Resume skips completed/unchanged records only when their current
+source, country and English match the journal. It reconciles pending writes
+whose proposed value is already present and retries pending writes whose old
+value is still present. Changed records are reported as conflicts and not
+overwritten. Failed/unsupported/unconfirmed translations remain eligible for
+retry. A truncated journal or mismatching scope fails closed; do not edit it
+blindly. Schedule retranslation separately from ingestion where practical.
+
+Normal snapshots and previously published Zenodo versions are not rewritten by
+this operation; regenerate live snapshots through the usual workflow if desired.

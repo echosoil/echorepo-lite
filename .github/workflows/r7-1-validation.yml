@@ -7,6 +7,7 @@ on:
       - "echorepo/**"
       - "scripts/translate_data.sh"
       - "tools/translate_free_text_en.py"
+      - "tools/retranslation_journal.py"
       - "tests/test_free_text_translation.py"
       - "tests/test_translation_display.py"
       - "tests/test_photo_descriptions.py"
