@@ -13,10 +13,12 @@ fi
 
 # The caller must explicitly select the database port and opt in to writes.
 # Count-only runs do not need Docker.
-apply=0
+needs_lt=0
 for arg in "$@"; do
-    [[ "$arg" != "--apply" ]] || apply=1
     case "$arg" in
+        --apply|--compare-output|--compare-output=*)
+            needs_lt=1
+            ;;
         --endpoint|--endpoint=*|--db-host|--db-host=*)
             echo "Use the local PostgreSQL and LibreTranslate endpoints with this wrapper." >&2
             exit 2
@@ -24,16 +26,12 @@ for arg in "$@"; do
     esac
 done
 "$PYTHON" -m tools.translate_free_text_en --help >/dev/null
-if [[ "$apply" == 0 ]]; then
+if [[ "$needs_lt" == 0 ]]; then
     exec "$PYTHON" -u -m tools.translate_free_text_en "$@"
 fi
 
-# Validate database connectivity and arguments before starting the service.
-count_args=()
-for arg in "$@"; do
-    [[ "$arg" == "--apply" ]] || count_args+=("$arg")
-done
-"$PYTHON" -u -m tools.translate_free_text_en "${count_args[@]}"
+# Validate arguments and database connectivity without writes or report creation.
+"$PYTHON" -u -m tools.translate_free_text_en "$@" --preflight
 
 COMPOSE_DIR="$(cd "${LT_COMPOSE_DIR:-$ROOT}" && pwd)"
 COMPOSE=(docker compose --project-directory "$COMPOSE_DIR" -f "$COMPOSE_DIR/docker-compose.yml" --profile devtools)
