@@ -9,6 +9,9 @@ on:
       - "tools/translate_free_text_en.py"
       - "tools/retranslation_journal.py"
       - "tests/test_free_text_translation.py"
+      - "tests/test_manual_en_admin.py"
+      - "tests/test_manual_en_postgres.py"
+      - "migrations/postgres/20261126_002_manual_en_overrides.sql"
       - "tests/test_translation_display.py"
       - "tests/test_photo_descriptions.py"
       - "tools/pull_and_enrich_samples.py"
@@ -100,7 +103,7 @@ jobs:
         run: |
           bash -n scripts/translate_data.sh
           node --check static/js/map.js
-          python -m pytest -q tests/test_free_text_translation.py tests/test_translation_display.py tests/test_photo_descriptions.py tests/test_loess_my_attribution.py
+          python -m pytest -q tests/test_free_text_translation.py tests/test_manual_en_admin.py tests/test_translation_display.py tests/test_photo_descriptions.py tests/test_loess_my_attribution.py
 
       - name: Execute isolated acceptance and regression tests
         id: tests
@@ -149,3 +152,32 @@ jobs:
       - name: Require passing tests
         if: steps.tests.outcome != 'success'
         run: exit 1
+
+
+  manual-en-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      MANUAL_EN_TEST_DSN: "postgresql://test:test@127.0.0.1:5432/test"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -r requirements.txt pytest PyJWT
+      - run: python -m pytest -q tests/test_manual_en_postgres.py

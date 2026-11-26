@@ -160,3 +160,27 @@ blindly. Schedule retranslation separately from ingestion where practical.
 
 Normal snapshots and previously published Zenodo versions are not rewritten by
 this operation; regenerate live snapshots through the usual workflow if desired.
+
+
+## Manual English corrections
+
+Open /i18n/admin?scope=manual_en as an authorized editor. Set I18N_ADMIN_EDITORS
+to a comma-separated list of allowed emails/usernames; if unset, the existing
+COORDINATE_QA_EDITORS list is used. Empty lists deny access. The new Postgres
+migration must be applied first (normal application startup). The Page texts
+and JS keys tabs retain their previous behavior.
+
+Search is case-insensitive, literal substring matching in original and current
+English text, with 50 grouped results per page and no initial list. Each group
+is an exact original string, country and free-text field; saving replaces all
+matching canonical English values and creates persistent protection in
+manual_en_overrides. Other fields/countries are not changed. Saving briefly locks writes to the relevant
+canonical table (reads remain available). Removing protection
+does not erase the current English value. Automatic backfill and retranslation
+skip protected groups; database triggers also preserve corrections during
+ingestion and legacy translator writes. No soil categories are editable here.
+
+The former manual_overrides.json is not automatically imported: it has no
+country/field scope, so applying its entries globally could change unrelated
+records. Keep it as a reference and re-enter verified corrections using search.
+Live PostgreSQL exports reflect changes; regenerate snapshots if needed.
