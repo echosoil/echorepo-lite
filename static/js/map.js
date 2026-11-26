@@ -1672,7 +1672,12 @@
       if (!r.ok) return null;
       const j = await r.json();
       if (!j || !j.image_url) return null;
-      return { url: j.image_url, desc: j.caption || "" };
+      return {
+        url: j.image_url,
+        desc: j.caption || "",
+        original: j.image_description_orig || "",
+        english: j.image_description_en || ""
+      };
     } catch (e) {
       return null;
     }
@@ -1775,9 +1780,9 @@
       const url = String(props.image_url).trim();
       if (url) {
         const desc = String(
-          props.image_description_en || props.image_description_orig || ""
+          props.image_description_orig || props.image_description_en || ""
         ).trim();
-        return { idx: 0, url, opt: "photo", desc };
+        return { idx: 0, url, opt: "photo", desc, english: props.image_description_en };
       }
     }
 
@@ -1792,9 +1797,9 @@
         const url = String(first.image_url).trim();
         if (url) {
           const desc = String(
-            first.image_description_en || first.image_description_orig || first.caption || ""
+            first.image_description_orig || first.image_description_en || first.caption || ""
           ).trim();
-          return { idx: 0, url, opt: "photo", desc };
+          return { idx: 0, url, opt: "photo", desc, english: first.image_description_en };
         }
       }
     }
@@ -1811,7 +1816,7 @@
       if (!url) continue;
 
       const opt = String(props[`PHOTO_photos_${idx}_option`] || "").toLowerCase();
-      const desc = String(props[`PHOTO_photos_${idx}_description`] || "").trim();
+      const desc = String(props[`PHOTO_photos_${idx}_comment`] || props[`PHOTO_photos_${idx}_description`] || "").trim();
       items.push({ idx, url, opt, desc });
     }
     if (!items.length) return null;
@@ -1831,6 +1836,23 @@
   }
 
 
+
+  function translationHtml(original, english, displayHtml) {
+    const clean = value => {
+      const text = String(value ?? '').trim();
+      return /^(nan|none|null|<na>)$/i.test(text) ? '' : text;
+    };
+    const orig = clean(original);
+    const en = clean(english);
+    const display = displayHtml ?? escapeHtml(orig || en);
+    if (!orig || !en || orig === en) return display;
+    const label = T('englishTranslation', {}, 'English translation');
+    return `<details class="echo-translation">
+      <summary title="${escapeHtml(label + ': ' + en)}">${display}
+        <i class="bi bi-translate" aria-hidden="true"></i></summary>
+      <span class="echo-translation-text" lang="en">${escapeHtml(en)}</span>
+    </details>`;
+  }
 
   function formatPopup(f, isOwnerLayer) {
     const p = f.properties || {};
@@ -1880,9 +1902,10 @@
     );
 
     const observations = pickNonNaN(
-      p.observations_en,
       p.observations_orig,
-      p.observations
+      p.SOIL_DIVER_observations,
+      p.observations,
+      p.observations_en
     );
 
     const texture = localizeSoilChoice(
@@ -1902,15 +1925,15 @@
     const debris = pick(p.SOIL_CONTAMINATION_debris, p.contamination_debris, p.debris);
 
     const contaminationNotes = pickNonNaN(
-      p.SOIL_CONTAMINATION_comments,
-      p.contamination_other_en, p.contamination_other_orig,
+      p.contamination_other_orig,
+      p.SOIL_CONTAMINATION_comments, p.contamination_other_en,
       p.notes
     );
 
     // metals: old blob OR canonical fields
     const metalsRaw = pickNonNaN(
-      p.METALS_info,
-      p.metals_info_en, p.metals_info_orig,
+      p.metals_info_params,
+      p.metals_info_orig, p.METALS_info, p.metals_info_en,
       p.elemental_concentrations_en, p.elemental_concentrations_orig
     );
 
@@ -1964,15 +1987,6 @@
         ? `${numeric}%`
         : raw;
     })();
-    // Display a missing-data marker as no row, but only for the three
-    // free-text popup fields where literal "nan" is a known import artifact.
-    // Do not suppress meaningful text that merely contains those letters.
-    const omitNaN = value => {
-      if (typeof value === 'number' && Number.isNaN(value)) return null;
-      if (typeof value === 'string' && value.trim().toLowerCase() === 'nan') return null;
-      return value;
-    };
-
     const rows = [
       [
         '<i class="bi bi-calendar"></i> ' +
@@ -2026,17 +2040,23 @@
       [
         '<i class="bi bi-exclamation-triangle"></i> ' +
         T('contamination', {}, 'Contamination'),
-        omitNaN(contaminationNotes)
+        contaminationNotes == null ? null : translationHtml(contaminationNotes, p.contamination_other_en),
+        true
       ],
       [
         elementalConcentrationsHeaderHtml(),
-        omitNaN(metals),
+        metals ? (
+          pickNonNaN(p.metals_info_params) != null
+            ? metals
+            : translationHtml(metalsRaw, p.metals_info_en, metals)
+        ) : null,
         true
       ],
       [
         '<i class="bi bi-chat-left-text"></i> ' +
         T('observations', {}, 'Observations'),
-        omitNaN(observations)
+        observations == null ? null : translationHtml(observations, p.observations_en),
+        true
       ]
     ].filter(([_, value]) => !(
       value == null ||
@@ -2065,13 +2085,13 @@
       const caption = bestPhoto.desc || (bestPhoto.opt ? (bestPhoto.opt[0].toUpperCase() + bestPhoto.opt.slice(1)) : "");
       photoHtml = `
         <div class="popup-photo mt-2">
-          <a href="${bestPhoto.url}" target="_blank" rel="noopener">
+          <a href="${escapeHtml(bestPhoto.url)}" target="_blank" rel="noopener">
             <img
-              src="${bestPhoto.url}"
-              alt="${caption || 'Sample photo'}"
+              src="${escapeHtml(bestPhoto.url)}"
+              alt="${escapeHtml(caption || 'Sample photo')}"
               style="max-width:100%;height:auto;max-height:180px;display:block;object-fit:cover;">
           </a>
-          ${caption ? `<div class="small text-muted mt-1">${caption}</div>` : ""}
+          ${caption ? `<div class="small text-muted mt-1">${translationHtml(caption, bestPhoto.english)}</div>` : ""}
         </div>`;
     }
 
@@ -3036,7 +3056,8 @@
               const img = await fetchSampleImage(photoId);
               if (img) {
                 p.image_url = img.url;
-                p.image_description_en = img.desc || "";
+                p.image_description_orig = img.original || img.desc || "";
+                p.image_description_en = img.english || "";
                 changed = true;
               }
             }
