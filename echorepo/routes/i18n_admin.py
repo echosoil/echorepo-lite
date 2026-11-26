@@ -287,14 +287,13 @@ def manual_set():
         or not isinstance(country, str) or len(country) > 16
         or not isinstance(original, str) or not original.strip() or len(original) > 100000
         or "expected" not in data or (expected is not None and not isinstance(expected, str))
-        or action not in ("save", "clear")
-        or (action == "save" and (not isinstance(value, str) or not value.strip() or len(value) > 100000))
+        or action != "save"
+        or not isinstance(value, str) or not value.strip() or len(value) > 100000
     ):
         return jsonify(ok=False, error="Invalid correction"), 400
     try:
         result = change_manual_en(
-            field, country, original, value.strip() if action == "save" else None,
-            expected, actor, clear=action == "clear",
+            field, country, original, value.strip(), expected, actor,
         )
     except ManualConflict as exc:
         return jsonify(ok=False, error=str(exc)), 409

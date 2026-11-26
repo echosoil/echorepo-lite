@@ -54,7 +54,6 @@ def test_save_injects_exact_scope(client, monkeypatch):
     assert response.json["updated"] == 2
     change.assert_called_once_with(
         "image_description", "IT", "campione 3", "sample 3", None, "editor@example.org",
-        clear=False,
     )
 
 
@@ -75,14 +74,23 @@ def test_signed_in_non_editor_denied(client, monkeypatch):
     assert client.post("/i18n/admin/manual_set", json=payload()).status_code == 403
 
 
-def test_remove_protection_is_explicit(client, monkeypatch):
-    change = Mock(return_value={"matched": 2, "updated": 0, "override": None})
+def test_removing_protection_is_rejected(client, monkeypatch):
+    change = Mock()
     monkeypatch.setattr(admin, "change_manual_en", change)
     response = client.post(
         "/i18n/admin/manual_set", json=payload(action="clear", expected="sample 3", value="")
     )
+    assert response.status_code == 400
+    change.assert_not_called()
+
+
+def test_saved_translation_can_be_edited(client, monkeypatch):
+    change = Mock(return_value={"matched": 2, "updated": 2, "override": "soil sample 3"})
+    monkeypatch.setattr(admin, "change_manual_en", change)
+    response = client.post(
+        "/i18n/admin/manual_set", json=payload(expected="sample 3", value="soil sample 3")
+    )
     assert response.status_code == 200
     change.assert_called_once_with(
-        "image_description", "IT", "campione 3", None, "sample 3", "editor@example.org",
-        clear=True,
+        "image_description", "IT", "campione 3", "soil sample 3", "sample 3", "editor@example.org",
     )

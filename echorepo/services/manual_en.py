@@ -67,7 +67,9 @@ class ManualConflict(Exception):
     """The displayed override was changed or the source no longer exists."""
 
 
-def change_manual_en(field, country, original, value, expected, actor, *, clear=False):
+def change_manual_en(field, country, original, value, expected, actor):
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("A nonempty English translation is required")
     table = FIELDS[field]
     orig, en = (sql.Identifier(field + suffix) for suffix in ("_orig", "_en"))
     where = sql.SQL(
@@ -96,13 +98,6 @@ def change_manual_en(field, country, original, value, expected, actor, *, clear=
         count = cur.fetchone()[0]
         if not count:
             raise ManualConflict("Source no longer exists; search again.")
-        if clear:
-            cur.execute(
-                "DELETE FROM manual_en_overrides WHERE field = %s AND country = %s "
-                "AND original_hash = md5(%s) AND original = %s",
-                (field, country, original, original),
-            )
-            return {"matched": count, "updated": 0, "override": None}
         cur.execute(
             """
             INSERT INTO manual_en_overrides (field, country, original, english, updated_by)

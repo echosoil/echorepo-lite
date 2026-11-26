@@ -87,15 +87,22 @@ def test_search_inject_and_protect(monkeypatch):
             manual_en.change_manual_en(
                 "image_description", "IT", "campione 3", "different", None, "editor"
             )
+        with pytest.raises(ValueError):
+            manual_en.change_manual_en(
+                "image_description", "IT", "campione 3", "", "sample 3", "editor"
+            )
         manual_en.change_manual_en(
-            "image_description", "IT", "campione 3", None, "sample 3", "editor", clear=True
+            "image_description", "IT", "campione 3", "soil sample 3", "sample 3", "editor"
         )
         with connect() as conn, conn.cursor() as cur:
             cur.execute("SELECT image_description_en FROM sample_images WHERE sample_id = 'a'")
-            assert cur.fetchone() == ("sample 3",)
+            assert cur.fetchone() == ("soil sample 3",)
             cur.execute("UPDATE sample_images SET image_description_en = 'new' WHERE sample_id = 'a'")
             cur.execute("SELECT image_description_en FROM sample_images WHERE sample_id = 'a'")
-            assert cur.fetchone() == ("new",)
+            assert cur.fetchone() == ("soil sample 3",)
+            cur.execute("UPDATE sample_images SET image_description_en = NULL WHERE sample_id = 'a'")
+            cur.execute("SELECT image_description_en FROM sample_images WHERE sample_id = 'a'")
+            assert cur.fetchone() == ("soil sample 3",)
         conn.close()
     finally:
         with psycopg2.connect(DSN) as cleanup, cleanup.cursor() as cur:
