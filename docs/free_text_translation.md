@@ -175,8 +175,9 @@ English text, with 50 grouped results per page and no initial list. Each group
 is an exact original string, country and free-text field; saving replaces all
 matching canonical English values and creates persistent protection in
 manual_en_overrides. Other fields/countries are not changed. Saving briefly locks writes to the relevant
-canonical table (reads remain available). Removing protection
-does not erase the current English value. Automatic backfill and retranslation
+canonical table (reads remain available). The English translations tab is save-only:
+there is no action to remove protection. Edit and save again to revise a saved
+translation. Automatic backfill and retranslation
 skip protected groups; database triggers also preserve corrections during
 ingestion and legacy translator writes. No soil categories are editable here.
 
