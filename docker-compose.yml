@@ -82,7 +82,7 @@ services:
       - echorepo-shared
     volumes:
       - /home/echo/ECHO-STORE/libretranslate-tmp:/tmp
-
+      - /home/echo/ECHO-STORE/libretranslate-models:/home/libretranslate/.local
   i18n:
     profiles: ["devtools"]
     build:
