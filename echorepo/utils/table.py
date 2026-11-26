@@ -6,6 +6,7 @@ import pandas as pd
 from ..config import settings
 from ..services.personal_translations import row_key, text_value
 from .geo import pick_lat_lon_cols
+from .photo_descriptions import photo_description, photo_slots
 
 
 # ---- Format "METALS_info" into aligned monospace block ----
@@ -201,44 +202,42 @@ def make_table_html(df: pd.DataFrame, translations=None) -> str:
 
         df[col] = df.apply(format_text, axis=1)
 
-    # ---- Build thumbnails with ALT/TITLE and a tiny visible caption from *_option ----
-    def fmt_img_with_cap(url, caption_text, comment="", english=""):
-        if url is None or (isinstance(url, float) and pd.isna(url)):
-            return ""
-        url_s = str(url).strip()
+    # Render exactly the same description as the canonical ingestion pipeline.
+    def fmt_img_with_cap(url, original, english):
+        url_s = text_value(url)
         if not url_s:
             return ""
         safe_url = html.escape(url_s)
-        cap = text_value(caption_text)
-        safe_cap = html.escape(cap) if cap else "Sample photo"
-        # figure+figcaption to show a small caption; alt+title for accessibility/tooltip
+        safe_cap = html.escape(original or "Sample photo")
+        caption = translation_html(original, english)
         return (
-            f'<figure class="thumb">'
-            f'  <a href="{safe_url}" target="_blank" rel="noopener">'
-            f'    <img src="{safe_url}" alt="{safe_cap}" title="{safe_cap}" '
-            f'         style="max-height:60px;border-radius:4px;object-fit:cover;">'
-            f"  </a>"
-            f"{f'<figcaption>{html.escape(cap)}</figcaption>' if cap else ''}"
-            f"{f'<figcaption>{translation_html(comment, english)}</figcaption>' if comment else ''}"
-            f"</figure>"
+            '<figure class="thumb">'
+            f'<a href="{safe_url}" target="_blank" rel="noopener">'
+            f'<img src="{safe_url}" alt="{safe_cap}" title="{safe_cap}" '
+            'style="max-height:60px;border-radius:4px;object-fit:cover;">'
+            '</a>'
+            f"{f'<figcaption>{caption}</figcaption>' if caption else ''}"
+            "</figure>"
         )
 
-    for n in (1, 2, 3):
+    for n in photo_slots(df.columns):
         path_col = f"PHOTO_photos_{n}_path"
-        opt_col = f"PHOTO_photos_{n}_option"
-        if path_col in df.columns:
-            def format_photo(row, slot=n, path=path_col, option=opt_col):
-                raw = df_full.loc[row.name]
-                comment = text_value(raw.get(f"PHOTO_photos_{slot}_comment"))
-                canonical = image_translations.get((*row_key(raw), slot), {})
-                english = (
-                    canonical.get("image_description_en")
-                    if comment == text_value(canonical.get("image_description_orig"))
-                    else None
-                )
-                return fmt_img_with_cap(row[path], raw.get(option), comment, english)
 
-            df[path_col] = df.apply(format_photo, axis=1)
+        def format_photo(row, slot=n, path=path_col):
+            raw = df_full.loc[row.name]
+            original = photo_description(
+                raw.get(f"PHOTO_photos_{slot}_option"),
+                raw.get(f"PHOTO_photos_{slot}_comment"),
+            )
+            canonical = image_translations.get((*row_key(raw), slot), {})
+            english = (
+                canonical.get("image_description_en")
+                if original == text_value(canonical.get("image_description_orig"))
+                else None
+            )
+            return fmt_img_with_cap(row[path], original, english)
+
+        df[path_col] = df.apply(format_photo, axis=1)
 
     # Alignment in Metals column
     if "METALS_info" in df.columns:

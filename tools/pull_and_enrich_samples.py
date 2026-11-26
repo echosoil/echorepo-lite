@@ -89,6 +89,7 @@ from echorepo.utils.load_csv import (
 from echorepo.utils.load_csv import (
     deterministic_jitter as lc_det_jitter,
 )
+from echorepo.utils.photo_descriptions import photo_description, photo_slots, photo_text
 
 # parse helper for .env interpretation of booleans (1/0, true/false, yes/no, on/off)
 def env_bool(name: str, default: bool = False) -> bool:
@@ -2030,7 +2031,7 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
     and will be filled in Postgres by translate_pg_en.py.
     """
     img_rows = []
-    photo_slots = list(range(1, 14))
+    slots = photo_slots(df_flat.columns)
 
     for _, r in df_flat.iterrows():
         lt = _to_float_num(r.get("GPS_lat"))
@@ -2053,18 +2054,16 @@ def build_sample_images_df(df_flat: pd.DataFrame) -> pd.DataFrame:
         qr = norm_qr_for_id(r.get("QR_qrCode"))
         sample_id = qr or r.get("sampleId")
 
-        for i in photo_slots:
+        for i in slots:
             path_col = f"PHOTO_photos_{i}_path"
-            comment_col = f"PHOTO_photos_{i}_comment"
-            path = r.get(path_col)
-            if (
-                not path
-                or (isinstance(path, float) and math.isnan(path))
-                or str(path).strip().lower() == "nan"
-            ):
+            path = photo_text(r.get(path_col))
+            if not path:
                 continue
 
-            comment_orig = str(r.get(comment_col) or "").strip()
+            comment_orig = photo_description(
+                r.get(f"PHOTO_photos_{i}_option"),
+                r.get(f"PHOTO_photos_{i}_comment"),
+            )
 
             img_rows.append(
                 {
@@ -2543,7 +2542,7 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
             licence                  = EXCLUDED.licence;
         """)
 
-        # --- sample_images: upsert on (sample_id, image_id), keep *_en ---
+        # --- sample_images: preserve English only when the source remains unchanged ---
         cur.execute("""
             INSERT INTO sample_images (
             sample_id,
@@ -2570,6 +2569,9 @@ def load_canonical_into_pg_staging(samples_path, images_path, params_path):
             ON CONFLICT (sample_id, image_id) DO UPDATE SET
             country_code           = EXCLUDED.country_code,
             image_url              = EXCLUDED.image_url,
+            image_description_en = CASE
+                WHEN sample_images.image_description_orig IS DISTINCT FROM EXCLUDED.image_description_orig
+                THEN NULL ELSE sample_images.image_description_en END,
             image_description_orig = EXCLUDED.image_description_orig,
             collected_by           = EXCLUDED.collected_by,
             timestamp_utc          = EXCLUDED.timestamp_utc,

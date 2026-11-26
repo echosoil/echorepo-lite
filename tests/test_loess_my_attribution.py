@@ -39,7 +39,7 @@ class LoessOnMyTests(unittest.TestCase):
                     source,
                 )
                 self.assertLess(source.index('id="map"'), source.index("{% include 'partials/loess_map_attribution.html' %}"))
-                self.assertIn("js/map.js') }}?v=47", source)
+                self.assertIn("js/map.js') }}?v=48", source)
 
     def test_shared_attribution_has_external_source_and_separate_dataset_label(self):
         env = Environment(
