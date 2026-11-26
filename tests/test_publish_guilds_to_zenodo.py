@@ -135,6 +135,19 @@ class ReleaseTests(unittest.TestCase):
         self.assertIsNone(saved["pending"])
         self.assertEqual(len(saved["history"]), 1)
 
+    def test_data_curator_is_supported_and_verified(self):
+        config = self.approved("faprotax")
+        config["metadata"]["contributors"] = [
+            {"name": "Example, Curator", "type": "DataCurator"}
+        ]
+        self.assertFalse(p.review_blockers("faprotax", config))
+        p.verify_metadata({"metadata": config["metadata"]}, config["metadata"])
+        remote = {**config["metadata"], "contributors": []}
+        with self.assertRaisesRegex(ValueError, "contributor"):
+            p.verify_metadata({"metadata": remote}, config["metadata"])
+        config["metadata"]["contributors"][0].pop("type")
+        self.assertIn("Invalid contributor metadata", p.review_blockers("faprotax", config))
+
 
 if __name__ == "__main__":
     unittest.main()
