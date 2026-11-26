@@ -67,22 +67,33 @@ services:
     networks:
       - default
       - echorepo-shared
-    # 👇 make host port overridable
   libretranslate:
     profiles: ["devtools"]
-    image: libretranslate/libretranslate:latest
-    # container_name: libretranslate
+    image: libretranslate/libretranslate:v1.10.0
+
     ports:
-      - "5001:5000"
+      - "127.0.0.1:5001:5000"
+
     environment:
-     LT_LOAD_ONLY: en,bg,cs,da,de,el,es,et,fi,fr,hu,it,lt,lv,nb,nl,pl,pt,ro,sk,sl,sv
+      LT_LOAD_ONLY: "en,bg,cs,da,de,el,es,et,fi,fr,hu,it,lt,lv,nb,nl,pl,pt,ro,sk,sl,sv"
+      LT_THREADS: "2"
+      LT_UPDATE_MODELS: "false"
+
     restart: unless-stopped
+
     networks:
       - default
       - echorepo-shared
+
     volumes:
       - /home/echo/ECHO-STORE/libretranslate-tmp:/tmp
       - /home/echo/ECHO-STORE/libretranslate-models:/home/libretranslate/.local
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
   i18n:
     profiles: ["devtools"]
     build:
