@@ -1,5 +1,7 @@
 """Read canonical translations only for the already-authorized personal rows."""
 
+from contextlib import closing
+
 import pandas as pd
 from psycopg2.extras import RealDictCursor
 
@@ -25,7 +27,7 @@ def load_personal_translations(df):
         return {}, {}
     ids = sorted({sid for sid, _ in keys})
     users = sorted({uid for _, uid in keys})
-    with get_pg_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+    with closing(get_pg_conn()) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             """
             SELECT sample_id, collected_by, contamination_other_orig, contamination_other_en,

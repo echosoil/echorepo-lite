@@ -1849,7 +1849,8 @@
     const label = T('englishTranslation', {}, 'English translation');
     return `<details class="echo-translation">
       <summary title="${escapeHtml(label + ': ' + en)}">${display}
-        <i class="bi bi-translate" aria-hidden="true"></i></summary>
+        <i class="bi bi-translate" aria-hidden="true"></i>
+        <span class="visually-hidden">${escapeHtml(label)}</span></summary>
       <span class="echo-translation-text" lang="en">${escapeHtml(en)}</span>
     </details>`;
   }

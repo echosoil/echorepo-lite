@@ -5,6 +5,12 @@ on:
     branches: ["develop"]
     paths:
       - "echorepo/**"
+      - "scripts/translate_data.sh"
+      - "tools/translate_free_text_en.py"
+      - "tests/test_free_text_translation.py"
+      - "tests/test_translation_display.py"
+      - "static/js/map.js"
+      - "static/css/site.css"
       - "requirements.txt"
       - "Dockerfile"
       - "tests/test_r73_hardening.py"
@@ -85,6 +91,12 @@ jobs:
             tools/r71_phase3_guard.py \
             tools/r71_phase3_report.py \
             tools/r71_phase4_report.py
+
+      - name: Check free-text translation pipeline and display
+        run: |
+          bash -n scripts/translate_data.sh
+          node --check static/js/map.js
+          python -m pytest -q tests/test_free_text_translation.py tests/test_translation_display.py tests/test_loess_my_attribution.py
 
       - name: Execute isolated acceptance and regression tests
         id: tests

@@ -7,7 +7,10 @@ from tools.translate_free_text_en import FIELDS, translate_text
 
 def test_only_free_text_columns():
     assert {field for _, _, field in FIELDS} == {
-        "contamination_other", "observations", "metals_info", "image_description"
+        "contamination_other",
+        "observations",
+        "metals_info",
+        "image_description",
     }
 
 

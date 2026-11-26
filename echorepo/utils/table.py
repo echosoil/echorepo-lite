@@ -106,9 +106,10 @@ def translation_html(original, english, display_html=None):
     return (
         '<details class="echo-translation">'
         f'<summary title="{title}">{display}'
-        ' <i class="bi bi-translate" aria-hidden="true"></i></summary>'
+        ' <i class="bi bi-translate" aria-hidden="true"></i>'
+        ' <span class="visually-hidden">English translation available</span></summary>'
         f'<span class="echo-translation-text" lang="en">{html.escape(english)}</span>'
-        '</details>'
+        "</details>"
     )
 
 

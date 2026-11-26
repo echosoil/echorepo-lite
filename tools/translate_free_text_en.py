@@ -102,9 +102,7 @@ def main():
                     cur.execute(query)
                 rows = cur.fetchall()
             conn.commit()
-            where_keys = sql.SQL(" AND ").join(
-                sql.SQL("{} = %s").format(key) for key in key_ids
-            )
+            where_keys = sql.SQL(" AND ").join(sql.SQL("{} = %s").format(key) for key in key_ids)
             update = sql.SQL(
                 "UPDATE {table} SET {en} = %s WHERE {keys} "
                 "AND {orig} IS NOT DISTINCT FROM %s "
