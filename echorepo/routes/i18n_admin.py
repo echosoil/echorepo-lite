@@ -6,13 +6,22 @@ import re
 import secrets
 
 from babel.support import Translations
-from flask import Blueprint, Response, abort, current_app, jsonify, make_response, render_template, request, session
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    current_app,
+    jsonify,
+    make_response,
+    render_template,
+    request,
+    session,
+)
 from flask_babel import get_locale
 
 from echorepo.auth.decorators import login_required
 from echorepo.i18n import BASE_LABEL_MSGIDS
 from echorepo.services.i18n_labels import make_labels
-from echorepo.services.manual_en import FIELDS, ManualConflict, change_manual_en, search_manual_en
 from echorepo.services.i18n_overrides import (
     delete_override,
     delete_override_msgid,
@@ -21,6 +30,7 @@ from echorepo.services.i18n_overrides import (
     set_override,
     set_override_msgid,
 )
+from echorepo.services.manual_en import FIELDS, ManualConflict, change_manual_en, search_manual_en
 
 bp = Blueprint("i18n_admin", __name__, url_prefix="/i18n")
 
@@ -112,7 +122,7 @@ def admin_page():
     scope:
       - 'page'      → template msgids
       - 'js'        → JS keys (BASE_LABEL_MSGIDS)
-      - 'manual_en' → manual EN canonical overrides (text_to_en)
+      - 'manual_en' → manual EN canonical overrides (PostgreSQL)
     """
     scope = request.args.get("scope", "page")
     if scope not in ("page", "js", "manual_en"):
@@ -149,6 +159,7 @@ def admin_page():
             csrf_token=session["_manual_en_csrf"],
         ))
         response.headers["Cache-Control"] = "private, no-store"
+        response.headers["Referrer-Policy"] = "no-referrer"
         return response
 
     # ----- Page texts (msgids) -----

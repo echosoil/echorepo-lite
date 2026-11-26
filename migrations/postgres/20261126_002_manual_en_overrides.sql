@@ -21,8 +21,31 @@ RETURNS TEXT LANGUAGE sql VOLATILE AS $$
       AND original = original_text
 $$;
 
-CREATE OR REPLACE FUNCTION preserve_sample_manual_en() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION preserve_sample_manual_en() RETURNS trigger LANGUAGE plpgsql AS $
 BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF (OLD.contamination_other_orig, OLD.country_code)
+                IS DISTINCT FROM (NEW.contamination_other_orig, NEW.country_code)
+            AND NEW.contamination_other_en IS NOT DISTINCT FROM OLD.contamination_other_en
+            AND OLD.contamination_other_en = manual_en_value('contamination_other', OLD.country_code, OLD.contamination_other_orig)
+        THEN
+            NEW.contamination_other_en := NULL;
+        END IF;
+        IF (OLD.observations_orig, OLD.country_code)
+                IS DISTINCT FROM (NEW.observations_orig, NEW.country_code)
+            AND NEW.observations_en IS NOT DISTINCT FROM OLD.observations_en
+            AND OLD.observations_en = manual_en_value('observations', OLD.country_code, OLD.observations_orig)
+        THEN
+            NEW.observations_en := NULL;
+        END IF;
+        IF (OLD.metals_info_orig, OLD.country_code)
+                IS DISTINCT FROM (NEW.metals_info_orig, NEW.country_code)
+            AND NEW.metals_info_en IS NOT DISTINCT FROM OLD.metals_info_en
+            AND OLD.metals_info_en = manual_en_value('metals_info', OLD.country_code, OLD.metals_info_orig)
+        THEN
+            NEW.metals_info_en := NULL;
+        END IF;
+    END IF;
     NEW.contamination_other_en := coalesce(
         manual_en_value('contamination_other', NEW.country_code, NEW.contamination_other_orig),
         NEW.contamination_other_en);
@@ -36,8 +59,17 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION preserve_image_manual_en() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION preserve_image_manual_en() RETURNS trigger LANGUAGE plpgsql AS $
 BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF (OLD.image_description_orig, OLD.country_code)
+                IS DISTINCT FROM (NEW.image_description_orig, NEW.country_code)
+            AND NEW.image_description_en IS NOT DISTINCT FROM OLD.image_description_en
+            AND OLD.image_description_en = manual_en_value('image_description', OLD.country_code, OLD.image_description_orig)
+        THEN
+            NEW.image_description_en := NULL;
+        END IF;
+    END IF;
     NEW.image_description_en := coalesce(
         manual_en_value('image_description', NEW.country_code, NEW.image_description_orig),
         NEW.image_description_en);

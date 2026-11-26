@@ -11,6 +11,7 @@ def client(monkeypatch):
     app = Flask(__name__)
     app.secret_key = "test"
     app.register_blueprint(admin.bp)
+    monkeypatch.setattr(admin, "get_locale", lambda: "en")
     monkeypatch.setenv("I18N_ADMIN_EDITORS", "editor@example.org")
     with app.test_client() as client:
         with client.session_transaction() as state:

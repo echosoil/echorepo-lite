@@ -40,7 +40,10 @@ def search_manual_en(query, page=1):
             SELECT field, country, original, count(*) AS occurrences,
                    count(DISTINCT english) AS distinct_en,
                    count(*) FILTER (WHERE english IS NULL OR btrim(english) = '') AS missing_en,
-                   min(english) FILTER (WHERE btrim(english) <> '') AS current_en
+                   coalesce(
+                       min(english) FILTER (WHERE position(lower(%s) in lower(english)) > 0),
+                       min(english) FILTER (WHERE btrim(english) <> '')
+                   ) AS current_en
             FROM texts
             GROUP BY field, country, original
             HAVING position(lower(%s) in lower(original)) > 0
@@ -55,7 +58,7 @@ def search_manual_en(query, page=1):
         LIMIT %s OFFSET %s
     """).format(sources=sql.SQL(" UNION ALL ").join(parts))
     with closing(get_pg_conn()) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(statement, (query, query, PAGE_SIZE + 1, (page - 1) * PAGE_SIZE))
+        cur.execute(statement, (query, query, query, PAGE_SIZE + 1, (page - 1) * PAGE_SIZE))
         rows = cur.fetchall()
     return rows[:PAGE_SIZE], len(rows) > PAGE_SIZE
 
@@ -71,11 +74,10 @@ def change_manual_en(field, country, original, value, expected, actor, *, clear=
         "{orig} = %s AND upper(btrim(coalesce(country_code, ''))) = %s"
     ).format(orig=orig)
     with closing(get_pg_conn()) as conn, conn, conn.cursor() as cur:
-        # Serialize administrative changes for one exact scope (hash collisions
-        # merely serialize unrelated scopes; the full source is checked below).
+        # Serialize the short correction transaction with ingestion/translation
+        # writes, including inserts of new matching rows. Ordinary reads continue.
         cur.execute(
-            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-            (field + "\n" + country + "\n" + original,),
+            sql.SQL("LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE").format(sql.Identifier(table))
         )
         cur.execute(
             "SELECT english FROM manual_en_overrides "

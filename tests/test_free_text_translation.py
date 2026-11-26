@@ -245,7 +245,7 @@ def test_retranslation_cli_journals_before_guarded_update(tmp_path, monkeypatch)
     translator.translate.return_value = ("sample", LanguageChoice("it", "country_prior"))
     conn, cursor, backup = setup_retranslation_cli(tmp_path, monkeypatch, translator)
 
-    def check_execute(query, params):
+    def check_execute(query, params=None):
         if params and params[0] == "sample":
             assert "pending" in backup.read_text(encoding="utf-8")
             assert "champion" in backup.read_text(encoding="utf-8")
