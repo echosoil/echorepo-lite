@@ -265,7 +265,7 @@ def test_failed_retranslation_retains_previous_value(tmp_path, monkeypatch):
     translator.translate.return_value = (None, LanguageChoice(None, "unsupported_detected"))
     _, cursor, backup = setup_retranslation_cli(tmp_path, monkeypatch, translator)
     assert cli.main() == 0
-    assert cursor.execute.call_count == 2  # count and select only
+    assert cursor.execute.call_count == 3  # protection check, count and select
     assert "pending" not in backup.read_text(encoding="utf-8")
 
 
@@ -278,7 +278,7 @@ def test_retranslation_preflight_never_creates_backup(tmp_path, monkeypatch):
     assert not backup.exists()
     conn.set_session.assert_called_once_with(readonly=True)
     translator.translate.assert_not_called()
-    assert cursor.execute.call_count == 1
+    assert cursor.execute.call_count == 2
 
 
 def test_retranslation_journal_resume_and_conflicts(tmp_path):
@@ -312,7 +312,7 @@ def test_retranslation_cli_resume_skips_completed(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "argv", [*sys.argv, "--resume"])
     assert cli.main() == 0
     translator.translate.assert_not_called()
-    assert cursor.execute.call_count == 2
+    assert cursor.execute.call_count == 3
     with backup.open(encoding="utf-8", newline="") as handle:
         assert [row["event"] for row in csv.DictReader(handle)] == [
             "scope", "pending", "committed",

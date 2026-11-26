@@ -39,63 +39,70 @@
   <form id="manualFilterForm" class="row g-2 align-items-end mb-3" method="get">
     <input type="hidden" name="scope" value="manual_en">
     <input type="hidden" name="locale" value="{{ locale }}">
-    <div class="col-auto">
-      <label class="form-label">Search</label>
-      <input class="form-control" name="q" value="{{ request.args.get('q','') }}">
+    <div class="col-12 col-md-7">
+      <label class="form-label" for="manualQuery">Search original or English text</label>
+      <input class="form-control" id="manualQuery" name="q" value="{{ query }}" maxlength="500"
+        placeholder="e.g. campione or champion" required>
     </div>
     <div class="col-auto">
-      <label class="form-label d-block">&nbsp;</label>
       <button class="btn btn-primary">Filter</button>
     </div>
   </form>
 
+  {% if not query %}
+  <p class="text-muted">Enter any part of an original or English string to find translations.</p>
+  {% elif not rows %}
+  <p class="text-muted">No matching translations on this page.</p>
+  {% else %}
   <div class="table-responsive">
     <table class="table table-sm align-middle">
       <thead>
         <tr>
-          <th style="width:45%">Original text (from *_orig)</th>
-          <th style="width:45%">Override EN</th>
+          <th style="width:45%">Original text</th>
+          <th style="width:45%">English translation / override</th>
           <th style="width:10%"></th>
         </tr>
       </thead>
       <tbody id="manualOverridesBody">
         {% for r in rows %}
-        <tr>
+        <tr data-correction='{{ {"field": r.field, "country": r.country, "orig": r.original, "expected": r.override}|tojson }}'>
           <td>
-            <code class="orig-text">{{ r.orig }}</code>
+            <div class="small text-muted">{{ r.field }} · {{ r.country or 'Unknown country' }} · {{ r.occurrences }} records</div>
+            <code class="orig-text text-break" style="white-space:pre-wrap">{{ r.original }}</code>
           </td>
           <td>
-            <input class="form-control form-control-sm manual-override-input" value="{{ r.override }}">
+            {% if r.override is not none %}
+            <span class="badge text-bg-success manual-protected">Manual override</span>
+            {% elif r.distinct_en > 1 or (r.missing_en and r.current_en) %}
+            <div class="small text-muted">Mixed translations / missing values. Saving replaces all exact matches in this field and country.</div>
+            {% endif %}
+            <textarea class="form-control form-control-sm manual-override-input" rows="2"
+              aria-label="English translation">{{ r.override if r.override is not none else (r.current_en or '') }}</textarea>
           </td>
           <td>
-            <button class="btn btn-sm btn-outline-success manual-save-btn">Save</button>
-            <button class="btn btn-sm btn-outline-danger manual-clear-btn">Clear</button>
+            <button type="button" class="btn btn-sm btn-outline-success manual-save-btn">Save</button>
+            <button type="button" class="btn btn-sm btn-outline-danger manual-clear-btn"
+              {% if r.override is none %}disabled{% endif %}>Remove protection</button>
+            <div class="small manual-status" role="status"></div>
           </td>
         </tr>
         {% endfor %}
-
-        {# add-new row #}
-        <tr>
-          <td>
-            <input id="newOrig" class="form-control form-control-sm" placeholder="New original text (exact match)">
-          </td>
-          <td>
-            <input id="newOverride" class="form-control form-control-sm" placeholder="New EN override">
-          </td>
-          <td>
-            <button id="btnAddManualOverride" class="btn btn-sm btn-outline-primary">
-              Add
-            </button>
-          </td>
-        </tr>
       </tbody>
     </table>
   </div>
+  {% endif %}
+  {% if query and (page > 1 or has_next) %}
+  <nav class="d-flex gap-2 align-items-center" aria-label="Translation search pages">
+    {% if page > 1 %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('i18n_admin.admin_page',scope='manual_en',locale=locale,q=query,page=page-1) }}">Previous</a>{% endif %}
+    <span>Page {{ page }}</span>
+    {% if has_next %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('i18n_admin.admin_page',scope='manual_en',locale=locale,q=query,page=page+1) }}">Next</a>{% endif %}
+  </nav>
+  {% endif %}
 
   <div class="alert alert-info mt-3">
-    These overrides are applied <strong>before</strong> automatic translation into English
-    for canonical Postgres fields (e.g. <code>contamination_other_en</code>,
-    <code>soil_texture_en</code>, etc.).
+    Save updates all exact occurrences of the original text in the displayed field and country immediately.
+    Manual corrections are protected from automatic translation. Remove protection keeps the current English
+    text but allows a future explicit retranslation. Soil texture and structure are not affected.
   </div>
 
   {# ---------------- Original Page / JS tabs ---------------- #}
@@ -269,80 +276,65 @@
     }
 
     // ---------- Manual EN tab logic ----------
-    const tbody = document.getElementById('manualOverridesBody');
-    const newOrig = document.getElementById('newOrig');
-    const newOv = document.getElementById('newOverride');
-    const btnAdd = document.getElementById('btnAddManualOverride');
+    const csrf = {{ csrf_token|default('')|tojson }};
+    const endpoint = {{ url_for('i18n_admin.manual_set')|tojson }};
+    document.querySelectorAll('#manualOverridesBody tr[data-correction]').forEach(tr => {
+      const payload = JSON.parse(tr.dataset.correction);
+      const input = tr.querySelector('.manual-override-input');
+      const save = tr.querySelector('.manual-save-btn');
+      const clear = tr.querySelector('.manual-clear-btn');
+      const status = tr.querySelector('.manual-status');
 
-    async function postManual(orig, value) {
-      const r = await fetch('/i18n/admin/manual_set', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ orig: orig, value: value })
-      });
-      if (!r.ok) {
-        throw new Error(await r.text());
-      }
-      return r.json();
-    }
-
-    // Existing rows
-    if (tbody) {
-      tbody.querySelectorAll('tr').forEach(tr => {
-        const origEl = tr.querySelector('.orig-text');
-        const input = tr.querySelector('.manual-override-input');
-        const save = tr.querySelector('.manual-save-btn');
-        const clear = tr.querySelector('.manual-clear-btn');
-
-        if (!origEl || !input || !save || !clear) return;
-        const origText = origEl.textContent.trim();
-
-        save.addEventListener('click', async (ev) => {
-          ev.preventDefault();
-          try {
-            await postManual(origText, input.value);
-            input.classList.add('is-valid');
-            setTimeout(() => input.classList.remove('is-valid'), 600);
-          } catch (e) {
-            alert('Save failed: ' + e.message);
-          }
-        });
-
-        clear.addEventListener('click', async (ev) => {
-          ev.preventDefault();
-          try {
-            await postManual(origText, "");
-            // simplest: clear the row's input; you can also remove the row
-            input.value = "";
-            input.classList.add('is-valid');
-            setTimeout(() => input.classList.remove('is-valid'), 600);
-          } catch (e) {
-            alert('Clear failed: ' + e.message);
-          }
-        });
-      });
-    }
-
-    // Add-new row
-    if (btnAdd && newOrig && newOv) {
-      btnAdd.addEventListener('click', async (ev) => {
-        ev.preventDefault();
-        const o = newOrig.value.trim();
-        const v = newOv.value.trim();
-        if (!o || !v) {
-          alert('Please fill both original text and EN override.');
+      async function submit(action) {
+        if (action === 'save' && !input.value.trim()) {
+          status.textContent = 'Enter an English translation.';
           return;
         }
+        const message = action === 'save'
+          ? 'Replace all exact matches in this field and country with this English translation?'
+          : 'Remove protection? The current English translation will remain.';
+        if (!window.confirm(message)) return;
+        save.disabled = true;
+        clear.disabled = true;
+        input.disabled = true;
+        status.textContent = 'Saving…';
         try {
-          await postManual(o, v);
-          // easiest: reload so the new row appears in correct sorted position
-          window.location.reload();
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({...payload, action, value: input.value, csrf_token: csrf})
+          });
+          const result = await response.json();
+          if (!response.ok || !result.ok) throw new Error(result.error || 'Save failed');
+          payload.expected = result.override;
+          if (action === 'save') input.value = result.override;
+          status.textContent = action === 'save'
+            ? 'Saved · ' + result.updated + ' updated / ' + result.matched + ' matched'
+            : 'Protection removed';
+          input.classList.add('is-valid');
+          let badge = tr.querySelector('.manual-protected');
+          if (result.override !== null && !badge) {
+            badge = document.createElement('span');
+            badge.className = 'badge text-bg-success manual-protected';
+            badge.textContent = 'Manual override';
+            input.before(badge);
+          } else if (result.override === null && badge) {
+            badge.remove();
+          }
         } catch (e) {
-          alert('Add failed: ' + e.message);
+          status.textContent = e.message;
+          input.classList.remove('is-valid');
+        } finally {
+          save.disabled = false;
+          clear.disabled = payload.expected === null;
+          input.disabled = false;
         }
-      });
-    }
+      }
+
+      save.addEventListener('click', () => submit('save'));
+      clear.addEventListener('click', () => submit('clear'));
+    });
   })();
 </script>
 {% endblock %}

@@ -1,15 +1,18 @@
 # echorepo/routes/i18n_admin.py
+import hmac
 import json
 import os
-from pathlib import Path
+import re
+import secrets
 
 from babel.support import Translations
-from flask import Blueprint, Response, abort, current_app, jsonify, render_template, request
+from flask import Blueprint, Response, abort, current_app, jsonify, make_response, render_template, request, session
 from flask_babel import get_locale
 
 from echorepo.auth.decorators import login_required
 from echorepo.i18n import BASE_LABEL_MSGIDS
 from echorepo.services.i18n_labels import make_labels
+from echorepo.services.manual_en import FIELDS, ManualConflict, change_manual_en, search_manual_en
 from echorepo.services.i18n_overrides import (
     delete_override,
     delete_override_msgid,
@@ -75,46 +78,20 @@ def _load_pot_entries():
 # ---------- Manual EN overrides (for canonical *_en translations) ----------
 
 
-def _manual_overrides_path() -> Path:
-    """
-    Single source of truth for manual_en overrides file.
-
-    By default we keep it in /data/manual_overrides.json, which is
-    backed by ./data on the host (see docker-compose).
-    You can override via MANUAL_OVERRIDES_PATH if needed.
-    """
-    path = os.getenv("MANUAL_OVERRIDES_PATH", "/data/manual_overrides.json")
-    return Path(path)
-
-
-def _load_manual_overrides() -> dict:
-    """
-    Returns dict: { "text_to_en": {orig_text: en_text, ... } }
-    """
-    path = _manual_overrides_path()
-    if not path.exists():
-        return {"text_to_en": {}}
-
-    try:
-        with path.open("r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception:
-        current_app.logger.exception("Failed to read manual_overrides.json")
-        return {"text_to_en": {}}
-
-    if not isinstance(data, dict):
-        data = {}
-    if not isinstance(data.get("text_to_en"), dict):
-        data["text_to_en"] = {}
-    return data
-
-
-def _save_manual_overrides(text_to_en: dict) -> None:
-    path = _manual_overrides_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"text_to_en": text_to_en}
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
+def _manual_editor():
+    profile = (session.get("kc") or {}).get("profile") or {}
+    editors = {
+        value.casefold()
+        for value in re.split(
+            r"[,;\s]+", os.getenv("I18N_ADMIN_EDITORS", os.getenv("COORDINATE_QA_EDITORS", ""))
+        )
+        if value
+    }
+    for value in (profile.get("email"), profile.get("preferred_username"), session.get("user")):
+        identity = str(value or "").strip().casefold()
+        if identity and identity in editors:
+            return identity
+    abort(403)
 
 
 @bp.get("/labels.js")
@@ -146,32 +123,33 @@ def admin_page():
     q = (request.args.get("q") or "").strip().lower()
     file_filter = (request.args.get("file") or "").strip()
 
-    # ----- NEW: manual_en tab -----
     if scope == "manual_en":
-        data = _load_manual_overrides()
-        mapping = data.get("text_to_en", {})
-        rows = []
-        for orig, en_val in mapping.items():
-            orig_str = str(orig)
-            en_str = "" if en_val is None else str(en_val)
-            if q and not (q in orig_str.lower() or q in en_str.lower()):
-                continue
-            rows.append(
-                {
-                    "orig": orig_str,
-                    "override": en_str,
-                }
-            )
-        rows.sort(key=lambda r: r["orig"].lower())
-
-        return render_template(
+        _manual_editor()
+        query = (request.args.get("q") or "").strip()
+        if len(query) > 500:
+            abort(400, "Search too long")
+        page = request.args.get("page", 1, type=int)
+        if not 1 <= page <= 1000:
+            abort(400, "Invalid page")
+        rows, has_next = [], False
+        if query:
+            rows, has_next = search_manual_en(query, page)
+        if not session.get("_manual_en_csrf"):
+            session["_manual_en_csrf"] = secrets.token_urlsafe(32)
+        response = make_response(render_template(
             "i18n_admin.html",
             scope="manual_en",
             locale=loc,
             rows=rows,
-            files_hint=file_filter,
+            files_hint="",
             js_keys=False,
-        )
+            page=page,
+            has_next=has_next,
+            query=query,
+            csrf_token=session["_manual_en_csrf"],
+        ))
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
 
     # ----- Page texts (msgids) -----
     rows = []
@@ -282,34 +260,34 @@ def admin_set():
 @bp.post("/admin/manual_set")
 @login_required
 def manual_set():
-    """
-    Save / clear a single manual EN override.
-    Body: { "orig": "...", "value": "..." }
-      - if value == "" → delete entry
-      - else           → set orig → value
-    """
-    data = request.get_json(silent=True) or request.form
-    orig = (data.get("orig") or "").strip()
-    if not orig:
-        return jsonify({"ok": False, "error": "orig required"}), 400
-
-    value = (data.get("value") or "").strip()
-
-    data_obj = _load_manual_overrides()
-    mapping = data_obj.get("text_to_en", {})
-    if not isinstance(mapping, dict):
-        mapping = {}
-
-    if value == "":
-        # delete
-        mapping.pop(orig, None)
-    else:
-        mapping[orig] = value
-
+    actor = _manual_editor()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(ok=False, error="JSON required"), 400
+    token = data.get("csrf_token")
+    expected_token = session.get("_manual_en_csrf")
+    if not isinstance(token, str) or not expected_token or not hmac.compare_digest(token, expected_token):
+        return jsonify(ok=False, error="Invalid CSRF token"), 400
+    field, country, original = (data.get(key) for key in ("field", "country", "orig"))
+    value, expected = data.get("value"), data.get("expected")
+    action = data.get("action")
+    if (
+        not isinstance(field, str) or field not in FIELDS
+        or not isinstance(country, str) or len(country) > 16
+        or not isinstance(original, str) or not original.strip() or len(original) > 100000
+        or "expected" not in data or (expected is not None and not isinstance(expected, str))
+        or action not in ("save", "clear")
+        or (action == "save" and (not isinstance(value, str) or not value.strip() or len(value) > 100000))
+    ):
+        return jsonify(ok=False, error="Invalid correction"), 400
     try:
-        _save_manual_overrides(mapping)
-    except Exception as e:
-        current_app.logger.exception("Failed to save manual overrides")
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-    return jsonify({"ok": True, "orig": orig, "value": value})
+        result = change_manual_en(
+            field, country, original, value.strip() if action == "save" else None,
+            expected, actor, clear=action == "clear",
+        )
+    except ManualConflict as exc:
+        return jsonify(ok=False, error=str(exc)), 409
+    except Exception:
+        current_app.logger.exception("Manual EN correction failed")
+        return jsonify(ok=False, error="Could not save correction"), 500
+    return jsonify(ok=True, **result)

@@ -414,6 +414,11 @@ def main():
             return write_comparison(
                 conn, translator, compare, args.compare_per_country, countries
             )
+        # Count and write modes exclude protected values once the migration is deployed.
+        with conn.cursor() as cur:
+            cur.execute("SELECT to_regclass('manual_en_overrides') IS NOT NULL")
+            manual_protection = cur.fetchone()[0] is True
+        conn.commit()
         if retranslate:
             print(
                 f"Retranslation scope: {','.join(countries) or 'ALL'}; "
@@ -450,6 +455,12 @@ def main():
             if retranslate and countries:
                 missing += sql.SQL(" AND upper(btrim(country_code)) = ANY(%s)")
                 params.append(countries)
+            if manual_protection:
+                missing += sql.SQL(
+                    " AND NOT EXISTS (SELECT 1 FROM manual_en_overrides m "
+                    "WHERE m.field = {field} AND m.country = upper(btrim(coalesce({table}.country_code, ''))) "
+                    "AND m.original_hash = md5({table}.{orig}) AND m.original = {table}.{orig})"
+                ).format(field=sql.Literal(field), table=table_id, orig=orig)
             with conn.cursor() as cur:
                 count_query = sql.SQL("SELECT count(*) FROM {} WHERE {}").format(table_id, missing)
                 cur.execute(count_query, params)
@@ -477,6 +488,13 @@ def main():
                 "AND country_code IS NOT DISTINCT FROM %s "
                 "AND {en} IS NOT DISTINCT FROM %s"
             ).format(table=table_id, en=en, keys=where_keys, orig=orig)
+            if manual_protection:
+                update += sql.SQL(
+                    " AND NOT EXISTS (SELECT 1 FROM manual_en_overrides m "
+                    "WHERE m.field = {field} AND m.country = upper(btrim(coalesce({table}.country_code, ''))) "
+                    "AND m.original_hash = md5({table}.{orig}) AND m.original = {table}.{orig}) "
+                    "RETURNING {en}"
+                ).format(field=sql.Literal(field), table=table_id, orig=orig, en=en)
             stats = Counter()
             errors = 0
             attempted = 0
@@ -520,6 +538,8 @@ def main():
                 with conn.cursor() as cur:
                     cur.execute(update, (translated, *ids, raw, country, previous))
                     changed = bool(cur.rowcount)
+                    if changed and manual_protection:
+                        changed = cur.fetchone()[0] == translated
                 conn.commit()
                 if changed and journal:
                     journal.record("committed", table, field, ids, raw, country, previous, translated)
