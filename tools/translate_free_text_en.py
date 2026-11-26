@@ -490,6 +490,8 @@ def main():
                 if retranslate and args.limit is not None and attempted >= args.limit:
                     break
                 attempted += 1
+                if attempted % 50 == 0:
+                    print(f"Attempted {attempted}/{len(rows)}: {dict(stats)}", flush=True)
                 source = raw.strip()
                 try:
                     translated, decision = translator.translate(
@@ -522,12 +524,11 @@ def main():
                 if changed and journal:
                     journal.record("committed", table, field, ids, raw, country, previous, translated)
                 stats["updated" if changed else "changed_since_read"] += 1
-                if sum(stats.values()) % 50 == 0:
-                    print(dict(stats), flush=True)
             print(dict(stats), flush=True)
             totals.update(stats)
         print("TOTAL:", dict(totals), flush=True)
-        return 1 if any(totals[key] for key in ("failed", "resume_conflict", "changed_since_read")) else 0
+        conflicts = totals["resume_conflict"] + totals["changed_since_read"]
+        return 1 if totals["failed"] or (retranslate and conflicts) else 0
     finally:
         try:
             if journal is not None:

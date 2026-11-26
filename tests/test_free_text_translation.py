@@ -299,3 +299,43 @@ def test_retranslation_journal_resume_and_conflicts(tmp_path):
     journal.close()
     with pytest.raises(ValueError, match="scope"):
         RetranslationJournal(backup, {"database": "other"}, resume=True)
+
+
+def test_retranslation_cli_resume_skips_completed(tmp_path, monkeypatch):
+    translator = Mock()
+    translator.translate.return_value = ("sample 3", LanguageChoice("it", "country_prior"))
+    _, cursor, backup = setup_retranslation_cli(tmp_path, monkeypatch, translator)
+    assert cli.main() == 0
+    translator.translate.reset_mock()
+    cursor.execute.reset_mock()
+    cursor.fetchall.return_value = [("sample", "campione", "IT", "sample 3")]
+    monkeypatch.setattr(sys, "argv", [*sys.argv, "--resume"])
+    assert cli.main() == 0
+    translator.translate.assert_not_called()
+    assert cursor.execute.call_count == 2
+    with backup.open(encoding="utf-8", newline="") as handle:
+        assert [row["event"] for row in csv.DictReader(handle)] == [
+            "scope", "pending", "committed",
+        ]
+
+
+def test_retranslation_conflict_does_not_record_commit(tmp_path, monkeypatch):
+    translator = Mock()
+    translator.translate.return_value = ("sample 3", LanguageChoice("it", "country_prior"))
+    _, cursor, backup = setup_retranslation_cli(tmp_path, monkeypatch, translator)
+    cursor.rowcount = 0
+    assert cli.main() == 1
+    with backup.open(encoding="utf-8", newline="") as handle:
+        assert [row["event"] for row in csv.DictReader(handle)] == ["scope", "pending"]
+
+
+def test_retranslation_requires_backup_before_connect(monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", ["translate_free_text_en", "--db-port", "5432", "--apply", "--retranslate-all"]
+    )
+    connect = Mock()
+    monkeypatch.setattr(cli.psycopg2, "connect", connect)
+    with pytest.raises(SystemExit) as exc:
+        cli.main()
+    assert exc.value.code == 2
+    connect.assert_not_called()
