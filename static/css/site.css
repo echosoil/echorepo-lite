@@ -94,3 +94,36 @@
 .deg-rulers text {
   font-family: var(--font-sans);
 }
+
+/* Original text remains visible; native details supports touch and keyboard. */
+.echo-translation {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+}
+.echo-translation > summary {
+  cursor: pointer;
+  list-style: none;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+  overflow-wrap: anywhere;
+}
+.echo-translation > summary::-webkit-details-marker {
+  display: none;
+}
+.echo-translation > summary:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.echo-translation > summary .bi-translate {
+  font-size: 0.85em;
+  color: #526675;
+}
+.echo-translation-text {
+  display: block;
+  margin-top: 0.3rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid #718096;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
