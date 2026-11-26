@@ -94,7 +94,7 @@ def review_blockers(kind, config):
     meta = config.get("metadata", {})
     allowed = {"title", "upload_type", "description", "creators", "access_right",
                "license", "version", "keywords", "grants", "communities",
-               "related_identifiers", "subjects", "notes"}
+               "related_identifiers", "subjects", "notes", "contributors"}
     if set(meta) - allowed:
         blockers.append("Unexpected metadata keys")
     if meta.get("upload_type") != "dataset" or meta.get("access_right") != "open":
@@ -108,6 +108,14 @@ def review_blockers(kind, config):
         for c in creators
     ):
         blockers.append("Creator metadata missing")
+    contributors = meta.get("contributors", [])
+    if not isinstance(contributors, list) or any(
+        not isinstance(c, dict) or not isinstance(c.get("name"), str)
+        or not c["name"].strip() or not isinstance(c.get("type"), str)
+        or not c["type"].strip()
+        for c in contributors
+    ):
+        blockers.append("Invalid contributor metadata")
     for name in CHECKS:
         item = config.get("review", {}).get(name, {})
         evidence = item.get("evidence")
@@ -236,6 +244,17 @@ def verify_metadata(record, expected):
         c["name"] for c in expected["creators"]
     ]:
         raise ValueError("Remote creator mismatch")
+    # Verify the role as well as the name. A data curator is not a creator.
+    def contributor_key(item):
+        return (item.get("name"), item.get("type"))
+
+    actual_contributors = actual.get("contributors", [])
+    expected_contributors = expected.get("contributors", [])
+    if sorted(map(contributor_key, actual_contributors)) != sorted(
+        map(contributor_key, expected_contributors)
+    ):
+        raise ValueError("Remote contributor mismatch")
+
 
 
 def run_remote(action, directory, approved, state_root, env_file):
