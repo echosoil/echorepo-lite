@@ -42,7 +42,7 @@
     <div class="col-12 col-md-7">
       <label class="form-label" for="manualQuery">Search original or English text</label>
       <input class="form-control" id="manualQuery" name="q" value="{{ query }}" maxlength="500"
-        placeholder="e.g. campione or champion" required>
+        placeholder="e.g. campione or sample" required>
     </div>
     <div class="col-auto">
       <button class="btn btn-primary">Filter</button>
@@ -65,24 +65,27 @@
       </thead>
       <tbody id="manualOverridesBody">
         {% for r in rows %}
-        <tr data-correction='{{ {"field": r.field, "country": r.country, "orig": r.original, "expected": r.override}|tojson }}'>
+        <tr
+          data-correction='{{ {"field": r.field, "country": r.country, "orig": r.original, "expected": r.override}|tojson }}'>
           <td>
-            <div class="small text-muted">{{ r.field }} · {{ r.country or 'Unknown country' }} · {{ r.occurrences }} records</div>
+            <div class="small text-muted">{{ r.field }} · {{ r.country or 'Unknown country' }} · {{ r.occurrences }}
+              records</div>
             <code class="orig-text text-break" style="white-space:pre-wrap">{{ r.original }}</code>
           </td>
           <td>
             {% if r.override is not none %}
             <span class="badge text-bg-success manual-protected">Manual override</span>
             {% elif r.distinct_en > 1 or (r.missing_en and r.current_en) %}
-            <div class="small text-muted">Mixed translations / missing values. Saving replaces all exact matches in this field and country.</div>
+            <div class="small text-muted">Mixed translations / missing values. Saving replaces all exact matches in this
+              field and country.</div>
             {% endif %}
             <textarea class="form-control form-control-sm manual-override-input" rows="2"
               aria-label="English translation">{{ r.override if r.override is not none else (r.current_en or '') }}</textarea>
           </td>
           <td>
             <button type="button" class="btn btn-sm btn-outline-success manual-save-btn">Save</button>
-            <button type="button" class="btn btn-sm btn-outline-danger manual-clear-btn"
-              {% if r.override is none %}disabled{% endif %}>Remove protection</button>
+            <button type="button" class="btn btn-sm btn-outline-danger manual-clear-btn" {% if r.override is none
+              %}disabled{% endif %}>Remove protection</button>
             <div class="small manual-status" role="status"></div>
           </td>
         </tr>
@@ -93,9 +96,13 @@
   {% endif %}
   {% if query and (page > 1 or has_next) %}
   <nav class="d-flex gap-2 align-items-center" aria-label="Translation search pages">
-    {% if page > 1 %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('i18n_admin.admin_page',scope='manual_en',locale=locale,q=query,page=page-1) }}">Previous</a>{% endif %}
+    {% if page > 1 %}<a class="btn btn-sm btn-outline-secondary"
+      href="{{ url_for('i18n_admin.admin_page',scope='manual_en',locale=locale,q=query,page=page-1) }}">Previous</a>{%
+    endif %}
     <span>Page {{ page }}</span>
-    {% if has_next %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('i18n_admin.admin_page',scope='manual_en',locale=locale,q=query,page=page+1) }}">Next</a>{% endif %}
+    {% if has_next %}<a class="btn btn-sm btn-outline-secondary"
+      href="{{ url_for('i18n_admin.admin_page',scope='manual_en',locale=locale,q=query,page=page+1) }}">Next</a>{% endif
+    %}
   </nav>
   {% endif %}
 
@@ -276,65 +283,66 @@
     }
 
     // ---------- Manual EN tab logic ----------
-    const csrf = {{ csrf_token|default('')|tojson }};
-    const endpoint = {{ url_for('i18n_admin.manual_set')|tojson }};
-    document.querySelectorAll('#manualOverridesBody tr[data-correction]').forEach(tr => {
-      const payload = JSON.parse(tr.dataset.correction);
-      const input = tr.querySelector('.manual-override-input');
-      const save = tr.querySelector('.manual-save-btn');
-      const clear = tr.querySelector('.manual-clear-btn');
-      const status = tr.querySelector('.manual-status');
+    const csrf = {{ csrf_token|default ('') | tojson
+  }};
+  const endpoint = {{ url_for('i18n_admin.manual_set') | tojson }};
+  document.querySelectorAll('#manualOverridesBody tr[data-correction]').forEach(tr => {
+    const payload = JSON.parse(tr.dataset.correction);
+    const input = tr.querySelector('.manual-override-input');
+    const save = tr.querySelector('.manual-save-btn');
+    const clear = tr.querySelector('.manual-clear-btn');
+    const status = tr.querySelector('.manual-status');
 
-      async function submit(action) {
-        if (action === 'save' && !input.value.trim()) {
-          status.textContent = 'Enter an English translation.';
-          return;
-        }
-        const message = action === 'save'
-          ? 'Replace all exact matches in this field and country with this English translation?'
-          : 'Remove protection? The current English translation will remain.';
-        if (!window.confirm(message)) return;
-        save.disabled = true;
-        clear.disabled = true;
-        input.disabled = true;
-        status.textContent = 'Saving…';
-        try {
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({...payload, action, value: input.value, csrf_token: csrf})
-          });
-          const result = await response.json();
-          if (!response.ok || !result.ok) throw new Error(result.error || 'Save failed');
-          payload.expected = result.override;
-          if (action === 'save') input.value = result.override;
-          status.textContent = action === 'save'
-            ? 'Saved · ' + result.updated + ' updated / ' + result.matched + ' matched'
-            : 'Protection removed';
-          input.classList.add('is-valid');
-          let badge = tr.querySelector('.manual-protected');
-          if (result.override !== null && !badge) {
-            badge = document.createElement('span');
-            badge.className = 'badge text-bg-success manual-protected';
-            badge.textContent = 'Manual override';
-            input.before(badge);
-          } else if (result.override === null && badge) {
-            badge.remove();
-          }
-        } catch (e) {
-          status.textContent = e.message;
-          input.classList.remove('is-valid');
-        } finally {
-          save.disabled = false;
-          clear.disabled = payload.expected === null;
-          input.disabled = false;
-        }
+    async function submit(action) {
+      if (action === 'save' && !input.value.trim()) {
+        status.textContent = 'Enter an English translation.';
+        return;
       }
+      const message = action === 'save'
+        ? 'Replace all exact matches in this field and country with this English translation?'
+        : 'Remove protection? The current English translation will remain.';
+      if (!window.confirm(message)) return;
+      save.disabled = true;
+      clear.disabled = true;
+      input.disabled = true;
+      status.textContent = 'Saving…';
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ ...payload, action, value: input.value, csrf_token: csrf })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error || 'Save failed');
+        payload.expected = result.override;
+        if (action === 'save') input.value = result.override;
+        status.textContent = action === 'save'
+          ? 'Saved · ' + result.updated + ' updated / ' + result.matched + ' matched'
+          : 'Protection removed';
+        input.classList.add('is-valid');
+        let badge = tr.querySelector('.manual-protected');
+        if (result.override !== null && !badge) {
+          badge = document.createElement('span');
+          badge.className = 'badge text-bg-success manual-protected';
+          badge.textContent = 'Manual override';
+          input.before(badge);
+        } else if (result.override === null && badge) {
+          badge.remove();
+        }
+      } catch (e) {
+        status.textContent = e.message;
+        input.classList.remove('is-valid');
+      } finally {
+        save.disabled = false;
+        clear.disabled = payload.expected === null;
+        input.disabled = false;
+      }
+    }
 
-      save.addEventListener('click', () => submit('save'));
-      clear.addEventListener('click', () => submit('clear'));
-    });
-  })();
+    save.addEventListener('click', () => submit('save'));
+    clear.addEventListener('click', () => submit('clear'));
+  });
+  }) ();
 </script>
 {% endblock %}
