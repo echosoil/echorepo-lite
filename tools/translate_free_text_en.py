@@ -361,7 +361,7 @@ def main():
     )
     endpoint = args.endpoint.rstrip("/")
     apply = args.apply and not args.preflight
-    compare = args.compare_output and not args.preflight
+    compare = None if args.preflight else args.compare_output
     totals = Counter()
     conn = psycopg2.connect(
         host=args.db_host, port=args.db_port, dbname=name, user=user, password=password

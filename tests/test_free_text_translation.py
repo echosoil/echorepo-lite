@@ -1,8 +1,10 @@
 import csv
-from unittest.mock import Mock
+import sys
+from unittest.mock import MagicMock, Mock
 
 import pytest
 
+from tools import translate_free_text_en as cli
 from tools.translate_free_text_en import (
     FIELDS,
     LanguageChoice,
@@ -158,3 +160,56 @@ def test_country_mode_does_not_depend_on_detector():
     assert translator.translate("campione 3", "IT", "country")[0] == "sample 3"
     assert session.post.call_count == 1
     assert session.post.call_args.kwargs["json"]["source"] == "it"
+
+
+@pytest.mark.parametrize("preflight", [False, True])
+def test_comparison_cli_preserves_output_path(tmp_path, monkeypatch, preflight):
+    """Exercise CLI dispatch and the actual writer, not just the writer in isolation."""
+    env = tmp_path / ".env"
+    env.write_text("DB_PASSWORD=test-password\n", encoding="utf-8")
+    output = tmp_path / "review.csv"
+    argv = [
+        "translate_free_text_en",
+        "--env-file",
+        str(env),
+        "--db-port",
+        "5432",
+        "--compare-country",
+        "IT",
+        "--compare-per-country",
+        "1",
+        "--compare-output",
+        str(output),
+    ]
+    if preflight:
+        argv.append("--preflight")
+    monkeypatch.setattr(sys, "argv", argv)
+    monkeypatch.setenv("DB_PASSWORD", "test-password")
+    conn = MagicMock()
+    conn.cursor.return_value.__enter__.return_value.fetchone.return_value = (0,)
+    monkeypatch.setattr(cli.psycopg2, "connect", Mock(return_value=conn))
+    monkeypatch.setattr(cli.requests, "Session", Mock())
+    models = Mock(return_value=SUPPORTED)
+    monkeypatch.setattr(cli, "available_sources", models)
+    monkeypatch.setattr(cli, "translate_text", Mock(return_value="Hello everyone"))
+    monkeypatch.setattr(
+        cli, "comparison_rows", Mock(return_value=[("IT", "campione 3", "image_description")])
+    )
+    translator = Mock()
+    translator.translate.return_value = ("sample 3", LanguageChoice("it", "country_prior"))
+    monkeypatch.setattr(cli, "Translator", Mock(return_value=translator))
+
+    assert cli.main() == 0
+    conn.set_session.assert_called_once_with(readonly=True)
+    if preflight:
+        assert not output.exists()
+        models.assert_not_called()
+        translator.translate.assert_not_called()
+    else:
+        with output.open(encoding="utf-8", newline="") as handle:
+            row = next(csv.DictReader(handle))
+        assert row["original"] == "campione 3"
+        assert row["hybrid_en"] == "sample 3"
+        assert translator.translate.call_count == 3
+        cli.comparison_rows.assert_called_once_with(conn, 1, ["IT"])
+        conn.cursor.assert_not_called()
