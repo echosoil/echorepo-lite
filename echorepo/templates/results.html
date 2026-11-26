@@ -874,6 +874,12 @@
 
 <div id="tableWrap" class="table-wrap bg-white rounded-3 p-2 card-elevated">
 
+  {% if 'echo-translation' in table_html %}
+  <p class="small text-muted mb-2">
+    <i class="bi bi-translate" aria-hidden="true"></i>
+    {{ _('Hover over marked text or select it to reveal the English translation.') }}
+  </p>
+  {% endif %}
   {{ table_html | safe }}
 
 </div>
@@ -1025,7 +1031,7 @@
 {% if config.get('LOESS_OVERLAY_ENABLED', False) %}
 <script src="{{ url_for('static', filename='js/loess_overlay.js') }}?v=5"></script>
 {% endif %}
-<script src="{{ url_for('static', filename='js/map.js') }}?v=46"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}?v=47"></script>
 
 
 
@@ -2020,6 +2026,8 @@
       const block = td.querySelector('.metals-block');
 
       const el = block || td;
+
+      if (td.querySelector(".echo-translation")) return;
 
 
 

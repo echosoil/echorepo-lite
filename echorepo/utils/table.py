@@ -4,6 +4,7 @@ import re
 import pandas as pd
 
 from ..config import settings
+from ..services.personal_translations import row_key, text_value
 from .geo import pick_lat_lon_cols
 
 
@@ -95,12 +96,30 @@ def strip_orig_cols(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(columns=list(drop), errors="ignore") if drop else df
 
 
-def make_table_html(df: pd.DataFrame) -> str:
+def translation_html(original, english, display_html=None):
+    """Native hover title plus keyboard/touch expandable, escaped English text."""
+    original, english = text_value(original), text_value(english)
+    display = html.escape(original or english) if display_html is None else display_html
+    if not original or not english or original == english:
+        return display
+    title = html.escape("English translation: " + english, quote=True)
+    return (
+        '<details class="echo-translation">'
+        f'<summary title="{title}">{display}'
+        ' <i class="bi bi-translate" aria-hidden="true"></i>'
+        ' <span class="visually-hidden">English translation available</span></summary>'
+        f'<span class="echo-translation-text" lang="en">{html.escape(english)}</span>'
+        "</details>"
+    )
+
+
+def make_table_html(df: pd.DataFrame, translations=None) -> str:
     if df.empty:
         return "<p>No data available.</p>"
 
     # Keep a copy with ALL columns so we can read *_option captions later
     df_full = df.copy()
+    sample_translations, image_translations = translations or ({}, {})
 
     # Add lat/lon display columns
     lat_col, lon_col = pick_lat_lon_cols(df.columns)
@@ -132,6 +151,7 @@ def make_table_html(df: pd.DataFrame) -> str:
         "SOIL_CONTAMINATION_plastic",
         "SOIL_CONTAMINATION_debris",
         "SOIL_CONTAMINATION_comments",
+        "SOIL_DIVER_observations",
         "METALS_info",
         "PHOTO_photos_1_path",
         "PHOTO_photos_2_path",
@@ -160,15 +180,36 @@ def make_table_html(df: pd.DataFrame) -> str:
                 .replace("<NA>", "")
             )
 
+    # Use original SQLite values, and attach English only if the canonical
+    # original still matches (e.g. a duplicate QR or edited text must not borrow it).
+    for col, field in (
+        ("SOIL_CONTAMINATION_comments", "contamination_other"),
+        ("SOIL_DIVER_observations", "observations"),
+    ):
+        if col not in df.columns:
+            continue
+
+        def format_text(row, column=col, prefix=field):
+            original = text_value(row[column])
+            canonical = sample_translations.get(row_key(df_full.loc[row.name]), {})
+            english = (
+                canonical.get(prefix + "_en")
+                if original == text_value(canonical.get(prefix + "_orig"))
+                else None
+            )
+            return translation_html(original, english)
+
+        df[col] = df.apply(format_text, axis=1)
+
     # ---- Build thumbnails with ALT/TITLE and a tiny visible caption from *_option ----
-    def fmt_img_with_cap(url, caption_text):
+    def fmt_img_with_cap(url, caption_text, comment="", english=""):
         if url is None or (isinstance(url, float) and pd.isna(url)):
             return ""
         url_s = str(url).strip()
         if not url_s:
             return ""
         safe_url = html.escape(url_s)
-        cap = str(caption_text).strip() if caption_text is not None else ""
+        cap = text_value(caption_text)
         safe_cap = html.escape(cap) if cap else "Sample photo"
         # figure+figcaption to show a small caption; alt+title for accessibility/tooltip
         return (
@@ -178,6 +219,7 @@ def make_table_html(df: pd.DataFrame) -> str:
             f'         style="max-height:60px;border-radius:4px;object-fit:cover;">'
             f"  </a>"
             f"{f'<figcaption>{html.escape(cap)}</figcaption>' if cap else ''}"
+            f"{f'<figcaption>{translation_html(comment, english)}</figcaption>' if comment else ''}"
             f"</figure>"
         )
 
@@ -185,18 +227,34 @@ def make_table_html(df: pd.DataFrame) -> str:
         path_col = f"PHOTO_photos_{n}_path"
         opt_col = f"PHOTO_photos_{n}_option"
         if path_col in df.columns:
-            caps = df_full[opt_col] if opt_col in df_full.columns else None
-            if caps is not None:
-                # Keep index alignment so row.name matches caps index
-                df[path_col] = df.apply(
-                    lambda row: fmt_img_with_cap(row[path_col], caps.loc[row.name]), axis=1
+            def format_photo(row, slot=n, path=path_col, option=opt_col):
+                raw = df_full.loc[row.name]
+                comment = text_value(raw.get(f"PHOTO_photos_{slot}_comment"))
+                canonical = image_translations.get((*row_key(raw), slot), {})
+                english = (
+                    canonical.get("image_description_en")
+                    if comment == text_value(canonical.get("image_description_orig"))
+                    else None
                 )
-            else:
-                df[path_col] = df[path_col].apply(lambda url: fmt_img_with_cap(url, None))
+                return fmt_img_with_cap(row[path], raw.get(option), comment, english)
+
+            df[path_col] = df.apply(format_photo, axis=1)
 
     # Alignment in Metals column
     if "METALS_info" in df.columns:
-        df["METALS_info"] = df["METALS_info"].apply(_format_metals_block)
+        def format_metals(row):
+            original = text_value(row["METALS_info"])
+            block = _format_metals_block(original)
+            canonical = sample_translations.get(row_key(df_full.loc[row.name]), {})
+            source = text_value(canonical.get("metals_info_orig"))
+            matches = original == source
+            english = canonical.get("metals_info_en") if matches else None
+            # Do not replace or translate structured lab measurements in the UI.
+            if block:
+                return block
+            return translation_html(original, english)
+
+        df["METALS_info"] = df.apply(format_metals, axis=1)
 
     # ---- Pretty headers and no-breaks where useful ----
     pretty = {
@@ -214,6 +272,7 @@ def make_table_html(df: pd.DataFrame) -> str:
         "SOIL_CONTAMINATION_plastic": ("Plastic", False),
         "SOIL_CONTAMINATION_debris": ("Debris", False),
         "SOIL_CONTAMINATION_comments": ("Contamination", False),
+        "SOIL_DIVER_observations": ("Observations", False),
         "METALS_info": ("Elemental concentrations", False),
         "PHOTO_photos_1_path": ("Photo 1", False),
         "PHOTO_photos_2_path": ("Photo 2", False),

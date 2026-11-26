@@ -129,6 +129,7 @@ BASE_LABEL_MSGIDS = {
     "contamination": N_("Contamination"),
     "metals": N_("Metals"),
     "elementalConcentrations": N_("Elemental concentrations"),
+    "englishTranslation": N_("English translation"),
     "drawRectangle": N_("Draw a rectangle"),
     "drawRectangleHint": N_("Click and drag to draw a rectangle."),
     "cancelDrawing": N_("Cancel drawing"),

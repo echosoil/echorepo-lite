@@ -49,6 +49,7 @@ from ..services.canonical_exports import (
 )
 from ..services.db import get_pg_conn, query_user_df
 from ..services.lab_permissions import can_upload_lab_data
+from ..services.personal_translations import load_personal_translations
 from ..services.lab_uploads import (
     InvalidLabUpload,
     LabImportError,
@@ -828,7 +829,12 @@ def home():
                 cols.insert(0, cols.pop(cols.index("fs_createdAt")))
             df_html = df_html[cols]
 
-    table_html = make_table_html(df_html)
+    try:
+        translations = load_personal_translations(df_html)
+    except Exception:
+        logging.getLogger(__name__).warning("Personal translations unavailable")
+        translations = ({}, {})
+    table_html = make_table_html(df_html, translations=translations)
 
     return render_template(
         "results.html",
@@ -2545,7 +2551,15 @@ def public_sample_image(sample_id: str):
         return jsonify({"ok": True, "image_url": None})
 
     desc = row.get("image_description_en") or row.get("image_description_orig") or ""
-    return jsonify({"ok": True, "image_url": row.get("image_url"), "caption": desc})
+    return jsonify(
+        {
+            "ok": True,
+            "image_url": row.get("image_url"),
+            "caption": desc,
+            "image_description_orig": row.get("image_description_orig"),
+            "image_description_en": row.get("image_description_en"),
+        }
+    )
 
 
 def _process_lab_upload_file(
