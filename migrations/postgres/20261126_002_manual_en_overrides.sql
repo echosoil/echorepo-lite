@@ -21,7 +21,7 @@ RETURNS TEXT LANGUAGE sql VOLATILE AS $$
       AND original = original_text
 $$;
 
-CREATE OR REPLACE FUNCTION preserve_sample_manual_en() RETURNS trigger LANGUAGE plpgsql AS $
+CREATE OR REPLACE FUNCTION preserve_sample_manual_en() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF (OLD.contamination_other_orig, OLD.country_code)
@@ -59,7 +59,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION preserve_image_manual_en() RETURNS trigger LANGUAGE plpgsql AS $
+CREATE OR REPLACE FUNCTION preserve_image_manual_en() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF (OLD.image_description_orig, OLD.country_code)
