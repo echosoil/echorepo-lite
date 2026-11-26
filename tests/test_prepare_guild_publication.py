@@ -22,7 +22,23 @@ class GuildPreparationTests(unittest.TestCase):
         self.assertEqual(stats["profile_rows"], 4)
         self.assertEqual(stats["overlapping_profile_rows"], 1)
         self.assertEqual(stats["zero_profiles"], 1)
-        self.assertIn("A,f2,0.8", (self.out / "functional_profiles.csv").read_text())
+        self.assertIn("A,f2,80.0", (self.out / "functional_profiles.csv").read_text())
+
+        self.assertEqual((self.out / "annotation_coverage.csv").read_text().splitlines(),
+                         ["sample_id,annotated_read_perc", "A,42", "B,0"])
+
+    def test_fungal_percentage_conversion(self):
+        manifest = self.fungal_fixture()
+        p.fungal_tables(self.out, manifest)
+        p.convert_fungal_percentages(self.out)
+        profiles = p.records(self.out / "guild_profiles.csv",
+                             ("sample_id", "guild", "read_count", "guild_perc"))
+        self.assertEqual(p.number(profiles[0]["guild_perc"]), p.number("0.5"))
+        coverage = p.records(self.out / "annotation_coverage.csv",
+                             (*p.FUN_HEADERS[1][:-1], "assigned_perc"))
+        self.assertEqual(coverage[1]["assigned_perc"], "")
+        self.assertEqual(coverage[2]["assigned_perc"], "0")
+        self.assertEqual(coverage[0]["assigned_reads"], "1")
 
     def test_fap_rejects_misalignment(self):
         (self.root / p.FAP8).write_text(",f1\nA,0.7\n")
@@ -63,6 +79,8 @@ class GuildPreparationTests(unittest.TestCase):
         doc = p.metadata("faprotax")
         self.assertEqual(doc["tables"][0]["tableSchema"]["primaryKey"], ["sample_id", "function_code"])
         self.assertEqual(len(doc["tables"][0]["tableSchema"]["foreignKeys"]), 2)
+        self.assertEqual(doc["tables"][0]["tableSchema"]["columns"][-1]["datatype"]["maximum"], 100)
+        self.assertEqual(doc["tables"][0]["tableSchema"]["columns"][-1]["name"], "otu_perc")
 
     def test_complete_bundle_excludes_private_inventory(self):
         fap = self.root / "fap"
